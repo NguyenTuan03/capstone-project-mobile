@@ -4,9 +4,9 @@ import { Redirect, Stack } from "expo-router";
 export default function AuthLayout() {
   const { isAuthenticated } = useJWTAuth();
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  }
+  // if (isAuthenticated) {
+  //   return <Redirect href="/(coach)/home" />;
+  // }
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
