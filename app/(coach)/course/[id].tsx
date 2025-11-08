@@ -1,128 +1,193 @@
+import CreateEditCourseModal from "@/components/coach/CreateEditCourseModal";
+import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import { get, put } from "@/services/http/httpService";
+import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function CourseDetailScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const courseId = params.id as string;
   const [activeTab, setActiveTab] = useState("overview");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - thay bằng data từ route.params hoặc API
-  const courseData = {
-    id: 1,
-    name: "Pickleball cơ bản - Khóa 1",
-    status: "ongoing",
-    level: "Beginner",
-    students: 4,
-    maxStudents: 4,
-    totalSessions: 8,
-    progress: 100,
-    revenue: "500.000đ/người",
-    schedule: "Thứ 2, 4, 6 - 14:00-15:30",
-    location: "Sân Pickleball Quận 7",
-    coach: "Huấn luyện viên Nguyễn Văn A",
-    price: "500.000đ/người",
-    description:
-      "Khóa học offline dành cho người mới bắt đầu, tập trung vào các kỹ thuật cơ bản và luật chơi",
+  const fetchCourseDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await get<Course>(`/v1/courses/${courseId}`);
+      setCourse(res.data);
+    } catch (error) {
+      console.error("Lỗi khi tải chi tiết khóa học:", error);
+      Alert.alert("Lỗi", "Không thể tải thông tin khóa học");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const studentsList = [
-    {
-      id: 1,
-      name: "Học viên 1",
-      email: "student1@email.com",
-      phone: "0945308509",
-      status: "Đang học",
-    },
-    {
-      id: 2,
-      name: "Học viên 2",
-      email: "student2@email.com",
-      phone: "0940860217",
-      status: "Đang học",
-    },
-    {
-      id: 3,
-      name: "Học viên 3",
-      email: "student3@email.com",
-      phone: "0992428433",
-      status: "Đang học",
-    },
-    {
-      id: 4,
-      name: "Học viên 4",
-      email: "student4@email.com",
-      phone: "094660481",
-      status: "Đang học",
-    },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      if (courseId) {
+        fetchCourseDetail();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId])
+  );
 
-  const sessionsList = [
-    {
-      id: 1,
-      name: "Buổi 1",
-      date: "23/10/2025",
-      time: "Thứ 2 - 14:00-15:30",
-      status: "completed",
-    },
-    {
-      id: 2,
-      name: "Buổi 2",
-      date: "25/10/2025",
-      time: "Thứ 4 - 14:00-15:30",
-      status: "completed",
-    },
-    {
-      id: 3,
-      name: "Buổi 3",
-      date: "27/10/2025",
-      time: "Thứ 6 - 14:00-15:30",
-      status: "completed",
-    },
-    {
-      id: 4,
-      name: "Buổi 4",
-      date: "29/10/2025",
-      time: "Thứ 2 - 14:00-15:30",
-      status: "completed",
-    },
-    {
-      id: 5,
-      name: "Buổi 5",
-      date: "01/11/2025",
-      time: "Thứ 4 - 14:00-15:30",
-      status: "upcoming",
-    },
-    {
-      id: 6,
-      name: "Buổi 6",
-      date: "03/11/2025",
-      time: "Thứ 6 - 14:00-15:30",
-      status: "upcoming",
-    },
-    {
-      id: 7,
-      name: "Buổi 7",
-      date: "05/11/2025",
-      time: "Thứ 2 - 14:00-15:30",
-      status: "upcoming",
-    },
-    {
-      id: 8,
-      name: "Buổi 8",
-      date: "07/11/2025",
-      time: "Thứ 4 - 14:00-15:30",
-      status: "upcoming",
-    },
-  ];
+  useEffect(() => {
+    if (activeTab === "edit") {
+      setShowEditModal(true);
+    }
+  }, [activeTab]);
+
+  const handleUpdateCourse = async (data: {
+    subjectId: number;
+    learningFormat: string;
+    minParticipants: number;
+    maxParticipants: number;
+    pricePerParticipant: number;
+    startDate: string;
+    address: string;
+    province: number;
+    district: number;
+    schedules?: any[];
+  }) => {
+    try {
+      // Tách subjectId ra khỏi payload vì nó không cần trong body khi update
+      const { subjectId, ...payload } = data;
+      
+      console.log("Payload gửi lên API:", payload);
+      console.log("Course ID:", courseId);
+      
+      await put(`/v1/courses/${courseId}`, payload);
+      Alert.alert("Thành công", "Cập nhật khóa học thành công!", [
+        {
+          text: "OK",
+          onPress: () => {
+            setShowEditModal(false);
+            fetchCourseDetail(); // Refresh data
+          },
+        },
+      ]);
+    } catch (error: any) {
+      console.error("Lỗi khi cập nhật khóa học:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
+      // Lấy thông báo lỗi chi tiết từ API
+      let errorMessage = "Không thể cập nhật khóa học. Vui lòng thử lại.";
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (Array.isArray(errorData)) {
+          errorMessage = errorData.map((e: any) => e.message || e).join(", ");
+        } else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+      }
+      
+      Alert.alert("Lỗi", errorMessage);
+      throw error;
+    }
+  };
+
+  const formatPrice = (price: string) => {
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice)) return price;
+    return new Intl.NumberFormat("vi-VN").format(numPrice) + "đ";
+  };
+
+  const formatSchedule = (schedules: Course["schedules"]) => {
+    if (!schedules || schedules.length === 0) return "Chưa có lịch";
+
+    return schedules
+      .map((schedule) => {
+        const dayIndex = [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ].indexOf(schedule.dayOfWeek);
+        const dayName =
+          dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : schedule.dayOfWeek;
+        const startTime = schedule.startTime.substring(0, 5);
+        const endTime = schedule.endTime.substring(0, 5);
+        return `${dayName}: ${startTime}-${endTime}`;
+      })
+      .join(", ");
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      APPROVED: "Đã duyệt",
+      PENDING_APPROVAL: "Chờ duyệt",
+      REJECTED: "Đã từ chối",
+      COMPLETED: "Đã hoàn thành",
+    };
+    return statusMap[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colorMap: Record<string, { bg: string; text: string }> = {
+      APPROVED: { bg: "#D1FAE5", text: "#059669" },
+      PENDING_APPROVAL: { bg: "#FEF3C7", text: "#D97706" },
+      REJECTED: { bg: "#FEE2E2", text: "#DC2626" },
+      COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
+    };
+    return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
+  };
+
+  const calculateProgress = () => {
+    if (!course || !course.endDate || !course.startDate) return 0;
+    const start = new Date(course.startDate);
+    const end = new Date(course.endDate);
+    const now = new Date();
+    if (now < start) return 0;
+    if (now > end) return 100;
+    const total = end.getTime() - start.getTime();
+    const current = now.getTime() - start.getTime();
+    return Math.round((current / total) * 100);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#059669" />
+        <Text style={styles.loadingText}>Đang tải thông tin khóa học...</Text>
+      </View>
+    );
+  }
+
+  if (!course) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Không tìm thấy khóa học</Text>
+      </View>
+    );
+  }
+
+  const statusColors = getStatusColor(course.status);
+  const progress = calculateProgress();
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -131,15 +196,26 @@ export default function CourseDetailScreen() {
       </TouchableOpacity>
       <View style={styles.headerTitleContainer}>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {courseData.name}
+          {course.name}
         </Text>
         <View style={styles.headerBadges}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Đang diễn ra</Text>
+          <View
+            style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}
+          >
+            <Text
+              style={[styles.statusBadgeText, { color: statusColors.text }]}
+            >
+              {getStatusLabel(course.status)}
+            </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: "#EFF6FF" }]}>
             <Text style={[styles.statusBadgeText, { color: "#3B82F6" }]}>
-              {courseData.level}
+              {course.level}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: "#F3F4F6" }]}>
+            <Text style={[styles.statusBadgeText, { color: "#6B7280" }]}>
+              {course.learningFormat === "GROUP" ? "Nhóm" : "Cá nhân"}
             </Text>
           </View>
         </View>
@@ -179,7 +255,7 @@ export default function CourseDetailScreen() {
           onPress={() =>
             router.push({
               pathname: "/(coach)/course/assignment/[id]" as any,
-              params: { id: String(courseData.id) },
+              params: { id: String(course.id) },
             })
           }
         >
@@ -202,7 +278,7 @@ export default function CourseDetailScreen() {
               activeTab === "students" && styles.tabTextActive,
             ]}
           >
-            Học viên ({courseData.students})
+            Học viên ({course.currentParticipants})
           </Text>
         </TouchableOpacity>
 
@@ -255,26 +331,28 @@ export default function CourseDetailScreen() {
           <Ionicons name="people" size={32} color="#3B82F6" />
           <Text style={styles.statLabel}>Học viên</Text>
           <Text style={styles.statValue}>
-            {courseData.students}/{courseData.maxStudents}
+            {course.currentParticipants}/{course.maxParticipants}
           </Text>
         </View>
 
         <View style={styles.statCard}>
           <Ionicons name="book" size={32} color="#10B981" />
           <Text style={styles.statLabel}>Buổi học</Text>
-          <Text style={styles.statValue}>{courseData.totalSessions}</Text>
+          <Text style={styles.statValue}>{course.totalSessions}</Text>
         </View>
 
         <View style={styles.statCard}>
           <Ionicons name="time" size={32} color="#F59E0B" />
           <Text style={styles.statLabel}>Tiến độ</Text>
-          <Text style={styles.statValue}>{courseData.progress}%</Text>
+          <Text style={styles.statValue}>{progress}%</Text>
         </View>
 
         <View style={styles.statCard}>
           <Ionicons name="cash" size={32} color="#059669" />
           <Text style={styles.statLabel}>Doanh thu</Text>
-          <Text style={styles.statValue}>{courseData.revenue}</Text>
+          <Text style={styles.statValue}>
+            {formatPrice(course.totalEarnings)}
+          </Text>
         </View>
       </View>
 
@@ -283,18 +361,43 @@ export default function CourseDetailScreen() {
         <Text style={styles.sectionTitle}>Thông tin khóa học</Text>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Lịch học</Text>
-          <Text style={styles.infoValue}>{courseData.schedule}</Text>
+          <Text style={styles.infoLabel}>Môn học</Text>
+          <Text style={styles.infoValue}>{course.subject.name}</Text>
         </View>
 
         <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Lịch học</Text>
+          <Text style={styles.infoValue}>
+            {formatSchedule(course.schedules)}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Ngày bắt đầu</Text>
+          <Text style={styles.infoValue}>
+            {new Date(course.startDate).toLocaleDateString("vi-VN")}
+          </Text>
+        </View>
+
+        {course.endDate && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Ngày kết thúc</Text>
+            <Text style={styles.infoValue}>
+              {new Date(course.endDate).toLocaleDateString("vi-VN")}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Địa điểm</Text>
-          <Text style={styles.infoValue}>{courseData.location}</Text>
+          <Text style={styles.infoValue}>
+            {course.address}, {course.district.name}, {course.province.name}
+          </Text>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Huấn luyện viên</Text>
-          <Text style={styles.infoValue}>{courseData.coach}</Text>
+          <Text style={styles.infoValue}>{course.createdBy.fullName}</Text>
         </View>
 
         <View style={styles.infoRow}>
@@ -302,7 +405,15 @@ export default function CourseDetailScreen() {
           <Text
             style={[styles.infoValue, { color: "#059669", fontWeight: "600" }]}
           >
-            {courseData.price}
+            {formatPrice(course.pricePerParticipant)}/người
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Số lượng học viên</Text>
+          <Text style={styles.infoValue}>
+            Tối thiểu: {course.minParticipants} - Tối đa:{" "}
+            {course.maxParticipants}
           </Text>
         </View>
       </View>
@@ -311,7 +422,7 @@ export default function CourseDetailScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Mô tả</Text>
         <View style={styles.descriptionBox}>
-          <Text style={styles.descriptionText}>{courseData.description}</Text>
+          <Text style={styles.descriptionText}>{course.description}</Text>
         </View>
       </View>
 
@@ -323,44 +434,17 @@ export default function CourseDetailScreen() {
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Danh sách học viên</Text>
-
-        {/* Table Header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { width: 40 }]}>STT</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Họ tên</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Trạng thái</Text>
-        </View>
-
-        {/* Table Rows */}
-        {studentsList.map((student, index) => (
-          <View key={student.id} style={styles.tableRow}>
-            <Text style={[styles.tableCellText, { width: 40 }]}>
-              {index + 1}
-            </Text>
-            <View style={[styles.tableCell, { flex: 1 }]}>
-              <View style={styles.studentInfo}>
-                <View style={styles.studentAvatar}>
-                  <Ionicons name="person" size={16} color="#6B7280" />
-                </View>
-                <View>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  <Text style={styles.studentEmail}>{student.email}</Text>
-                  <Text style={styles.studentPhone}>{student.phone}</Text>
-                </View>
-              </View>
-            </View>
-            <View style={[styles.tableCell, { flex: 1 }]}>
-              <View style={styles.statusTag}>
-                <Text style={styles.statusTagText}>{student.status}</Text>
-              </View>
-              <TouchableOpacity style={styles.detailLink}>
-                <Text style={styles.detailLinkText}>Chi tiết</Text>
-              </TouchableOpacity>
-            </View>
+        {course.currentParticipants === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={48} color="#9CA3AF" />
+            <Text style={styles.emptyText}>Chưa có học viên nào</Text>
           </View>
-        ))}
+        ) : (
+          <Text style={styles.infoValue}>
+            Hiện có {course.currentParticipants} học viên đã đăng ký
+          </Text>
+        )}
       </View>
-
       <View style={{ height: 100 }} />
     </ScrollView>
   );
@@ -370,122 +454,60 @@ export default function CourseDetailScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Lịch học chi tiết</Text>
 
-        {sessionsList.map((session, index) => (
-          <View
-            key={session.id}
-            style={[
-              styles.sessionCard,
-              session.status === "completed" && styles.sessionCardCompleted,
-            ]}
-          >
-            <View style={styles.sessionNumber}>
-              <Text style={styles.sessionNumberText}>{index + 1}</Text>
-            </View>
-            <View style={styles.sessionInfo}>
-              <Text style={styles.sessionName}>{session.name}</Text>
-              <Text style={styles.sessionTime}>{session.time}</Text>
-              <Text style={styles.sessionDate}>{session.date}</Text>
-            </View>
-            <View style={styles.sessionStatus}>
-              {session.status === "completed" ? (
-                <>
-                  <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-                  <Text style={styles.sessionStatusText}>Đã hoàn thành</Text>
-                </>
-              ) : (
-                <TouchableOpacity style={styles.sessionDetailButton}>
-                  <Text style={styles.sessionDetailButtonText}>Chi tiết</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+        {course.schedules && course.schedules.length > 0 ? (
+          course.schedules.map((schedule, index) => {
+            const dayIndex = [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ].indexOf(schedule.dayOfWeek);
+            const dayName =
+              dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : schedule.dayOfWeek;
+            const startTime = schedule.startTime.substring(0, 5);
+            const endTime = schedule.endTime.substring(0, 5);
+
+            return (
+              <View key={schedule.id} style={styles.sessionCard}>
+                <View style={styles.sessionNumber}>
+                  <Text style={styles.sessionNumberText}>{index + 1}</Text>
+                </View>
+                <View style={styles.sessionInfo}>
+                  <Text style={styles.sessionName}>{dayName}</Text>
+                  <Text style={styles.sessionTime}>
+                    {startTime} - {endTime}
+                  </Text>
+                </View>
+              </View>
+            );
+          })
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+            <Text style={styles.emptyText}>Chưa có lịch học</Text>
           </View>
-        ))}
+        )}
       </View>
 
       <View style={{ height: 100 }} />
     </ScrollView>
   );
 
-  const renderEditTab = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Chỉnh sửa thông tin khóa học</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Tên khóa học</Text>
-          <TextInput
-            style={styles.input}
-            value={courseData.name}
-            placeholder="Tên khóa học"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Mô tả</Text>
-          <TextInput
-            style={styles.textArea}
-            multiline
-            numberOfLines={4}
-            value={courseData.description}
-            placeholder="Mô tả khóa học"
-            textAlignVertical="top"
-          />
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Địa điểm</Text>
-            <TextInput
-              style={styles.input}
-              value={courseData.location}
-              placeholder="Địa điểm"
-            />
-          </View>
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>Học phí</Text>
-            <TextInput
-              style={styles.input}
-              value={courseData.price}
-              placeholder="Học phí"
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Số học viên tối đa</Text>
-          <TextInput
-            style={styles.input}
-            value={String(courseData.maxStudents)}
-            placeholder="Số học viên"
-            keyboardType="numeric"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Trình độ</Text>
-          <View style={styles.pickerContainer}>
-            <Text style={styles.pickerText}>{courseData.level}</Text>
-            <Ionicons name="chevron-down" size={20} color="#6B7280" />
-          </View>
-        </View>
-
-        <View style={styles.editActions}>
-          <TouchableOpacity style={styles.saveButton}>
-            <Ionicons name="save" size={20} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.deleteButton}>
-            <Ionicons name="trash" size={20} color="#EF4444" />
-            <Text style={styles.deleteButtonText}>Xóa khóa học</Text>
-          </TouchableOpacity>
+  const renderEditTab = () => {
+    return (
+      <View style={styles.tabContent}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Chỉnh sửa thông tin khóa học</Text>
+          <Text style={{ color: "#6B7280", fontSize: 14, marginTop: 8 }}>
+            Form chỉnh sửa đang được hiển thị trong modal
+          </Text>
         </View>
       </View>
-
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -517,6 +539,29 @@ export default function CourseDetailScreen() {
           <Text style={styles.closeButtonText}>Đóng</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Edit Course Modal */}
+      <CreateEditCourseModal
+        visible={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setActiveTab("overview");
+        }}
+        onSubmit={handleUpdateCourse}
+        mode="edit"
+        initialData={{
+          subjectId: course.subject.id, // Set subjectId từ course data
+          learningFormat: course.learningFormat,
+          minParticipants: String(course.minParticipants),
+          maxParticipants: String(course.maxParticipants),
+          pricePerParticipant: course.pricePerParticipant,
+          startDate: course.startDate,
+          address: course.address,
+          province: course.province,
+          district: course.district,
+          schedules: course.schedules,
+        }}
+      />
     </View>
   );
 }
@@ -525,6 +570,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F3F4F6",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#6B7280",
   },
   header: {
     flexDirection: "row",
@@ -552,9 +608,9 @@ const styles = StyleSheet.create({
   headerBadges: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
   },
   statusBadge: {
-    backgroundColor: "#D1FAE5",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -562,7 +618,6 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#059669",
   },
   placeholder: {
     width: 32,
@@ -672,81 +727,15 @@ const styles = StyleSheet.create({
     color: "#374151",
     lineHeight: 22,
   },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#F9FAFB",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  tableHeaderText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  tableRow: {
-    flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  tableCell: {
+  emptyContainer: {
+    padding: 40,
+    alignItems: "center",
     justifyContent: "center",
   },
-  tableCellText: {
-    fontSize: 13,
-    color: "#111827",
-  },
-  studentInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  studentAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  studentName: {
+  emptyText: {
+    marginTop: 12,
     fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 2,
-  },
-  studentEmail: {
-    fontSize: 12,
     color: "#6B7280",
-    marginBottom: 1,
-  },
-  studentPhone: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  statusTag: {
-    backgroundColor: "#D1FAE5",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-    marginBottom: 6,
-  },
-  statusTagText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#059669",
-  },
-  detailLink: {
-    alignSelf: "flex-start",
-  },
-  detailLinkText: {
-    fontSize: 13,
-    color: "#3B82F6",
-    fontWeight: "600",
   },
   sessionCard: {
     flexDirection: "row",
@@ -755,9 +744,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     alignItems: "center",
-  },
-  sessionCardCompleted: {
-    backgroundColor: "#F0FDF4",
   },
   sessionNumber: {
     width: 40,
@@ -786,112 +772,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     marginBottom: 2,
-  },
-  sessionDate: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  sessionStatus: {
-    alignItems: "flex-end",
-  },
-  sessionStatusText: {
-    fontSize: 12,
-    color: "#10B981",
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  sessionDetailButton: {
-    backgroundColor: "#3B82F6",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  sessionDetailButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#111827",
-  },
-  textArea: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#111827",
-    minHeight: 100,
-  },
-  row: {
-    flexDirection: "row",
-  },
-  pickerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  pickerText: {
-    fontSize: 14,
-    color: "#111827",
-  },
-  editActions: {
-    marginTop: 8,
-    gap: 12,
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#3B82F6",
-    paddingVertical: 14,
-    borderRadius: 8,
-    gap: 8,
-  },
-  saveButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1.5,
-    borderColor: "#EF4444",
-    paddingVertical: 14,
-    borderRadius: 8,
-    gap: 8,
-  },
-  deleteButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#EF4444",
   },
   bottomButton: {
     backgroundColor: "#FFFFFF",
