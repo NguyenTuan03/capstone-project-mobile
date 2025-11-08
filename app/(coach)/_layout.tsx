@@ -100,9 +100,11 @@ export default function CoachTabs() {
       <Tabs.Screen
         name="menu"
         options={{
-          tabBarButton: () => null,
+          // tabBarButton: () => null,
+          href: null,
         }}
       />
     </Tabs>
+
   );
 }
