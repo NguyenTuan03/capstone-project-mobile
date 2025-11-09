@@ -20,7 +20,7 @@ export default function LearnerTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="courses/index"
+        name="courses"
         options={{
           title: "Khóa học",
           tabBarIcon: ({ color, size }) => (
@@ -29,7 +29,7 @@ export default function LearnerTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="my-courses/index"
+        name="my-courses"
         options={{
           title: "Của tôi",
           tabBarIcon: ({ color, size }) => (
@@ -65,12 +65,6 @@ export default function LearnerTabsLayout() {
         name="course/[id]/lesson"
         options={{
           href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="payment"
-        options={{
-          href: null, // Ẩn khỏi tab bar
         }}
       />
     </Tabs>
