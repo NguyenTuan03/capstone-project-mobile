@@ -1,5 +1,9 @@
-import { useRouter } from "expo-router";
+import { get } from "@/services/http/httpService";
+import { Enrollment, EnrollmentsResponse } from "@/types/enrollments";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   SafeAreaView,
   ScrollView,
@@ -9,23 +13,41 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 export default function MyCoursesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const enrolled = [
-    {
-      id: 1,
-      title: "Cơ bản Pickleball cho người mới bắt đầu",
-      coach: "Huấn luyện viên Nguyễn Văn A",
-      courseType: "individual",
-      totalSessions: 8,
-      completedSessions: 3,
-      progress: 37,
-      image:
-        "https://cdn.britannica.com/25/236225-050-59A4051E/woman-daughter-doubles-pickleball.jpg",
-    },
-  ];
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchEnrollments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await get<EnrollmentsResponse>(
+        "/v1/enrollments?filter=status_eq_CONFIRMED"
+      );
+      setEnrollments(res.data.items || []);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách khóa học đã đăng ký:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchEnrollments();
+    }, [fetchEnrollments])
+  );
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
 
   return (
     <SafeAreaView
@@ -37,46 +59,88 @@ export default function MyCoursesScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.pageTitle}>Khóa học của tôi</Text>
 
-        {enrolled.map((c) => (
-          <View
-            key={c.id}
-            style={[styles.card, { padding: 0, overflow: "hidden" }]}
-          >
-            <Image source={{ uri: c.image }} style={styles.cover} />
-            <View style={{ padding: 16, gap: 10 }}>
-              <Text style={styles.courseTitle}>{c.title}</Text>
-              <Text style={styles.courseCoach}>{c.coach}</Text>
-
-              <View style={{ gap: 6 }}>
-                <View style={styles.progressHeader}>
-                  <Text style={styles.progressLabel}>Tiến độ</Text>
-                  <Text style={styles.progressPercent}>{c.progress}%</Text>
-                </View>
-                <View style={styles.progressTrack}>
-                  <View
-                    style={[styles.progressFill, { width: `${c.progress}%` }]}
-                  />
-                </View>
-                <Text style={styles.sessionCount}>
-                  {c.completedSessions}/{c.totalSessions} buổi
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                activeOpacity={0.9}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(learner)/course/[id]",
-                    params: { id: String(c.id) },
-                  } as any)
-                }
-              >
-                <Text style={styles.primaryBtnText}>Xem chi tiết</Text>
-              </TouchableOpacity>
-            </View>
+        {loading ? (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <ActivityIndicator size="large" color="#10B981" />
           </View>
-        ))}
+        ) : enrollments.length === 0 ? (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <Text style={{ color: "#6B7280", fontSize: 14 }}>
+              Bạn chưa có khóa học nào
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 16 }}>
+            {enrollments.map((enrollment) => {
+              const course = enrollment.course;
+              const progress = 0; // TODO: Calculate from completed sessions
+              const progressPercent = Math.round(progress * 100);
+
+              return (
+                <TouchableOpacity
+                  key={enrollment.id}
+                  style={[styles.card, { padding: 0, overflow: "hidden" }]}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    // TODO: Navigate to course detail
+                    // router.push(`/(learner)/courses/${course.id}`);
+                  }}
+                >
+                  <Image
+                    source={{
+                      uri: "https://via.placeholder.com/400x160?text=Course",
+                    }}
+                    style={styles.cover}
+                  />
+                  <View style={{ padding: 16, gap: 8 }}>
+                    <Text style={styles.courseTitle}>{course.name}</Text>
+                    <Text style={styles.courseCoach}>
+                      {course.createdBy?.fullName || "Huấn luyện viên"}
+                    </Text>
+
+                    <View style={styles.progressHeader}>
+                      <Text style={styles.progressLabel}>Tiến độ</Text>
+                      <Text style={styles.progressPercent}>
+                        {progressPercent}%
+                      </Text>
+                    </View>
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${progressPercent}%` },
+                        ]}
+                      />
+                    </View>
+
+                    <Text style={styles.sessionCount}>
+                      {course.totalSessions || 0} buổi học
+                    </Text>
+
+                    <View style={{ marginTop: 8 }}>
+                      <Text style={{ color: "#6B7280", fontSize: 12 }}>
+                        Ngày bắt đầu: {formatDate(course.startDate)}
+                      </Text>
+                      <Text style={{ color: "#6B7280", fontSize: 12 }}>
+                        Ngày kết thúc: {formatDate(course.endDate)}
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.primaryBtn}
+                      activeOpacity={0.9}
+                      onPress={() =>
+                        router.push(`/(learner)/my-courses/${enrollment.id}`)
+                      }
+                    >
+                      <Text style={styles.primaryBtnText}>Xem chi tiết</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
