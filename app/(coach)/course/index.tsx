@@ -1,182 +1,225 @@
+import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import { get } from "@/services/http/httpService";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Course = {
   id: number;
   name: string;
-  status: string;
+  description: string;
   level: string;
-  type: string;
-  weeks: number;
-  schedule: string;
-  students: number;
-  maxStudents: number;
-  revenue: string;
-  location: string;
-  coach: string;
+  learningFormat: "GROUP" | "INDIVIDUAL";
+  status: string;
+  minParticipants: number;
+  maxParticipants: number;
+  pricePerParticipant: string;
+  currentParticipants: number;
+  totalSessions: number;
+  totalEarnings: string;
+  startDate: string;
+  endDate: string | null;
+  address: string;
+  subject: {
+    id: number;
+    name: string;
+  };
+  schedules: {
+    id: number;
+    dayOfWeek: string;
+    startTime: string;
+    endTime: string;
+  }[];
+  province: {
+    id: number;
+    name: string;
+  };
+  district: {
+    id: number;
+    name: string;
+  };
+};
+
+type CoursesResponse = {
+  items: Course[];
+  page: number;
+  pageSize: number;
+  total: number;
 };
 
 export default function CoachCourseScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  // navigate to create screen instead of modal
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const coursesData = {
-    all: 7,
-    ongoing: 4,
-    completed: 3,
+    all: total,
+    ongoing: courses.filter((c) => c.status === "APPROVED").length,
+    completed: courses.filter((c) => c.status === "COMPLETED").length,
   };
 
-  const courses = [
-    {
-      id: 1,
-      name: "Pickleball cơ bản - Khóa 1",
-      status: "ongoing",
-      level: "Beginner",
-      type: "Nhóm",
-      weeks: 4,
-      schedule: "Thứ 2, 4, 6 - 14:00-15:30",
-      students: 4,
-      maxStudents: 6,
-      revenue: "4.800.000đ",
-      location: "Offline",
-      coach: "Huấn luyện viên",
-    },
-    {
-      id: 2,
-      name: "Kỹ thuật nâng cao - Khóa 1",
-      status: "ongoing",
-      level: "Intermediate",
-      type: "Nhóm",
-      weeks: 5,
-      schedule: "Thứ 3, 5, 7 - 16:00-17:30",
-      students: 5,
-      maxStudents: 6,
-      revenue: "7.500.000đ",
-      location: "Online",
-      coach: "Huấn luyện viên Trần",
-    },
-    {
-      id: 3,
-      name: "Pickleball cá nhân - Khóa 2",
-      status: "completed",
-      level: "Beginner",
-      type: "Cá nhân",
-      weeks: 3,
-      schedule: "Thứ 2, 4 - 10:00-11:30",
-      students: 1,
-      maxStudents: 1,
-      revenue: "3.000.000đ",
-      location: "Offline",
-      coach: "Huấn luyện viên",
-    },
-  ];
+  const fetchCourses = async (pageNum: number = 1, append: boolean = false) => {
+    try {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
 
-  const renderCourseCard = (course: Course) => (
-    <View key={course.id} style={styles.courseCard}>
-      <View style={styles.courseHeader}>
-        <View>
-          <Text style={styles.courseName}>{course.name}</Text>
-          <View style={styles.courseTags}>
-            <View
-              style={[
-                styles.statusBadge,
-                course.status === "ongoing"
-                  ? styles.statusOngoing
-                  : styles.statusCompleted,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  course.status === "ongoing"
-                    ? styles.statusOngoingText
-                    : styles.statusCompletedText,
-                ]}
-              >
-                {course.status === "ongoing" ? "Đang diễn ra" : "Đã hoàn thành"}
-              </Text>
-            </View>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelText}>{course.level}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+      const url = `/v1/courses?page=${pageNum}&pageSize=${pageSize}`;
+      const res = await get<CoursesResponse>(url);
 
-      <View style={styles.courseBody}>
-        <View style={styles.courseRow}>
-          <Ionicons name="time-outline" size={16} color="#6B7280" />
-          <Text style={styles.courseText}>{course.schedule}</Text>
-        </View>
-        <View style={styles.courseRow}>
-          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-          <Text style={styles.courseText}>{course.weeks} tuần</Text>
-        </View>
-        <View style={styles.courseRow}>
-          <Ionicons name="people-outline" size={16} color="#6B7280" />
-          <Text style={styles.courseText}>
-            {course.students}/{course.maxStudents} học viên
-          </Text>
-        </View>
-        <View style={styles.courseRow}>
-          <Ionicons name="location-outline" size={16} color="#6B7280" />
-          <Text style={styles.courseText}>{course.location}</Text>
-        </View>
-        <View style={styles.courseRow}>
-          <Ionicons name="person-outline" size={16} color="#6B7280" />
-          <Text style={styles.courseText}>{course.coach}</Text>
-        </View>
-      </View>
+      if (append) {
+        setCourses((prev) => [...prev, ...(res.data.items || [])]);
+      } else {
+        setCourses(res.data.items || []);
+      }
 
-      <View style={styles.courseFooter}>
-        <View style={styles.revenueContainer}>
-          <Ionicons name="trending-up" size={18} color="#059669" />
-          <Text style={styles.revenueLabel}>Doanh thu</Text>
-          <Text style={styles.revenueValue}>{course.revenue}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.viewDetailsButton}
-          onPress={() =>
-            router.push({
-              pathname: "/(coach)/course/[id]",
-              params: { id: String(course.id) },
-            } as any)
-          }
-        >
-          <Text style={styles.viewDetailsText}>Xem chi tiết</Text>
-          <Ionicons name="chevron-forward" size={18} color="#059669" />
-        </TouchableOpacity>
-      </View>
-    </View>
+      setTotal(res.data.total || 0);
+      setPage(res.data.page || 1);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách khóa học:", error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loadingMore && courses.length < total) {
+      fetchCourses(page + 1, true);
+    }
+  };
+
+  // Refresh khi màn hình được focus (quay lại từ create screen)
+  useFocusEffect(
+    useCallback(() => {
+      fetchCourses(1, false);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
+
+  const formatPrice = (price: string) => {
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice)) return price;
+    return new Intl.NumberFormat("vi-VN").format(numPrice) + "đ";
+  };
+
+  const formatSchedule = (schedules: Course["schedules"]) => {
+    if (!schedules || schedules.length === 0) return "Chưa có lịch";
+
+    return schedules
+      .map((schedule) => {
+        const dayIndex = [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ].indexOf(schedule.dayOfWeek);
+        const dayName =
+          dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : schedule.dayOfWeek;
+        const startTime = schedule.startTime.substring(0, 5);
+        const endTime = schedule.endTime.substring(0, 5);
+        return `${dayName}: ${startTime}-${endTime}`;
+      })
+      .join(", ");
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      APPROVED: "Đã duyệt",
+      PENDING_APPROVAL: "Chờ duyệt",
+      REJECTED: "Đã từ chối",
+      COMPLETED: "Đã hoàn thành",
+    };
+    return statusMap[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colorMap: Record<string, { bg: string; text: string }> = {
+      APPROVED: { bg: "#D1FAE5", text: "#059669" },
+      PENDING_APPROVAL: { bg: "#FEF3C7", text: "#D97706" },
+      REJECTED: { bg: "#FEE2E2", text: "#DC2626" },
+      COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
+    };
+    return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
+  };
+
+  const filteredCourses =
+    activeTab === "all"
+      ? courses
+      : activeTab === "ongoing"
+      ? courses.filter((c) => c.status === "APPROVED")
+      : courses.filter((c) => c.status === "COMPLETED");
+
+  const hasMore = courses.length < total;
 
   return (
     <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 50 },
-      ]}
+      style={{
+        flex: 1,
+        backgroundColor: "#F3F4F6",
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom + 50,
+      }}
     >
       <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={{ flex: 1 }}
+        onScroll={(e) => {
+          const { layoutMeasurement, contentOffset, contentSize } =
+            e.nativeEvent;
+          const paddingToBottom = 20;
+          if (
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - paddingToBottom
+          ) {
+            if (hasMore && !loadingMore) {
+              loadMore();
+            }
+          }
+        }}
+        scrollEventThrottle={400}
+      >
         {/* Tabs */}
-        <View style={styles.tabsContainer}>
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 8,
+          }}
+        >
           <TouchableOpacity
-            style={[styles.tab, activeTab === "all" && styles.tabActive]}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 8,
+              marginBottom: 8,
+              backgroundColor: activeTab === "all" ? "#EFF6FF" : "#F9FAFB",
+            }}
             onPress={() => setActiveTab("all")}
           >
             <Ionicons
@@ -185,20 +228,46 @@ export default function CoachCourseScreen() {
               color={activeTab === "all" ? "#059669" : "#6B7280"}
             />
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "all" && styles.tabTextActive,
-              ]}
+              style={{
+                fontSize: 14,
+                color: activeTab === "all" ? "#059669" : "#6B7280",
+                marginLeft: 8,
+                flex: 1,
+                fontWeight: activeTab === "all" ? "600" : "400",
+              }}
             >
               Tất cả khóa học
             </Text>
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{coursesData.all}</Text>
+            <View
+              style={{
+                backgroundColor: "#E5E7EB",
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#374151",
+                  fontWeight: "600",
+                }}
+              >
+                {coursesData.all}
+              </Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab, activeTab === "ongoing" && styles.tabActive]}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 8,
+              marginBottom: 8,
+              backgroundColor: activeTab === "ongoing" ? "#EFF6FF" : "#F9FAFB",
+            }}
             onPress={() => setActiveTab("ongoing")}
           >
             <Ionicons
@@ -207,20 +276,47 @@ export default function CoachCourseScreen() {
               color={activeTab === "ongoing" ? "#059669" : "#6B7280"}
             />
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "ongoing" && styles.tabTextActive,
-              ]}
+              style={{
+                fontSize: 14,
+                color: activeTab === "ongoing" ? "#059669" : "#6B7280",
+                marginLeft: 8,
+                flex: 1,
+                fontWeight: activeTab === "ongoing" ? "600" : "400",
+              }}
             >
               Đang diễn ra
             </Text>
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{coursesData.ongoing}</Text>
+            <View
+              style={{
+                backgroundColor: "#E5E7EB",
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#374151",
+                  fontWeight: "600",
+                }}
+              >
+                {coursesData.ongoing}
+              </Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab, activeTab === "completed" && styles.tabActive]}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 8,
+              marginBottom: 8,
+              backgroundColor:
+                activeTab === "completed" ? "#EFF6FF" : "#F9FAFB",
+            }}
             onPress={() => setActiveTab("completed")}
           >
             <Ionicons
@@ -229,24 +325,61 @@ export default function CoachCourseScreen() {
               color={activeTab === "completed" ? "#059669" : "#6B7280"}
             />
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "completed" && styles.tabTextActive,
-              ]}
+              style={{
+                fontSize: 14,
+                color: activeTab === "completed" ? "#059669" : "#6B7280",
+                marginLeft: 8,
+                flex: 1,
+                fontWeight: activeTab === "completed" ? "600" : "400",
+              }}
             >
               Đã hoàn thành
             </Text>
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{coursesData.completed}</Text>
+            <View
+              style={{
+                backgroundColor: "#E5E7EB",
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#374151",
+                  fontWeight: "600",
+                }}
+              >
+                {coursesData.completed}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#FFFFFF",
+            marginHorizontal: 16,
+            marginTop: 16,
+            marginBottom: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+          }}
+        >
           <Ionicons name="search" size={20} color="#9CA3AF" />
           <TextInput
-            style={styles.searchInput}
+            style={{
+              flex: 1,
+              marginLeft: 8,
+              fontSize: 14,
+              color: "#111827",
+            }}
             placeholder="Tìm kiếm khóa học..."
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -254,248 +387,421 @@ export default function CoachCourseScreen() {
         </View>
 
         {/* Courses List */}
-        <View style={styles.coursesContainer}>
-          {courses.map((course) => renderCourseCard(course))}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+          {loading ? (
+            <View
+              style={{
+                padding: 40,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ActivityIndicator size="large" color="#059669" />
+              <Text
+                style={{
+                  marginTop: 12,
+                  fontSize: 14,
+                  color: "#6B7280",
+                }}
+              >
+                Đang tải danh sách khóa học...
+              </Text>
+            </View>
+          ) : filteredCourses.length === 0 ? (
+            <View
+              style={{
+                padding: 40,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="book-outline" size={48} color="#9CA3AF" />
+              <Text
+                style={{
+                  marginTop: 12,
+                  fontSize: 14,
+                  color: "#6B7280",
+                }}
+              >
+                Chưa có khóa học nào
+              </Text>
+            </View>
+          ) : (
+            <>
+              {filteredCourses.map((course) => {
+                const statusColors = getStatusColor(course.status);
+                return (
+                  <View
+                    key={course.id}
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 12,
+                      padding: 16,
+                      marginBottom: 12,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                  >
+                    <View style={{ marginBottom: 12 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "600",
+                          color: "#111827",
+                          marginBottom: 8,
+                        }}
+                      >
+                        {course.name}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <View
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 12,
+                            backgroundColor: statusColors.bg,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "600",
+                              color: statusColors.text,
+                            }}
+                          >
+                            {getStatusLabel(course.status)}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 12,
+                            backgroundColor: "#EFF6FF",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#3B82F6",
+                              fontWeight: "600",
+                            }}
+                          >
+                            {course.level}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 12,
+                            backgroundColor: "#F3F4F6",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#6B7280",
+                              fontWeight: "600",
+                            }}
+                          >
+                            {course.learningFormat === "GROUP"
+                              ? "Nhóm"
+                              : "Cá nhân"}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={{ marginBottom: 12 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="book-outline"
+                          size={16}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6B7280",
+                            marginLeft: 8,
+                            flex: 1,
+                          }}
+                        >
+                          {course.subject.name}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="time-outline"
+                          size={16}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6B7280",
+                            marginLeft: 8,
+                            flex: 1,
+                          }}
+                        >
+                          {formatSchedule(course.schedules)}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="calendar-outline"
+                          size={16}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6B7280",
+                            marginLeft: 8,
+                          }}
+                        >
+                          Bắt đầu:{" "}
+                          {new Date(course.startDate).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                          {course.endDate &&
+                            ` - Kết thúc: ${new Date(
+                              course.endDate
+                            ).toLocaleDateString("vi-VN")}`}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="people-outline"
+                          size={16}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6B7280",
+                            marginLeft: 8,
+                          }}
+                        >
+                          {course.currentParticipants}/{course.maxParticipants}{" "}
+                          học viên
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="location-outline"
+                          size={16}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6B7280",
+                            marginLeft: 8,
+                            flex: 1,
+                          }}
+                        >
+                          {course.address}, {course.district.name},{" "}
+                          {course.province.name}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="cash-outline"
+                          size={16}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6B7280",
+                            marginLeft: 8,
+                          }}
+                        >
+                          {formatPrice(course.pricePerParticipant)}/người
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        paddingTop: 12,
+                        borderTopWidth: 1,
+                        borderTopColor: "#F3F4F6",
+                      }}
+                    >
+                      <View
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                      >
+                        <Ionicons
+                          name="trending-up"
+                          size={18}
+                          color="#059669"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#6B7280",
+                            marginLeft: 6,
+                          }}
+                        >
+                          Doanh thu
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "bold",
+                            color: "#059669",
+                            marginLeft: 8,
+                          }}
+                        >
+                          {formatPrice(course.totalEarnings)}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(coach)/course/[id]",
+                            params: { id: String(course.id) },
+                          } as any)
+                        }
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#059669",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Xem chi tiết
+                        </Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={18}
+                          color="#059669"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Load More */}
+              {hasMore && (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  {loadingMore ? (
+                    <ActivityIndicator size="small" color="#059669" />
+                  ) : (
+                    <TouchableOpacity
+                      onPress={loadMore}
+                      style={{
+                        paddingHorizontal: 20,
+                        paddingVertical: 10,
+                        backgroundColor: "#F3F4F6",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          color: "#059669",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Tải thêm
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
 
       {/* Create Course Button */}
       <TouchableOpacity
-        style={[styles.createButton, { bottom: insets.bottom + 80 }]}
+        style={{
+          position: "absolute",
+          bottom: insets.bottom + 80,
+          right: 16,
+          left: 16,
+          backgroundColor: "#059669",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: 16,
+          borderRadius: 12,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+        }}
         onPress={() => router.push("/(coach)/course/create" as any)}
       >
         <Ionicons name="add" size={24} color="#FFFFFF" />
-        <Text style={styles.createButtonText}>Tạo khóa học</Text>
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontSize: 16,
+            fontWeight: "bold",
+            marginLeft: 8,
+          }}
+        >
+          Tạo khóa học
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  tabsContainer: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  tab: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: "#F9FAFB",
-  },
-  tabActive: {
-    backgroundColor: "#EFF6FF",
-  },
-  tabText: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginLeft: 8,
-    flex: 1,
-  },
-  tabTextActive: {
-    color: "#059669",
-    fontWeight: "600",
-  },
-  tabBadge: {
-    backgroundColor: "#E5E7EB",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  tabBadgeText: {
-    fontSize: 12,
-    color: "#374151",
-    fontWeight: "600",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#111827",
-  },
-  coursesContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
-  courseCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  courseHeader: {
-    marginBottom: 12,
-  },
-  courseName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  courseTags: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusOngoing: {
-    backgroundColor: "#D1FAE5",
-  },
-  statusCompleted: {
-    backgroundColor: "#E0F2FE",
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  statusOngoingText: {
-    color: "#059669",
-  },
-  statusCompletedText: {
-    color: "#0284C7",
-  },
-  levelBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: "#EFF6FF",
-  },
-  levelText: {
-    fontSize: 12,
-    color: "#3B82F6",
-    fontWeight: "600",
-  },
-  courseBody: {
-    marginBottom: 12,
-  },
-  courseRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  courseText: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginLeft: 8,
-  },
-  courseFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-  },
-  revenueContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  revenueLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginLeft: 6,
-  },
-  revenueValue: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#059669",
-    marginLeft: 8,
-  },
-  viewDetailsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  viewDetailsText: {
-    fontSize: 14,
-    color: "#059669",
-    fontWeight: "600",
-  },
-  createButton: {
-    position: "absolute",
-    bottom: 16,
-    right: 16,
-    left: 16,
-    backgroundColor: "#059669",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  createButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-});
