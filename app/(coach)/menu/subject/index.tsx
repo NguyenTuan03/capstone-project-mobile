@@ -1,28 +1,17 @@
 import React, { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Modal,
-  Alert,
-} from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { get, remove } from "@/services/http/httpService";
 import { Subject } from "@/types/subject";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -67,8 +56,7 @@ const CoachSubjectScreen = () => {
           style: "destructive",
           onPress: async () => {
             try {
-               await remove( `${API_URL}/v1/subjects/${subject.id}`
-              );
+              await remove(`${API_URL}/v1/subjects/${subject.id}`);
 
               setSubjects((prev) =>
                 prev.filter((item) => item.id !== subject.id)
@@ -77,9 +65,9 @@ const CoachSubjectScreen = () => {
             } catch (error) {
               console.error("Lỗi khi xóa tài liệu:", error);
               Alert.alert(
-              "Lỗi",
-              "Không thể xóa môn học. Vui lòng thử lại sau."
-            );
+                "Lỗi",
+                "Không thể xóa môn học. Vui lòng thử lại sau."
+              );
             }
           },
         },
@@ -110,11 +98,11 @@ const CoachSubjectScreen = () => {
     }
   };
 
- useFocusEffect(
-  useCallback(() => {
-    fetchSubjects();
-  }, [])
-);
+  useFocusEffect(
+    useCallback(() => {
+      fetchSubjects();
+    }, [])
+  );
 
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
