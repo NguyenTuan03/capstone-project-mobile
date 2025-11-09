@@ -2,7 +2,7 @@ import { get, remove } from "@/services/http/httpService";
 import { Lesson } from "@/types/subject";
 import { Feather, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,

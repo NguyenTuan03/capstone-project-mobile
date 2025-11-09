@@ -1,27 +1,23 @@
-import { post, put } from "@/services/http/httpService";
+
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Platform,
   ScrollView,
-  StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+// const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function LessonDetailScreen() {
   const { lessonId, lessonName } = useLocalSearchParams<{
     lessonId: string;
     lessonName: string;
   }>();
+  console.log("lessonId", lessonId);
   const [activeTab, setActiveTab] = useState<"VIDEO LESSON" | "QUIZZ">(
     "VIDEO LESSON"
   );

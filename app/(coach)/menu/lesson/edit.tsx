@@ -1,13 +1,9 @@
-import { post, put } from "@/services/http/httpService";
+import { put } from "@/services/http/httpService";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
