@@ -28,8 +28,12 @@ export default function CoachMenuScreen() {
           onPress={() => router.push("/(coach)/menu/payouts" as any)}
         />
         <MenuItem
-          label="Môn học"
+          label="Tài liệu"
           onPress={() => router.push("/(coach)/menu/subject" as any)}
+        />
+        <MenuItem
+          label="Bài học"
+          onPress={() => router.push("/(coach)/menu/lesson" as any)}
         />
       </View>
     </View>

@@ -18,12 +18,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function EditSubjectScreen() {
-  const { subjectId, subjectName, subjectDescription, subjectLevel } =
+  const { subjectId, subjectName, subjectDescription, subjectLevel, subjectStatus } =
     useLocalSearchParams<{
       subjectId: string;
       subjectName: string;
       subjectDescription: string;
       subjectLevel: string;
+      subjectStatus: string;
     }>();
 
   //   console.log("Editing subject with ID:", subjectId);
@@ -37,22 +38,18 @@ export default function EditSubjectScreen() {
   const [editLevel, setEditLevel] = useState<
     "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
   >(subjectLevel as any);
+  const [editStatus, setEditStatus] = useState<"DRAFT" | "PUBLISHED">(subjectStatus as any);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     try {
       setSaving(true);
       await put(`${API_URL}/v1/subjects/${subjectId}`, {
-        editNameSubject,
-        editDescription,
-        editLevel,
+        name: editNameSubject,
+        description: editDescription,
+        level: editLevel,
+        status: editStatus,
       });
-      //   console.log(
-      //     "Lưu thay đổi cho tài liệu:",
-      //     editNameSubject,
-      //     editDescription,
-      //     editLevel,
-      //   );
 
       Alert.alert("Thành công", "Cập nhật tài liệu thành công!", [
         {
@@ -193,6 +190,50 @@ export default function EditSubjectScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#374151",
+            marginBottom: 8,
+          }}
+        >
+          Trạng thái
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            backgroundColor: "#F3F4F6",
+            borderRadius: 8,
+            padding: 4,
+            marginBottom: 30,
+          }}
+        >
+          {["DRAFT", "PUBLISHED"].map((status) => (
+            <TouchableOpacity
+              key={status}
+              style={[
+                {
+                  flex: 1,
+                  paddingVertical: 10,
+                  alignItems: "center",
+                  borderRadius: 6,
+                },
+                editStatus === status && {
+                  backgroundColor: "#FFFFFF",
+                  shadowColor: "#000",
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  shadowOffset: { width: 0, height: 1 },
+                  elevation: 1,
+                },
+              ]}
+              onPress={() => setEditStatus(status as any)}
+            >
+              <Text>{status === "DRAFT" ? "Nháp" : "Công khai"}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <TouchableOpacity
