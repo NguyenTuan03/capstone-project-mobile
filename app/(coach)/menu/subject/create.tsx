@@ -25,7 +25,7 @@ export default function CreateSubjectScreen() {
 
   const handleCreateSubject = async () => {
     if (!subjectName.trim()) {
-      Alert.alert("Lỗi", "Tên môn học là bắt buộc.");
+      Alert.alert("Lỗi", "Tên tài liệu là bắt buộc.");
       return;
     }
 
@@ -41,11 +41,11 @@ export default function CreateSubjectScreen() {
 
       const res = await post("/v1/subjects", payload);
 
-      Alert.alert("Thành công", "Tạo môn học mới thành công!");
+      Alert.alert("Thành công", "Tạo tài liệu mới thành công!");
       router.back();
     } catch (error: any) {
-      console.error("Lỗi khi tạo môn học:", error);
-      Alert.alert("Lỗi", "Không thể tạo môn học. Vui lòng thử lại.");
+      console.error("Lỗi khi tạo tài liệu:", error);
+      Alert.alert("Lỗi", "Không thể tạo tài liệu. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
