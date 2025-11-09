@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "capstone-project-mobile",
-    "slug": "capstone-project-mobile",
+    "scheme": "pickleball",
+    "name": "pickleball",
+    "slug": "pickleball",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "capstoneprojectmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
