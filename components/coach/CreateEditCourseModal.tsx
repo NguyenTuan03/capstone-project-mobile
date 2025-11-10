@@ -106,6 +106,10 @@ export default function CreateEditCourseModal({
     initialData?.schedules || []
   );
 
+  const [availableSchedules, setAvailableSchedules] = useState<Schedule[]>([]);
+  const [loadingAvailableSchedules, setLoadingAvailableSchedules] =
+    useState(false);
+
   // UI states
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -171,6 +175,10 @@ export default function CreateEditCourseModal({
     }
   }, [learningFormat]);
 
+  useEffect(() => {
+    fetchCoachAvailableSchedules();
+  }, []);
+
   const fetchSubjects = async () => {
     try {
       setLoadingSubjects(true);
@@ -209,6 +217,24 @@ export default function CreateEditCourseModal({
       console.error("Lỗi khi tải danh sách quận/huyện:", error);
     } finally {
       setLoadingDistricts(false);
+    }
+  };
+
+  const fetchCoachAvailableSchedules = async () => {
+    setLoadingAvailableSchedules(true);
+    try {
+      const res = await get<{ metadata: Schedule[] }>(
+        "/v1/schedules/coaches/available"
+      );
+      console.log("Available Schedules API response:", res.data.metadata);
+      setAvailableSchedules(res.data?.metadata || []);
+    } catch (error) {
+      console.error(
+        "Lỗi khi tải lịch trình có sẵn của huấn luyện viên:",
+        error
+      );
+    } finally {
+      setLoadingAvailableSchedules(false);
     }
   };
 
@@ -858,6 +884,103 @@ export default function CreateEditCourseModal({
                     <Text style={styles.hint}>
                       Định dạng: HH:mm (ví dụ: 11:00)
                     </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.section,
+                      { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" },
+                    ]}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="warning"
+                        size={20}
+                        color="#92400E"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text style={[styles.label, { color: "#92400E" }]}>
+                        Lịch học các khóa khác (Cảnh báo)
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={{
+                        color: "#92400E",
+                        fontSize: 13,
+                        marginBottom: 8,
+                      }}
+                    >
+                      Chú ý: Lịch bên dưới hiển thị các khung giờ các khóa học
+                      khác của bạn. Vui lòng chọn khung giờ không trùng lặp để
+                      tránh xung đột lịch học.
+                    </Text>
+
+                    {loadingAvailableSchedules ? (
+                      <ActivityIndicator size="small" color="#92400E" />
+                    ) : availableSchedules.length === 0 ? (
+                      <Text style={styles.hint}>Không có lịch có sẵn</Text>
+                    ) : (
+                      availableSchedules.map((sch, i) => {
+                        const dayIndex = DAYS_OF_WEEK.indexOf(sch.dayOfWeek);
+                        const dayName =
+                          dayIndex >= 0
+                            ? DAYS_OF_WEEK_VI[dayIndex]
+                            : sch.dayOfWeek;
+                        const isSelected =
+                          sch.dayOfWeek === tempSchedule.dayOfWeek &&
+                          sch.startTime === tempSchedule.startTime &&
+                          sch.endTime === tempSchedule.endTime;
+
+                        return (
+                          <TouchableOpacity
+                            key={i}
+                            style={[
+                              styles.modalItem,
+                              isSelected && styles.modalItemSelected,
+                              {
+                                backgroundColor: isSelected
+                                  ? "#FEF3C7"
+                                  : "#FFF7ED",
+                              },
+                            ]}
+                            onPress={() => setTempSchedule({ ...sch })}
+                          >
+                            <View>
+                              <Text style={styles.modalItemText}>
+                                {dayName}: {sch.startTime} - {sch.endTime}
+                              </Text>
+                              <Text style={styles.hint}>
+                                Từ ngày{" "}
+                                {sch.course?.startDate
+                                  ? new Date(
+                                      sch.course.startDate
+                                    ).toLocaleDateString("vi-VN")
+                                  : "—"}
+                                {" đến "}
+                                {sch.course?.endDate
+                                  ? new Date(
+                                      sch.course.endDate
+                                    ).toLocaleDateString("vi-VN")
+                                  : "—"}
+                              </Text>
+                            </View>
+                            {isSelected && (
+                              <Ionicons
+                                name="checkmark"
+                                size={20}
+                                color="#92400E"
+                              />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
                   </View>
 
                   <TouchableOpacity
