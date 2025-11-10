@@ -79,7 +79,7 @@ export default function ContentScreen() {
           >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="book-outline" size={22} color="#000" />
-              <Text style={{ marginLeft: 10, fontSize: 16 }}>Tạo môn học</Text>
+              <Text style={{ marginLeft: 10, fontSize: 16 }}>Tài liệu khóa học</Text>
             </View>
             <MaterialIcons name="navigate-next" size={24} color="black" />
           </TouchableOpacity>

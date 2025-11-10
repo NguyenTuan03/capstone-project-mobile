@@ -70,13 +70,6 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         (session) => session.scheduleDate === dateStr
       );
 
-      console.log(`🔍 Filtering for date ${dateStr}:`, {
-        totalSessions: sessions.length,
-        matchingSessions: daySessions.length,
-        matchingSessionIds: daySessions.map((s) => s.id),
-        allSessionDates: sessions.map((s) => s.scheduleDate),
-      });
-
       return {
         date: day,
         dateStr,
@@ -133,7 +126,6 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
       if (onSessionPress) {
         onSessionPress(session);
       } else {
-        console.log("🔍 Session pressed:", session);
         setSelectedSession(session);
         setIsModalVisible(true);
       }
@@ -158,12 +150,10 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
   const navigateWeek = useCallback(
     (direction: "prev" | "next") => {
-      console.log("navigateWeek called with direction:", direction);
       const newDate =
         direction === "prev"
           ? subWeeks(currentDate, 1)
           : addWeeks(currentDate, 1);
-      console.log("newDate:", newDate);
       setCurrentDate(newDate);
 
       const weekStart = startOfWeek(newDate, { weekStartsOn: 1 }); // Monday
@@ -171,8 +161,6 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
       const weekStartStr = format(weekStart, "yyyy-MM-dd");
       const weekEndStr = format(weekEnd, "yyyy-MM-dd");
-
-      console.log("Calling onWeekChange with:", weekStartStr, weekEndStr);
 
       if (onWeekChange) {
         onWeekChange(weekStartStr, weekEndStr);

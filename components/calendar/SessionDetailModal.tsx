@@ -58,7 +58,6 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
         const cfg = await configurationService.getConfiguration(
           "complete_session_before_hours"
         );
-        console.log(cfg);
         // cfg shape may vary; treat as any to safely read possible locations
         const raw: any = cfg as any;
         let hours: number = 24;
@@ -163,19 +162,6 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   }, [sessionData]);
 
   if (!sessionData) return null;
-
-  // Debug: Log session data to see what's available
-  console.log("🔍 Session data:", {
-    sessionId: sessionData.id,
-    hasQuizzes: !!sessionData.quizzes,
-    quizzesCount: sessionData.quizzes?.length || 0,
-    hasVideos: !!sessionData.videos,
-    videosCount: sessionData.videos?.length || 0,
-    sessionKeys: Object.keys(sessionData),
-    videos: sessionData.videos,
-    course: sessionData.course,
-    attendances: sessionData.attendances,
-  });
 
   const toggleAttendance = (enrollmentId: number) => {
     setAttendanceMap((prev) => ({

@@ -60,7 +60,7 @@ export default function CreateSubjectScreen() {
         >
           <Ionicons name="close" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tạo Môn Học Mới</Text>
+        <Text style={styles.headerTitle}>Tạo Tài liệu mới</Text>
         <View style={styles.placeholder} />
       </View>
       <ScrollView>
@@ -68,7 +68,7 @@ export default function CreateSubjectScreen() {
           <View style={styles.row}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                Tên môn học <Text style={styles.required}>*</Text>
+                Tiêu đề <Text style={styles.required}>*</Text>
               </Text>
               <TextInput
                 style={[styles.input, !subjectName && styles.inputError]}
@@ -78,12 +78,12 @@ export default function CreateSubjectScreen() {
                 placeholderTextColor="#9CA3AF"
               />
               {!subjectName && (
-                <Text style={styles.errorText}>Tên môn học là bắt buộc</Text>
+                <Text style={styles.errorText}>Tiêu đề là bắt buộc</Text>
               )}
             </View>
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mô tả môn học</Text>
+            <Text style={styles.label}>Mô tả</Text>
             <TextInput
               style={[
                 styles.input,
