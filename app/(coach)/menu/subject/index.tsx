@@ -1,9 +1,9 @@
-import React, { useCallback, useState } from "react";
-import { router, useFocusEffect } from "expo-router";
 import { get, remove } from "@/services/http/httpService";
 import { Subject } from "@/types/subject";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -88,7 +88,7 @@ const CoachSubjectScreen = () => {
       const userId = user.id;
 
       const res = await get<{ items: Subject[] }>(
-        `${API_URL}/v1/subjects?filter=createdBy_eq_${userId}&filter=status_eq_PUBLISHED`
+        `${API_URL}/v1/subjects?filter=createdBy_eq_${userId},status_eq_PUBLISHED`
       );
       setSubjects(res.data.items || []);
     } catch (error) {

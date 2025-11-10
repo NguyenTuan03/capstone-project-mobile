@@ -9,37 +9,12 @@ class SessionService {
     request: GetSessionForWeeklyCalendarRequestDto
   ): Promise<CalendarSession[]> {
     try {
-      console.log("Session Service - API Request:", {
-        url: `/v1/sessions/calendar/weekly?startDate=${request.startDate}&endDate=${request.endDate}`,
-        method: "GET",
-      });
-
       const response = await http.get(
         `/v1/sessions/calendar/weekly?startDate=${request.startDate}&endDate=${request.endDate}`
       );
 
-      console.log("Session Service - API Response:", response.data);
-
       // Transform the response data to match CalendarSession interface
       const sessions = response.data.metadata || [];
-      console.log("Sessions found:", sessions.length);
-
-      if (sessions.length > 0) {
-        console.log("Raw session data:", sessions[0]); // Log first session for debugging
-
-        sessions.forEach((session: any) => {
-          console.log(`🔍 Raw session ${session.id}:`, {
-            name: session.name,
-            scheduleDate: session.scheduleDate,
-            startTime: session.startTime,
-            endTime: session.endTime,
-            courseName: session.course?.name,
-            courseId: session.course?.id,
-            courseEnrollments: session.course?.enrollments?.length || 0,
-            courseAddress: session.course?.address,
-          });
-        });
-      }
 
       return sessions.map((session: any) => {
         const transformedSession = {
@@ -56,11 +31,6 @@ class SessionService {
           quizzes: session.quizzes || [],
           videos: session.videos || [],
         };
-
-        console.log(
-          `✅ Transformed session ${session.id}:`,
-          transformedSession
-        );
 
         return transformedSession;
       });
