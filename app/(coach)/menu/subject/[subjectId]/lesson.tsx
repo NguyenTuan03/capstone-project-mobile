@@ -101,7 +101,6 @@ const CoachLessonScreen = () => {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "space-between",
           paddingVertical: 12,
         }}
       >
@@ -119,14 +118,7 @@ const CoachLessonScreen = () => {
         >
           {subjectName}
         </Text>
-
-        <TouchableOpacity>
-          <Ionicons
-            name="information-circle-outline"
-            size={24}
-            color="#059669"
-          />
-        </TouchableOpacity>
+        <View style={{ width: 24 }}/>
       </View>
       <View
         style={{
@@ -241,6 +233,7 @@ const CoachLessonScreen = () => {
                     lessonId: lesson.id,
                     lessonName: lesson.name,
                     lessonDuration: lesson.duration,
+                    lessonDescription: lesson.description,
                   },
                 })
               }

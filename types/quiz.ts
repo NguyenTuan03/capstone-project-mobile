@@ -30,10 +30,6 @@ export interface SessionSummary {
   startsAt?: string; // ISO datetime
 }
 
-/**
- * Quiz type used across the app.
- * - Mirrors the DB entity but uses simpler nested summaries to avoid circular imports.
- */
 export interface QuizType {
   id: number;
   title: string;
@@ -46,10 +42,6 @@ export interface QuizType {
   session?: SessionSummary | null;
 }
 
-/**
- * DTO used when creating/updating a quiz from the client.
- * Questions can be provided inline; id should be omitted for new items.
- */
 export interface QuizFormDTO {
   title: string;
   description?: string | null;
