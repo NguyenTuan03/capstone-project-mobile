@@ -134,7 +134,7 @@ export default function CourseDetailScreen() {
         const endTime = schedule.endTime.substring(0, 5);
         return `${dayName}: ${startTime}-${endTime}`;
       })
-      .join(", ");
+      .join("\n ");
   };
 
   const getStatusLabel = (status: string) => {
@@ -373,31 +373,20 @@ export default function CourseDetailScreen() {
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Ngày bắt đầu</Text>
+          <Text style={styles.infoLabel}>Ngày bắt đầu - kết thúc</Text>
           <Text style={styles.infoValue}>
-            {new Date(course.startDate).toLocaleDateString("vi-VN")}
+            {new Date(course.startDate).toLocaleDateString("vi-VN")} -{" "}
+            {course.endDate
+              ? new Date(course.endDate).toLocaleDateString("vi-VN")
+              : ""}
           </Text>
         </View>
-
-        {course.endDate && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Ngày kết thúc</Text>
-            <Text style={styles.infoValue}>
-              {new Date(course.endDate).toLocaleDateString("vi-VN")}
-            </Text>
-          </View>
-        )}
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Địa điểm</Text>
           <Text style={styles.infoValue}>
-            {course.address}, {course.district.name}, {course.province.name}
+            {course.address}{"\n"}{course.district.name}{"\n"}{course.province.name}
           </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Huấn luyện viên</Text>
-          <Text style={styles.infoValue}>{course.createdBy.fullName}</Text>
         </View>
 
         <View style={styles.infoRow}>

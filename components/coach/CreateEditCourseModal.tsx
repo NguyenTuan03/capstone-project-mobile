@@ -287,7 +287,7 @@ export default function CreateEditCourseModal({
   const handleSubmit = async () => {
     // Validation với thông báo lỗi
     if (!selectedSubjectId) {
-      console.error("Validation error: Chưa chọn môn học");
+      console.error("Validation error: Chưa chọn tài liệu");
       return;
     }
     if (learningFormat === "GROUP") {
@@ -470,7 +470,7 @@ export default function CreateEditCourseModal({
                   onPress={() => {
                     const currentValue =
                       parseInt(pricePerParticipant.replace(/,/g, "")) || 0;
-                    const newValue = Math.max(0, currentValue - 10000);
+                    const newValue = Math.max(0, currentValue - 500000);
                     setPricePerParticipant(newValue.toString());
                   }}
                 >
@@ -478,7 +478,7 @@ export default function CreateEditCourseModal({
                 </TouchableOpacity>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="1,500,000"
+                  placeholder="2,000,000"
                   value={pricePerParticipant.replace(
                     /\B(?=(\d{3})+(?!\d))/g,
                     ","
@@ -495,7 +495,7 @@ export default function CreateEditCourseModal({
                   onPress={() => {
                     const currentValue =
                       parseInt(pricePerParticipant.replace(/,/g, "")) || 0;
-                    const newValue = currentValue + 10000;
+                    const newValue = currentValue + 500000;
                     setPricePerParticipant(newValue.toString());
                   }}
                 >
@@ -758,7 +758,7 @@ export default function CreateEditCourseModal({
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Chọn môn học</Text>
+                  <Text style={styles.modalTitle}>Chọn tài liệu</Text>
                   <TouchableOpacity
                     onPress={() => setShowSubjectModal(false)}
                     style={styles.modalCloseButton}
@@ -938,7 +938,7 @@ export default function CreateEditCourseModal({
                           sch.endTime === tempSchedule.endTime;
 
                         return (
-                          <TouchableOpacity
+                          <View
                             key={i}
                             style={[
                               styles.modalItem,
@@ -949,35 +949,25 @@ export default function CreateEditCourseModal({
                                   : "#FFF7ED",
                               },
                             ]}
-                            onPress={() => setTempSchedule({ ...sch })}
                           >
-                            <View>
-                              <Text style={styles.modalItemText}>
-                                {dayName}: {sch.startTime} - {sch.endTime}
-                              </Text>
-                              <Text style={styles.hint}>
-                                Từ ngày{" "}
-                                {sch.course?.startDate
-                                  ? new Date(
-                                      sch.course.startDate
-                                    ).toLocaleDateString("vi-VN")
-                                  : "—"}
-                                {" đến "}
-                                {sch.course?.endDate
-                                  ? new Date(
-                                      sch.course.endDate
-                                    ).toLocaleDateString("vi-VN")
-                                  : "—"}
-                              </Text>
-                            </View>
-                            {isSelected && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color="#92400E"
-                              />
-                            )}
-                          </TouchableOpacity>
+                            <Text style={styles.modalItemText}>
+                              {dayName}: {sch.startTime} - {sch.endTime}
+                            </Text>
+                            <Text style={styles.hint}>
+                              Từ ngày{" "}
+                              {sch.course?.startDate
+                                ? new Date(
+                                    sch.course.startDate
+                                  ).toLocaleDateString("vi-VN")
+                                : "—"}
+                              {" đến "}
+                              {sch.course?.endDate
+                                ? new Date(
+                                    sch.course.endDate
+                                  ).toLocaleDateString("vi-VN")
+                                : "—"}
+                            </Text>
+                          </View>
                         );
                       })
                     )}
