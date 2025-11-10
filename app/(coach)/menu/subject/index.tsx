@@ -88,7 +88,7 @@ const CoachSubjectScreen = () => {
       const userId = user.id;
 
       const res = await get<{ items: Subject[] }>(
-        `${API_URL}/v1/subjects?filter=createdBy_eq_${userId},status_eq_PUBLISHED`
+        `${API_URL}/v1/subjects?filter=createdBy_eq_${userId}`
       );
       setSubjects(res.data.items || []);
     } catch (error) {
@@ -139,13 +139,7 @@ const CoachSubjectScreen = () => {
           Danh sách tài liệu của tôi
         </Text>
 
-        <TouchableOpacity>
-          <Ionicons
-            name="information-circle-outline"
-            size={24}
-            color="#059669"
-          />
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
       </View>
 
       <TouchableOpacity
@@ -221,6 +215,23 @@ const CoachSubjectScreen = () => {
                   {subject.description ||
                     "Không có mô tả chi tiết cho môn học này."}
                 </Text>
+                <Text
+                  style={{
+                    marginTop: 8,
+                    color:
+                      subject.status === "DRAFT"
+                        ? "#fbbf24"
+                        : subject.status === "PUBLISHED"
+                        ? "#059669"
+                        : "#999",
+                  }}
+                >
+                  {{
+                    DRAFT: "Bản nháp",
+                    PUBLISHED: "Đã xuất bản",
+                  }[subject.status] || subject.status}
+                </Text>
+
                 <TouchableOpacity
                   style={{
                     position: "absolute",

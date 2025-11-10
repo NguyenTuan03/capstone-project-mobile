@@ -29,3 +29,21 @@ export interface QuizType {
   deletedAt?: string | null;
 }
 
+export interface QuizFormDTO {
+  title: string;
+  description?: string | null;
+  totalQuestions: number;
+  questions: (Partial<Omit<QuestionType, "quizId" | "id">> & {
+    id?: number;
+  })[];
+  lessonId?: number | null;
+  sessionId?: number | null;
+}
+
+export interface QuestionOptionType {
+  id: number;
+  content: string;
+  isCorrect: boolean;
+  questionId?: number;
+}
+
