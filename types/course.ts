@@ -1,10 +1,11 @@
 export type LearningFormat = "GROUP" | "INDIVIDUAL";
 
 export type Schedule = {
+  id?: number;
   dayOfWeek: string;
   startTime: string;
   endTime: string;
-}
+};
 export type Course = {
   id: number;
   name: string;
@@ -26,12 +27,7 @@ export type Course = {
     name: string;
     description: string;
   };
-  schedules: {
-    id: number;
-    dayOfWeek: string;
-    startTime: string;
-    endTime: string;
-  }[];
+  schedules: Schedule[];
   province: {
     id: number;
     name: string;
