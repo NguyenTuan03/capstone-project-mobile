@@ -80,7 +80,6 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
           <View style={s.optList}>
             {q.options.map((op) => {
               const selected = answers[q.id] === op.id;
-              // Sau khi nộp bài, highlight đúng/sai nếu BE có trả về; ở đây chỉ show chọn
               return (
                 <TouchableOpacity
                   key={op.id}
@@ -97,7 +96,6 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
             })}
           </View>
 
-          {/* Hiện giải thích sau khi submit */}
           {submitted && !!q.explanation && (
             <Text style={s.explain}>💡 {q.explanation}</Text>
           )}
