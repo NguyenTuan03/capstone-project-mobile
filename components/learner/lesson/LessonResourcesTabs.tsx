@@ -7,13 +7,13 @@ import type { StyleProp, ViewStyle } from "react-native";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useLessonResources } from "../../../hooks/useLessonResources";
+import http from "../../../services/http/interceptor";
 import { QuizType } from "../../../types/quiz";
 import { VideoType } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
@@ -29,9 +29,14 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, style }) => {
     const { quizzes, videos, loading, error } = useLessonResources(lessonId);
     const [activeTab, setActiveTab] = useState<LessonResourcesTab>("videos");
-    const [localVideos, setLocalVideos] = useState<
-      { uri: string; name: string }[]
-    >([]);
+    const [localVideo, setLocalVideo] = useState<{
+      uri: string;
+      name: string;
+      duration?: number;
+      tags?: string[];
+      uploaded?: boolean;
+    } | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
@@ -64,11 +69,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       );
     };
 
-    const handleOpenLink = (url?: string | null) => {
-      if (!url) return;
-      void Linking.openURL(url);
-    };
-
     const handlePickVideo = async () => {
       try {
         const { status } =
@@ -89,13 +89,14 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
         if (!result.canceled && result.assets[0]) {
           const asset = result.assets[0];
-          setLocalVideos((prev) => [
-            ...prev,
-            {
-              uri: asset.uri,
-              name: asset.fileName || `Video ${localVideos.length + 1}`,
-            },
-          ]);
+          setLocalVideo({
+            uri: asset.uri,
+            name: asset.fileName || "Video của bạn",
+            duration: asset.duration
+              ? Math.round(asset.duration / 60)
+              : undefined,
+            uploaded: false,
+          });
         }
       } catch (err) {
         console.error("Lỗi khi chọn video:", err);
@@ -103,28 +104,118 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
+    const handleUploadVideo = async () => {
+      if (!localVideo) return;
+
+      setIsUploading(true);
+      try {
+        const fd = new FormData();
+
+        // ✅ field name phải là 'video'
+        fd.append("video", {
+          uri: localVideo.uri.startsWith("file://")
+            ? localVideo.uri
+            : localVideo.uri,
+          type: "video/mp4",
+          name: localVideo.name?.endsWith(".mp4")
+            ? localVideo.name
+            : "video.mp4",
+        } as any);
+
+        // ✅ các field DTO
+        fd.append("lessonId", String(lessonId));
+        // Expo ImagePicker.duration trả về giây → gửi thẳng, đừng chia 60
+        if (localVideo.duration != null)
+          fd.append("duration", String(Math.round(localVideo.duration)));
+        if (localVideo.tags?.length) {
+          // Tuỳ BE: gửi JSON string là an toàn vì DTO không validate tags
+          fd.append("tags", JSON.stringify(localVideo.tags));
+          // Hoặc gửi mảng repeat:
+          // localVideo.tags.forEach(t => fd.append("tags", t));
+        }
+
+        // Nếu http interceptor đã gắn Bearer rồi thì khỏi header này.
+        const res = await http.post("/v1/learner-videos", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        console.log("response", res);
+        Alert.alert("Thành công", "Video đã được upload thành công!");
+        setLocalVideo((prev) => (prev ? { ...prev, uploaded: true } : null));
+      } catch (err: any) {
+        console.error("Upload error:", err?.response?.data || err);
+        Alert.alert(
+          "Lỗi",
+          err?.response?.data?.message ?? "Không thể upload video"
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
     const renderVideos = (items: VideoType[]) => {
       return (
         <>
-          <TouchableOpacity
-            style={styles.uploadButton}
-            onPress={handlePickVideo}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.uploadButtonText}>
-              📤 Upload video của bạn tại đây
-            </Text>
-          </TouchableOpacity>
+          {!localVideo && (
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={handlePickVideo}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.uploadButtonText}>
+                📤 Upload video của bạn tại đây
+              </Text>
+            </TouchableOpacity>
+          )}
 
-          {localVideos.map((localVideo, index) => (
-            <View key={`local-${index}`} style={styles.resourceCard}>
+          {localVideo && (
+            <View style={styles.resourceCard}>
               <Text style={styles.resourceTitle}>{localVideo.name}</Text>
               <Text style={styles.metaText}>Video từ thiết bị của bạn</Text>
+              {localVideo.duration && (
+                <Text style={styles.metaText}>
+                  ⏱ {localVideo.duration} phút
+                </Text>
+              )}
+              {localVideo.uploaded && (
+                <View style={styles.uploadedBadge}>
+                  <Text style={styles.uploadedBadgeText}>✓ Đã upload</Text>
+                </View>
+              )}
               <LessonVideoPlayer source={localVideo.uri} />
+              {localVideo.uploaded ? (
+                <TouchableOpacity
+                  style={styles.reuploadButton}
+                  onPress={handlePickVideo}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.reuploadButtonText}>🔄 Upload lại</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    isUploading && styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleUploadVideo}
+                  disabled={isUploading}
+                  activeOpacity={0.85}
+                >
+                  {isUploading ? (
+                    <View style={styles.submitButtonContent}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text style={styles.submitButtonText}>
+                        Đang upload...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.submitButtonText}>📤 Nộp bài</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
-          ))}
+          )}
 
-          {items.length === 0 && localVideos.length === 0 ? (
+          {items.length === 0 && !localVideo ? (
             <Text style={styles.emptyText}>
               Chưa có video nào cho bài học này.
             </Text>
@@ -282,6 +373,56 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: "#FFFFFF",
     fontSize: 15,
+    fontWeight: "700",
+  },
+  submitButton: {
+    backgroundColor: "#10B981",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#6B7280",
+    opacity: 0.7,
+  },
+  submitButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  submitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  uploadedBadge: {
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+    marginTop: 8,
+  },
+  uploadedBadgeText: {
+    color: "#047857",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  reuploadButton: {
+    backgroundColor: "#3B82F6",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  reuploadButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "700",
   },
   resourceCard: {
