@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { addWeeks, endOfWeek, format, startOfWeek, subWeeks } from 'date-fns';
 
 /**
  * Get the current week date range (Monday to Sunday)
@@ -59,5 +59,5 @@ export const isValidDateString = (dateString: string): boolean => {
   if (!dateString) return false;
 
   const date = new Date(dateString);
-  return !isNaN(date.getTime()) && dateString.match(/^\d{4}-\d{2}-\d{2}$/);
+  return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateString);
 };

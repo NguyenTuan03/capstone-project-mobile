@@ -6,14 +6,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -218,25 +218,53 @@ export default function EnrollmentDetailScreen() {
                         </Text>
                       </View>
                     </View>
-                    {session.lesson && (
-                      <View style={styles.lessonInfo}>
-                        <Text style={styles.lessonTitle}>
-                          Bài học: {session.lesson.name}
-                        </Text>
-                        {session.lesson.videos &&
-                          session.lesson.videos.length > 0 && (
+                    {session.lesson && (() => {
+                      const lesson = session.lesson;
+                      const lessonLabel =
+                        lesson.name ||
+                        (lesson.lessonNumber != null
+                          ? `Bài học ${lesson.lessonNumber}`
+                          : "Bài học");
+
+                      return (
+                        <View style={styles.lessonInfo}>
+                          <Text style={styles.lessonTitle}>
+                            Bài học: {lessonLabel}
+                          </Text>
+                          {lesson.videos && lesson.videos.length > 0 && (
                             <Text style={styles.lessonMeta}>
-                              {session.lesson.videos.length} video
+                              {lesson.videos.length} video
                             </Text>
                           )}
-                        {session.lesson.quizzes &&
-                          session.lesson.quizzes.length > 0 && (
+                          {lesson.quizzes && lesson.quizzes.length > 0 && (
                             <Text style={styles.lessonMeta}>
-                              {session.lesson.quizzes.length} quiz
+                              {lesson.quizzes.length} quiz
                             </Text>
                           )}
-                      </View>
-                    )}
+                          {lesson.id ? (
+                            <TouchableOpacity
+                              style={styles.lessonResourcesButton}
+                              activeOpacity={0.85}
+                              onPress={() =>
+                                router.push({
+                                  pathname:
+                                    "/(learner)/my-courses/[id]/lesson/[lessonId]",
+                                  params: {
+                                    id: enrollmentId?.toString() ?? "",
+                                    lessonId: lesson.id.toString(),
+                                    lessonName: lessonLabel,
+                                  },
+                                })
+                              }
+                            >
+                              <Text style={styles.lessonResourcesButtonText}>
+                                Xem video & quiz
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
+                      );
+                    })()}
                   </View>
                 ))}
               </View>
@@ -415,6 +443,18 @@ const styles = StyleSheet.create({
   lessonMeta: {
     fontSize: 11,
     color: "#6B7280",
+  },
+  lessonResourcesButton: {
+    marginTop: 12,
+    backgroundColor: "#10B981",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  lessonResourcesButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 13,
   },
   feedbackItem: {
     padding: 12,

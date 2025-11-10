@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { QuestionType } from "../../types/question";
-import { QuestionOptionType } from "../../types/question-option";
-import { QuizType } from "../../types/quiz";
-import { CalendarSession } from "../../types/session";
+import { QuestionType } from "../../../types/question";
+import { QuestionOptionType } from "../../../types/question-option";
+import { QuizType } from "../../../types/quiz";
+import { CalendarSession } from "../../../types/session";
 
 interface Props {
   session: CalendarSession | null;
