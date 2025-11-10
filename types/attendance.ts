@@ -26,5 +26,3 @@ export interface CreateAttendanceDto {
   sessionId: number;
   status?: AttendanceStatus;
 }
-
-export default AttendanceType;
