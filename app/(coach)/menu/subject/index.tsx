@@ -1,16 +1,17 @@
-import { get } from "@/services/http/httpService";
+import React, { useCallback, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { get, remove } from "@/services/http/httpService";
 import { Subject } from "@/types/subject";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -38,15 +39,41 @@ const CoachSubjectScreen = () => {
         subjectName: s.name,
         subjectDescription: s.description,
         subjectLevel: s.level,
+        subjectStatus: s.status,
       },
     });
   };
+  const handleDelete = (subject: Subject | null) => {
+    if (!subject) return;
 
-  const handleDelete = () => {
-    // setSubjects((prev) =>
-    //   prev.filter((item) => item.id !== selectedSubject.id)
-    // );
-    setModalVisible(false);
+    Alert.alert(
+      "Xác nhận xóa",
+      `Bạn có chắc chắn muốn xóa tài liệu "${subject.name}" không?`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await remove(`${API_URL}/v1/subjects/${subject.id}`);
+
+              setSubjects((prev) =>
+                prev.filter((item) => item.id !== subject.id)
+              );
+              setModalVisible(false);
+            } catch (error) {
+              console.error("Lỗi khi xóa tài liệu:", error);
+              Alert.alert(
+                "Lỗi",
+                "Không thể xóa môn học. Vui lòng thử lại sau."
+              );
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const fetchSubjects = async () => {
@@ -65,15 +92,17 @@ const CoachSubjectScreen = () => {
       );
       setSubjects(res.data.items || []);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách môn học:", error);
+      console.error("Lỗi khi tải danh sách tài liệu:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchSubjects();
+    }, [])
+  );
 
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
@@ -87,16 +116,37 @@ const CoachSubjectScreen = () => {
         paddingHorizontal: 20,
       }}
     >
-      <Text
+      <View
         style={{
-          fontSize: 22,
-          fontWeight: "bold",
-          textAlign: "center",
-          marginBottom: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingVertical: 12,
         }}
       >
-        Danh sách môn học của tôi
-      </Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#059669" />
+        </TouchableOpacity>
+
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "bold",
+            textAlign: "center",
+            flex: 1,
+          }}
+        >
+          Danh sách tài liệu của tôi
+        </Text>
+
+        <TouchableOpacity>
+          <Ionicons
+            name="information-circle-outline"
+            size={24}
+            color="#059669"
+          />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         style={{
@@ -113,7 +163,7 @@ const CoachSubjectScreen = () => {
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Ionicons name="add" size={22} color="#000" />
-          <Text style={{ marginLeft: 10, fontSize: 16 }}>Tạo môn học</Text>
+          <Text style={{ marginLeft: 10, fontSize: 16 }}>Tạo tài liệu mới</Text>
         </View>
       </TouchableOpacity>
 
@@ -130,7 +180,7 @@ const CoachSubjectScreen = () => {
         <ScrollView showsVerticalScrollIndicator={false}>
           {subjects.length === 0 ? (
             <Text style={{ textAlign: "center", color: "#888", marginTop: 20 }}>
-              Bạn chưa có môn học nào.
+              Bạn chưa có tài liệu nào.
             </Text>
           ) : (
             subjects.map((subject) => (
@@ -228,7 +278,7 @@ const CoachSubjectScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={handleDelete}
+              onPress={() => handleDelete(selectedSubject)}
               style={{
                 paddingVertical: 12,
                 paddingHorizontal: 16,

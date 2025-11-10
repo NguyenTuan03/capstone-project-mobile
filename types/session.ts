@@ -1,4 +1,4 @@
-import AttendanceType from "./attendance";
+import { AttendanceType } from "./attendance";
 import { QuizType } from "./quiz";
 import { VideoType } from "./video";
 
