@@ -183,7 +183,7 @@ export default function CreateSubjectScreen() {
                   letterSpacing: 0.5,
                 }}
               >
-                Tạo Môn Học
+                Tạo tài liệu mới
               </Text>
             </>
           )}

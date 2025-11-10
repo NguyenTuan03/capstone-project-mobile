@@ -349,7 +349,7 @@ export default function CreateEditCourseModal({
             {/* Subject Selection */}
             <View style={styles.section}>
               <Text style={styles.label}>
-                Môn học <Text style={styles.required}>*</Text>
+                Tài liệu <Text style={styles.required}>*</Text>
               </Text>
               <TouchableOpacity
                 style={styles.selectButton}
@@ -361,7 +361,7 @@ export default function CreateEditCourseModal({
                     !selectedSubject && styles.placeholderText,
                   ]}
                 >
-                  {selectedSubject ? selectedSubject.name : "Chọn môn học"}
+                  {selectedSubject ? selectedSubject.name : "Chọn tài liêu"}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </TouchableOpacity>

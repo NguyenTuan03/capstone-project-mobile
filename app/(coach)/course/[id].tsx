@@ -6,14 +6,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function CourseDetailScreen() {
@@ -68,10 +68,10 @@ export default function CourseDetailScreen() {
     try {
       // Tách subjectId ra khỏi payload vì nó không cần trong body khi update
       const { subjectId, ...payload } = data;
-      
+
       console.log("Payload gửi lên API:", payload);
       console.log("Course ID:", courseId);
-      
+
       await put(`/v1/courses/${courseId}`, payload);
       Alert.alert("Thành công", "Cập nhật khóa học thành công!", [
         {
@@ -86,10 +86,10 @@ export default function CourseDetailScreen() {
       console.error("Lỗi khi cập nhật khóa học:", error);
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
-      
+
       // Lấy thông báo lỗi chi tiết từ API
       let errorMessage = "Không thể cập nhật khóa học. Vui lòng thử lại.";
-      
+
       if (error.response?.data) {
         const errorData = error.response.data;
         if (errorData.message) {
@@ -102,7 +102,7 @@ export default function CourseDetailScreen() {
           errorMessage = errorData;
         }
       }
-      
+
       Alert.alert("Lỗi", errorMessage);
       throw error;
     }
