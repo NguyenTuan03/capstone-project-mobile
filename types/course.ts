@@ -5,6 +5,7 @@ export type Schedule = {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
+  course?: Course;
 };
 export type Course = {
   id: number;
