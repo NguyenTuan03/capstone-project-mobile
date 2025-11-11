@@ -71,24 +71,12 @@ class SessionService {
         throw new Error("attendances must be an array");
       }
 
-      console.log("Session Service - Complete & Check Attendance Request:", {
-        url: `/v1/sessions/${sessionId}/complete`,
-        method: "POST",
-        body: { attendances },
-      });
-
       const response = await http.patch(`/v1/sessions/${sessionId}/complete`, {
         attendances,
       });
 
-      console.log(
-        "Session Service - Complete & Check Attendance Response:",
-        response.data
-      );
-
       return response.data;
     } catch (error) {
-      console.error("Error completing session and checking attendance:", error);
       throw error;
     }
   }

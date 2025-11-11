@@ -14,16 +14,10 @@ import sessionService from "../../../services/sessionService";
 import { CalendarSession } from "../../../types/session";
 import { getCurrentWeekRange } from "../../../utils/dateUtils";
 
-// Force refresh by adding timestamp to ensure component reload
-const CALENDAR_KEY = `calendar_${Date.now()}`;
-
 export default function CoachCalendarScreen() {
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(getCurrentWeekRange());
-
-  // Force component remount by adding a key to main container
-  const [forceUpdate, setForceUpdate] = useState(0);
 
   // Load sessions for the current week
   const loadSessions = useCallback(
@@ -79,15 +73,6 @@ export default function CoachCalendarScreen() {
         <Text style={styles.headerTitle}>Lịch dạy</Text>
         <TouchableOpacity style={styles.todayButton} onPress={handleTodayPress}>
           <Text style={styles.todayButtonText}>Hôm nay</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.todayButton,
-            { backgroundColor: "#F59E0B", marginLeft: 8 },
-          ]}
-          onPress={() => setForceUpdate((prev) => prev + 1)}
-        >
-          <Text style={styles.todayButtonText}>🔄</Text>
         </TouchableOpacity>
       </View>
 

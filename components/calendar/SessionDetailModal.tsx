@@ -255,10 +255,13 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               Alert.alert("Thành công", "Đã lưu điểm danh thành công!");
             } catch (error: any) {
               console.error("Failed to save attendance:", error);
-              Alert.alert(
-                "Lỗi",
-                error?.message || "Không thể lưu điểm danh. Vui lòng thử lại."
-              );
+              if (error?.response?.data) {
+                Alert.alert(
+                  "Lỗi",
+                  error?.response?.data?.message ||
+                    "Không thể lưu điểm danh. Vui lòng thử lại."
+                );
+              }
             }
           },
         },
