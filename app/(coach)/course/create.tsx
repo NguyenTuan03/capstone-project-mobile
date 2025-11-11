@@ -1,4 +1,4 @@
-import CreateEditCourseModal from "@/components/coach/CreateEditCourseModal";
+import CreateEditCourseModal from "@/components/coach/course/modal/CreateEditCourseModal";
 import { post } from "@/services/http/httpService";
 import { router } from "expo-router";
 import { useState } from "react";

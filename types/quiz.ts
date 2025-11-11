@@ -33,7 +33,7 @@ export interface QuizFormDTO {
   title: string;
   description?: string | null;
   totalQuestions: number;
-  questions: (Partial<Omit<QuestionType, "quizId" | "id">> & {
+  questions: (Partial<Omit<QuizQuestionType, "quizId" | "id">> & {
     id?: number;
   })[];
   lessonId?: number | null;

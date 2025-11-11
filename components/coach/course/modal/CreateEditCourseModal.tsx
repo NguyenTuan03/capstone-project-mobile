@@ -126,8 +126,13 @@ export default function CreateEditCourseModal({
     dayOfWeek: "Monday",
     startTime: "09:00",
     endTime: "11:00",
+    totalSessions: 1,
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [selectedStartTime, setSelectedStartTime] = useState<Date>(new Date());
+  const [selectedEndTime, setSelectedEndTime] = useState<Date>(new Date());
 
   useEffect(() => {
     if (visible) {
@@ -284,6 +289,7 @@ export default function CreateEditCourseModal({
       dayOfWeek: "Monday",
       startTime: "09:00",
       endTime: "11:00",
+      totalSessions: 1,
     });
     setEditingScheduleIndex(null);
     setShowScheduleModal(true);
@@ -309,6 +315,7 @@ export default function CreateEditCourseModal({
       dayOfWeek: tempSchedule.dayOfWeek,
       startTime: formatTime(tempSchedule.startTime),
       endTime: formatTime(tempSchedule.endTime),
+      totalSessions: tempSchedule.totalSessions ?? 1,
     };
 
     if (editingScheduleIndex !== null) {
@@ -911,34 +918,205 @@ export default function CreateEditCourseModal({
 
                   <View style={styles.section}>
                     <Text style={styles.label}>Giờ bắt đầu</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="09:00"
-                      value={tempSchedule.startTime}
-                      onChangeText={(text) =>
-                        setTempSchedule({ ...tempSchedule, startTime: text })
-                      }
-                      placeholderTextColor="#9CA3AF"
-                    />
-                    <Text style={styles.hint}>
-                      Định dạng: HH:mm (ví dụ: 09:00)
-                    </Text>
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => {
+                        // seed selectedStartTime from current tempSchedule.startTime
+                        const [h = "09", m = "00"] = (
+                          tempSchedule.startTime || "09:00"
+                        ).split(":");
+                        const d = new Date();
+                        d.setHours(parseInt(h), parseInt(m), 0, 0);
+                        setSelectedStartTime(d);
+                        setShowStartTimePicker(true);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.dateInputText,
+                          !tempSchedule.startTime && styles.placeholderText,
+                        ]}
+                      >
+                        {tempSchedule.startTime || "Chọn giờ bắt đầu"}
+                      </Text>
+                      <Ionicons name="time-outline" size={20} color="#059669" />
+                    </TouchableOpacity>
+                    {Platform.OS === "ios" && showStartTimePicker && (
+                      <Modal
+                        visible={showStartTimePicker}
+                        transparent
+                        animationType="slide"
+                        onRequestClose={() => setShowStartTimePicker(false)}
+                      >
+                        <View style={styles.datePickerModal}>
+                          <View style={styles.datePickerContainer}>
+                            <View style={styles.datePickerHeader}>
+                              <TouchableOpacity
+                                onPress={() => setShowStartTimePicker(false)}
+                                style={styles.datePickerCancelButton}
+                              >
+                                <Text style={styles.datePickerCancelText}>
+                                  Hủy
+                                </Text>
+                              </TouchableOpacity>
+                              <Text style={styles.datePickerTitle}>
+                                Chọn giờ bắt đầu
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  const hh = String(
+                                    selectedStartTime.getHours()
+                                  ).padStart(2, "0");
+                                  const mm = String(
+                                    selectedStartTime.getMinutes()
+                                  ).padStart(2, "0");
+                                  setTempSchedule({
+                                    ...tempSchedule,
+                                    startTime: `${hh}:${mm}`,
+                                  });
+                                  setShowStartTimePicker(false);
+                                }}
+                                style={styles.datePickerConfirmButton}
+                              >
+                                <Text style={styles.datePickerConfirmText}>
+                                  Xác nhận
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                            <DateTimePicker
+                              value={selectedStartTime}
+                              mode="time"
+                              display="spinner"
+                              onChange={(event, date) => {
+                                if (date) setSelectedStartTime(date);
+                              }}
+                            />
+                          </View>
+                        </View>
+                      </Modal>
+                    )}
+                    {Platform.OS === "android" && showStartTimePicker && (
+                      <DateTimePicker
+                        value={selectedStartTime}
+                        mode="time"
+                        display="default"
+                        onChange={(event, date) => {
+                          setShowStartTimePicker(false);
+                          if (date) {
+                            const hh = String(date.getHours()).padStart(2, "0");
+                            const mm = String(date.getMinutes()).padStart(
+                              2,
+                              "0"
+                            );
+                            setTempSchedule({
+                              ...tempSchedule,
+                              startTime: `${hh}:${mm}`,
+                            });
+                          }
+                        }}
+                      />
+                    )}
                   </View>
 
                   <View style={styles.section}>
                     <Text style={styles.label}>Giờ kết thúc</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="11:00"
-                      value={tempSchedule.endTime}
-                      onChangeText={(text) =>
-                        setTempSchedule({ ...tempSchedule, endTime: text })
-                      }
-                      placeholderTextColor="#9CA3AF"
-                    />
-                    <Text style={styles.hint}>
-                      Định dạng: HH:mm (ví dụ: 11:00)
-                    </Text>
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => {
+                        const [h = "11", m = "00"] = (
+                          tempSchedule.endTime || "11:00"
+                        ).split(":");
+                        const d = new Date();
+                        d.setHours(parseInt(h), parseInt(m), 0, 0);
+                        setSelectedEndTime(d);
+                        setShowEndTimePicker(true);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.dateInputText,
+                          !tempSchedule.endTime && styles.placeholderText,
+                        ]}
+                      >
+                        {tempSchedule.endTime || "Chọn giờ kết thúc"}
+                      </Text>
+                      <Ionicons name="time-outline" size={20} color="#059669" />
+                    </TouchableOpacity>
+                    {Platform.OS === "ios" && showEndTimePicker && (
+                      <Modal
+                        visible={showEndTimePicker}
+                        transparent
+                        animationType="slide"
+                        onRequestClose={() => setShowEndTimePicker(false)}
+                      >
+                        <View style={styles.datePickerModal}>
+                          <View style={styles.datePickerContainer}>
+                            <View style={styles.datePickerHeader}>
+                              <TouchableOpacity
+                                onPress={() => setShowEndTimePicker(false)}
+                                style={styles.datePickerCancelButton}
+                              >
+                                <Text style={styles.datePickerCancelText}>
+                                  Hủy
+                                </Text>
+                              </TouchableOpacity>
+                              <Text style={styles.datePickerTitle}>
+                                Chọn giờ kết thúc
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  const hh = String(
+                                    selectedEndTime.getHours()
+                                  ).padStart(2, "0");
+                                  const mm = String(
+                                    selectedEndTime.getMinutes()
+                                  ).padStart(2, "0");
+                                  setTempSchedule({
+                                    ...tempSchedule,
+                                    endTime: `${hh}:${mm}`,
+                                  });
+                                  setShowEndTimePicker(false);
+                                }}
+                                style={styles.datePickerConfirmButton}
+                              >
+                                <Text style={styles.datePickerConfirmText}>
+                                  Xác nhận
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                            <DateTimePicker
+                              value={selectedEndTime}
+                              mode="time"
+                              display="spinner"
+                              onChange={(event, date) => {
+                                if (date) setSelectedEndTime(date);
+                              }}
+                            />
+                          </View>
+                        </View>
+                      </Modal>
+                    )}
+                    {Platform.OS === "android" && showEndTimePicker && (
+                      <DateTimePicker
+                        value={selectedEndTime}
+                        mode="time"
+                        display="default"
+                        onChange={(event, date) => {
+                          setShowEndTimePicker(false);
+                          if (date) {
+                            const hh = String(date.getHours()).padStart(2, "0");
+                            const mm = String(date.getMinutes()).padStart(
+                              2,
+                              "0"
+                            );
+                            setTempSchedule({
+                              ...tempSchedule,
+                              endTime: `${hh}:${mm}`,
+                            });
+                          }
+                        }}
+                      />
+                    )}
                   </View>
                   <View
                     style={[

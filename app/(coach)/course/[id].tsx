@@ -1,21 +1,18 @@
-import CreateEditCourseModal from "@/components/coach/CreateEditCourseModal";
-import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import EditTab from "@/components/coach/course/edit";
+import CourseHeader from "@/components/coach/course/header";
+import CreateEditCourseModal from "@/components/coach/course/modal/CreateEditCourseModal";
+import { OverviewTab } from "@/components/coach/course/overview";
+import ScheduleTab from "@/components/coach/course/schedule";
+import StudentsTab from "@/components/coach/course/students";
+import CourseTabs from "@/components/coach/course/tabs";
 import { get, put } from "@/services/http/httpService";
 import { Course } from "@/types/course";
-import { Ionicons } from "@expo/vector-icons";
+import { formatPrice } from "@/utils/priceFormat";
+import { formatSchedule } from "@/utils/scheduleFormat";
+import { getStatusColor, getStatusLabel } from "@/utils/statusMap";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function CourseDetailScreen() {
   const router = useRouter();
@@ -25,14 +22,6 @@ export default function CourseDetailScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Scroll tab refs / state for horizontal tab scrolling
-  const scrollRef = useRef<ScrollView | null>(null);
-  const [scrollWidth, setScrollWidth] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
-  const [scrollX, setScrollX] = useState(0);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
 
   const fetchCourseDetail = async () => {
     try {
@@ -52,7 +41,6 @@ export default function CourseDetailScreen() {
       if (courseId) {
         fetchCourseDetail();
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courseId])
   );
 
@@ -75,11 +63,7 @@ export default function CourseDetailScreen() {
     schedules?: any[];
   }) => {
     try {
-      // Tách subjectId ra khỏi payload vì nó không cần trong body khi update
       const { subjectId, ...payload } = data;
-
-      console.log("Payload gửi lên API:", payload);
-      console.log("Course ID:", courseId);
 
       await put(`/v1/courses/${courseId}`, payload);
       Alert.alert("Thành công", "Cập nhật khóa học thành công!", [
@@ -87,7 +71,7 @@ export default function CourseDetailScreen() {
           text: "OK",
           onPress: () => {
             setShowEditModal(false);
-            fetchCourseDetail(); // Refresh data
+            fetchCourseDetail();
           },
         },
       ]);
@@ -96,7 +80,6 @@ export default function CourseDetailScreen() {
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
 
-      // Lấy thông báo lỗi chi tiết từ API
       let errorMessage = "Không thể cập nhật khóa học. Vui lòng thử lại.";
 
       if (error.response?.data) {
@@ -115,55 +98,6 @@ export default function CourseDetailScreen() {
       Alert.alert("Lỗi", errorMessage);
       throw error;
     }
-  };
-
-  const formatPrice = (price: string) => {
-    const numPrice = parseFloat(price);
-    if (isNaN(numPrice)) return price;
-    return new Intl.NumberFormat("vi-VN").format(numPrice) + "đ";
-  };
-
-  const formatSchedule = (schedules: Course["schedules"]) => {
-    if (!schedules || schedules.length === 0) return "Chưa có lịch";
-
-    return schedules
-      .map((schedule) => {
-        const dayIndex = [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-          "Sunday",
-        ].indexOf(schedule.dayOfWeek);
-        const dayName =
-          dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : schedule.dayOfWeek;
-        const startTime = schedule.startTime.substring(0, 5);
-        const endTime = schedule.endTime.substring(0, 5);
-        return `${dayName}: ${startTime}-${endTime}`;
-      })
-      .join("\n ");
-  };
-
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      APPROVED: "Đã duyệt",
-      PENDING_APPROVAL: "Chờ duyệt",
-      REJECTED: "Đã từ chối",
-      COMPLETED: "Đã hoàn thành",
-    };
-    return statusMap[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    const colorMap: Record<string, { bg: string; text: string }> = {
-      APPROVED: { bg: "#D1FAE5", text: "#059669" },
-      PENDING_APPROVAL: { bg: "#FEF3C7", text: "#D97706" },
-      REJECTED: { bg: "#FEE2E2", text: "#DC2626" },
-      COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
-    };
-    return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
   };
 
   const calculateProgress = () => {
@@ -195,521 +129,55 @@ export default function CourseDetailScreen() {
     );
   }
 
-  const statusColors = getStatusColor(course.status);
   const progress = calculateProgress();
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="close" size={24} color="#111827" />
-      </TouchableOpacity>
-      <View style={styles.headerTitleContainer}>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {course.name}
-        </Text>
-        <View style={styles.headerBadges}>
-          <View
-            style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}
-          >
-            <Text
-              style={[styles.statusBadgeText, { color: statusColors.text }]}
-            >
-              {getStatusLabel(course.status)}
-            </Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: "#EFF6FF" }]}>
-            <Text style={[styles.statusBadgeText, { color: "#3B82F6" }]}>
-              {course.level}
-            </Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: "#F3F4F6" }]}>
-            <Text style={[styles.statusBadgeText, { color: "#6B7280" }]}>
-              {course.learningFormat === "GROUP" ? "Nhóm" : "Cá nhân"}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <View style={styles.placeholder} />
-    </View>
-  );
-
-  const renderTabs = () => (
-    <View style={styles.tabsContainer}>
-      <View style={{ position: "relative" }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsContent}
-          ref={scrollRef as any}
-          onLayout={(e) => {
-            const w = e.nativeEvent.layout.width;
-            setScrollWidth(w);
-            setShowRightArrow(contentWidth > w);
-          }}
-          onContentSizeChange={(w) => {
-            setContentWidth(w);
-            setShowRightArrow(w > scrollWidth);
-          }}
-          onScroll={(e) => {
-            const x = e.nativeEvent.contentOffset.x;
-            setScrollX(x);
-            setShowLeftArrow(x > 5);
-            setShowRightArrow(x + scrollWidth < contentWidth - 5);
-          }}
-          scrollEventThrottle={16}
-        >
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "overview" && styles.tabActive]}
-            onPress={() => setActiveTab("overview")}
-          >
-            <Ionicons
-              name="bar-chart"
-              size={18}
-              color={activeTab === "overview" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "overview" && styles.tabTextActive,
-              ]}
-            >
-              Tổng quan
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab]}
-            onPress={() =>
-              router.push({
-                pathname: "/(coach)/course/assignment/[id]" as any,
-                params: { id: String(course.id) },
-              })
-            }
-          >
-            <Ionicons name="clipboard" size={18} color="#6B7280" />
-            <Text style={styles.tabText}>Bài tập</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "students" && styles.tabActive]}
-            onPress={() => setActiveTab("students")}
-          >
-            <Ionicons
-              name="people"
-              size={18}
-              color={activeTab === "students" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "students" && styles.tabTextActive,
-              ]}
-            >
-              Học viên ({course.currentParticipants})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "schedule" && styles.tabActive]}
-            onPress={() => setActiveTab("schedule")}
-          >
-            <Ionicons
-              name="calendar"
-              size={18}
-              color={activeTab === "schedule" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "schedule" && styles.tabTextActive,
-              ]}
-            >
-              Lịch học
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "edit" && styles.tabActive]}
-            onPress={() => setActiveTab("edit")}
-          >
-            <Ionicons
-              name="create"
-              size={18}
-              color={activeTab === "edit" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "edit" && styles.tabTextActive,
-              ]}
-            >
-              Chỉnh sửa
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {showLeftArrow ? (
-          <TouchableOpacity
-            onPress={() => {
-              const next = Math.max(0, scrollX - Math.round(scrollWidth * 0.6));
-              (scrollRef as any).current?.scrollTo({ x: next, animated: true });
-            }}
-            style={{
-              position: "absolute",
-              left: 6,
-              top: 0,
-              bottom: 0,
-              justifyContent: "center",
-              zIndex: 10,
-              width: 32,
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "rgba(255,255,255,0.9)",
-                borderRadius: 20,
-                padding: 6,
-                alignItems: "center",
-                justifyContent: "center",
-                shadowColor: "#000",
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="chevron-back" size={20} color="#6B7280" />
-            </View>
-          </TouchableOpacity>
-        ) : null}
-
-        {showRightArrow ? (
-          <TouchableOpacity
-            onPress={() => {
-              const maxX = Math.max(0, contentWidth - scrollWidth);
-              const next = Math.min(
-                maxX,
-                scrollX + Math.round(scrollWidth * 0.6)
-              );
-              (scrollRef as any).current?.scrollTo({ x: next, animated: true });
-            }}
-            style={{
-              position: "absolute",
-              right: 6,
-              top: 0,
-              bottom: 0,
-              justifyContent: "center",
-              zIndex: 10,
-              width: 32,
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "rgba(255,255,255,0.9)",
-                borderRadius: 20,
-                padding: 6,
-                alignItems: "center",
-                justifyContent: "center",
-                shadowColor: "#000",
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <Ionicons name="chevron-forward" size={20} color="#6B7280" />
-            </View>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </View>
-  );
-
-  const renderOverviewTab = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      {/* Stats Cards */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Ionicons name="people" size={32} color="#3B82F6" />
-          <Text style={styles.statLabel}>Học viên</Text>
-          <Text style={styles.statValue}>
-            {course.currentParticipants}/{course.maxParticipants}
-          </Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Ionicons name="book" size={32} color="#10B981" />
-          <Text style={styles.statLabel}>Buổi học</Text>
-          <Text style={styles.statValue}>{course.totalSessions}</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Ionicons name="time" size={32} color="#F59E0B" />
-          <Text style={styles.statLabel}>Tiến độ</Text>
-          <Text style={styles.statValue}>{progress}%</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Ionicons name="cash" size={32} color="#059669" />
-          <Text style={styles.statLabel}>Doanh thu</Text>
-          <Text style={styles.statValue}>
-            {formatPrice(course.totalEarnings)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Course Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Thông tin khóa học</Text>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Môn học</Text>
-          <Text style={styles.infoValue}>{course.subject.name}</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Lịch học</Text>
-          <Text style={styles.infoValue}>
-            {formatSchedule(course.schedules)}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Ngày bắt đầu - kết thúc</Text>
-          <Text style={styles.infoValue}>
-            {new Date(course.startDate).toLocaleDateString("vi-VN")} -{" "}
-            {course.endDate
-              ? new Date(course.endDate).toLocaleDateString("vi-VN")
-              : ""}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Địa điểm</Text>
-          <Text style={styles.infoValue}>
-            {course.address}
-            {"\n"}
-            {course.district.name}
-            {"\n"}
-            {course.province.name}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Học phí</Text>
-          <Text
-            style={[styles.infoValue, { color: "#059669", fontWeight: "600" }]}
-          >
-            {formatPrice(course.pricePerParticipant)}/người
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Số lượng học viên</Text>
-          <Text style={styles.infoValue}>
-            Tối thiểu: {course.minParticipants} - Tối đa:{" "}
-            {course.maxParticipants}
-          </Text>
-        </View>
-      </View>
-
-      {/* Description */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mô tả</Text>
-        <View style={styles.descriptionBox}>
-          <Text style={styles.descriptionText}>{course.description}</Text>
-        </View>
-      </View>
-
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
-
-  const renderStudentsTab = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Danh sách học viên</Text>
-        {course.currentParticipants === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={48} color="#9CA3AF" />
-            <Text style={styles.emptyText}>Chưa có học viên nào</Text>
-          </View>
-        ) : (
-          <View>
-            <View style={{ marginBottom: 12 }}>
-              {course.enrollments && course.enrollments.length > 0 ? (
-                course.enrollments.map((e) => {
-                  const name = e.user.fullName || "Người dùng";
-                  const initials = name
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(-2)
-                    .map((s) => s[0])
-                    .join("")
-                    .toUpperCase();
-
-                  return (
-                    <View
-                      key={e.id}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        padding: 12,
-                        backgroundColor: "#F9FAFB",
-                        borderRadius: 12,
-                        marginBottom: 8,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 22,
-                          backgroundColor: "#E5E7EB",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          marginRight: 12,
-                        }}
-                      >
-                        <Text style={{ fontWeight: "700", color: "#374151" }}>
-                          {initials}
-                        </Text>
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontWeight: "600",
-                            color: "#111827",
-                          }}
-                        >
-                          {name}
-                        </Text>
-                        {e.user.email ? (
-                          <Text style={{ fontSize: 13, color: "#6B7280" }}>
-                            {e.user.email}
-                          </Text>
-                        ) : null}
-                      </View>
-
-                      <View style={{ marginLeft: 8, alignItems: "flex-end" }}>
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: "#059669",
-                            fontWeight: "600",
-                          }}
-                        >
-                          Đã thanh toán
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="people-outline" size={48} color="#9CA3AF" />
-                  <Text style={styles.emptyText}>Chưa có học viên</Text>
-                </View>
-              )}
-            </View>
-
-            <View
-              style={[
-                styles.infoRow,
-                { borderBottomWidth: 0, paddingVertical: 8 },
-              ]}
-            >
-              <Text style={[styles.infoLabel]}>Tổng số học viên</Text>
-              <Text
-                style={[
-                  styles.infoValue,
-                  { color: "#059669", fontWeight: "700" },
-                ]}
-              >
-                {course.currentParticipants}
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
-
-  const renderScheduleTab = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Lịch học chi tiết</Text>
-
-        {course.schedules && course.schedules.length > 0 ? (
-          course.schedules.map((schedule, index) => {
-            const dayIndex = [
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-              "Saturday",
-              "Sunday",
-            ].indexOf(schedule.dayOfWeek);
-            const dayName =
-              dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : schedule.dayOfWeek;
-            const startTime = schedule.startTime.substring(0, 5);
-            const endTime = schedule.endTime.substring(0, 5);
-
-            return (
-              <View key={schedule.id} style={styles.sessionCard}>
-                <View style={styles.sessionNumber}>
-                  <Text style={styles.sessionNumberText}>{index + 1}</Text>
-                </View>
-                <View style={styles.sessionInfo}>
-                  <Text style={styles.sessionName}>
-                    {dayName} ({schedule.totalSessions} buổi)
-                  </Text>
-                  <Text style={styles.sessionTime}>
-                    {startTime} - {endTime}
-                  </Text>
-                </View>
-              </View>
-            );
-          })
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
-            <Text style={styles.emptyText}>Chưa có lịch học</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
-
-  const renderEditTab = () => {
+  const renderHeader = () => {
+    const statusColors = getStatusColor(course.status);
+    const statusLabel = getStatusLabel(course.status);
     return (
-      <View style={styles.tabContent}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Chỉnh sửa thông tin khóa học</Text>
-          <Text style={{ color: "#6B7280", fontSize: 14, marginTop: 8 }}>
-            Form chỉnh sửa đang được hiển thị trong modal
-          </Text>
-        </View>
-      </View>
+      <CourseHeader
+        course={course}
+        statusColors={statusColors}
+        statusLabel={statusLabel}
+        onBack={() => router.back()}
+      />
     );
   };
+
+  const renderTabs = () => (
+    <CourseTabs
+      course={course}
+      activeTab={activeTab as any}
+      onChangeTab={(t) => setActiveTab(t)}
+    />
+  );
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "overview":
-        return renderOverviewTab();
+        return (
+          <OverviewTab
+            course={course}
+            progress={progress}
+            formatPrice={formatPrice}
+            formatSchedule={formatSchedule}
+          />
+        );
       case "students":
-        return renderStudentsTab();
+        return <StudentsTab course={course} />;
       case "schedule":
-        return renderScheduleTab();
+        return <ScheduleTab course={course} />;
       case "edit":
-        return renderEditTab();
+        return <EditTab />;
       default:
-        return renderOverviewTab();
+        return (
+          <OverviewTab
+            course={course}
+            progress={progress}
+            formatPrice={formatPrice}
+            formatSchedule={formatSchedule}
+          />
+        );
     }
   };
 
@@ -739,7 +207,7 @@ export default function CourseDetailScreen() {
         onSubmit={handleUpdateCourse}
         mode="edit"
         initialData={{
-          subjectId: course.subject.id, // Set subjectId từ course data
+          subjectId: course.subject.id,
           learningFormat: course.learningFormat,
           minParticipants: String(course.minParticipants),
           maxParticipants: String(course.maxParticipants),
