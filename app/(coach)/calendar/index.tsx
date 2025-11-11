@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CustomWeeklyCalendar from "../../../components/calendar/CustomWeeklyCalendar";
+import CustomWeeklyCalendar from "../../../components/coach/calendar/CustomWeeklyCalendar";
 import sessionService from "../../../services/sessionService";
 import { CalendarSession } from "../../../types/session";
 import { getCurrentWeekRange } from "../../../utils/dateUtils";
@@ -17,7 +17,7 @@ import { getCurrentWeekRange } from "../../../utils/dateUtils";
 export default function CoachCalendarScreen() {
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentWeek, setCurrentWeek] = useState(getCurrentWeekRange());
+  const [currentWeek, setCurrentWeek] = useState<any>(getCurrentWeekRange());
 
   // Load sessions for the current week
   const loadSessions = useCallback(

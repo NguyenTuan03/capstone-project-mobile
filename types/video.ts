@@ -1,11 +1,11 @@
 import { UserType } from "./auth";
-import { Lesson, Session } from "./session";
+import type { Lesson, Session } from "./session";
 
 export interface VideoType {
   id: number;
   title: string;
   description?: string;
-  tags?: string[];
+  tags?: string[] | string | null;
   duration: number;
   drillName: string;
   drillDescription?: string;

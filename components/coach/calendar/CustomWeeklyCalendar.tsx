@@ -1,22 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  addWeeks,
-  eachDayOfInterval,
-  endOfWeek,
-  format,
-  startOfWeek,
-  subWeeks,
+    addWeeks,
+    eachDayOfInterval,
+    endOfWeek,
+    format,
+    startOfWeek,
+    subWeeks,
 } from "date-fns";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { CalendarSession, SessionStatus } from "../../types/session";
-import { toVietnameseDay } from "../../utils/localization";
+import { CalendarSession, SessionStatus } from "../../../types/session";
+import { toVietnameseDay } from "../../../utils/localization";
 import SessionDetailModal from "./SessionDetailModal";
 
 // Force refresh by adding a version number

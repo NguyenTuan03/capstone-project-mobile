@@ -1,32 +1,40 @@
-import { AttendanceType } from "./attendance";
-import { QuizType } from "./quiz";
-import { VideoType } from "./video";
+import type { AttendanceType } from "./attendance";
+import type { QuizType } from "./quiz";
+import type { VideoType } from "./video";
 
 export interface Session {
   id: number;
-  name?: string;
-  description?: string;
+  name?: string | null;
+  description?: string | null;
   sessionNumber: number;
-  scheduleDate: Date;
+  scheduleDate: string;
   startTime: string;
   endTime: string;
-  durationInMinutes?: number;
+  durationInMinutes?: number | null;
   status: SessionStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt?: Date;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
   course: Course;
-  lesson?: Lesson;
+  lesson?: Lesson | null;
 }
 
 export interface Course {
   id: number;
-  name?: string;
+  name?: string | null;
 }
 
 export interface Lesson {
   id: number;
-  title?: string;
+  name?: string | null;
+  description?: string | null;
+  lessonNumber?: number | null;
+  duration?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  videos?: VideoType[];
+  quizzes?: QuizType[];
 }
 
 export enum SessionStatus {

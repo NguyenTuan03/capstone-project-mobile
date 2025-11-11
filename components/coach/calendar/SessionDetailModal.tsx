@@ -11,11 +11,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import attendanceService from "../../services/attendanceService";
-import configurationService from "../../services/configurationService";
-import sessionService from "../../services/sessionService";
-import { AttendanceStatus } from "../../types/attendance";
-import { CalendarSession, SessionStatus } from "../../types/session";
+import attendanceService from "../../../services/attendanceService";
+import configurationService from "../../../services/configurationService";
+import sessionService from "../../../services/sessionService";
+import { AttendanceStatus } from "../../../types/attendance";
+import { CalendarSession, SessionStatus } from "../../../types/session";
 import SessionDetailQuiz from "./SessionDetailQuiz";
 import SessionDetailVideo from "./SessionDetailVideo";
 
