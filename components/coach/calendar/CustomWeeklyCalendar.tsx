@@ -79,9 +79,38 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         sessions: daySessions,
         hasSessions: daySessions.length > 0,
         isSelected: dateStr === selectedDate,
+        isToday: dateStr === format(new Date(), "yyyy-MM-dd"),
       };
     });
   }, [currentDate, sessions, selectedDate]);
+
+  // Week summary statistics
+  const weekStats = useMemo(() => {
+    const allWeekSessions = weekData.flatMap(day => day.sessions);
+    const totalSessions = allWeekSessions.length;
+    const completedSessions = allWeekSessions.filter(s => s.status === SessionStatus.COMPLETED).length;
+    const scheduledSessions = allWeekSessions.filter(s => s.status === SessionStatus.SCHEDULED).length;
+    
+    // Calculate total teaching hours
+    const totalMinutes = allWeekSessions.reduce((acc, session) => {
+      const start = session.startTime.split(':');
+      const end = session.endTime.split(':');
+      const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
+      const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
+      return acc + (endMinutes - startMinutes);
+    }, 0);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+
+    return {
+      totalSessions,
+      completedSessions,
+      scheduledSessions,
+      totalHours,
+      remainingMinutes,
+      timeText: remainingMinutes > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalHours}h`
+    };
+  }, [weekData]);
 
   const getSessionStatusColor = (status: SessionStatus): string => {
     switch (status) {
@@ -169,6 +198,19 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
     [currentDate, onWeekChange]
   );
 
+  const goToToday = useCallback(() => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDate(format(today, "yyyy-MM-dd"));
+
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+
+    if (onWeekChange) {
+      onWeekChange(format(weekStart, "yyyy-MM-dd"), format(weekEnd, "yyyy-MM-dd"));
+    }
+  }, [onWeekChange]);
+
   const renderDayHeader = (day: any) => {
     const sessionCountColor = getSessionCountColor(day.sessions.length);
 
@@ -179,16 +221,25 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           styles.dayHeader,
           day.isSelected && styles.dayHeaderSelected,
           day.hasSessions && styles.dayHeaderWithSessions,
+          day.isToday && styles.dayHeaderToday,
         ]}
         onPress={() => handleDayPress(day)}
       >
         <Text
-          style={[styles.dayText, day.isSelected && styles.dayTextSelected]}
+          style={[
+            styles.dayText, 
+            day.isSelected && styles.dayTextSelected,
+            day.isToday && styles.dayTextToday
+          ]}
         >
           {day.dayShort}
         </Text>
         <Text
-          style={[styles.dayNumber, day.isSelected && styles.dayNumberSelected]}
+          style={[
+            styles.dayNumber, 
+            day.isSelected && styles.dayNumberSelected,
+            day.isToday && styles.dayNumberToday
+          ]}
         >
           {day.dayNumber}
         </Text>
@@ -203,6 +254,9 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           </View>
         ) : (
           <View style={styles.emptyIndicator} />
+        )}
+        {day.isToday && !day.isSelected && (
+          <View style={styles.todayDot} />
         )}
       </TouchableOpacity>
     );
@@ -284,9 +338,18 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           <Ionicons name="chevron-back" size={20} color="#059669" />
         </TouchableOpacity>
 
-        <Text style={styles.weekTitle}>
-          {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM/yyyy")}
-        </Text>
+        <View style={styles.weekTitleContainer}>
+          <Text style={styles.weekTitle}>
+            {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM/yyyy")}
+          </Text>
+          <TouchableOpacity 
+            style={styles.todayButton}
+            onPress={goToToday}
+          >
+            <Ionicons name="today-outline" size={14} color="#059669" />
+            <Text style={styles.todayButtonText}>Hôm nay</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.navButton}
@@ -294,6 +357,27 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         >
           <Ionicons name="chevron-forward" size={20} color="#059669" />
         </TouchableOpacity>
+      </View>
+
+      {/* Week Summary Stats */}
+      <View style={styles.weekSummary}>
+        <View style={styles.statItem}>
+          <Ionicons name="calendar" size={16} color="#059669" />
+          <Text style={styles.statValue}>{weekStats.totalSessions}</Text>
+          <Text style={styles.statLabel}>buổi học</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Ionicons name="time" size={16} color="#3B82F6" />
+          <Text style={styles.statValue}>{weekStats.timeText}</Text>
+          <Text style={styles.statLabel}>giảng dạy</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+          <Text style={styles.statValue}>{weekStats.completedSessions}</Text>
+          <Text style={styles.statLabel}>hoàn thành</Text>
+        </View>
       </View>
 
       {/* Day Headers */}
@@ -355,94 +439,90 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F3F4F6",
   },
   weekHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  navButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F0FDF4",
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
     elevation: 2,
   },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   weekTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#1F2937",
+    color: "#111827",
   },
   daysContainer: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    paddingBottom: 10,
+    gap: 3,
   },
   dayHeader: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 3,
     borderRadius: 12,
-    marginHorizontal: 2,
+    marginHorizontal: 1,
+    minHeight: 75,
+    justifyContent: "space-between",
   },
   dayHeaderSelected: {
-    backgroundColor: "#F0FDF4",
-    borderWidth: 2,
-    borderColor: "#059669",
-    shadowColor: "#059669",
+    backgroundColor: "#DCFCE7",
+    borderWidth: 1.5,
+    borderColor: "#10B981",
+    shadowColor: "#10B981",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   dayHeaderWithSessions: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#FEF9C3",
   },
   dayText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#6B7280",
-    fontWeight: "500",
+    fontWeight: "600",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   dayTextSelected: {
     color: "#059669",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   dayNumber: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 19,
+    fontWeight: "800",
     color: "#1F2937",
     marginTop: 4,
   },
   dayNumberSelected: {
     color: "#059669",
+    fontSize: 20,
   },
   sessionBadge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 6,
@@ -455,7 +535,7 @@ const styles = StyleSheet.create({
   },
   sessionBadgeText: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#FFFFFF",
   },
   emptyIndicator: {
@@ -463,91 +543,97 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: "#E5E7EB",
-    marginTop: 8,
+    marginTop: 6,
   },
   sessionsContainer: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F3F4F6",
   },
   sessionsContent: {
-    padding: 20,
+    padding: 12,
+    paddingBottom: 24,
   },
   selectedDayHeader: {
-    marginBottom: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    marginBottom: 12,
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+    borderBottomWidth: 1.5,
+    borderBottomColor: "#E5E7EB",
   },
   selectedDayTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1F2937",
-    marginBottom: 8,
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 3,
   },
   sessionCount: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500",
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "600",
   },
   sessionItem: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sessionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 14,
+    padding: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
     borderLeftWidth: 4,
-    marginHorizontal: 4,
+    overflow: "hidden",
   },
   sessionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 6,
   },
   timeContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     flex: 1,
+    backgroundColor: "#F9FAFB",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
   },
   sessionTime: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
   },
   statusBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: 5,
+    borderRadius: 14,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 9,
+    fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   sessionContent: {
-    marginBottom: 16,
+    gap: 8,
   },
   sessionName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1F2937",
-    marginBottom: 12,
-    lineHeight: 24,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 20,
   },
   sessionMeta: {
     gap: 8,
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 10,
   },
   metaItem: {
     flexDirection: "row",
@@ -555,12 +641,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   courseName: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500",
+    fontSize: 12,
+    color: "#374151",
+    fontWeight: "600",
+    flex: 1,
   },
   locationText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6B7280",
     fontWeight: "500",
     flex: 1,
@@ -573,21 +660,105 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 80,
-    minHeight: 400,
+    paddingVertical: 40,
+    minHeight: 280,
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 6,
+    marginTop: 6,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
     color: "#374151",
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  // Week Title Container
+  weekTitleContainer: {
+    alignItems: "center",
+    gap: 3,
+  },
+  // Today Button
+  todayButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#059669",
+  },
+  todayButtonText: {
+    fontSize: 10,
+    color: "#059669",
+    fontWeight: "700",
+  },
+  // Today Indicator
+  dayHeaderToday: {
+    borderWidth: 1.5,
+    borderColor: "#FCD34D",
+  },
+  dayTextToday: {
+    color: "#D97706",
+  },
+  dayNumberToday: {
+    color: "#D97706",
+  },
+  todayDot: {
+    position: "absolute",
+    top: 3,
+    right: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#F59E0B",
+  },
+  // Week Summary Stats
+  weekSummary: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: "space-around",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  statItem: {
+    alignItems: "center",
+    gap: 3,
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  statLabel: {
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: "#E5E7EB",
   },
 });
 

@@ -6,11 +6,10 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
 
 import AppAuthProvider from "@/context/AppAuthProvider";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import AppContextProvider from "@/context/AppContextProvider";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
