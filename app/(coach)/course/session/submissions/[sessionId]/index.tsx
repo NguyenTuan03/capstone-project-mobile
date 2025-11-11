@@ -5,15 +5,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
 const formatDateTime = (value?: string | null) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -24,7 +25,7 @@ const formatDateTime = (value?: string | null) => {
 
 const SubmissionListScreen: React.FC = () => {
   const router = useRouter();
-  const { sessionId } = useLocalSearchParams();
+  const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
   const [videos, setVideos] = useState<LearnerVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
@@ -41,7 +42,6 @@ const SubmissionListScreen: React.FC = () => {
       if (list.length > 0) {
         setSession(list[0].session);
       } else {
-        // fetch session for title when no submissions
         const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
         setSession(sessionRes.data);
       }
@@ -113,7 +113,11 @@ const SubmissionListScreen: React.FC = () => {
             <View key={learnerName} style={styles.section}>
               <Text style={styles.sectionTitle}>{learnerName}</Text>
               {learnerVideos.map((video) => (
-                <SubmissionCard key={video.id} video={video} />
+                <SubmissionCard
+                  key={video.id}
+                  video={video}
+                  sessionId={sessionId ? String(sessionId) : undefined}
+                />
               ))}
             </View>
           ))}
@@ -123,9 +127,32 @@ const SubmissionListScreen: React.FC = () => {
   );
 };
 
-const SubmissionCard = ({ video }: { video: LearnerVideo }) => {
+const SubmissionCard = ({
+  video,
+  sessionId,
+}: {
+  video: LearnerVideo;
+  sessionId?: string;
+}) => {
+  const router = useRouter();
   const lessonVideo: VideoType | undefined =
     video.session.lesson?.videos?.[0] ?? undefined;
+
+  const handleNavigate = () => {
+    const effectiveSessionId = sessionId ?? String(video.session?.id ?? "");
+    if (!video.publicUrl || !effectiveSessionId) {
+      return;
+    }
+
+    router.push({
+      pathname:
+        "/(coach)/course/session/submissions/[sessionId]/[submissionId]",
+      params: {
+        sessionId: effectiveSessionId,
+        submissionId: String(video.id),
+      },
+    });
+  };
 
   return (
     <View style={styles.card}>
@@ -137,7 +164,7 @@ const SubmissionCard = ({ video }: { video: LearnerVideo }) => {
         Thời gian nộp: {formatDateTime(video.createdAt)}
       </Text>
       {video.publicUrl ? (
-        <TouchableOpacity style={styles.linkButton}>
+        <TouchableOpacity style={styles.linkButton} onPress={handleNavigate}>
           <Ionicons name="sparkles" size={14} color="#7C3AED" />
           <Ionicons name="play" size={14} color="#059669" />
           <Text style={styles.linkText}>Chấm bài</Text>
@@ -247,5 +274,3 @@ const styles = StyleSheet.create({
 });
 
 export default SubmissionListScreen;
-
-
