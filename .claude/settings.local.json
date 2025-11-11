@@ -1,8 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)",
-      "Bash(npm run type-check:*)"
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run start:dev:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run build:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(tasklist:*)",
+      "Bash(for file in notification.entity.ts payment.entity.ts property-check-achievement.entity.ts province.entity.ts question.entity.ts question-option.entity.ts quiz.entity.ts quiz_attempt.entity.ts request.entity.ts request-action.entity.ts role.entity.ts schedule.entity.ts session.entity.ts session-earning.entity.ts streak-achievement.entity.ts subject.entity.ts video.entity.ts video-conference-presence-log.entity.ts wallet.entity.ts wallet-transaction.entity.ts withdrawal-request.entity.ts)",
+      "Bash(do echo:*)",
+      "Bash(tail:*)",
+      "Bash(done)",
+      "Bash(dir:*)",
+      "Bash(npm run)",
+      "Bash(cat:*)",
+      "Bash(npm run start:*)",
+      "Bash(npm run copy:templates:*)"
     ],
     "deny": [],
     "ask": []

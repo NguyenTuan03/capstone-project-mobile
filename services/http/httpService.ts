@@ -46,6 +46,11 @@ export const patch = async <T = unknown>(
   data: unknown = {},
   option: AxiosRequestConfig = {}
 ): Promise<AxiosResponse<T>> => {
-  const res: AxiosResponse<T> = await http.patch(url, data, option);
-  return res;
+  try {
+    const res: AxiosResponse<T> = await http.patch(url, data, option);
+    return res;
+  } catch (err) {
+    console.error("Error in patch()", err);
+    throw err;
+  }
 };

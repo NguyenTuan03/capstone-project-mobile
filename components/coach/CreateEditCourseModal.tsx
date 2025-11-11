@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK, DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
 import { LearningFormat, Schedule } from "@/types/course";
 import { Subject } from "@/types/subject";
@@ -105,6 +106,8 @@ export default function CreateEditCourseModal({
   const [schedules, setSchedules] = useState<Schedule[]>(
     initialData?.schedules || []
   );
+  const [courseStartDateAfterDaysFromNow, setCourseStartDateAfterDaysFromNow] =
+    useState<number>(7);
 
   const [availableSchedules, setAvailableSchedules] = useState<Schedule[]>([]);
   const [loadingAvailableSchedules, setLoadingAvailableSchedules] =
@@ -177,6 +180,44 @@ export default function CreateEditCourseModal({
 
   useEffect(() => {
     fetchCoachAvailableSchedules();
+  }, []);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const cfg = await configurationService.getConfiguration(
+          "course_start_date_after_days_from_now"
+        );
+        // cfg shape may vary; treat as any to safely read possible locations
+        const raw: any = cfg as any;
+        let days: number = 7;
+        if (raw == null) {
+          days = 7;
+        } else if (typeof raw === "number") {
+          days = raw;
+        } else if (typeof raw === "string") {
+          const n = Number(raw);
+          days = Number.isNaN(n) ? 7 : n;
+        } else if (typeof raw === "object") {
+          if (raw.value != null) days = Number(raw.value);
+          else if (raw.metadata && raw.metadata.value != null)
+            days = Number(raw.metadata.value);
+          else if (raw.data && raw.data.value != null)
+            days = Number(raw.data.value);
+          else if (raw.valueRaw != null) days = Number(raw.valueRaw);
+          if (Number.isNaN(days)) days = 7;
+        }
+        setCourseStartDateAfterDaysFromNow(days);
+      } catch (err) {
+        console.warn(
+          "Failed to load configuration course_start_date_after_days_from_now",
+          err
+        );
+        setCourseStartDateAfterDaysFromNow(7);
+      }
+    };
+
+    loadConfig();
   }, []);
 
   const fetchSubjects = async () => {
@@ -287,7 +328,7 @@ export default function CreateEditCourseModal({
   const handleSubmit = async () => {
     // Validation với thông báo lỗi
     if (!selectedSubjectId) {
-      console.error("Validation error: Chưa chọn môn học");
+      console.error("Validation error: Chưa chọn tài liệu");
       return;
     }
     if (learningFormat === "GROUP") {
@@ -376,6 +417,16 @@ export default function CreateEditCourseModal({
             <View style={styles.section}>
               <Text style={styles.label}>
                 Tài liệu <Text style={styles.required}>*</Text>
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: "#6B7280",
+                }}
+              >
+                Chỉ những tài liệu{" "}
+                <Text style={{ fontWeight: "bold" }}>ĐÃ XUẤT BẢN</Text> mới có
+                thể sử dụng
               </Text>
               <TouchableOpacity
                 style={styles.selectButton}
@@ -470,7 +521,7 @@ export default function CreateEditCourseModal({
                   onPress={() => {
                     const currentValue =
                       parseInt(pricePerParticipant.replace(/,/g, "")) || 0;
-                    const newValue = Math.max(0, currentValue - 10000);
+                    const newValue = Math.max(0, currentValue - 500000);
                     setPricePerParticipant(newValue.toString());
                   }}
                 >
@@ -478,7 +529,7 @@ export default function CreateEditCourseModal({
                 </TouchableOpacity>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="1,500,000"
+                  placeholder="2,000,000"
                   value={pricePerParticipant.replace(
                     /\B(?=(\d{3})+(?!\d))/g,
                     ","
@@ -495,7 +546,7 @@ export default function CreateEditCourseModal({
                   onPress={() => {
                     const currentValue =
                       parseInt(pricePerParticipant.replace(/,/g, "")) || 0;
-                    const newValue = currentValue + 10000;
+                    const newValue = currentValue + 500000;
                     setPricePerParticipant(newValue.toString());
                   }}
                 >
@@ -508,6 +559,10 @@ export default function CreateEditCourseModal({
             <View style={styles.section}>
               <Text style={styles.label}>
                 Ngày bắt đầu <Text style={styles.required}>*</Text>
+              </Text>
+              <Text style={{ color: "gray" }}>
+                Ngày bắt đầu phải cách it nhất{" "}
+                {courseStartDateAfterDaysFromNow || ""} ngày từ hôm nay.
               </Text>
               <TouchableOpacity
                 style={styles.dateInput}
@@ -758,7 +813,7 @@ export default function CreateEditCourseModal({
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Chọn môn học</Text>
+                  <Text style={styles.modalTitle}>Chọn tài liệu</Text>
                   <TouchableOpacity
                     onPress={() => setShowSubjectModal(false)}
                     style={styles.modalCloseButton}
@@ -938,7 +993,7 @@ export default function CreateEditCourseModal({
                           sch.endTime === tempSchedule.endTime;
 
                         return (
-                          <TouchableOpacity
+                          <View
                             key={i}
                             style={[
                               styles.modalItem,
@@ -949,35 +1004,25 @@ export default function CreateEditCourseModal({
                                   : "#FFF7ED",
                               },
                             ]}
-                            onPress={() => setTempSchedule({ ...sch })}
                           >
-                            <View>
-                              <Text style={styles.modalItemText}>
-                                {dayName}: {sch.startTime} - {sch.endTime}
-                              </Text>
-                              <Text style={styles.hint}>
-                                Từ ngày{" "}
-                                {sch.course?.startDate
-                                  ? new Date(
-                                      sch.course.startDate
-                                    ).toLocaleDateString("vi-VN")
-                                  : "—"}
-                                {" đến "}
-                                {sch.course?.endDate
-                                  ? new Date(
-                                      sch.course.endDate
-                                    ).toLocaleDateString("vi-VN")
-                                  : "—"}
-                              </Text>
-                            </View>
-                            {isSelected && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color="#92400E"
-                              />
-                            )}
-                          </TouchableOpacity>
+                            <Text style={styles.modalItemText}>
+                              {dayName}: {sch.startTime} - {sch.endTime}
+                            </Text>
+                            <Text style={styles.hint}>
+                              Từ ngày{" "}
+                              {sch.course?.startDate
+                                ? new Date(
+                                    sch.course.startDate
+                                  ).toLocaleDateString("vi-VN")
+                                : "—"}
+                              {" đến "}
+                              {sch.course?.endDate
+                                ? new Date(
+                                    sch.course.endDate
+                                  ).toLocaleDateString("vi-VN")
+                                : "—"}
+                            </Text>
+                          </View>
                         );
                       })
                     )}
