@@ -174,9 +174,90 @@ components/
    - [ ] Font sizes readable: body >= 13px, captions >= 11px
    - [ ] Visual hierarchy maintained through size/weight, not excessive spacing
 
+### Enterprise/Professional Button Design
+
+**Design Philosophy:**
+- **Minimal & Refined:** Less roundness, subtle shadows, professional color palette
+- **Clear Hierarchy:** Primary vs secondary actions distinguished by fill vs outline
+- **Visual Polish:** Letter spacing, shadows, and borders for depth
+- **Avoid Childish Patterns:** No bright blues, excessive roundness (18-20px), or bubble-like appearance
+
+**Button Standards:**
+
+1. **Primary Action Buttons:**
+   ```typescript
+   primaryButton: {
+     backgroundColor: '#059669',      // Professional green (brand color)
+     paddingVertical: 14,
+     paddingHorizontal: 24,
+     borderRadius: 8,                 // Subtle, not overly round
+     alignItems: 'center',
+     shadowColor: '#059669',          // Colored shadow for depth
+     shadowOffset: { width: 0, height: 2 },
+     shadowOpacity: 0.15,
+     shadowRadius: 4,
+     elevation: 3,
+   },
+   primaryButtonText: {
+     color: '#FFFFFF',
+     fontSize: 15,
+     fontWeight: '700',               // Bold but not extra bold (not 800)
+     letterSpacing: 0.3,              // Adds polish
+   },
+   ```
+
+2. **Secondary Action Buttons (Ghost/Outline):**
+   ```typescript
+   secondaryButton: {
+     backgroundColor: '#FFFFFF',
+     paddingVertical: 14,
+     paddingHorizontal: 24,
+     borderRadius: 8,
+     alignItems: 'center',
+     borderWidth: 1,
+     borderColor: '#D1D5DB',          // Subtle gray border
+   },
+   secondaryButtonText: {
+     color: '#374151',                // Dark gray, not black
+     fontSize: 15,
+     fontWeight: '600',
+   },
+   ```
+
+3. **Icon-Only Buttons (Header Close, Actions):**
+   ```typescript
+   iconButton: {
+     width: 36,
+     height: 36,
+     borderRadius: 8,                 // Square with rounded corners, not circle
+     backgroundColor: 'transparent',
+     justifyContent: 'center',
+     alignItems: 'center',
+     borderWidth: 1,
+     borderColor: '#E5E7EB',          // Light border for definition
+   },
+   ```
+
+**Anti-Patterns to Avoid:**
+- ❌ Bright blue (#3B82F6) for primary actions - too playful
+- ❌ High border radius (12-20px) - looks childish
+- ❌ Circular buttons (borderRadius: half of width/height) - toy-like
+- ❌ Filled gray backgrounds (#F3F4F6) without borders - undefined/mushy
+- ❌ Font weight 800 - too heavy, aggressive
+- ❌ Multiple filled buttons side-by-side - no hierarchy
+
+**Best Practices:**
+- ✅ Use brand green (#059669) for primary actions
+- ✅ Use outline/ghost for secondary actions
+- ✅ Border radius: 8px for buttons, 6-10px for small elements
+- ✅ Font weight: 700 for primary, 600 for secondary
+- ✅ Add subtle shadows to primary buttons only
+- ✅ Use letter spacing (0.3-0.5) for polish
+- ✅ Transparent backgrounds with borders for minimal look
+
 **Reference Implementations:**
 - `components/coach/calendar/CustomWeeklyCalendar.tsx` - Aggressive compact calendar layout
-- `components/coach/calendar/SessionDetailModal.tsx` - Compact full-screen modal (native Modal component)
+- `components/coach/calendar/SessionDetailModal.tsx` - Professional button styles (primary green, ghost secondary, minimal icon buttons)
 - `components/coach/calendar/SessionDetailQuiz.tsx` - Native Modal with quiz details (slide-up pattern)
 - `components/coach/calendar/SessionDetailVideo.tsx` - Compact media display with player
 

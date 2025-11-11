@@ -1,6 +1,7 @@
 import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
+import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,42 +17,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-type Course = {
-  id: number;
-  name: string;
-  description: string;
-  level: string;
-  learningFormat: "GROUP" | "INDIVIDUAL";
-  status: string;
-  minParticipants: number;
-  maxParticipants: number;
-  pricePerParticipant: string;
-  currentParticipants: number;
-  totalSessions: number;
-  totalEarnings: string;
-  startDate: string;
-  endDate: string | null;
-  address: string;
-  subject: {
-    id: number;
-    name: string;
-  };
-  schedules: {
-    id: number;
-    dayOfWeek: string;
-    startTime: string;
-    endTime: string;
-  }[];
-  province: {
-    id: number;
-    name: string;
-  };
-  district: {
-    id: number;
-    name: string;
-  };
-};
 
 type CoursesResponse = {
   items: Course[];
@@ -166,6 +131,8 @@ export default function CoachCourseScreen() {
       PENDING_APPROVAL: "Chờ duyệt",
       REJECTED: "Đã từ chối",
       COMPLETED: "Đã hoàn thành",
+      ON_GOING: "Đang diễn ra",
+      CANCELLED: "Đã hủy",
     };
     return statusMap[status] || status;
   };
@@ -328,19 +295,19 @@ export default function CoachCourseScreen() {
           <Text
             style={{
               color: "#cf2d2dff",
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: "700",
-              marginTop: 6,
+              marginTop: 4,
             }}
           >
             {`- ${platformFee}%`}
           </Text>
           <TouchableOpacity
             onPress={() => setVisible(false)}
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 6 }}
           >
             <Text
-              style={{ color: "#9CA3AF", fontSize: 12, textAlign: "right" }}
+              style={{ color: "#9CA3AF", fontSize: 11, textAlign: "right" }}
             >
               Đóng
             </Text>
@@ -382,31 +349,31 @@ export default function CoachCourseScreen() {
         <View
           style={{
             backgroundColor: "#FFFFFF",
-            paddingHorizontal: 16,
-            paddingTop: 16,
-            paddingBottom: 8,
+            paddingHorizontal: 12,
+            paddingTop: 12,
+            paddingBottom: 6,
           }}
         >
           <TouchableOpacity
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingVertical: 12,
-              paddingHorizontal: 16,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
               borderRadius: 8,
-              marginBottom: 8,
+              marginBottom: 6,
               backgroundColor: activeTab === "all" ? "#EFF6FF" : "#F9FAFB",
             }}
             onPress={() => setActiveTab("all")}
           >
             <Ionicons
               name="book"
-              size={20}
+              size={18}
               color={activeTab === "all" ? "#059669" : "#6B7280"}
             />
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: activeTab === "all" ? "#059669" : "#6B7280",
                 marginLeft: 8,
                 flex: 1,
@@ -417,16 +384,16 @@ export default function CoachCourseScreen() {
             </Text>
             <View
               style={{
-                backgroundColor: "#E5E7EB",
-                paddingHorizontal: 8,
+                backgroundColor: activeTab === "all" ? "#DBEAFE" : "#E5E7EB",
+                paddingHorizontal: 7,
                 paddingVertical: 2,
-                borderRadius: 10,
+                borderRadius: 8,
               }}
             >
               <Text
                 style={{
-                  fontSize: 12,
-                  color: "#374151",
+                  fontSize: 11,
+                  color: activeTab === "all" ? "#059669" : "#374151",
                   fontWeight: "600",
                 }}
               >
@@ -439,22 +406,22 @@ export default function CoachCourseScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingVertical: 12,
-              paddingHorizontal: 16,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
               borderRadius: 8,
-              marginBottom: 8,
+              marginBottom: 6,
               backgroundColor: activeTab === "ongoing" ? "#EFF6FF" : "#F9FAFB",
             }}
             onPress={() => setActiveTab("ongoing")}
           >
             <Ionicons
               name="time"
-              size={20}
+              size={18}
               color={activeTab === "ongoing" ? "#059669" : "#6B7280"}
             />
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: activeTab === "ongoing" ? "#059669" : "#6B7280",
                 marginLeft: 8,
                 flex: 1,
@@ -465,16 +432,17 @@ export default function CoachCourseScreen() {
             </Text>
             <View
               style={{
-                backgroundColor: "#E5E7EB",
-                paddingHorizontal: 8,
+                backgroundColor:
+                  activeTab === "ongoing" ? "#DBEAFE" : "#E5E7EB",
+                paddingHorizontal: 7,
                 paddingVertical: 2,
-                borderRadius: 10,
+                borderRadius: 8,
               }}
             >
               <Text
                 style={{
-                  fontSize: 12,
-                  color: "#374151",
+                  fontSize: 11,
+                  color: activeTab === "ongoing" ? "#059669" : "#374151",
                   fontWeight: "600",
                 }}
               >
@@ -487,10 +455,10 @@ export default function CoachCourseScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingVertical: 12,
-              paddingHorizontal: 16,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
               borderRadius: 8,
-              marginBottom: 8,
+              marginBottom: 6,
               backgroundColor:
                 activeTab === "completed" ? "#EFF6FF" : "#F9FAFB",
             }}
@@ -498,12 +466,12 @@ export default function CoachCourseScreen() {
           >
             <Ionicons
               name="checkmark-circle"
-              size={20}
+              size={18}
               color={activeTab === "completed" ? "#059669" : "#6B7280"}
             />
             <Text
               style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: activeTab === "completed" ? "#059669" : "#6B7280",
                 marginLeft: 8,
                 flex: 1,
@@ -514,16 +482,17 @@ export default function CoachCourseScreen() {
             </Text>
             <View
               style={{
-                backgroundColor: "#E5E7EB",
-                paddingHorizontal: 8,
+                backgroundColor:
+                  activeTab === "completed" ? "#DBEAFE" : "#E5E7EB",
+                paddingHorizontal: 7,
                 paddingVertical: 2,
-                borderRadius: 10,
+                borderRadius: 8,
               }}
             >
               <Text
                 style={{
-                  fontSize: 12,
-                  color: "#374151",
+                  fontSize: 11,
+                  color: activeTab === "completed" ? "#059669" : "#374151",
                   fontWeight: "600",
                 }}
               >
@@ -539,22 +508,22 @@ export default function CoachCourseScreen() {
             flexDirection: "row",
             alignItems: "center",
             backgroundColor: "#FFFFFF",
-            marginHorizontal: 16,
-            marginTop: 16,
-            marginBottom: 12,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderRadius: 12,
+            marginHorizontal: 12,
+            marginTop: 12,
+            marginBottom: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderRadius: 10,
             borderWidth: 1,
             borderColor: "#E5E7EB",
           }}
         >
-          <Ionicons name="search" size={20} color="#9CA3AF" />
+          <Ionicons name="search" size={18} color="#9CA3AF" />
           <TextInput
             style={{
               flex: 1,
               marginLeft: 8,
-              fontSize: 14,
+              fontSize: 13,
               color: "#111827",
             }}
             placeholder="Tìm kiếm khóa học..."
@@ -564,11 +533,11 @@ export default function CoachCourseScreen() {
         </View>
 
         {/* Courses List */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+        <View style={{ paddingHorizontal: 12, paddingBottom: 100 }}>
           {loading ? (
             <View
               style={{
-                padding: 40,
+                padding: 30,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -576,8 +545,8 @@ export default function CoachCourseScreen() {
               <ActivityIndicator size="large" color="#059669" />
               <Text
                 style={{
-                  marginTop: 12,
-                  fontSize: 14,
+                  marginTop: 10,
+                  fontSize: 13,
                   color: "#6B7280",
                 }}
               >
@@ -587,16 +556,16 @@ export default function CoachCourseScreen() {
           ) : filteredCourses.length === 0 ? (
             <View
               style={{
-                padding: 40,
+                padding: 30,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Ionicons name="book-outline" size={48} color="#9CA3AF" />
+              <Ionicons name="book-outline" size={44} color="#9CA3AF" />
               <Text
                 style={{
-                  marginTop: 12,
-                  fontSize: 14,
+                  marginTop: 10,
+                  fontSize: 13,
                   color: "#6B7280",
                 }}
               >
@@ -608,27 +577,35 @@ export default function CoachCourseScreen() {
               {filteredCourses.map((course) => {
                 const statusColors = getStatusColor(course.status);
                 return (
-                  <View
+                  <TouchableOpacity
                     key={course.id}
+                    activeOpacity={0.7}
                     style={{
                       backgroundColor: "#FFFFFF",
-                      borderRadius: 12,
-                      padding: 16,
-                      marginBottom: 12,
+                      borderRadius: 10,
+                      padding: 12,
+                      marginBottom: 10,
                       shadowColor: "#000",
                       shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 4,
-                      elevation: 2,
+                      shadowOpacity: 0.04,
+                      shadowRadius: 3,
+                      elevation: 1,
                     }}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(coach)/course/[id]",
+                        params: { id: String(course.id) },
+                      } as any)
+                    }
                   >
-                    <View style={{ marginBottom: 12 }}>
+                    <View style={{ marginBottom: 10 }}>
                       <Text
                         style={{
-                          fontSize: 16,
-                          fontWeight: "600",
+                          fontSize: 15,
+                          fontWeight: "700",
                           color: "#111827",
-                          marginBottom: 8,
+                          marginBottom: 6,
+                          lineHeight: 20,
                         }}
                       >
                         {course.name}
@@ -636,21 +613,21 @@ export default function CoachCourseScreen() {
                       <View
                         style={{
                           flexDirection: "row",
-                          gap: 8,
+                          gap: 6,
                           flexWrap: "wrap",
                         }}
                       >
                         <View
                           style={{
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 12,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 8,
                             backgroundColor: statusColors.bg,
                           }}
                         >
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: "600",
                               color: statusColors.text,
                             }}
@@ -660,15 +637,15 @@ export default function CoachCourseScreen() {
                         </View>
                         <View
                           style={{
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 12,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 8,
                             backgroundColor: "#EFF6FF",
                           }}
                         >
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: 11,
                               color: "#3B82F6",
                               fontWeight: "600",
                             }}
@@ -678,15 +655,15 @@ export default function CoachCourseScreen() {
                         </View>
                         <View
                           style={{
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 12,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 8,
                             backgroundColor: "#F3F4F6",
                           }}
                         >
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: 11,
                               color: "#6B7280",
                               fontWeight: "600",
                             }}
@@ -699,24 +676,24 @@ export default function CoachCourseScreen() {
                       </View>
                     </View>
 
-                    <View style={{ marginBottom: 12 }}>
+                    <View>
                       <View
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
-                          marginBottom: 8,
+                          marginBottom: 6,
                         }}
                       >
                         <Ionicons
                           name="book-outline"
-                          size={16}
+                          size={15}
                           color="#6B7280"
                         />
                         <Text
                           style={{
-                            fontSize: 14,
+                            fontSize: 13,
                             color: "#6B7280",
-                            marginLeft: 8,
+                            marginLeft: 7,
                             flex: 1,
                           }}
                         >
@@ -727,20 +704,21 @@ export default function CoachCourseScreen() {
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
-                          marginBottom: 8,
+                          marginBottom: 6,
                         }}
                       >
                         <Ionicons
                           name="time-outline"
-                          size={16}
+                          size={15}
                           color="#6B7280"
                         />
                         <Text
                           style={{
-                            fontSize: 14,
+                            fontSize: 13,
                             color: "#6B7280",
-                            marginLeft: 8,
+                            marginLeft: 7,
                             flex: 1,
+                            lineHeight: 18,
                           }}
                         >
                           {formatSchedule(course.schedules)}
@@ -750,19 +728,19 @@ export default function CoachCourseScreen() {
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
-                          marginBottom: 8,
+                          marginBottom: 6,
                         }}
                       >
                         <Ionicons
                           name="calendar-outline"
-                          size={16}
+                          size={15}
                           color="#6B7280"
                         />
                         <Text
                           style={{
-                            fontSize: 14,
+                            fontSize: 13,
                             color: "#6B7280",
-                            marginLeft: 8,
+                            marginLeft: 7,
                           }}
                         >
                           Bắt đầu:{" "}
@@ -780,7 +758,6 @@ export default function CoachCourseScreen() {
                           flexDirection: "row",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          marginBottom: 8,
                         }}
                       >
                         <View
@@ -792,14 +769,14 @@ export default function CoachCourseScreen() {
                         >
                           <Ionicons
                             name="people-outline"
-                            size={16}
+                            size={15}
                             color="#6B7280"
                           />
                           <Text
                             style={{
-                              fontSize: 14,
+                              fontSize: 13,
                               color: "#6B7280",
-                              marginLeft: 8,
+                              marginLeft: 7,
                             }}
                           >
                             {course.currentParticipants}/
@@ -817,54 +794,32 @@ export default function CoachCourseScreen() {
                           <RevenueTooltip course={course} />
                         </View>
                       </View>
-                      <TouchableOpacity
-                        style={{ flexDirection: "row", alignItems: "center" }}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/(coach)/course/[id]",
-                            params: { id: String(course.id) },
-                          } as any)
-                        }
-                      >
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#059669",
-                            fontWeight: "600",
-                          }}
-                        >
-                          Xem chi tiết
-                        </Text>
-                        <Ionicons
-                          name="chevron-forward"
-                          size={18}
-                          color="#059669"
-                        />
-                      </TouchableOpacity>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
 
               {/* Load More */}
               {hasMore && (
-                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                <View style={{ paddingVertical: 16, alignItems: "center" }}>
                   {loadingMore ? (
                     <ActivityIndicator size="small" color="#059669" />
                   ) : (
                     <TouchableOpacity
                       onPress={loadMore}
                       style={{
-                        paddingHorizontal: 20,
-                        paddingVertical: 10,
-                        backgroundColor: "#F3F4F6",
+                        paddingHorizontal: 18,
+                        paddingVertical: 9,
+                        backgroundColor: "#FFFFFF",
                         borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: "#D1D5DB",
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 14,
-                          color: "#059669",
+                          fontSize: 13,
+                          color: "#374151",
                           fontWeight: "600",
                         }}
                       >
@@ -890,13 +845,13 @@ export default function CoachCourseScreen() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
-          paddingVertical: 16,
-          borderRadius: 12,
-          shadowColor: "#000",
+          paddingVertical: 14,
+          borderRadius: 8,
+          shadowColor: "#059669",
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 4,
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 3,
         }}
         onPress={() => router.push("/(coach)/course/create" as any)}
       >
@@ -904,9 +859,10 @@ export default function CoachCourseScreen() {
         <Text
           style={{
             color: "#FFFFFF",
-            fontSize: 16,
-            fontWeight: "bold",
+            fontSize: 15,
+            fontWeight: "700",
             marginLeft: 8,
+            letterSpacing: 0.3,
           }}
         >
           Tạo khóa học
