@@ -5,12 +5,17 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Button,
+  Linking,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useEvent } from "expo";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -20,6 +25,7 @@ export default function LessonDetailScreen() {
     lessonName: string;
     lessonDescription: string;
   }>();
+
   const [activeTab, setActiveTab] = useState<"VIDEO LESSON" | "QUIZZ">(
     "VIDEO LESSON"
   );
@@ -56,6 +62,13 @@ export default function LessonDetailScreen() {
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
+
+  const videoSource =
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = true;
+    player.play();
+  });
 
   return (
     <SafeAreaView
@@ -133,69 +146,53 @@ export default function LessonDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {activeTab === "VIDEO LESSON" ? (
           <>
-            <View style={{ marginBottom: 16 }}>
-              <TouchableOpacity style={{ marginBottom: 8 }}>
-                <Text style={{ fontWeight: "600", color: "#6B7280" }}>
-                  Thêm video mới{" "}
+            <View>
+              <TouchableOpacity
+                style={{
+                  marginBottom: 16,
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+                onPress={() => console.log("Thêm video mới")}
+              >
+                <Text style={{ fontWeight: "600", color: "#374151" }}>
+                  Thêm video mới
                 </Text>
               </TouchableOpacity>
-              <Text style={{ fontWeight: "600", color: "#6B7280" }}>
-                Video bài học 1
-              </Text>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "#fff",
-                  borderRadius: 12,
-                  padding: 16,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.05,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowRadius: 4,
-                  elevation: 2,
-                }}
-              >
+
+              <View style={{ marginBottom: 16 }}>
                 <Text
                   style={{
-                    fontWeight: "700",
-                    fontSize: 16,
-                    marginBottom: 4,
-                    color: "#111827",
+                    fontWeight: "600",
+                    color: "#6B7280",
+                    marginBottom: 8,
                   }}
                 >
-                  Make an observation
+                  Step 1
                 </Text>
-                <Text style={{ color: "#6B7280", fontSize: 14 }}>Video 1</Text>
-              </View>
-            </View>
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontWeight: "600", color: "#6B7280" }}>
-                Step 2
-              </Text>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "#fff",
-                  borderRadius: 12,
-                  padding: 16,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.05,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowRadius: 4,
-                  elevation: 2,
-                }}
-              >
-                <Text
+                <TouchableOpacity
                   style={{
-                    fontWeight: "700",
-                    fontSize: 16,
-                    marginBottom: 4,
-                    color: "#111827",
+                    backgroundColor: "#fff",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.05,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowRadius: 4,
+                    elevation: 2,
+                    padding: 4,
                   }}
                 >
-                  Ask a question
-                </Text>
-                <Text style={{ color: "#6B7280", fontSize: 14 }}>Video 2</Text>
+                  <VideoView
+                    style={{ width: "100%", height: 200, borderRadius: 15 }}
+                    player={player}
+                    allowsFullscreen
+                    allowsPictureInPicture
+                  />
+                </TouchableOpacity>
               </View>
             </View>
           </>
@@ -248,65 +245,182 @@ export default function LessonDetailScreen() {
                   }
                 >
                   <Text style={{ color: "#fff", fontWeight: "600" }}>
-                    Tạo bài quiz mới
+                    Tạo bài quiz đầu tiên
                   </Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              quizzes.map((quiz) => (
-                <TouchableOpacity
-                  key={quiz.id}
+              <>
+                <View
                   style={{
                     flexDirection: "row",
-                    backgroundColor: "#EEEEF7",
-                    borderRadius: 15,
-                    padding: 15,
                     alignItems: "center",
-                    marginVertical: 8,
-                    shadowColor: "#000",
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                    shadowOffset: { width: 0, height: 2 },
+                    justifyContent: "space-between",
+                    paddingVertical: 10,
+                    paddingHorizontal: 10,
                   }}
-                  activeOpacity={0.7}
-                  // onPress={() =>
-                  //   router.push(`/(quiz)/detail?quizId=${quiz.id}`)
-                  // }
                 >
-                  <View
+                  <Text
                     style={{
-                      backgroundColor: "#7B78E5",
-                      width: 70,
-                      height: 70,
-                      borderRadius: 15,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginRight: 15,
+                      fontSize: 18,
+                      fontWeight: "700",
+                      color: "#111827",
                     }}
                   >
+                    Tất cả bài quiz
+                  </Text>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#059669",
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                    }}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(coach)/menu/quizzes/create",
+                        params: { lessonId },
+                      })
+                    }
+                  >
                     <Ionicons
-                      name="document-text-outline"
-                      size={32}
+                      name="add-circle-outline"
+                      size={18}
                       color="#fff"
                     />
-                  </View>
-                  <View style={{ flex: 1 }}>
                     <Text
                       style={{
-                        fontWeight: "bold",
-                        fontSize: 16,
-                        color: "#333",
+                        color: "#fff",
+                        fontWeight: "600",
+                        fontSize: 14,
+                        marginLeft: 6,
                       }}
                     >
-                      {quiz.title || "Quiz không tên"}
+                      Tạo quiz mới
                     </Text>
-                    <Text style={{ color: "#777", marginTop: 4 }}>
-                      {quiz.description || "Không có mô tả"}
-                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {quizzes.map((quiz) => (
+                  <View
+                    key={quiz.id}
+                    style={{
+                      flexDirection: "row",
+                      backgroundColor: "#EEF2FF",
+                      borderRadius: 15,
+                      padding: 16,
+                      alignItems: "center",
+                      marginVertical: 8,
+                      shadowColor: "#000",
+                      shadowOpacity: 0.08,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                      activeOpacity={0.8}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(coach)/menu/quizzes/[quizId]",
+                          params: {
+                            quizId: quiz.id,
+                            quizName: quiz.title,
+                            lessonId,
+                          },
+                        })
+                      }
+                    >
+                      <View
+                        style={{
+                          backgroundColor: "#6366F1",
+                          width: 60,
+                          height: 60,
+                          borderRadius: 12,
+                          justifyContent: "center",
+                          alignItems: "center",
+                          marginRight: 14,
+                        }}
+                      >
+                        <Ionicons
+                          name="document-text-outline"
+                          size={28}
+                          color="#fff"
+                        />
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontWeight: "bold",
+                            fontSize: 16,
+                            color: "#111827",
+                          }}
+                        >
+                          {quiz.title}
+                        </Text>
+                        <Text style={{ color: "#6B7280", marginTop: 4 }}>
+                          {quiz.description || "Không có mô tả"}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        Alert.alert("Xác nhận", "Bạn có muốn xóa quiz này?", [
+                          { text: "Hủy", style: "cancel" },
+                          {
+                            text: "Xóa",
+                            style: "destructive",
+                            onPress: () => console.log("Xóa quiz:", quiz.id),
+                          },
+                        ]);
+                      }}
+                      style={{
+                        padding: 5,
+                        borderRadius: 8,
+                        backgroundColor: "#FECACA",
+                        marginRight: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#B91C1C"
+                      />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(coach)/menu/quizzes/edit",
+                          params: { quizId: quiz.id },
+                        })
+                      }
+                      style={{
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor: "#E0E7FF",
+                      }}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={20}
+                        color="#4F46E5"
+                      />
+                    </TouchableOpacity>
                   </View>
-                  <MaterialIcons name="navigate-next" size={24} color="black" />
-                </TouchableOpacity>
-              ))
+                ))}
+              </>
             )}
           </>
         )}
