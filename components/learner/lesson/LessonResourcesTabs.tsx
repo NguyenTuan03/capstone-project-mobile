@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEvent } from "expo";
 import * as ImagePicker from "expo-image-picker";
 import type { PlayerError } from "expo-video";
@@ -37,6 +38,13 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       uploaded?: boolean;
     } | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [submittedVideo, setSubmittedVideo] = useState<{
+      publicUrl: string;
+      thumbnailUrl?: string | null;
+      status?: string;
+      createdAt?: string;
+      id?: number;
+    } | null>(null);
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
@@ -104,6 +112,44 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
+    const loadSubmittedVideo = async () => {
+      try {
+        const userString = await AsyncStorage.getItem("user");
+        if (!userString) return;
+        const userData = JSON.parse(userString);
+        // normalize user id from possible shapes
+        const userId =
+          userData?.metadata?.user?.id ??
+          userData?.user?.id ??
+          userData?.id ??
+          userData?.metadata?.user?.userId ??
+          userData?.userId;
+        if (!userId) return;
+        const res = await http.get(`/v1/learner-videos/user/${userId}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        if (list.length === 0) return;
+        // pick the most recent by createdAt if available, else first item
+        const picked =
+          list
+            .slice()
+            .sort((a: any, b: any) =>
+              new Date(b?.createdAt ?? 0).getTime() -
+              new Date(a?.createdAt ?? 0).getTime()
+            )[0] ?? list[0];
+        if (picked?.publicUrl) {
+          setSubmittedVideo({
+            publicUrl: picked.publicUrl,
+            thumbnailUrl: picked.thumbnailUrl,
+            status: picked.status,
+            createdAt: picked.createdAt,
+            id: picked.id,
+          });
+        }
+      } catch {
+        // ignore silently; not critical to block UI
+      }
+    };
+
     const handleUploadVideo = async () => {
       if (!localVideo) return;
 
@@ -111,7 +157,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       try {
         const fd = new FormData();
 
-        // ✅ field name phải là 'video'
         fd.append("video", {
           uri: localVideo.uri.startsWith("file://")
             ? localVideo.uri
@@ -122,25 +167,21 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             : "video.mp4",
         } as any);
 
-        // ✅ các field DTO
         fd.append("lessonId", String(lessonId));
-        // Expo ImagePicker.duration trả về giây → gửi thẳng, đừng chia 60
         if (localVideo.duration != null)
           fd.append("duration", String(Math.round(localVideo.duration)));
         if (localVideo.tags?.length) {
-          // Tuỳ BE: gửi JSON string là an toàn vì DTO không validate tags
           fd.append("tags", JSON.stringify(localVideo.tags));
-          // Hoặc gửi mảng repeat:
-          // localVideo.tags.forEach(t => fd.append("tags", t));
         }
 
-        // Nếu http interceptor đã gắn Bearer rồi thì khỏi header này.
-        const res = await http.post("/v1/learner-videos", fd, {
+        await http.post("/v1/learner-videos", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        console.log("response", res);
         Alert.alert("Thành công", "Video đã được upload thành công!");
+        // mark uploaded, then fetch submitted video and replace local preview
         setLocalVideo((prev) => (prev ? { ...prev, uploaded: true } : null));
+        await loadSubmittedVideo();
+        setLocalVideo(null);
       } catch (err: any) {
         console.error("Upload error:", err?.response?.data || err);
         Alert.alert(
@@ -155,7 +196,24 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const renderVideos = (items: VideoType[]) => {
       return (
         <>
-          {!localVideo && (
+          {submittedVideo && (
+            <View style={styles.resourceCard}>
+              <Text style={styles.resourceTitle}>Video bạn đã nộp</Text>
+              {submittedVideo.status && (
+                <Text style={styles.metaText}>
+                  Trạng thái: {submittedVideo.status}
+                </Text>
+              )}
+              {submittedVideo.createdAt && (
+                <Text style={styles.metaText}>
+                  Nộp lúc: {new Date(submittedVideo.createdAt).toLocaleString()}
+                </Text>
+              )}
+              <LessonVideoPlayer source={submittedVideo.publicUrl} />
+            </View>
+          )}
+
+          {!localVideo && !submittedVideo && (
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={handlePickVideo}
@@ -182,15 +240,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                 </View>
               )}
               <LessonVideoPlayer source={localVideo.uri} />
-              {localVideo.uploaded ? (
-                <TouchableOpacity
-                  style={styles.reuploadButton}
-                  onPress={handlePickVideo}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.reuploadButtonText}>🔄 Upload lại</Text>
-                </TouchableOpacity>
-              ) : (
+              {!localVideo.uploaded && (
                 <TouchableOpacity
                   style={[
                     styles.submitButton,
@@ -256,6 +306,11 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         </>
       );
     };
+
+    // Load submitted video on mount or when lesson changes
+    React.useEffect(() => {
+      loadSubmittedVideo();
+    }, [lessonId]);
 
     const renderQuizzes = (items: QuizType[]) => {
       if (items.length === 0) {
