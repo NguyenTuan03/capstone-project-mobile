@@ -166,18 +166,6 @@ export default function CourseDetailScreen() {
     return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
   };
 
-  const calculateProgress = () => {
-    if (!course || !course.endDate || !course.startDate) return 0;
-    const start = new Date(course.startDate);
-    const end = new Date(course.endDate);
-    const now = new Date();
-    if (now < start) return 0;
-    if (now > end) return 100;
-    const total = end.getTime() - start.getTime();
-    const current = now.getTime() - start.getTime();
-    return Math.round((current / total) * 100);
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -196,7 +184,6 @@ export default function CourseDetailScreen() {
   }
 
   const statusColors = getStatusColor(course.status);
-  const progress = calculateProgress();
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -444,7 +431,7 @@ export default function CourseDetailScreen() {
         <View style={styles.statCard}>
           <Ionicons name="time" size={32} color="#F59E0B" />
           <Text style={styles.statLabel}>Tiến độ</Text>
-          <Text style={styles.statValue}>{progress}%</Text>
+          <Text style={styles.statValue}>{course.progressPct}%</Text>
         </View>
 
         <View style={styles.statCard}>

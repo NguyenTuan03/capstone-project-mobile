@@ -7,7 +7,7 @@ export type Schedule = {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
-  totalSessions: number;
+  totalSessions?: number;
   course?: Course;
 };
 export type Course = {
@@ -25,6 +25,7 @@ export type Course = {
   totalEarnings: string;
   startDate: string;
   endDate: string | null;
+  progressPct: number;
   address: string;
   subject: {
     id: number;
