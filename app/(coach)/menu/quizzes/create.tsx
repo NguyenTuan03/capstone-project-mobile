@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { QuizFormDTO } from "@/types/quiz";
+import { QuizFormDTO, QuizOptionType, QuizQuestionType } from "@/types/quiz";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -24,7 +24,15 @@ export default function CreateQuizScreen() {
     title: "",
     description: "",
     totalQuestions: 1,
-    questions: [{ content: "", options: ["", ""], correctIndex: null }],
+    questions: [
+      {
+        title: "",
+        options: [
+          { id: 1, content: "", isCorrect: false },
+          { id: 2, content: "", isCorrect: false },
+        ],
+      },
+    ],
     lessonId: Number(lessonId),
   });
 
@@ -34,7 +42,7 @@ export default function CreateQuizScreen() {
 
   const updateQuestionContent = (qIndex: number, value: string) => {
     const questions = [...quiz.questions];
-    questions[qIndex].content = value;
+    questions[qIndex].title = value;
     setQuiz({ ...quiz, questions });
   };
 
@@ -45,32 +53,41 @@ export default function CreateQuizScreen() {
     isCorrect?: boolean
   ) => {
     const questions = [...quiz.questions];
-    if (value !== undefined) questions[qIndex].options![oIndex] = value;
-    if (isCorrect !== undefined)
-      questions[qIndex].correctIndex = isCorrect ? oIndex : null;
+    if (value !== undefined && questions[qIndex].options)
+      questions[qIndex].options[oIndex].content = value;
+    if (isCorrect !== undefined) {
+      if (isCorrect && questions[qIndex].options) {
+        questions[qIndex].options = questions[qIndex].options.map(
+          (opt, idx) => ({
+            ...opt,
+            isCorrect: idx === oIndex,
+          })
+        );
+      } else if (questions[qIndex].options) {
+        questions[qIndex].options[oIndex].isCorrect = false;
+      }
+    }
     setQuiz({ ...quiz, questions });
   };
 
   const addQuestion = () => {
+    const newQuestion: Partial<QuizQuestionType> = {
+      title: "",
+      options: [
+        { id: 1, content: "", isCorrect: false },
+        { id: 2, content: "", isCorrect: false },
+      ],
+    };
     setQuiz({
       ...quiz,
-      questions: [
-        ...quiz.questions,
-        { content: "", options: ["", ""], correctIndex: null },
-      ],
+      questions: [...quiz.questions, newQuestion],
       totalQuestions: quiz.totalQuestions + 1,
     });
   };
 
-  const addOption = (qIndex: number) => {
-    const questions = [...quiz.questions];
-    questions[qIndex].options!.push("");
-    setQuiz({ ...quiz, questions });
-  };
-
   const deleteQuestion = (qIndex: number) => {
     const questions = [...quiz.questions];
-    questions.splice(qIndex, 1); // xóa câu hỏi tại index
+    questions.splice(qIndex, 1);
     setQuiz({
       ...quiz,
       questions,
@@ -78,26 +95,46 @@ export default function CreateQuizScreen() {
     });
   };
 
+  const addOption = (qIndex: number) => {
+    const questions = [...quiz.questions];
+    const newOption: QuizOptionType = {
+      id: Date.now(),
+      content: "",
+      isCorrect: false,
+    };
+    if (!questions[qIndex].options) {
+      questions[qIndex].options = [];
+    }
+    questions[qIndex].options.push(newOption);
+    setQuiz({ ...quiz, questions });
+  };
+
   const saveQuiz = async () => {
     try {
+      if (!quiz.title.trim()) {
+        Alert.alert("Vui lòng nhập tên bài quiz.");
+        return;
+      }
+
       if (quiz.questions.length === 0) {
         Alert.alert("Vui lòng thêm ít nhất 1 câu hỏi.");
         return;
       }
-      const formattedQuestions = [];
+
+      const formattedQuestions: QuizFormDTO["questions"] = [];
 
       for (let qIndex = 0; qIndex < quiz.questions.length; qIndex++) {
         const q = quiz.questions[qIndex];
 
-        if (!q.content || q.content.trim() === "") {
+        if (!q.title || q.title.trim() === "") {
           Alert.alert(`Câu hỏi ${qIndex + 1} chưa có nội dung.`);
           return;
         }
 
         const validOptions = q
-          .options!.map((o, i) => ({
-            content: o.trim(),
-            isCorrect: q.correctIndex === i,
+          .options!.map((o) => ({
+            content: o.content.trim(),
+            isCorrect: o.isCorrect,
           }))
           .filter((o) => o.content !== "");
 
@@ -112,26 +149,23 @@ export default function CreateQuizScreen() {
         }
 
         formattedQuestions.push({
-          title: q.content.trim(),
-          options: validOptions.map((opt) => ({
+          title: q.title.trim(),
+          options: validOptions.map((opt, idx) => ({
+            id: idx + 1,
             content: opt.content,
             isCorrect: opt.isCorrect,
           })),
         });
       }
 
-      if (formattedQuestions.length === 0) {
-        Alert.alert("Vui lòng thêm ít nhất 1 câu hỏi hợp lệ.");
-        return;
-      }
-      const payload: any = {
+      const payload: QuizFormDTO = {
         title: quiz.title.trim(),
         description: quiz.description?.trim() || null,
+        totalQuestions: formattedQuestions.length,
         questions: formattedQuestions,
+        lessonId: quiz.lessonId,
+        sessionId: quiz.sessionId || null,
       };
-
-      if (quiz.lessonId) payload.lessonId = quiz.lessonId;
-      if (quiz.sessionId) payload.sessionId = quiz.sessionId;
 
       await post(`${API_URL}/v1/quizzes/lessons/${quiz.lessonId}`, payload);
       Alert.alert("Tạo bài quiz thành công");
@@ -248,7 +282,7 @@ export default function CreateQuizScreen() {
                 marginBottom: 12,
               }}
               placeholder="Nhập câu hỏi"
-              value={q.content}
+              value={q.title}
               onChangeText={(text) => updateQuestionContent(qIndex, text)}
             />
 
@@ -271,11 +305,11 @@ export default function CreateQuizScreen() {
                     marginRight: 10,
                   }}
                   placeholder={`Đáp án ${oIndex + 1}`}
-                  value={o}
+                  value={o.content}
                   onChangeText={(text) => updateOption(qIndex, oIndex, text)}
                 />
                 <Switch
-                  value={q.correctIndex === oIndex}
+                  value={o.isCorrect}
                   onValueChange={(val) =>
                     updateOption(qIndex, oIndex, undefined, val)
                   }
