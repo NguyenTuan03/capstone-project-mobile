@@ -1,16 +1,19 @@
 import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StatusBar,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Easing,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -62,6 +65,7 @@ export default function CoachCourseScreen() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [platformFee, setPlatformFee] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
@@ -101,6 +105,17 @@ export default function CoachCourseScreen() {
     }
   };
 
+  const fetchPlatformFee = async () => {
+    try {
+      const res = await configurationService.getConfiguration(
+        "platform_fee_per_percentage"
+      );
+      setPlatformFee(parseFloat(res?.value || "0"));
+    } catch (error) {
+      console.error("Lỗi khi tải phí nền tảng:", error);
+    }
+  };
+
   const loadMore = () => {
     if (!loadingMore && courses.length < total) {
       fetchCourses(page + 1, true);
@@ -111,6 +126,7 @@ export default function CoachCourseScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchCourses(1, false);
+      fetchPlatformFee();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
@@ -172,6 +188,167 @@ export default function CoachCourseScreen() {
       : courses.filter((c) => c.status === "COMPLETED");
 
   const hasMore = courses.length < total;
+
+  const RevenueTooltip = ({ course }: { course: Course }) => {
+    // local require to avoid changing top-level imports
+
+    const [visible, setVisible] = useState(false);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const tooltipAnim = useRef(new Animated.Value(0)).current;
+    const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+
+    const startPulse = () => {
+      pulseLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.06,
+            duration: 700,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 700,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseLoopRef.current.start();
+    };
+
+    const stopPulse = () => {
+      if (pulseLoopRef.current) {
+        pulseLoopRef.current.stop();
+        pulseLoopRef.current = null;
+      }
+      // ensure scale returns to 1
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    useEffect(() => {
+      // start pulse initially
+      startPulse();
+      return () => {
+        stopPulse();
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+      if (visible) {
+        // stop pulse and show tooltip with fade+slide
+        stopPulse();
+        Animated.timing(tooltipAnim, {
+          toValue: 1,
+          duration: 180,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }).start();
+      } else {
+        // hide tooltip and resume pulse
+        Animated.timing(tooltipAnim, {
+          toValue: 0,
+          duration: 120,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) startPulse();
+        });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visible]);
+
+    const AnimatedTouchable =
+      Animated.createAnimatedComponent(TouchableOpacity);
+
+    const tooltipTranslateY = tooltipAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [8, 0],
+    });
+
+    return (
+      <>
+        <AnimatedTouchable
+          activeOpacity={0.8}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            transform: [{ scale: pulseAnim }],
+          }}
+          onPress={() => setVisible((v: boolean) => !v)}
+        >
+          <Ionicons name="trending-up" size={18} color="#059669" />
+          <Text style={{ fontSize: 12, color: "#6B7280", marginLeft: 6 }}>
+            Doanh thu
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "bold",
+              color: "#059669",
+              marginLeft: 8,
+            }}
+          >
+            {formatPrice(course.totalEarnings)}
+          </Text>
+        </AnimatedTouchable>
+
+        {/*
+          Tooltip is an Animated.View so it fades/slides into place.
+          It's absolutely positioned relative to the parent container,
+          same as the original implementation.
+        */}
+        <Animated.View
+          pointerEvents={visible ? "auto" : "none"}
+          style={{
+            position: "absolute",
+            bottom: 44,
+            right: 0,
+            backgroundColor: "#111827",
+            padding: 10,
+            borderRadius: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 6,
+            elevation: 6,
+            maxWidth: 220,
+            opacity: tooltipAnim,
+            transform: [{ translateY: tooltipTranslateY }],
+          }}
+        >
+          <Text style={{ color: "#F9FAFB", fontSize: 12 }}>
+            Đã trừ phí nền tảng
+          </Text>
+          <Text
+            style={{
+              color: "#cf2d2dff",
+              fontSize: 14,
+              fontWeight: "700",
+              marginTop: 6,
+            }}
+          >
+            {`- ${platformFee}%`}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setVisible(false)}
+            style={{ marginTop: 8 }}
+          >
+            <Text
+              style={{ color: "#9CA3AF", fontSize: 12, textAlign: "right" }}
+            >
+              Đóng
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </>
+    );
+  };
 
   return (
     <View
@@ -602,110 +779,43 @@ export default function CoachCourseScreen() {
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
+                          justifyContent: "space-between",
                           marginBottom: 8,
                         }}
                       >
-                        <Ionicons
-                          name="people-outline"
-                          size={16}
-                          color="#6B7280"
-                        />
-                        <Text
+                        <View
                           style={{
-                            fontSize: 14,
-                            color: "#6B7280",
-                            marginLeft: 8,
-                          }}
-                        >
-                          {course.currentParticipants}/{course.maxParticipants}{" "}
-                          học viên
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <Ionicons
-                          name="location-outline"
-                          size={16}
-                          color="#6B7280"
-                        />
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#6B7280",
-                            marginLeft: 8,
+                            flexDirection: "row",
+                            alignItems: "center",
                             flex: 1,
                           }}
                         >
-                          {course.address}, {course.district.name},{" "}
-                          {course.province.name}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <Ionicons
-                          name="cash-outline"
-                          size={16}
-                          color="#6B7280"
-                        />
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            color: "#6B7280",
-                            marginLeft: 8,
-                          }}
-                        >
-                          {formatPrice(course.pricePerParticipant)}/người
-                        </Text>
-                      </View>
-                    </View>
+                          <Ionicons
+                            name="people-outline"
+                            size={16}
+                            color="#6B7280"
+                          />
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              color: "#6B7280",
+                              marginLeft: 8,
+                            }}
+                          >
+                            {course.currentParticipants}/
+                            {course.maxParticipants} học viên
+                          </Text>
+                        </View>
 
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        paddingTop: 12,
-                        borderTopWidth: 1,
-                        borderTopColor: "#F3F4F6",
-                      }}
-                    >
-                      <View
-                        style={{ flexDirection: "row", alignItems: "center" }}
-                      >
-                        <Ionicons
-                          name="trending-up"
-                          size={18}
-                          color="#059669"
-                        />
-                        <Text
+                        <View
                           style={{
-                            fontSize: 12,
-                            color: "#6B7280",
-                            marginLeft: 6,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            position: "relative",
                           }}
                         >
-                          Doanh thu
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "bold",
-                            color: "#059669",
-                            marginLeft: 8,
-                          }}
-                        >
-                          {formatPrice(course.totalEarnings)}
-                        </Text>
+                          <RevenueTooltip course={course} />
+                        </View>
                       </View>
                       <TouchableOpacity
                         style={{ flexDirection: "row", alignItems: "center" }}
