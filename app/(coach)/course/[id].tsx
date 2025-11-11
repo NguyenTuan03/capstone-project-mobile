@@ -4,12 +4,13 @@ import { get, put } from "@/services/http/httpService";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -24,6 +25,14 @@ export default function CourseDetailScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Scroll tab refs / state for horizontal tab scrolling
+  const scrollRef = useRef<ScrollView | null>(null);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [scrollX, setScrollX] = useState(0);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
 
   const fetchCourseDetail = async () => {
     try {
@@ -226,100 +235,191 @@ export default function CourseDetailScreen() {
 
   const renderTabs = () => (
     <View style={styles.tabsContainer}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContent}
-      >
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "overview" && styles.tabActive]}
-          onPress={() => setActiveTab("overview")}
+      <View style={{ position: "relative" }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContent}
+          ref={scrollRef as any}
+          onLayout={(e) => {
+            const w = e.nativeEvent.layout.width;
+            setScrollWidth(w);
+            setShowRightArrow(contentWidth > w);
+          }}
+          onContentSizeChange={(w) => {
+            setContentWidth(w);
+            setShowRightArrow(w > scrollWidth);
+          }}
+          onScroll={(e) => {
+            const x = e.nativeEvent.contentOffset.x;
+            setScrollX(x);
+            setShowLeftArrow(x > 5);
+            setShowRightArrow(x + scrollWidth < contentWidth - 5);
+          }}
+          scrollEventThrottle={16}
         >
-          <Ionicons
-            name="bar-chart"
-            size={18}
-            color={activeTab === "overview" ? "#059669" : "#6B7280"}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "overview" && styles.tabTextActive,
-            ]}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "overview" && styles.tabActive]}
+            onPress={() => setActiveTab("overview")}
           >
-            Tổng quan
-          </Text>
-        </TouchableOpacity>
+            <Ionicons
+              name="bar-chart"
+              size={18}
+              color={activeTab === "overview" ? "#059669" : "#6B7280"}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "overview" && styles.tabTextActive,
+              ]}
+            >
+              Tổng quan
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab]}
-          onPress={() =>
-            router.push({
-              pathname: "/(coach)/course/assignment/[id]" as any,
-              params: { id: String(course.id) },
-            })
-          }
-        >
-          <Ionicons name="clipboard" size={18} color="#6B7280" />
-          <Text style={styles.tabText}>Bài tập</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "students" && styles.tabActive]}
-          onPress={() => setActiveTab("students")}
-        >
-          <Ionicons
-            name="people"
-            size={18}
-            color={activeTab === "students" ? "#059669" : "#6B7280"}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "students" && styles.tabTextActive,
-            ]}
+          <TouchableOpacity
+            style={[styles.tab]}
+            onPress={() =>
+              router.push({
+                pathname: "/(coach)/course/assignment/[id]" as any,
+                params: { id: String(course.id) },
+              })
+            }
           >
-            Học viên ({course.currentParticipants})
-          </Text>
-        </TouchableOpacity>
+            <Ionicons name="clipboard" size={18} color="#6B7280" />
+            <Text style={styles.tabText}>Bài tập</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "schedule" && styles.tabActive]}
-          onPress={() => setActiveTab("schedule")}
-        >
-          <Ionicons
-            name="calendar"
-            size={18}
-            color={activeTab === "schedule" ? "#059669" : "#6B7280"}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "schedule" && styles.tabTextActive,
-            ]}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "students" && styles.tabActive]}
+            onPress={() => setActiveTab("students")}
           >
-            Lịch học
-          </Text>
-        </TouchableOpacity>
+            <Ionicons
+              name="people"
+              size={18}
+              color={activeTab === "students" ? "#059669" : "#6B7280"}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "students" && styles.tabTextActive,
+              ]}
+            >
+              Học viên ({course.currentParticipants})
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "edit" && styles.tabActive]}
-          onPress={() => setActiveTab("edit")}
-        >
-          <Ionicons
-            name="create"
-            size={18}
-            color={activeTab === "edit" ? "#059669" : "#6B7280"}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "edit" && styles.tabTextActive,
-            ]}
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "schedule" && styles.tabActive]}
+            onPress={() => setActiveTab("schedule")}
           >
-            Chỉnh sửa
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+            <Ionicons
+              name="calendar"
+              size={18}
+              color={activeTab === "schedule" ? "#059669" : "#6B7280"}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "schedule" && styles.tabTextActive,
+              ]}
+            >
+              Lịch học
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "edit" && styles.tabActive]}
+            onPress={() => setActiveTab("edit")}
+          >
+            <Ionicons
+              name="create"
+              size={18}
+              color={activeTab === "edit" ? "#059669" : "#6B7280"}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "edit" && styles.tabTextActive,
+              ]}
+            >
+              Chỉnh sửa
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {showLeftArrow ? (
+          <TouchableOpacity
+            onPress={() => {
+              const next = Math.max(0, scrollX - Math.round(scrollWidth * 0.6));
+              (scrollRef as any).current?.scrollTo({ x: next, animated: true });
+            }}
+            style={{
+              position: "absolute",
+              left: 6,
+              top: 0,
+              bottom: 0,
+              justifyContent: "center",
+              zIndex: 10,
+              width: 32,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.9)",
+                borderRadius: 20,
+                padding: 6,
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="chevron-back" size={20} color="#6B7280" />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+
+        {showRightArrow ? (
+          <TouchableOpacity
+            onPress={() => {
+              const maxX = Math.max(0, contentWidth - scrollWidth);
+              const next = Math.min(
+                maxX,
+                scrollX + Math.round(scrollWidth * 0.6)
+              );
+              (scrollRef as any).current?.scrollTo({ x: next, animated: true });
+            }}
+            style={{
+              position: "absolute",
+              right: 6,
+              top: 0,
+              bottom: 0,
+              justifyContent: "center",
+              zIndex: 10,
+              width: 32,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.9)",
+                borderRadius: 20,
+                padding: 6,
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 
@@ -385,7 +485,11 @@ export default function CourseDetailScreen() {
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Địa điểm</Text>
           <Text style={styles.infoValue}>
-            {course.address}{"\n"}{course.district.name}{"\n"}{course.province.name}
+            {course.address}
+            {"\n"}
+            {course.district.name}
+            {"\n"}
+            {course.province.name}
           </Text>
         </View>
 
@@ -429,9 +533,103 @@ export default function CourseDetailScreen() {
             <Text style={styles.emptyText}>Chưa có học viên nào</Text>
           </View>
         ) : (
-          <Text style={styles.infoValue}>
-            Hiện có {course.currentParticipants} học viên đã đăng ký
-          </Text>
+          <View>
+            <View style={{ marginBottom: 12 }}>
+              {course.enrollments && course.enrollments.length > 0 ? (
+                course.enrollments.map((e) => {
+                  const name = e.user.fullName || "Người dùng";
+                  const initials = name
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(-2)
+                    .map((s) => s[0])
+                    .join("")
+                    .toUpperCase();
+
+                  return (
+                    <View
+                      key={e.id}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        padding: 12,
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 22,
+                          backgroundColor: "#E5E7EB",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          marginRight: 12,
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700", color: "#374151" }}>
+                          {initials}
+                        </Text>
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "600",
+                            color: "#111827",
+                          }}
+                        >
+                          {name}
+                        </Text>
+                        {e.user.email ? (
+                          <Text style={{ fontSize: 13, color: "#6B7280" }}>
+                            {e.user.email}
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      <View style={{ marginLeft: 8, alignItems: "flex-end" }}>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#059669",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Đã thanh toán
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="people-outline" size={48} color="#9CA3AF" />
+                  <Text style={styles.emptyText}>Chưa có học viên</Text>
+                </View>
+              )}
+            </View>
+
+            <View
+              style={[
+                styles.infoRow,
+                { borderBottomWidth: 0, paddingVertical: 8 },
+              ]}
+            >
+              <Text style={[styles.infoLabel]}>Tổng số học viên</Text>
+              <Text
+                style={[
+                  styles.infoValue,
+                  { color: "#059669", fontWeight: "700" },
+                ]}
+              >
+                {course.currentParticipants}
+              </Text>
+            </View>
+          </View>
         )}
       </View>
       <View style={{ height: 100 }} />
@@ -465,7 +663,9 @@ export default function CourseDetailScreen() {
                   <Text style={styles.sessionNumberText}>{index + 1}</Text>
                 </View>
                 <View style={styles.sessionInfo}>
-                  <Text style={styles.sessionName}>{dayName}</Text>
+                  <Text style={styles.sessionName}>
+                    {dayName} ({schedule.totalSessions} buổi)
+                  </Text>
                   <Text style={styles.sessionTime}>
                     {startTime} - {endTime}
                   </Text>
@@ -559,6 +759,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F3F4F6",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
   },
   loadingContainer: {
     flex: 1,

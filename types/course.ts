@@ -1,3 +1,5 @@
+import { Enrollment } from "./enrollments";
+
 export type LearningFormat = "GROUP" | "INDIVIDUAL";
 
 export type Schedule = {
@@ -5,6 +7,7 @@ export type Schedule = {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
+  totalSessions: number;
   course?: Course;
 };
 export type Course = {
@@ -42,4 +45,5 @@ export type Course = {
     fullName: string;
     email: string;
   };
+  enrollments: Enrollment[];
 };
