@@ -1,3 +1,4 @@
+import AssignmentTab from "@/components/coach/course/assignment";
 import EditTab from "@/components/coach/course/edit";
 import CourseHeader from "@/components/coach/course/header";
 import CreateEditCourseModal from "@/components/coach/course/modal/CreateEditCourseModal";
@@ -9,7 +10,6 @@ import { get, put } from "@/services/http/httpService";
 import { Course } from "@/types/course";
 import { formatPrice } from "@/utils/priceFormat";
 import { formatSchedule } from "@/utils/scheduleFormat";
-import { getStatusColor, getStatusLabel } from "@/utils/statusMap";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -178,6 +178,8 @@ export default function CourseDetailScreen() {
             formatSchedule={formatSchedule}
           />
         );
+      case "assignment":
+        return <AssignmentTab courseId={course.id} />;
       case "students":
         return <StudentsTab course={course} />;
       case "schedule":

@@ -1,6 +1,7 @@
 import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
+import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,42 +17,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-type Course = {
-  id: number;
-  name: string;
-  description: string;
-  level: string;
-  learningFormat: "GROUP" | "INDIVIDUAL";
-  status: string;
-  minParticipants: number;
-  maxParticipants: number;
-  pricePerParticipant: string;
-  currentParticipants: number;
-  totalSessions: number;
-  totalEarnings: string;
-  startDate: string;
-  endDate: string | null;
-  address: string;
-  subject: {
-    id: number;
-    name: string;
-  };
-  schedules: {
-    id: number;
-    dayOfWeek: string;
-    startTime: string;
-    endTime: string;
-  }[];
-  province: {
-    id: number;
-    name: string;
-  };
-  district: {
-    id: number;
-    name: string;
-  };
-};
 
 type CoursesResponse = {
   items: Course[];
@@ -122,12 +87,10 @@ export default function CoachCourseScreen() {
     }
   };
 
-  // Refresh khi màn hình được focus (quay lại từ create screen)
   useFocusEffect(
     useCallback(() => {
       fetchCourses(1, false);
       fetchPlatformFee();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -190,8 +153,6 @@ export default function CoachCourseScreen() {
   const hasMore = courses.length < total;
 
   const RevenueTooltip = ({ course }: { course: Course }) => {
-    // local require to avoid changing top-level imports
-
     const [visible, setVisible] = useState(false);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const tooltipAnim = useRef(new Animated.Value(0)).current;
@@ -298,11 +259,6 @@ export default function CoachCourseScreen() {
           </Text>
         </AnimatedTouchable>
 
-        {/*
-          Tooltip is an Animated.View so it fades/slides into place.
-          It's absolutely positioned relative to the parent container,
-          same as the original implementation.
-        */}
         <Animated.View
           pointerEvents={visible ? "auto" : "none"}
           style={{

@@ -24,3 +24,19 @@ export enum CoachVideoStatus {
   ERROR = "ERROR",
   ANALYZING = "ANALYZING",
 }
+
+export type LearnerVideo = {
+  id: number;
+  tags: string | string[] | null;
+  duration: number | null;
+  publicUrl: string | null;
+  thumbnailUrl: string | null;
+  status: string;
+  createdAt: string;
+  user: {
+    id: number;
+    fullName: string | null;
+    email: string | null;
+  };
+  session: Session;
+};
