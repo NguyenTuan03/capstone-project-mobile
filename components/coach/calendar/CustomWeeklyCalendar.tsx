@@ -1,19 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-    addWeeks,
-    eachDayOfInterval,
-    endOfWeek,
-    format,
-    startOfWeek,
-    subWeeks,
+  addWeeks,
+  eachDayOfInterval,
+  endOfWeek,
+  format,
+  startOfWeek,
+  subWeeks,
 } from "date-fns";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { CalendarSession, SessionStatus } from "../../../types/session";
 import { toVietnameseDay } from "../../../utils/localization";
@@ -212,14 +212,22 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
     <TouchableOpacity
       style={[
         styles.sessionCard,
-        { borderLeftColor: getSessionStatusColor(item.status) },
+        {
+          borderLeftColor: getSessionStatusColor(item.status),
+          shadowColor: getSessionStatusColor(item.status),
+          shadowOpacity: 0.2,
+        },
       ]}
       onPress={() => handleSessionPress(item)}
+      activeOpacity={0.8}
     >
       <View style={styles.sessionHeader}>
-        <Text style={styles.sessionTime}>
-          {item.startTime} - {item.endTime}
-        </Text>
+        <View style={styles.timeContainer}>
+          <Ionicons name="time-outline" size={14} color="#6B7280" />
+          <Text style={styles.sessionTime}>
+            {item.startTime} - {item.endTime}
+          </Text>
+        </View>
         <View
           style={[
             styles.statusBadge,
@@ -231,12 +239,24 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           </Text>
         </View>
       </View>
-      <Text>{item.course.address}</Text>
-      <Text style={styles.sessionName} numberOfLines={1}>
-        {item.name}
-      </Text>
 
-      <Text style={styles.courseName}>{item.courseName}</Text>
+      <View style={styles.sessionContent}>
+        <Text style={styles.sessionName} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <View style={styles.sessionMeta}>
+          <View style={styles.metaItem}>
+            <Ionicons name="book-outline" size={12} color="#6B7280" />
+            <Text style={styles.courseName}>{item.courseName}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="location-outline" size={12} color="#6B7280" />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {item.course.address}
+            </Text>
+          </View>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 
@@ -335,84 +355,107 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F8FAFC",
   },
   weekHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F1F5F9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   },
   navButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#F0FDF4",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   weekTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1F2937",
   },
   daysContainer: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F1F5F9",
   },
   dayHeader: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    borderRadius: 12,
     marginHorizontal: 2,
   },
   dayHeaderSelected: {
-    backgroundColor: "#DBEAFE",
+    backgroundColor: "#F0FDF4",
     borderWidth: 2,
     borderColor: "#059669",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dayHeaderWithSessions: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#FEF3C7",
   },
   dayText: {
     fontSize: 12,
     color: "#6B7280",
     fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   dayTextSelected: {
     color: "#059669",
     fontWeight: "600",
   },
   dayNumber: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    marginTop: 2,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginTop: 4,
   },
   dayNumberSelected: {
     color: "#059669",
   },
   sessionBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
+    paddingHorizontal: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   sessionBadgeText: {
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   emptyIndicator: {
@@ -420,72 +463,107 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: "#E5E7EB",
-    marginTop: 4,
+    marginTop: 8,
   },
   sessionsContainer: {
     flex: 1,
+    backgroundColor: "#F8FAFC",
   },
   sessionsContent: {
-    padding: 16,
+    padding: 20,
   },
   selectedDayHeader: {
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
   selectedDayTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 8,
   },
   sessionCount: {
     fontSize: 14,
     color: "#6B7280",
+    fontWeight: "500",
   },
   sessionItem: {
     marginBottom: 12,
   },
   sessionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
     borderLeftWidth: 4,
+    marginHorizontal: 4,
   },
   sessionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  timeContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    gap: 6,
+    flex: 1,
   },
   sessionTime: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: "#1F2937",
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "600",
     color: "#FFFFFF",
   },
+  sessionContent: {
+    marginBottom: 16,
+  },
   sessionName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#111827",
-    marginBottom: 8,
+    color: "#1F2937",
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  sessionMeta: {
+    gap: 8,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   courseName: {
     fontSize: 14,
     color: "#6B7280",
-    marginBottom: 8,
+    fontWeight: "500",
+  },
+  locationText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+    flex: 1,
   },
   sessionDescription: {
     fontSize: 12,
@@ -495,20 +573,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 60,
-    minHeight: 300,
+    paddingVertical: 80,
+    minHeight: 400,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginTop: 16,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#374151",
+    marginTop: 20,
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: "#9CA3AF",
+    fontSize: 16,
+    color: "#6B7280",
     textAlign: "center",
+    lineHeight: 24,
   },
 });
 
