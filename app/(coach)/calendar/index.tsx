@@ -2,18 +2,19 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomWeeklyCalendar from "../../../components/coach/calendar/CustomWeeklyCalendar";
 import sessionService from "../../../services/sessionService";
 import { CalendarSession } from "../../../types/session";
 import { getCurrentWeekRange } from "../../../utils/dateUtils";
 
 export default function CoachCalendarScreen() {
+  const insets = useSafeAreaInsets();
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentWeek, setCurrentWeek] = useState<any>(getCurrentWeekRange());
@@ -55,11 +56,13 @@ export default function CoachCalendarScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom + 50 },
+      ]}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#059669" />
-
-      {/* Safe Area Top Padding for different devices */}
-      <View style={styles.safeAreaTop} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -87,10 +90,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F3F4F6",
-  },
-  safeAreaTop: {
-    backgroundColor: "#059669",
-    paddingTop: Platform.OS === "ios" ? 44 : StatusBar.currentHeight || 24,
   },
   header: {
     backgroundColor: "#FFFFFF",

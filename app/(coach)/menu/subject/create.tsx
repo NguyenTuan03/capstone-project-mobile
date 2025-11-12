@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CreateSubjectScreen() {
   const [subjectName, setSubjectName] = useState("");
@@ -52,7 +51,7 @@ export default function CreateSubjectScreen() {
   };
 
   return (
-    <SafeAreaView>
+    <View>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -189,7 +188,7 @@ export default function CreateSubjectScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

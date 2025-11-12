@@ -1,4 +1,5 @@
 import AppForm from "@/components/common/AppForm";
+import { User } from "@/types/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Href, useRouter } from "expo-router";
@@ -14,11 +15,18 @@ export default function AuthScreen() {
   const handleLogin = async (values: Record<string, string>) => {
     setSubmitting(true);
     try {
+      // Convert phone number from 0xxx to +84xxx format
+      const phoneNumber = values.phoneNumber.startsWith("0")
+        ? "+84" + values.phoneNumber.substring(1)
+        : values.phoneNumber;
+
       const res = await axios.post(`${API_URL}/v1/auth/login`, {
-        email: values.email,
+        phoneNumber: phoneNumber,
         password: values.password,
       });
-      const { accessToken, refreshToken, user } = res.data.metadata;
+      const { accessToken, refreshToken } = res.data.metadata;
+      const user = res.data.metadata.user as User;
+      console.log("Logged in user:", user);
 
       await AsyncStorage.setItem("token", accessToken);
       await AsyncStorage.setItem("refreshToken", refreshToken);
@@ -34,7 +42,7 @@ export default function AuthScreen() {
       console.error("Login error:", err);
       Alert.alert(
         "Đăng nhập thất bại",
-        "Vui lòng kiểm tra lại email và mật khẩu của bạn.",
+        "Vui lòng kiểm tra lại sdt và mật khẩu của bạn.",
         [{ text: "OK" }]
       );
     } finally {
@@ -46,39 +54,36 @@ export default function AuthScreen() {
     <AppForm
       title="Chào mừng trở lại 👋"
       subtitle="Đăng nhập để tiếp tục hành trình tập luyện của bạn."
-      skipValidation={true}
       items={[
         {
-          name: "email",
-          label: "Email",
-          placeholder: "ban@example.com",
-          keyboardType: "email-address",
-          leftIcon: null, // dùng default mail icon
+          name: "phoneNumber",
+          label: "Số điện thoại",
+          placeholder: "0123456789",
+          keyboardType: "phone-pad",
         },
         {
           name: "password",
           label: "Mật khẩu",
           placeholder: "••••••••",
           secureTextEntry: true,
-          leftIcon: null, // dùng default lock icon
         },
       ]}
       onSubmit={handleLogin}
       submitting={submitting}
       submitText="Đăng nhập"
       footer={
-        <View style={{ gap: 8, alignItems: "center" }}>
+        <View style={{ gap: 6, alignItems: "center" }}>
           <Pressable
             onPress={() => router.push("/(auth)/forgot-password" as Href)}
           >
-            <Text style={{ color: "#6b7280", textDecorationLine: "underline" }}>
+            <Text style={{ color: "#6b7280", fontSize: 13, textDecorationLine: "underline" }}>
               Quên mật khẩu?
             </Text>
           </Pressable>
           <View style={{ flexDirection: "row", gap: 6 }}>
-            <Text style={{ color: "#6b7280" }}>Chưa có tài khoản?</Text>
+            <Text style={{ color: "#6b7280", fontSize: 13 }}>Chưa có tài khoản?</Text>
             <Pressable onPress={() => router.push("/(auth)/register" as Href)}>
-              <Text style={{ color: "#2563eb", fontWeight: "700" }}>
+              <Text style={{ color: "#059669", fontWeight: "700", fontSize: 13 }}>
                 Đăng ký
               </Text>
             </Pressable>

@@ -7,7 +7,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -71,7 +70,7 @@ const SubmissionListScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity
@@ -123,7 +122,7 @@ const SubmissionListScreen: React.FC = () => {
           ))}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

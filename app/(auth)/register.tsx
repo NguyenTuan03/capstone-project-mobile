@@ -1,75 +1,383 @@
-import AppForm from "@/components/common/AppForm";
+import { StepIndicator } from "@/components/common/StepIndicator";
+import { PickleballLevel } from "@/types/user";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { RegistrationStep1 } from "../../components/auth/RegistrationStep1";
+import { RegistrationStep2Coach } from "../../components/auth/RegistrationStep2Coach";
+import { RegistrationStep2Learner } from "../../components/auth/RegistrationStep2Learner";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
+type Step = 1 | 2;
+
 const Register = () => {
   const router = useRouter();
+  const [currentStep, setCurrentStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRegister = async (values: Record<string, string>) => {
-    if (values.password !== values.confirm) {
-      setError("Mật khẩu không khớp");
-      return;
+  // Step 1: Basic Info
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"COACH" | "LEARNER">("LEARNER");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Step 2: Coach Info
+  const [coachBio, setCoachBio] = useState("");
+  const [yearsOfExperience, setYearsOfExperience] = useState("");
+  const [specialties, setSpecialties] = useState("");
+  const [teachingMethods, setTeachingMethods] = useState("");
+
+  // Step 2: Learner Info
+  const [skillLevel, setSkillLevel] = useState<PickleballLevel>(
+    PickleballLevel.BEGINNER
+  );
+  const [learningGoal, setLearningGoal] = useState<PickleballLevel>(
+    PickleballLevel.INTERMEDIATE
+  );
+  const [province, setProvince] = useState<number | null>(null);
+  const [district, setDistrict] = useState<number | null>(null);
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const phoneRegex = /^0[0-9]{8,9}$/;
+
+  const validateStep1 = () => {
+    const errors: Record<string, string> = {};
+
+    if (!fullName.trim()) {
+      errors.fullName = "Họ và tên không được để trống";
     }
+
+    if (!phoneNumber.trim()) {
+      errors.phoneNumber = "Số điện thoại không được để trống";
+    } else if (!phoneRegex.test(phoneNumber.trim())) {
+      errors.phoneNumber =
+        "Số điện thoại không hợp lệ (phải bắt đầu bằng 0 và có 10 chữ số)";
+    }
+
+    if (!password) {
+      errors.password = "Mật khẩu không được để trống";
+    } else if (password.length < 8) {
+      errors.password = "Mật khẩu tối thiểu 8 ký tự";
+    } else if (
+      !/(?=.*[a-z])/.test(password) ||
+      !/(?=.*[A-Z])/.test(password) ||
+      !/(?=.*\d)/.test(password) ||
+      !/(?=.*[@$!%*?&#])/.test(password)
+    ) {
+      errors.password =
+        "Mật khẩu phải có ít nhất 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&)";
+    }
+
+    if (password !== confirmPassword) {
+      errors.confirmPassword = "Mật khẩu không khớp";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const errors: Record<string, string> = {};
+
+    if (role === "COACH") {
+      if (!coachBio.trim()) {
+        errors.coachBio = "Giới thiệu bản thân không được để trống";
+      }
+      if (!yearsOfExperience.trim()) {
+        errors.yearsOfExperience = "Số năm kinh nghiệm không được để trống";
+      } else if (
+        isNaN(Number(yearsOfExperience)) ||
+        Number(yearsOfExperience) < 0
+      ) {
+        errors.yearsOfExperience = "Số năm kinh nghiệm không hợp lệ";
+      }
+      if (!specialties.trim()) {
+        errors.specialties = "Chuyên môn không được để trống";
+      }
+      if (!teachingMethods.trim()) {
+        errors.teachingMethods = "Phương pháp giảng dạy không được để trống";
+      }
+    } else if (role === "LEARNER") {
+      if (!province) {
+        errors.province = "Tỉnh/Thành phố không được để trống";
+      }
+      if (!district) {
+        errors.district = "Quận/Huyện không được để trống";
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (!validateStep1()) return;
+    setCurrentStep(2);
+    setError(null);
+  };
+
+  const handleBack = () => {
+    setCurrentStep(1);
+    setFieldErrors({});
+    setError(null);
+  };
+
+  const handleRegister = async () => {
+    if (!validateStep2()) return;
 
     setError(null);
     setSubmitting(true);
     try {
-      const res = await axios.post(`${API_URL}/v1/auth/register`, {
-        email: values.email,
-        password: values.password,
+      const formattedPhone = phoneNumber.startsWith("0")
+        ? "+84" + phoneNumber.substring(1)
+        : phoneNumber;
+
+      if (role === "COACH") {
+        const coachPayload = {
+          fullName: fullName.trim(),
+          phoneNumber: formattedPhone,
+          password: password,
+          coach: {
+            bio: coachBio.trim(),
+            yearOfExperience: Number(yearsOfExperience),
+            specialties: specialties
+              .split(",")
+              .map((s) => s.trim())
+              .filter((s) => s),
+            teachingMethods: teachingMethods
+              .split(",")
+              .map((m) => m.trim())
+              .filter((m) => m),
+          },
+        };
+
+        await axios.post(`${API_URL}/v1/coaches/register`, coachPayload);
+      } else {
+        const learnerPayload = {
+          fullName: fullName.trim(),
+          phoneNumber: formattedPhone,
+          password: password,
+          learner: {
+            skillLevel: skillLevel,
+            learningGoal: learningGoal,
+            province: Number(province),
+            district: Number(district),
+          },
+        };
+
+        await axios.post(`${API_URL}/v1/auth/register`, learnerPayload);
+      }
+
+      // Navigate to phone verification
+      router.push({
+        pathname: "/(auth)/verify-phone",
+        params: { phoneNumber: formattedPhone },
       });
-      router.replace("/(auth)");
-    } catch {
-      setError("Đăng ký thất bại");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Đăng ký thất bại");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
   return (
-    <>
-      <AppForm
-        title="Tạo Tài Khoản"
-        items={[
-          {
-            name: "email",
-            label: "Email",
-            placeholder: "ban@example.com",
-            keyboardType: "email-address",
-          },
-          {
-            name: "password",
-            label: "Mật khẩu",
-            placeholder: "••••••••",
-            secureTextEntry: true,
-          },
-          {
-            name: "confirm",
-            label: "Xác nhận mật khẩu",
-            placeholder: "••••••••",
-            secureTextEntry: true,
-          },
-        ]}
-        onSubmit={handleRegister}
-        submitting={submitting}
-        error={error}
-        submitText="Đăng ký"
-        footer={
-          <>
-            <Text style={{ color: "#6b7280" }}>Đã có tài khoản?</Text>
-            <Pressable onPress={() => router.replace("/(auth)")}>
-              <Text style={{ color: "#3b82f6" }}>Đăng nhập</Text>
-            </Pressable>
-          </>
-        }
-      />
-    </>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Tạo Tài Khoản</Text>
+          <Text style={styles.subtitle}>
+            Bước {currentStep}/2:{" "}
+            {currentStep === 1
+              ? "Thông tin cơ bản"
+              : role === "COACH"
+              ? "Thông tin huấn luyện viên"
+              : "Thông tin học viên"}
+          </Text>
+        </View>
+
+        {/* Step Indicator */}
+        <StepIndicator
+          currentStep={currentStep}
+          totalSteps={2}
+          stepLabels={[
+            "Cơ bản",
+            role === "COACH" ? "HLV" : "Học viên",
+          ]}
+        />
+
+        {/* Form Card */}
+        <View style={styles.card}>
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          {/* Step 1 */}
+          {currentStep === 1 && (
+            <RegistrationStep1
+              fullName={fullName}
+              phoneNumber={phoneNumber}
+              password={password}
+              confirmPassword={confirmPassword}
+              role={role}
+              showPassword={showPassword}
+              showConfirmPassword={showConfirmPassword}
+              fieldErrors={fieldErrors}
+              onFullNameChange={setFullName}
+              onPhoneNumberChange={setPhoneNumber}
+              onPasswordChange={setPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              onRoleChange={setRole}
+              onShowPasswordToggle={() => setShowPassword(!showPassword)}
+              onShowConfirmPasswordToggle={() =>
+                setShowConfirmPassword(!showConfirmPassword)
+              }
+              onClearError={clearFieldError}
+              onNext={handleNext}
+            />
+          )}
+
+          {/* Step 2: Coach */}
+          {currentStep === 2 && role === "COACH" && (
+            <RegistrationStep2Coach
+              bio={coachBio}
+              yearsOfExperience={yearsOfExperience}
+              specialties={specialties}
+              teachingMethods={teachingMethods}
+              fieldErrors={fieldErrors}
+              submitting={submitting}
+              onBioChange={setCoachBio}
+              onYearsChange={setYearsOfExperience}
+              onSpecialtiesChange={setSpecialties}
+              onTeachingMethodsChange={setTeachingMethods}
+              onClearError={clearFieldError}
+              onBack={handleBack}
+              onSubmit={handleRegister}
+            />
+          )}
+
+          {/* Step 2: Learner */}
+          {currentStep === 2 && role === "LEARNER" && (
+            <RegistrationStep2Learner
+              skillLevel={skillLevel}
+              learningGoal={learningGoal}
+              province={province}
+              district={district}
+              fieldErrors={fieldErrors}
+              submitting={submitting}
+              onSkillLevelChange={setSkillLevel}
+              onLearningGoalChange={setLearningGoal}
+              onProvinceChange={setProvince}
+              onDistrictChange={setDistrict}
+              onClearError={clearFieldError}
+              onBack={handleBack}
+              onSubmit={handleRegister}
+            />
+          )}
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Đã có tài khoản?</Text>
+          <Pressable onPress={() => router.replace("/(auth)")}>
+            <Text style={styles.footerLink}>Đăng nhập</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
+  header: {
+    paddingTop: 40,
+    paddingHorizontal: 16,
+    gap: 4,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  card: {
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 12,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  errorContainer: {
+    backgroundColor: "#FEF2F2",
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  footer: {
+    alignItems: "center",
+    marginTop: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+  },
+  footerText: {
+    color: "#6B7280",
+    fontSize: 13,
+  },
+  footerLink: {
+    color: "#059669",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+});
 
 export default Register;

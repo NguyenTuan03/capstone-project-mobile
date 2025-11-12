@@ -8,18 +8,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function EnrollmentDetailScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const enrollmentId = id ? parseInt(id, 10) : null;
 
@@ -96,41 +93,26 @@ export default function EnrollmentDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safe,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
-      >
+      <View style={styles.safe}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#10B981" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!enrollment) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safe,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
-      >
+      <View style={styles.safe}>
         <View style={styles.loadingContainer}>
           <Text style={{ color: "#6B7280" }}>Không tìm thấy khóa học</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safe,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -322,7 +304,7 @@ export default function EnrollmentDetailScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
