@@ -221,9 +221,7 @@ export const OverviewTab: React.FC<Props> = ({
           label="Địa điểm"
           icon="location-outline"
           value={[
-            course?.address,
-            course?.district?.name,
-            course?.province?.name,
+            course?.court.name
           ]
             .filter(Boolean)
             .join("\n")}

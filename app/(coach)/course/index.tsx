@@ -732,6 +732,28 @@ export default function CoachCourseScreen() {
                         }}
                       >
                         <Ionicons
+                          name="map-outline"
+                          size={15}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#6B7280",
+                            marginLeft: 7,
+                          }}
+                        >
+                          Địa điểm: {course.court.name}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 6,
+                        }}
+                      >
+                        <Ionicons
                           name="calendar-outline"
                           size={15}
                           color="#6B7280"

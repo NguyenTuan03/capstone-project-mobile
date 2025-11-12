@@ -19,6 +19,7 @@ import type {
   PanResponderGestureState,
 } from "react-native";
 import {
+  Modal,
   PanResponder,
   ScrollView,
   StyleSheet,
@@ -62,6 +63,13 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
   const [selectedSession, setSelectedSession] =
     useState<CalendarSession | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  // Edit session state
+  const [editingSession, setEditingSession] = useState<CalendarSession | null>(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editScheduleDate, setEditScheduleDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
 
   useEffect(() => {
     if (initialStartDate) {
@@ -183,6 +191,41 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
   const closeModal = useCallback(() => {
     setIsModalVisible(false);
     setSelectedSession(null);
+  }, []);
+
+  const handleEditSession = useCallback((session: CalendarSession) => {
+    setEditingSession(session);
+    setEditScheduleDate(session.scheduleDate);
+    setEditStartTime(session.startTime);
+    setEditEndTime(session.endTime);
+    setIsEditModalVisible(true);
+  }, []);
+
+  const handleSaveSessionChanges = useCallback(() => {
+    if (!editingSession) return;
+    
+    // This is where you would call your API to update the session
+    console.log('Updating session:', {
+      sessionId: editingSession.id,
+      scheduleDate: editScheduleDate,
+      startTime: editStartTime,
+      endTime: editEndTime,
+    });
+    
+    // TODO: Call API here
+    // await sessionService.updateSession(editingSession.id, {
+    //   scheduleDate: editScheduleDate,
+    //   startTime: editStartTime,
+    //   endTime: editEndTime,
+    // });
+    
+    setIsEditModalVisible(false);
+    setEditingSession(null);
+  }, [editingSession, editScheduleDate, editStartTime, editEndTime]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditModalVisible(false);
+    setEditingSession(null);
   }, []);
 
   const handleDayPress = useCallback(
@@ -324,15 +367,24 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
             {item.startTime} - {item.endTime}
           </Text>
         </View>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: getSessionStatusColor(item.status) },
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {getSessionStatusText(item.status)}
-          </Text>
+        <View style={styles.headerActions}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getSessionStatusColor(item.status) },
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {getSessionStatusText(item.status)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => handleEditSession(item)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="create-outline" size={18} color="#059669" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -486,6 +538,88 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           isVisible={isModalVisible}
           onClose={closeModal}
         />
+
+        {/* Edit Session Modal */}
+        <Modal
+          visible={isEditModalVisible}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={handleCancelEdit}
+        >
+          <View style={styles.editModalContainer}>
+            <View style={styles.editModalHeader}>
+              <TouchableOpacity onPress={handleCancelEdit} style={styles.cancelButton}>
+                <Text style={styles.cancelButtonText}>Hủy</Text>
+              </TouchableOpacity>
+              <Text style={styles.editModalTitle}>Chỉnh sửa lịch học</Text>
+              <TouchableOpacity onPress={handleSaveSessionChanges} style={styles.saveButton}>
+                <Text style={styles.saveButtonText}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.editModalContent}>
+              {editingSession && (
+                <>
+                  {/* Session Info */}
+                  <View style={styles.editSection}>
+                    <Text style={styles.editSectionTitle}>Thông tin buổi học</Text>
+                    <Text style={styles.sessionTitle}>{editingSession.name}</Text>
+                    <Text style={styles.courseTitle}>{editingSession.courseName}</Text>
+                  </View>
+
+                  {/* Schedule Date */}
+                  <View style={styles.editSection}>
+                    <Text style={styles.editLabel}>Ngày học</Text>
+                    <TouchableOpacity
+                      style={styles.editInput}
+                      onPress={() => {/* TODO: Open date picker */}}
+                    >
+                      <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                      <Text style={styles.editInputText}>
+                        {format(new Date(editScheduleDate), 'dd/MM/yyyy')}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Start Time */}
+                  <View style={styles.editSection}>
+                    <Text style={styles.editLabel}>Giờ bắt đầu</Text>
+                    <TouchableOpacity
+                      style={styles.editInput}
+                      onPress={() => {/* TODO: Open time picker */}}
+                    >
+                      <Ionicons name="time-outline" size={20} color="#6B7280" />
+                      <Text style={styles.editInputText}>{editStartTime}</Text>
+                      <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* End Time */}
+                  <View style={styles.editSection}>
+                    <Text style={styles.editLabel}>Giờ kết thúc</Text>
+                    <TouchableOpacity
+                      style={styles.editInput}
+                      onPress={() => {/* TODO: Open time picker */}}
+                    >
+                      <Ionicons name="time-outline" size={20} color="#6B7280" />
+                      <Text style={styles.editInputText}>{editEndTime}</Text>
+                      <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Info Message */}
+                  <View style={styles.infoBox}>
+                    <Ionicons name="information-circle" size={20} color="#3B82F6" />
+                    <Text style={styles.infoText}>
+                      Thay đổi lịch học sẽ thông báo đến tất cả học viên
+                    </Text>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </Modal>
       </View>
     </View>
   );
@@ -861,6 +995,128 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: "#E5E7EB",
+  },
+  // Edit Button
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#ECFDF5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+  },
+  // Edit Modal
+  editModalContainer: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  editModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  editModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  cancelButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  saveButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#059669',
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    fontSize: 15,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  editModalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  editSection: {
+    marginBottom: 20,
+  },
+  editSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  sessionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  courseTitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  editLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  editInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 10,
+  },
+  editInputText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#EFF6FF',
+    padding: 12,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3B82F6',
+    marginTop: 10,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1E40AF',
+    lineHeight: 18,
   },
 });
 
