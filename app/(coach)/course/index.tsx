@@ -3,6 +3,7 @@ import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -51,7 +52,10 @@ export default function CoachCourseScreen() {
         setLoading(true);
       }
 
-      const url = `/v1/courses?page=${pageNum}&pageSize=${pageSize}`;
+      const userString = await AsyncStorage.getItem("user");
+      const user = userString ? JSON.parse(userString) : null;
+
+      const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=createdBy.id_eq_${user?.id}`;
       const res = await get<CoursesResponse>(url);
 
       if (append) {

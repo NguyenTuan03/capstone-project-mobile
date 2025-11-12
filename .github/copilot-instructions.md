@@ -55,12 +55,24 @@ await axios.post(`${API_URL}/v1/auth/login`, data);
 
 ### Component Organization
 ```
-components/
-  common/         # Shared utilities (AppForm, AppEnum)
-  coach/          # Coach-specific features (calendar, course, students)
-  learner/        # Learner-specific features (lesson, quiz)
-  ui/             # Reusable UI primitives (collapsible, themed components)
+components/                      # Root-level components directory (same level as app/)
+  common/                        # Shared utilities (AppForm, AppEnum, StepIndicator, LocationSelector)
+  coach/                         # Coach-specific features (calendar, course, students)
+  learner/                       # Learner-specific features (lesson, quiz)
+  ui/                            # Reusable UI primitives (collapsible, themed components)
+
+app/(auth)/components/           # Route-specific components (only used in auth flow)
+app/(coach)/*/components/        # Coach route-specific components
+app/(learner)/*/components/      # Learner route-specific components
 ```
+
+**Component Placement Guidelines:**
+- **Reusable across app** → `components/common/` (e.g., StepIndicator, LocationSelector, formStyles)
+- **Role-specific reusable** → `components/coach/` or `components/learner/`
+- **Route-specific only** → Create `components/` folder inside the route directory (e.g., `app/(auth)/components/RegistrationStep1.tsx`)
+- **When refactoring large files:** Split into smaller components in appropriate location based on reusability
+  - If component is only used in one route → keep in route's `components/` folder
+  - If component could be reused elsewhere → move to `components/common/` or role-specific folder
 
 **Reusable Form Pattern** (`components/common/AppForm/index.tsx`):
 - Single form component with validation, auto-focus, gradient submit button
@@ -173,6 +185,93 @@ components/
    - [ ] Border radius scaled proportionally (12px for cards, 6-8px for badges)
    - [ ] Font sizes readable: body >= 13px, captions >= 11px
    - [ ] Visual hierarchy maintained through size/weight, not excessive spacing
+   - [ ] Text labels fit within their containers without being cut off
+   - [ ] Flexbox layouts distribute space evenly (avoid mixing flex: 1 with fixed widths)
+   - [ ] Long text can wrap or is abbreviated appropriately
+
+7. **Text Truncation & Overflow Prevention:**
+   - **Keep labels short** - Aim for 1-2 words on mobile (e.g., "Cơ bản" instead of "Thông tin cơ bản")
+   - **Use abbreviations** when appropriate (e.g., "HLV" for "Huấn Luyện Viên")
+   - **Set maxWidth** on text elements that might overflow:
+     ```typescript
+     stepLabel: {
+       maxWidth: 100,        // Prevent text overflow
+       textAlign: 'center',  // Center align for better appearance
+     }
+     ```
+   - **Use numberOfLines** with ellipsis for long text:
+     ```typescript
+     <Text numberOfLines={1} ellipsizeMode="tail">Long text here</Text>
+     ```
+   - **Test with longest possible text** - Use Vietnamese text which can be longer than English
+
+8. **Flexbox Layout Balance:**
+   - **Avoid mixing flex and fixed dimensions** in same parent:
+     ```typescript
+     // ❌ BAD: Unbalanced layout
+     <View style={{flexDirection: 'row'}}>
+       <View style={{flex: 1}}>Step 1</View>
+       <View style={{width: 40}} />  {/* Fixed width line */}
+       <View style={{flex: 1}}>Step 2</View>
+     </View>
+     
+     // ✅ GOOD: Balanced layout
+     <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+       <View>Step 1</View>
+       <View style={{width: 60}} />  {/* Fixed connector */}
+       <View>Step 2</View>
+     </View>
+     ```
+   - **Use space-between for even distribution** instead of center when items should be edge-aligned
+   - **Remove unnecessary flex: 1** if it causes uneven spacing
+   - **Test symmetry** - Left/right spacing should visually match
+
+9. **Vertical Layout Strategy for Buttons/Cards:**
+   - **Use column layout when text is long:**
+     ```typescript
+     roleButton: {
+       flexDirection: 'column',  // Stack items vertically
+       alignItems: 'center',     // Center all items
+       gap: 6,                   // Space between icon, radio, text
+       paddingVertical: 12,
+       minHeight: 90,            // Ensure consistent height
+     }
+     ```
+   - **Benefits:** Prevents horizontal overflow, allows text to wrap, clearer visual hierarchy
+   - **Order:** Radio/checkbox → Icon → Text label (top to bottom)
+
+10. **Cross-Platform Compatibility (iOS & Android):**
+   - **Always test UI changes on both platforms** - what looks good on iOS may need adjustments for Android
+   - **Use Platform-specific components when needed:**
+     ```typescript
+     import { Platform } from 'react-native';
+     
+     // Example: Different shadows for iOS vs Android
+     ...Platform.select({
+       ios: {
+         shadowColor: '#000',
+         shadowOffset: { width: 0, height: 2 },
+         shadowOpacity: 0.15,
+         shadowRadius: 4,
+       },
+       android: {
+         elevation: 3,
+       },
+     }),
+     ```
+   - **Avoid iOS-only properties** on Android (shadowColor, shadowOffset, shadowOpacity, shadowRadius)
+   - **Use `elevation` for Android** instead of shadow properties
+   - **Combine both for universal support:**
+     ```typescript
+     shadowColor: '#059669',    // iOS only
+     shadowOffset: { width: 0, height: 2 },
+     shadowOpacity: 0.15,
+     shadowRadius: 4,
+     elevation: 3,              // Android only
+     ```
+   - **KeyboardAvoidingView behavior:** `padding` for iOS, `undefined` for Android
+   - **Test touch targets:** Android typically needs slightly larger hit areas than iOS
+   - **Safe areas:** Use `react-native-safe-area-context` for notch/status bar handling on both platforms
 
 ### Enterprise/Professional Button Design
 

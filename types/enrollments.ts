@@ -1,4 +1,5 @@
 import type { Course } from "./course";
+import { User } from "./user";
 
 export type EnrollmentStatus =
   | "PENDING_GROUP"
@@ -8,30 +9,15 @@ export type EnrollmentStatus =
   | "UNPAID"
   | "CANCELLED";
 
-export type EnrollmentPaymentStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+export type EnrollmentPaymentStatus =
+  | "PENDING"
+  | "PAID"
+  | "FAILED"
+  | "CANCELLED";
 
 export type EnrollmentRole = {
   id: number;
   name: string;
-};
-
-export type EnrollmentUser = {
-  id: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string | null;
-  profilePicture: string | null;
-  refreshToken: string | null;
-  isEmailVerified: boolean;
-  isPhoneVerified: boolean;
-  emailVerificationToken: string | null;
-  resetPasswordToken: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  role: EnrollmentRole;
-  wallet: unknown | null;
 };
 
 export type EnrollmentCourse = Course & {
@@ -59,7 +45,7 @@ export type Enrollment = {
   status: EnrollmentStatus;
   enrolledAt: string;
   updatedAt: string;
-  user: EnrollmentUser;
+  user: User;
   course: EnrollmentCourse;
   payments: EnrollmentPayment[];
 };

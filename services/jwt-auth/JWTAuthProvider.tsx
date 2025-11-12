@@ -1,4 +1,4 @@
-import { UserType } from "@/types/auth";
+import { User } from "@/types/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
@@ -27,7 +27,7 @@ interface JWTAuthActionsProps {
 }
 
 interface JWTAuthContextProps {
-  user: UserType | null | undefined;
+  user: User | null | undefined;
   isAuthenticated: boolean;
   isLoading: boolean;
 }

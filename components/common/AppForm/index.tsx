@@ -20,7 +20,7 @@ type FieldItem = {
   placeholder?: string;
   secureTextEntry?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
-  keyboardType?: "default" | "email-address" | "numeric";
+  keyboardType?: "default" | "email-address" | "numeric" | "phone-pad";
   leftIcon?: React.ReactNode;
 };
 
@@ -37,6 +37,8 @@ type AppFormProps = {
 };
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+// Vietnamese phone number validation: must start with 0 and have 9-10 digits
+const phoneRegex = /^0[0-9]{8,9}$/;
 
 export default function AppForm({
   title,
@@ -74,6 +76,13 @@ export default function AppForm({
       else if (!emailRegex.test(v))
         nextErrors[emailField.name] = "Email không hợp lệ";
     }
+    const phoneField = items.find((i) => i.keyboardType === "phone-pad");
+    if (phoneField) {
+      const v = (formValues[phoneField.name] || "").trim();
+      if (!v) nextErrors[phoneField.name] = "Số điện thoại không được để trống";
+      else if (!phoneRegex.test(v))
+        nextErrors[phoneField.name] = "Số điện thoại không hợp lệ (phải bắt đầu bằng 0 và có 10 chữ số)";
+    }
     const passField = items.find((i) => i.secureTextEntry);
     if (passField) {
       const v = (formValues[passField.name] || "").trim();
@@ -101,40 +110,40 @@ export default function AppForm({
       >
         <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
           {/* Header */}
-          <View style={{ paddingTop: 80, paddingHorizontal: 20, gap: 8 }}>
-            <Text style={{ fontSize: 28, fontWeight: "800" }}>{title}</Text>
+          <View style={{ paddingTop: 50, paddingHorizontal: 16, gap: 6 }}>
+            <Text style={{ fontSize: 17, fontWeight: "700" }}>{title}</Text>
             {subtitle ? (
-              <Text style={{ color: "#6b7280" }}>{subtitle}</Text>
+              <Text style={{ color: "#6b7280", fontSize: 13 }}>{subtitle}</Text>
             ) : null}
           </View>
 
           {/* Card */}
           <View
             style={{
-              marginTop: 20,
-              marginHorizontal: 20,
+              marginTop: 16,
+              marginHorizontal: 16,
               backgroundColor: "#fff",
-              borderRadius: 16,
-              padding: 18,
-              gap: 14,
+              borderRadius: 8,
+              padding: 12,
+              gap: 10,
               shadowColor: "#000",
               shadowOpacity: 0.06,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 4,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 3,
             }}
           >
             {error ? (
               <View
                 style={{
                   backgroundColor: "#fef2f2",
-                  padding: 12,
-                  borderRadius: 10,
+                  padding: 10,
+                  borderRadius: 6,
                   borderWidth: 1,
                   borderColor: "#fecaca",
                 }}
               >
-                <Text style={{ color: "#b91c1c", fontWeight: "600" }}>
+                <Text style={{ color: "#b91c1c", fontWeight: "600", fontSize: 13 }}>
                   {error}
                 </Text>
               </View>
@@ -146,16 +155,16 @@ export default function AppForm({
               const hasError = !!fieldErrors[item.name];
 
               return (
-                <View key={item.name} style={{ gap: 6 }}>
-                  <Text style={{ fontWeight: "600" }}>{item.label}</Text>
+                <View key={item.name} style={{ gap: 4 }}>
+                  <Text style={{ fontWeight: "600", fontSize: 13 }}>{item.label}</Text>
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      borderWidth: 1.5,
+                      borderWidth: 1,
                       borderColor: hasError ? "#ef4444" : "#e5e7eb",
-                      borderRadius: 12,
-                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      paddingHorizontal: 10,
                       backgroundColor: "#fafafa",
                     }}
                   >
@@ -166,6 +175,12 @@ export default function AppForm({
                       ) : item.keyboardType === "email-address" ? (
                         <Ionicons
                           name="mail-outline"
+                          size={18}
+                          color="#6b7280"
+                        />
+                      ) : item.keyboardType === "phone-pad" ? (
+                        <Ionicons
+                          name="call-outline"
                           size={18}
                           color="#6b7280"
                         />
@@ -196,8 +211,8 @@ export default function AppForm({
                       keyboardType={item.keyboardType || "default"}
                       style={{
                         flex: 1,
-                        paddingVertical: 12,
-                        fontSize: 16,
+                        paddingVertical: 10,
+                        fontSize: 14,
                       }}
                       placeholderTextColor="#9ca3af"
                       returnKeyType={idx === items.length - 1 ? "go" : "next"}
@@ -245,21 +260,26 @@ export default function AppForm({
             >
               <LinearGradient
                 colors={
-                  submitting ? ["#93c5fd", "#93c5fd"] : ["#2563eb", "#7c3aed"]
+                  submitting ? ["#9CA3AF", "#9CA3AF"] : ["#059669", "#047857"]
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{
-                  paddingVertical: 14,
-                  borderRadius: 12,
+                  paddingVertical: 13,
+                  borderRadius: 8,
                   alignItems: "center",
+                  shadowColor: "#059669",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                  elevation: 3,
                 }}
               >
                 {submitting ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text
-                    style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}
+                    style={{ color: "#fff", fontWeight: "700", fontSize: 15, letterSpacing: 0.3 }}
                   >
                     {submitText}
                   </Text>
@@ -270,7 +290,7 @@ export default function AppForm({
 
           {/* Footer */}
           <View
-            style={{ alignItems: "center", marginTop: 16, marginBottom: 32 }}
+            style={{ alignItems: "center", marginTop: 12, marginBottom: 24 }}
           >
             {footer}
           </View>

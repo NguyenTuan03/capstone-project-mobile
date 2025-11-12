@@ -1,8 +1,7 @@
-import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
-import { Redirect, Stack } from "expo-router";
+import { Stack } from "expo-router";
 
 export default function AuthLayout() {
-  const { isAuthenticated } = useJWTAuth();
+  // const { isAuthenticated } = useJWTAuth();
 
   // if (isAuthenticated) {
   //   return <Redirect href="/(coach)/home" />;
@@ -10,7 +9,7 @@ export default function AuthLayout() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="register" options={{ title: "Register" }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
     </Stack>
   );
 }

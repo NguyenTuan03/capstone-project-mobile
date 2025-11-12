@@ -281,7 +281,10 @@ const SubmissionReviewScreen: React.FC = () => {
           <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>Thông tin bài nộp</Text>
             <InfoRow label="Học viên" value={learnerName} />
-            <InfoRow label="Email" value={submission.user?.email || "—"} />
+            <InfoRow
+              label="Số điện thoại"
+              value={submission.user?.phoneNumber || "—"}
+            />
             <InfoRow
               label="Thời gian nộp"
               value={formatDateTime(submission.createdAt)}
