@@ -23,7 +23,9 @@ export default function ContentScreen() {
       </TouchableOpacity> */}
       <ScrollView
         style={{ flex: 1, backgroundColor: "#fff" }}
-        contentContainerStyle={{ padding: 20, paddingTop: 60 }}
+        contentContainerStyle={{ 
+          padding: 20
+        }}
       >
         <View style={{ alignItems: "center", marginBottom: 30 }}>
           <View

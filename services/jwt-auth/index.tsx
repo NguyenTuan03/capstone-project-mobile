@@ -13,7 +13,7 @@ const AUTH_ERROR_STATUS = 401;
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL +
   "/" +
-  process.env.EXPO_PUBLIC_API_VERSION;
+  process.env.EXPO_PUBLIC_VERSION;
 const jwtAxios: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {

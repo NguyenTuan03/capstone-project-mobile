@@ -1,12 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import LessonResourcesTabs from "../../../../../components/learner/lesson/LessonResourcesTabs";
 
@@ -32,7 +31,7 @@ const LessonResourcesScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.container}
@@ -65,7 +64,7 @@ const LessonResourcesScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

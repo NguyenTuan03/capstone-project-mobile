@@ -1,13 +1,17 @@
 import { Stack } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MyCoursesLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Stack
       screenOptions={{
         headerShown: false,
         contentStyle: {
           backgroundColor: "#FFFFFF",
-          paddingBottom: 80,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom + 80,
         },
       }}
     >

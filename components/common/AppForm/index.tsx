@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type FieldItem = {
   name: string;
@@ -51,6 +52,7 @@ export default function AppForm({
   footer,
   skipValidation = false,
 }: AppFormProps) {
+  const insets = useSafeAreaInsets();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -110,7 +112,7 @@ export default function AppForm({
       >
         <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
           {/* Header */}
-          <View style={{ paddingTop: 50, paddingHorizontal: 16, gap: 6 }}>
+          <View style={{ paddingTop: insets.top + 24, paddingHorizontal: 16, gap: 6 }}>
             <Text style={{ fontSize: 17, fontWeight: "700" }}>{title}</Text>
             {subtitle ? (
               <Text style={{ color: "#6b7280", fontSize: 13 }}>{subtitle}</Text>

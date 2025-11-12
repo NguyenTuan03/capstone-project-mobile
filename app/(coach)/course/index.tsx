@@ -1,9 +1,9 @@
 import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
+import storageService from "@/services/storageService";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CoursesResponse = {
   items: Course[];
@@ -27,7 +26,6 @@ type CoursesResponse = {
 };
 
 export default function CoachCourseScreen() {
-  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
@@ -44,35 +42,37 @@ export default function CoachCourseScreen() {
     completed: courses.filter((c) => c.status === "COMPLETED").length,
   };
 
-  const fetchCourses = async (pageNum: number = 1, append: boolean = false) => {
-    try {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
+  const fetchCourses = useCallback(
+    async (pageNum: number = 1, append: boolean = false) => {
+      try {
+        if (append) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+        }
+
+        const user = await storageService.getUser();
+
+        const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=createdBy.id_eq_${user?.id}`;
+        const res = await get<CoursesResponse>(url);
+
+        if (append) {
+          setCourses((prev) => [...prev, ...(res.data.items || [])]);
+        } else {
+          setCourses(res.data.items || []);
+        }
+
+        setTotal(res.data.total || 0);
+        setPage(res.data.page || 1);
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách khóa học:", error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-
-      const userString = await AsyncStorage.getItem("user");
-      const user = userString ? JSON.parse(userString) : null;
-
-      const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=createdBy.id_eq_${user?.id}`;
-      const res = await get<CoursesResponse>(url);
-
-      if (append) {
-        setCourses((prev) => [...prev, ...(res.data.items || [])]);
-      } else {
-        setCourses(res.data.items || []);
-      }
-
-      setTotal(res.data.total || 0);
-      setPage(res.data.page || 1);
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách khóa học:", error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+    },
+    [pageSize]
+  );
 
   const fetchPlatformFee = async () => {
     try {
@@ -95,7 +95,7 @@ export default function CoachCourseScreen() {
     useCallback(() => {
       fetchCourses(1, false);
       fetchPlatformFee();
-    }, [])
+    }, [fetchCourses])
   );
 
   const formatPrice = (price: string) => {
@@ -317,14 +317,14 @@ export default function CoachCourseScreen() {
       style={{
         flex: 1,
         backgroundColor: "#F3F4F6",
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom + 50,
       }}
     >
       <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
       <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        scrollIndicatorInsets={{ right: 1 }}
         onScroll={(e) => {
           const { layoutMeasurement, contentOffset, contentSize } =
             e.nativeEvent;
@@ -528,7 +528,7 @@ export default function CoachCourseScreen() {
         </View>
 
         {/* Courses List */}
-        <View style={{ paddingHorizontal: 12, paddingBottom: 100 }}>
+        <View style={{ paddingHorizontal: 12, paddingBottom: 20 }}>
           {loading ? (
             <View
               style={{
@@ -855,7 +855,7 @@ export default function CoachCourseScreen() {
       <TouchableOpacity
         style={{
           position: "absolute",
-          bottom: insets.bottom + 80,
+          bottom: 16,
           right: 16,
           left: 16,
           backgroundColor: "#059669",
@@ -869,6 +869,7 @@ export default function CoachCourseScreen() {
           shadowOpacity: 0.15,
           shadowRadius: 4,
           elevation: 3,
+          zIndex: 10,
         }}
         onPress={() => router.push("/(coach)/course/create" as any)}
       >

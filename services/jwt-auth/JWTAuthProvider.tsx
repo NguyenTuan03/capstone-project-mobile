@@ -1,5 +1,4 @@
 import { User } from "@/types/user";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
   ReactNode,
@@ -8,6 +7,7 @@ import {
   useState,
 } from "react";
 import jwtAxios, { setAuthToken, setRefreshToken } from ".";
+import storageService from "../storageService";
 interface JWTAuthAuthProviderProps {
   children: ReactNode;
 }
@@ -18,6 +18,7 @@ interface SignInProps {
 interface JWTAuthActionsProps {
   signInUser: (data: SignInProps) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   resetPassword: (
     token: string,
@@ -39,6 +40,7 @@ const JWTAuthContext = createContext<JWTAuthContextProps>({
 const JWTAuthActionsContext = createContext<JWTAuthActionsProps>({
   signInUser: () => {},
   logout: () => {},
+  refreshUser: () => Promise.resolve(),
   requestPasswordReset: () => Promise.resolve(false),
   resetPassword: () => Promise.resolve(false),
 });
@@ -55,7 +57,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
   });
   useEffect(() => {
     const getAuthUser = async () => {
-      const token = await AsyncStorage.getItem("authToken");
+      const token = await storageService.getToken();
       if (!token) {
         setJwtAuthData({
           user: null,
@@ -66,11 +68,12 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
       }
       setAuthToken(token);
       try {
-        const { data } = await jwtAxios.get("/auth/user", {
+        const { data } = await jwtAxios.get("/auth/current-user", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log("Fetched auth user:", data);
         setJwtAuthData({
           user: data,
           isAuthenticated: true,
@@ -90,7 +93,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
 
   const signInUser = async ({ email, password }: SignInProps) => {
     try {
-      const { data } = await jwtAxios.post("auth/login", {
+      const { data } = await jwtAxios.post("/auth/login", {
         email,
         password,
       });
@@ -105,10 +108,8 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
         isAuthenticated: true,
         isLoading: false,
       });
-      // Persist user per remember option
-      try {
-        AsyncStorage.setItem("user", JSON.stringify(metadata.user));
-      } catch {}
+      // Persist user
+      await storageService.setUser(metadata.user);
     } catch {
       setJwtAuthData({
         ...jwtAuthData,
@@ -118,9 +119,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
     }
   };
   const logout = async () => {
-    await AsyncStorage.removeItem("authToken");
-    await AsyncStorage.removeItem("refreshToken");
-    await AsyncStorage.removeItem("user");
+    await storageService.clearAll();
     setJwtAuthData({
       user: null,
       isAuthenticated: false,
@@ -154,10 +153,35 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
       return false;
     }
   };
+
+  const refreshUser = async () => {
+    try {
+      const token = await storageService.getToken();
+      if (!token) return;
+
+      setAuthToken(token);
+      const { data } = await jwtAxios.get("/auth/current-user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setJwtAuthData((prevState) => ({
+        ...prevState,
+        user: data,
+      }));
+
+      // Update cached user in storage
+      await storageService.setUser(data);
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+    }
+  };
+
   return (
     <JWTAuthContext.Provider value={{ ...jwtAuthData }}>
       <JWTAuthActionsContext.Provider
-        value={{ signInUser, logout, requestPasswordReset, resetPassword }}
+        value={{ signInUser, logout, refreshUser, requestPasswordReset, resetPassword }}
       >
         {children}
       </JWTAuthActionsContext.Provider>

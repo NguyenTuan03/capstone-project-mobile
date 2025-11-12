@@ -4,13 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -56,7 +55,7 @@ export default function QuizDetailScreen() {
   }
 
   return (
-    <SafeAreaView
+    <View
       style={{ flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: 20 }}
     >
       <View
@@ -158,6 +157,6 @@ export default function QuizDetailScreen() {
           </View>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

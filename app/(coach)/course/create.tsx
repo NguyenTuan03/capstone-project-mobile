@@ -2,8 +2,7 @@ import CreateEditCourseModal from "@/components/coach/course/modal/CreateEditCou
 import { post } from "@/services/http/httpService";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, View } from "react-native";
 
 export default function CreateCourseScreen() {
   const [modalVisible, setModalVisible] = useState(true);
@@ -15,9 +14,7 @@ export default function CreateCourseScreen() {
     maxParticipants: number;
     pricePerParticipant: number;
     startDate: string;
-    address: string;
-    province: number;
-    district: number;
+    court?: number | undefined;
     schedules?: any[];
   }) => {
     try {
@@ -50,13 +47,13 @@ export default function CreateCourseScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <CreateEditCourseModal
         visible={modalVisible}
         onClose={handleClose}
         onSubmit={handleSubmit}
         mode="create"
       />
-    </SafeAreaView>
+    </View>
   );
 }

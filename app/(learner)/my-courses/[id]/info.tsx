@@ -4,20 +4,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function EnrollmentInfoScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const enrollmentId = id ? parseInt(id, 10) : null;
 
@@ -75,41 +72,26 @@ export default function EnrollmentInfoScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safe,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
-      >
+      <View style={styles.safe}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#10B981" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!enrollment) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safe,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
-      >
+      <View style={styles.safe}>
         <View style={styles.loadingContainer}>
           <Text style={{ color: "#6B7280" }}>Không tìm thấy khóa học</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safe,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -177,19 +159,11 @@ export default function EnrollmentInfoScreen() {
                 {enrollment.course.address}
               </Text>
             </View>
-            {enrollment.course.province && (
+            {enrollment.course.court.name && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Tỉnh/Thành phố:</Text>
                 <Text style={styles.detailValue}>
-                  {enrollment.course.province.name}
-                </Text>
-              </View>
-            )}
-            {enrollment.course.district && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Quận/Huyện:</Text>
-                <Text style={styles.detailValue}>
-                  {enrollment.course.district.name}
+                  {enrollment.course.court.name}
                 </Text>
               </View>
             )}
@@ -254,7 +228,7 @@ export default function EnrollmentInfoScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
