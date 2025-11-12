@@ -1,3 +1,4 @@
+import { Court } from "./court";
 import { Enrollment } from "./enrollments";
 
 export type LearningFormat = "GROUP" | "INDIVIDUAL";
@@ -33,14 +34,7 @@ export type Course = {
     description: string;
   };
   schedules: Schedule[];
-  province: {
-    id: number;
-    name: string;
-  };
-  district: {
-    id: number;
-    name: string;
-  };
+  court: Court;
   createdBy: {
     id: number;
     fullName: string;

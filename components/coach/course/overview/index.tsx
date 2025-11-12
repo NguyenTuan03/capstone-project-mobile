@@ -26,12 +26,12 @@ const StatCard = ({
   return (
     <View style={styles.statCard}>
       <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={22} color={iconColor} />
+        <Ionicons name={icon} size={18} color={iconColor} />
       </View>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
       {footer ? (
-        <View style={{ marginTop: 10, alignSelf: "stretch" }}>{footer}</View>
+        <View style={{ marginTop: 8, alignSelf: "stretch" }}>{footer}</View>
       ) : null}
     </View>
   );
@@ -88,7 +88,7 @@ const InfoRow = ({
       {icon ? (
         <Ionicons
           name={icon}
-          size={16}
+          size={15}
           color="#6B7280"
           style={{ marginRight: 6 }}
         />
@@ -108,7 +108,7 @@ const ChipRow = ({ chips }: { chips: string[] }) => (
   <View style={styles.chipRow}>
     {chips.filter(Boolean).map((c, idx) => (
       <View style={styles.chip} key={`${c}-${idx}`}>
-        <Ionicons name="pricetag-outline" size={12} color="#2563EB" />
+        <Ionicons name="pricetag-outline" size={11} color="#2563EB" />
         <Text style={styles.chipText}>{c}</Text>
       </View>
     ))}
@@ -221,9 +221,7 @@ export const OverviewTab: React.FC<Props> = ({
           label="Địa điểm"
           icon="location-outline"
           value={[
-            course?.address,
-            course?.district?.name,
-            course?.province?.name,
+            course?.court.name
           ]
             .filter(Boolean)
             .join("\n")}
@@ -262,7 +260,7 @@ export const OverviewTab: React.FC<Props> = ({
         </View>
       </Section>
 
-      <View style={{ height: 24 }} />
+      <View style={{ height: 16 }} />
     </ScrollView>
   );
 };
@@ -273,62 +271,62 @@ const styles = StyleSheet.create({
   /* Section */
   section: {
     backgroundColor: "#FFFFFF",
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 10,
     // subtle shadow
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 10,
     justifyContent: "space-between",
   },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  sectionHint: { fontSize: 12, color: "#6B7280" },
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  sectionHint: { fontSize: 11, color: "#6B7280" },
 
   /* KPI grid */
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    marginBottom: 12,
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    marginBottom: 10,
   },
   statCard: {
     width: "47.6%",
     backgroundColor: "#FFFFFF",
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 10,
     alignItems: "flex-start",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
   iconWrap: {
-    borderRadius: 10,
-    padding: 8,
-    marginBottom: 8,
+    borderRadius: 8,
+    padding: 7,
+    marginBottom: 7,
   },
-  statLabel: { fontSize: 12, color: "#6B7280" },
+  statLabel: { fontSize: 11, color: "#6B7280", fontWeight: "500" },
   statValue: {
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#111827",
-    marginTop: 4,
+    marginTop: 3,
   },
 
   /* Progress */
   progressOuter: {
-    height: 8,
+    height: 6,
     borderRadius: 999,
     backgroundColor: "#F3F4F6",
     overflow: "hidden",
@@ -343,7 +341,7 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
@@ -353,9 +351,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 8,
   },
-  infoLabel: { fontSize: 14, color: "#6B7280" },
+  infoLabel: { fontSize: 13, color: "#6B7280" },
   infoValue: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#111827",
     fontWeight: "500",
     flex: 1,
@@ -365,41 +363,42 @@ const styles = StyleSheet.create({
   /* Description */
   descriptionBox: {
     backgroundColor: "#F9FAFB",
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  descriptionText: { fontSize: 14, color: "#374151", lineHeight: 22 },
+  descriptionText: { fontSize: 13, color: "#374151", lineHeight: 19 },
   seeMoreBtn: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 8,
     alignSelf: "flex-start",
   },
-  seeMoreText: { fontSize: 13, color: "#2563EB", fontWeight: "600" },
+  seeMoreText: { fontSize: 12, color: "#2563EB", fontWeight: "600" },
 
   /* Chips */
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     backgroundColor: "#EFF6FF",
     borderWidth: 1,
     borderColor: "#DBEAFE",
   },
-  chipText: { fontSize: 12, color: "#1D4ED8", fontWeight: "600" },
+  chipText: { fontSize: 11, color: "#1D4ED8", fontWeight: "600" },
 
   /* Badge */
   badge: {
-    fontSize: 12,
+    fontSize: 11,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    fontWeight: "600",
   },
 });
