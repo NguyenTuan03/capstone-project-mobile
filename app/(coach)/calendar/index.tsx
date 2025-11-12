@@ -6,7 +6,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import CustomWeeklyCalendar from "../../../components/coach/calendar/CustomWeeklyCalendar";
@@ -55,12 +54,6 @@ export default function CoachCalendarScreen() {
     [loadSessions]
   );
 
-  const handleTodayPress = useCallback(() => {
-    const todayDates = getCurrentWeekRange();
-    setCurrentWeek(todayDates);
-    loadSessions(todayDates.start, todayDates.end);
-  }, [loadSessions]);
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#059669" />
@@ -71,9 +64,6 @@ export default function CoachCalendarScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lịch dạy</Text>
-        <TouchableOpacity style={styles.todayButton} onPress={handleTodayPress}>
-          <Text style={styles.todayButtonText}>Hôm nay</Text>
-        </TouchableOpacity>
       </View>
 
       {loading ? (

@@ -1,13 +1,19 @@
+import CourtSelectionModal from "@/components/coach/course/modal/CourtSelectionModal";
+import SubjectSelectionModal from "@/components/coach/course/modal/SubjectSelectionModal";
 import { DAYS_OF_WEEK, DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
+import courtService from "@/services/court.service";
 import { get } from "@/services/http/httpService";
 import { LearningFormat, Schedule } from "@/types/course";
+import { Court } from "@/types/court";
 import { Subject } from "@/types/subject";
+import { formatPrice } from "@/utils/priceFormat";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -52,9 +58,7 @@ type CreateEditCourseModalProps = {
     maxParticipants: number;
     pricePerParticipant: number;
     startDate: string;
-    address: string;
-    province: number;
-    district: number;
+    court?: number | undefined;
     schedules?: Schedule[];
   }) => Promise<void>;
   mode?: "create" | "edit";
@@ -113,12 +117,17 @@ export default function CreateEditCourseModal({
   const [loadingAvailableSchedules, setLoadingAvailableSchedules] =
     useState(false);
 
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [loadingCourts, setLoadingCourts] = useState(false);
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+
   // UI states
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showProvinceModal, setShowProvinceModal] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
+  const [showCourtModal, setShowCourtModal] = useState(false);
   const [editingScheduleIndex, setEditingScheduleIndex] = useState<
     number | null
   >(null);
@@ -170,9 +179,13 @@ export default function CreateEditCourseModal({
   useEffect(() => {
     if (selectedProvince) {
       fetchDistricts(selectedProvince.id);
+      // Clear district and court when province changes
+      setSelectedDistrict(null);
+      setSelectedCourt(null);
     } else {
       setDistricts([]);
       setSelectedDistrict(null);
+      setSelectedCourt(null);
     }
   }, [selectedProvince]);
 
@@ -182,6 +195,17 @@ export default function CreateEditCourseModal({
       setMaxParticipants("1");
     }
   }, [learningFormat]);
+
+  // Fetch courts when province or district changes
+  useEffect(() => {
+    if (selectedProvince || selectedDistrict) {
+      fetchCourtsByLocation(selectedProvince?.id, selectedDistrict?.id);
+    } else {
+      setCourts([]);
+    }
+    // Clear court when district changes
+    setSelectedCourt(null);
+  }, [selectedProvince, selectedDistrict]);
 
   useEffect(() => {
     fetchCoachAvailableSchedules();
@@ -263,6 +287,25 @@ export default function CreateEditCourseModal({
       console.error("Lỗi khi tải danh sách quận/huyện:", error);
     } finally {
       setLoadingDistricts(false);
+    }
+  };
+
+  const fetchCourtsByLocation = async (
+    provinceId?: number,
+    districtId?: number
+  ) => {
+    try {
+      setLoadingCourts(true);
+      const res = await courtService.getCourtsByLocation(
+        provinceId,
+        districtId
+      );
+      console.log("Courts by location API response:", res);
+      setCourts(res || []);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách sân:", error);
+    } finally {
+      setLoadingCourts(false);
     }
   };
 
@@ -356,12 +399,9 @@ export default function CreateEditCourseModal({
       console.error("Validation error: Chưa chọn ngày bắt đầu");
       return;
     }
-    if (!address) {
-      console.error("Validation error: Chưa nhập địa chỉ");
-      return;
-    }
-    if (!selectedProvince || !selectedDistrict) {
-      console.error("Validation error: Chưa chọn tỉnh/thành phố và quận/huyện");
+
+    if (!selectedCourt) {
+      Alert.alert("Lỗi", "Vui lòng chọn sân tập cho khóa học.");
       return;
     }
 
@@ -375,9 +415,7 @@ export default function CreateEditCourseModal({
         maxParticipants: parseInt(maxParticipants),
         pricePerParticipant: parseInt(pricePerParticipant.replace(/,/g, "")),
         startDate: new Date(startDate).toISOString(),
-        address,
-        province: selectedProvince.id,
-        district: selectedDistrict.id,
+        court: selectedCourt ? selectedCourt.id : undefined,
         schedules: schedules.length > 0 ? schedules : undefined,
       };
 
@@ -517,6 +555,136 @@ export default function CreateEditCourseModal({
               </View>
             )}
 
+            {/* Province & District - MOVED HERE */}
+            <View style={styles.section}>
+              <View style={styles.labelWithAction}>
+                <Text style={styles.label}>
+                  Tỉnh/Thành phố & Quận/Huyện{" "}
+                  <Text style={styles.required}>*</Text>
+                </Text>
+                {(selectedProvince || selectedDistrict || selectedCourt) && (
+                  <TouchableOpacity
+                    style={styles.clearButton}
+                    onPress={() => {
+                      setSelectedProvince(null);
+                      setSelectedDistrict(null);
+                      setSelectedCourt(null);
+                      setCourts([]);
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                    <Text style={styles.clearButtonText}>Xóa</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                  <Text style={styles.inputLabel}>Tỉnh/Thành phố</Text>
+                  <TouchableOpacity
+                    style={styles.selectButton}
+                    onPress={() => setShowProvinceModal(true)}
+                    disabled={loadingProvinces}
+                  >
+                    <Text
+                      style={[
+                        styles.selectButtonText,
+                        !selectedProvince && styles.placeholderText,
+                      ]}
+                    >
+                      {selectedProvince
+                        ? selectedProvince.name
+                        : loadingProvinces
+                        ? "Đang tải..."
+                        : "Chọn"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                  <Text style={styles.inputLabel}>Quận/Huyện</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.selectButton,
+                      !selectedProvince && styles.selectButtonDisabled,
+                    ]}
+                    onPress={() => {
+                      if (selectedProvince) {
+                        setShowDistrictModal(true);
+                      }
+                    }}
+                    disabled={!selectedProvince || loadingDistricts}
+                  >
+                    <Text
+                      style={[
+                        styles.selectButtonText,
+                        !selectedDistrict && styles.placeholderText,
+                      ]}
+                    >
+                      {loadingDistricts
+                        ? "Đang tải..."
+                        : selectedDistrict
+                        ? selectedDistrict.name
+                        : "Chọn"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Court Selection - MOVED HERE */}
+            {selectedProvince && selectedDistrict && (
+              <View style={styles.section}>
+                <Text style={styles.label}>
+                  Sân <Text style={styles.required}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.selectButton,
+                    loadingCourts && styles.selectButtonDisabled,
+                  ]}
+                  onPress={() => setShowCourtModal(true)}
+                  disabled={loadingCourts || courts.length === 0}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.selectButtonText,
+                        !selectedCourt && styles.placeholderText,
+                      ]}
+                    >
+                      {loadingCourts
+                        ? "Đang tải sân..."
+                        : selectedCourt
+                        ? selectedCourt.name
+                        : courts.length === 0
+                        ? "Không có sân nào"
+                        : "Chọn sân"}
+                    </Text>
+                    {selectedCourt && (
+                      <Text style={styles.courtPriceHighlight}>
+                        {formatPrice(selectedCourt.pricePerHour)} VNĐ/giờ
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                </TouchableOpacity>
+                {selectedCourt && (
+                  <View style={styles.courtInfo}>
+                    <Ionicons name="location" size={14} color="#6B7280" />
+                    <Text style={styles.courtInfoText}>
+                      {selectedCourt.address}
+                    </Text>
+                  </View>
+                )}
+                {!loadingCourts && courts.length === 0 && (
+                  <Text style={styles.hint}>
+                    Không tìm thấy sân nào tại vị trí này
+                  </Text>
+                )}
+              </View>
+            )}
+
             {/* Price */}
             <View style={styles.section}>
               <Text style={styles.label}>
@@ -633,13 +801,16 @@ export default function CreateEditCourseModal({
                       <DateTimePicker
                         value={selectedDate}
                         mode="date"
-                        display="spinner"
+                        display="inline"
                         onChange={(event, date) => {
                           if (date) {
                             setSelectedDate(date);
                           }
                         }}
                         minimumDate={new Date()}
+                        textColor="#111827"
+                        accentColor="#059669"
+                        themeVariant="light"
                       />
                     </View>
                   </View>
@@ -661,83 +832,6 @@ export default function CreateEditCourseModal({
                   minimumDate={new Date()}
                 />
               )}
-            </View>
-
-            {/* Address */}
-            <View style={styles.section}>
-              <Text style={styles.label}>
-                Địa chỉ <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="123 Main St, City, Country"
-                value={address}
-                onChangeText={setAddress}
-                multiline
-                numberOfLines={3}
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            {/* Province & District */}
-            <View style={styles.section}>
-              <Text style={styles.label}>
-                Tỉnh/Thành phố & Quận/Huyện{" "}
-                <Text style={styles.required}>*</Text>
-              </Text>
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>Tỉnh/Thành phố</Text>
-                  <TouchableOpacity
-                    style={styles.selectButton}
-                    onPress={() => setShowProvinceModal(true)}
-                    disabled={loadingProvinces}
-                  >
-                    <Text
-                      style={[
-                        styles.selectButtonText,
-                        !selectedProvince && styles.placeholderText,
-                      ]}
-                    >
-                      {selectedProvince
-                        ? selectedProvince.name
-                        : loadingProvinces
-                        ? "Đang tải..."
-                        : "Chọn tỉnh/thành phố"}
-                    </Text>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.inputLabel}>Quận/Huyện</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.selectButton,
-                      !selectedProvince && styles.selectButtonDisabled,
-                    ]}
-                    onPress={() => {
-                      if (selectedProvince) {
-                        setShowDistrictModal(true);
-                      }
-                    }}
-                    disabled={!selectedProvince || loadingDistricts}
-                  >
-                    <Text
-                      style={[
-                        styles.selectButtonText,
-                        !selectedDistrict && styles.placeholderText,
-                      ]}
-                    >
-                      {loadingDistricts
-                        ? "Đang tải..."
-                        : selectedDistrict
-                        ? selectedDistrict.name
-                        : "Chọn quận/huyện"}
-                    </Text>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
-              </View>
             </View>
 
             {/* Schedules */}
@@ -811,55 +905,14 @@ export default function CreateEditCourseModal({
           </View>
 
           {/* Subject Selection Modal */}
-          <Modal
+          <SubjectSelectionModal
             visible={showSubjectModal}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowSubjectModal(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Chọn tài liệu</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowSubjectModal(false)}
-                    style={styles.modalCloseButton}
-                  >
-                    <Ionicons name="close" size={24} color="#111827" />
-                  </TouchableOpacity>
-                </View>
-                {loadingSubjects ? (
-                  <ActivityIndicator size="large" color="#059669" />
-                ) : (
-                  <ScrollView>
-                    {subjects.map((subject) => (
-                      <TouchableOpacity
-                        key={subject.id}
-                        style={[
-                          styles.modalItem,
-                          selectedSubjectId === subject.id &&
-                            styles.modalItemSelected,
-                        ]}
-                        onPress={() => {
-                          setSelectedSubjectId(subject.id);
-                          setShowSubjectModal(false);
-                        }}
-                      >
-                        <Text style={styles.modalItemText}>{subject.name}</Text>
-                        {selectedSubjectId === subject.id && (
-                          <Ionicons
-                            name="checkmark"
-                            size={20}
-                            color="#059669"
-                          />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
-            </View>
-          </Modal>
+            onClose={() => setShowSubjectModal(false)}
+            subjects={subjects}
+            selectedSubjectId={selectedSubjectId}
+            onSelectSubject={setSelectedSubjectId}
+            loading={loadingSubjects}
+          />
 
           {/* Schedule Modal */}
           <Modal
@@ -986,10 +1039,13 @@ export default function CreateEditCourseModal({
                             <DateTimePicker
                               value={selectedStartTime}
                               mode="time"
-                              display="spinner"
+                              display="inline"
                               onChange={(event, date) => {
                                 if (date) setSelectedStartTime(date);
                               }}
+                              textColor="#111827"
+                              accentColor="#059669"
+                              themeVariant="light"
                             />
                           </View>
                         </View>
@@ -1087,7 +1143,10 @@ export default function CreateEditCourseModal({
                             <DateTimePicker
                               value={selectedEndTime}
                               mode="time"
-                              display="spinner"
+                              display="inline"
+                              textColor="#111827"
+                              accentColor="#059669"
+                              themeVariant="light"
                               onChange={(event, date) => {
                                 if (date) setSelectedEndTime(date);
                               }}
@@ -1322,6 +1381,16 @@ export default function CreateEditCourseModal({
               </View>
             </View>
           </Modal>
+
+          {/* Court Selection Modal */}
+          <CourtSelectionModal
+            visible={showCourtModal}
+            onClose={() => setShowCourtModal(false)}
+            courts={courts}
+            selectedCourt={selectedCourt}
+            onSelectCourt={setSelectedCourt}
+            loading={loadingCourts}
+          />
         </View>
       </View>
     </Modal>
@@ -1671,6 +1740,49 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  courtInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+  },
+  courtInfoText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  courtPriceHighlight: {
+    fontSize: 13,
+    color: "#059669",
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  labelWithAction: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  clearButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  clearButtonText: {
+    fontSize: 12,
+    color: "#EF4444",
     fontWeight: "600",
   },
 });

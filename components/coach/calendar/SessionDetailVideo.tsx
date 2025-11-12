@@ -2,14 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { VideoView, useVideoPlayer } from "expo-video";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 
 interface Props {
@@ -50,58 +50,62 @@ const SessionDetailVideo: React.FC<Props> = ({ session, course, styles }) => {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name="play-circle-outline" size={20} color="#059669" />
+        <View style={localStyles.headerIcon}>
+          <Ionicons name="play-circle-outline" size={20} color="#059669" />
+        </View>
         <Text style={styles.sectionTitle}>Video hướng dẫn</Text>
-        <Text style={styles.enrollmentCount}>({videos.length} video)</Text>
+        <View style={localStyles.badgeContainer}>
+          <Text style={localStyles.badgeText}>{videos.length}</Text>
+        </View>
       </View>
 
       <View style={styles.sectionContent}>
         {videos.map((video: any, index: number) => (
           <React.Fragment key={video.id || index}>
             <TouchableOpacity
-              style={styles.videoItem}
-              activeOpacity={0.9}
+              style={localStyles.videoCard}
+              activeOpacity={0.7}
               onPress={() => openPlayer(video)}
             >
-              <View style={styles.videoThumbnail}>
+              <View style={localStyles.videoThumbnail}>
                 {video.thumbnailUrl ? (
                   <Image
                     source={{ uri: video.thumbnailUrl }}
-                    style={styles.thumbnailImage}
+                    style={localStyles.thumbnailImage}
                   />
                 ) : (
-                  <View style={styles.defaultThumbnail}>
-                    <Ionicons name="play" size={32} color="#6B7280" />
+                  <View style={localStyles.defaultThumbnail}>
+                    <Ionicons name="play" size={28} color="#6B7280" />
                   </View>
                 )}
-                <View style={styles.playOverlay}>
-                  <Ionicons name="play" size={24} color="#FFFFFF" />
+                <View style={localStyles.playOverlay}>
+                  <Ionicons name="play" size={20} color="#FFFFFF" />
                 </View>
               </View>
 
-              <View style={styles.videoInfo}>
-                <Text style={styles.videoTitle}>{video.title}</Text>
+              <View style={localStyles.videoInfo}>
+                <Text style={localStyles.videoTitle} numberOfLines={2}>{video.title}</Text>
                 {video.description && (
-                  <Text style={styles.videoDescription} numberOfLines={2}>
+                  <Text style={localStyles.videoDescription} numberOfLines={2}>
                     {video.description}
                   </Text>
                 )}
-                <View style={styles.videoMeta}>
-                  <View style={styles.videoMetaItem}>
-                    <Ionicons name="time-outline" size={14} color="#6B7280" />
-                    <Text style={styles.videoMetaText}>
+                <View style={localStyles.videoMeta}>
+                  <View style={localStyles.videoMetaItem}>
+                    <Ionicons name="time-outline" size={13} color="#6B7280" />
+                    <Text style={localStyles.videoMetaText}>
                       {Math.floor(video.duration / 60)}:
                       {(video.duration % 60).toString().padStart(2, "0")}
                     </Text>
                   </View>
                   {video.drillName && (
-                    <View style={styles.videoMetaItem}>
+                    <View style={localStyles.videoMetaItem}>
                       <Ionicons
                         name="football-outline"
-                        size={14}
+                        size={13}
                         color="#6B7280"
                       />
-                      <Text style={styles.videoMetaText}>
+                      <Text style={localStyles.videoMetaText}>
                         {video.drillName}
                       </Text>
                     </View>
@@ -204,11 +208,108 @@ function formatTime(sec: number) {
 }
 
 const localStyles = StyleSheet.create({
+  headerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ECFDF5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeContainer: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  videoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  videoThumbnail: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#F3F4F6',
+    position: 'relative',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  defaultThumbnail: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  videoInfo: {
+    flex: 1,
+    padding: 10,
+    justifyContent: 'space-between',
+  },
+  videoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 19,
+    marginBottom: 4,
+  },
+  videoDescription: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 16,
+    marginBottom: 6,
+  },
+  videoMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  videoMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  videoMetaText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
   inlinePlayer: {
     width: "100%",
-    height: 220,
+    height: 200,
     backgroundColor: "#000",
     marginTop: 8,
+    marginBottom: 8,
     borderRadius: 8,
     overflow: "hidden",
   },

@@ -18,7 +18,10 @@
       "Bash(npm run)",
       "Bash(cat:*)",
       "Bash(npm run start:*)",
-      "Bash(npm run copy:templates:*)"
+      "Bash(npm run copy:templates:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
