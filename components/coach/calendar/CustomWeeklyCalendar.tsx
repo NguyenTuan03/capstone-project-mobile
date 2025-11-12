@@ -7,8 +7,19 @@ import {
   startOfWeek,
   subWeeks,
 } from "date-fns";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type {
+  GestureResponderEvent,
+  PanResponderGestureState,
+} from "react-native";
 import {
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -86,15 +97,19 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
   // Week summary statistics
   const weekStats = useMemo(() => {
-    const allWeekSessions = weekData.flatMap(day => day.sessions);
+    const allWeekSessions = weekData.flatMap((day) => day.sessions);
     const totalSessions = allWeekSessions.length;
-    const completedSessions = allWeekSessions.filter(s => s.status === SessionStatus.COMPLETED).length;
-    const scheduledSessions = allWeekSessions.filter(s => s.status === SessionStatus.SCHEDULED).length;
-    
+    const completedSessions = allWeekSessions.filter(
+      (s) => s.status === SessionStatus.COMPLETED
+    ).length;
+    const scheduledSessions = allWeekSessions.filter(
+      (s) => s.status === SessionStatus.SCHEDULED
+    ).length;
+
     // Calculate total teaching hours
     const totalMinutes = allWeekSessions.reduce((acc, session) => {
-      const start = session.startTime.split(':');
-      const end = session.endTime.split(':');
+      const start = session.startTime.split(":");
+      const end = session.endTime.split(":");
       const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
       const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
       return acc + (endMinutes - startMinutes);
@@ -108,7 +123,10 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
       scheduledSessions,
       totalHours,
       remainingMinutes,
-      timeText: remainingMinutes > 0 ? `${totalHours}h ${remainingMinutes}m` : `${totalHours}h`
+      timeText:
+        remainingMinutes > 0
+          ? `${totalHours}h ${remainingMinutes}m`
+          : `${totalHours}h`,
     };
   }, [weekData]);
 
@@ -207,10 +225,36 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
     const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
 
     if (onWeekChange) {
-      onWeekChange(format(weekStart, "yyyy-MM-dd"), format(weekEnd, "yyyy-MM-dd"));
+      onWeekChange(
+        format(weekStart, "yyyy-MM-dd"),
+        format(weekEnd, "yyyy-MM-dd")
+      );
     }
   }, [onWeekChange]);
 
+  // Pan responder for swipe gestures
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (
+        _evt: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
+        return Math.abs(gestureState.dx) > 10;
+      },
+      onPanResponderRelease: (
+        _evt: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
+        if (gestureState.dx > 50) {
+          // Swipe right - previous week
+          navigateWeek("prev");
+        } else if (gestureState.dx < -50) {
+          // Swipe left - next week
+          navigateWeek("next");
+        }
+      },
+    })
+  ).current;
   const renderDayHeader = (day: any) => {
     const sessionCountColor = getSessionCountColor(day.sessions.length);
 
@@ -227,18 +271,18 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
       >
         <Text
           style={[
-            styles.dayText, 
+            styles.dayText,
             day.isSelected && styles.dayTextSelected,
-            day.isToday && styles.dayTextToday
+            day.isToday && styles.dayTextToday,
           ]}
         >
           {day.dayShort}
         </Text>
         <Text
           style={[
-            styles.dayNumber, 
+            styles.dayNumber,
             day.isSelected && styles.dayNumberSelected,
-            day.isToday && styles.dayNumberToday
+            day.isToday && styles.dayNumberToday,
           ]}
         >
           {day.dayNumber}
@@ -255,9 +299,7 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         ) : (
           <View style={styles.emptyIndicator} />
         )}
-        {day.isToday && !day.isSelected && (
-          <View style={styles.todayDot} />
-        )}
+        {day.isToday && !day.isSelected && <View style={styles.todayDot} />}
       </TouchableOpacity>
     );
   };
@@ -327,111 +369,124 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
   const selectedDayData = weekData.find((day) => day.isSelected);
 
+  // Check if current week is today's week
+  const isCurrentWeek = useMemo(() => {
+    const today = new Date();
+    const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    return (
+      format(weekStart, "yyyy-MM-dd") === format(todayWeekStart, "yyyy-MM-dd")
+    );
+  }, [weekStart]);
+
   return (
     <View style={styles.container}>
-      {/* Week Navigation */}
-      <View style={styles.weekHeader}>
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => navigateWeek("prev")}
+      <View {...panResponder.panHandlers} style={styles.gestureContainer}>
+        {/* Week Navigation - Simplified */}
+        <View style={styles.weekHeader}>
+          <View style={styles.weekTitleContainer}>
+            <Text style={styles.monthYear}>
+              Tháng {format(currentDate, "M/yyyy")}
+            </Text>
+            <Text style={styles.weekRange}>
+              {format(weekStart, "dd")} - {format(weekEnd, "dd")}{" "}
+            </Text>
+          </View>
+
+          {!isCurrentWeek && (
+            <TouchableOpacity
+              style={styles.todayButtonPrimary}
+              onPress={goToToday}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="today" size={16} color="#FFFFFF" />
+              <Text style={styles.todayButtonPrimaryText}>Hôm nay</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Swipe Hint */}
+        <View style={styles.swipeHint}>
+          <Ionicons name="chevron-back" size={12} color="#9CA3AF" />
+          <Text style={styles.swipeHintText}>Vuốt để chuyển tuần</Text>
+          <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
+        </View>
+
+        {/* Week Summary Stats */}
+        <View style={styles.weekSummary}>
+          <View style={styles.statItem}>
+            <Ionicons name="calendar" size={16} color="#059669" />
+            <Text style={styles.statValue}>{weekStats.totalSessions}</Text>
+            <Text style={styles.statLabel}>buổi học</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="time" size={16} color="#3B82F6" />
+            <Text style={styles.statValue}>{weekStats.timeText}</Text>
+            <Text style={styles.statLabel}>giảng dạy</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+            <Text style={styles.statValue}>{weekStats.completedSessions}</Text>
+            <Text style={styles.statLabel}>hoàn thành</Text>
+          </View>
+        </View>
+
+        {/* Day Headers */}
+        <View style={styles.daysContainer}>
+          {weekData.map(renderDayHeader)}
+        </View>
+
+        {/* Sessions for Selected Day */}
+        <ScrollView
+          style={styles.sessionsContainer}
+          contentContainerStyle={styles.sessionsContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons name="chevron-back" size={20} color="#059669" />
-        </TouchableOpacity>
-
-        <View style={styles.weekTitleContainer}>
-          <Text style={styles.weekTitle}>
-            {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM/yyyy")}
-          </Text>
-          <TouchableOpacity 
-            style={styles.todayButton}
-            onPress={goToToday}
-          >
-            <Ionicons name="today-outline" size={14} color="#059669" />
-            <Text style={styles.todayButtonText}>Hôm nay</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.navButton}
-          onPress={() => navigateWeek("next")}
-        >
-          <Ionicons name="chevron-forward" size={20} color="#059669" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Week Summary Stats */}
-      <View style={styles.weekSummary}>
-        <View style={styles.statItem}>
-          <Ionicons name="calendar" size={16} color="#059669" />
-          <Text style={styles.statValue}>{weekStats.totalSessions}</Text>
-          <Text style={styles.statLabel}>buổi học</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Ionicons name="time" size={16} color="#3B82F6" />
-          <Text style={styles.statValue}>{weekStats.timeText}</Text>
-          <Text style={styles.statLabel}>giảng dạy</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-          <Text style={styles.statValue}>{weekStats.completedSessions}</Text>
-          <Text style={styles.statLabel}>hoàn thành</Text>
-        </View>
-      </View>
-
-      {/* Day Headers */}
-      <View style={styles.daysContainer}>{weekData.map(renderDayHeader)}</View>
-
-      {/* Sessions for Selected Day */}
-      <ScrollView
-        style={styles.sessionsContainer}
-        contentContainerStyle={styles.sessionsContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {selectedDayData && selectedDayData.sessions.length > 0 ? (
-          <>
-            <View style={styles.selectedDayHeader}>
-              <Text style={styles.selectedDayTitle}>
-                {toVietnameseDay(format(selectedDayData.date, "EEEE"))},{" "}
-                {format(selectedDayData.date, "dd/MM/yyyy")}
-              </Text>
-              <Text style={styles.sessionCount}>
-                {selectedDayData.sessions.length} buổi học
-              </Text>
-            </View>
-
-            {selectedDayData.sessions.map((session, index) => (
-              <View key={session.id || index} style={styles.sessionItem}>
-                {renderSession({ item: session })}
+          {selectedDayData && selectedDayData.sessions.length > 0 ? (
+            <>
+              <View style={styles.selectedDayHeader}>
+                <Text style={styles.selectedDayTitle}>
+                  {toVietnameseDay(format(selectedDayData.date, "EEEE"))},{" "}
+                  {format(selectedDayData.date, "dd/MM/yyyy")}
+                </Text>
+                <Text style={styles.sessionCount}>
+                  {selectedDayData.sessions.length} buổi học
+                </Text>
               </View>
-            ))}
-          </>
-        ) : (
-          <>
-            <View style={styles.selectedDayHeader}>
-              <Text style={styles.selectedDayTitle}>
-                {selectedDayData
-                  ? `${toVietnameseDay(
-                      format(selectedDayData.date, "EEEE")
-                    )}, ${format(selectedDayData.date, "dd/MM/yyyy")}`
-                  : `${toVietnameseDay(format(new Date(), "EEEE"))}, ${format(
-                      new Date(),
-                      "dd/MM/yyyy"
-                    )}`}
-              </Text>
-            </View>
-            {renderEmptyDay()}
-          </>
-        )}
-      </ScrollView>
 
-      {/* Session Detail Modal */}
-      <SessionDetailModal
-        session={selectedSession}
-        isVisible={isModalVisible}
-        onClose={closeModal}
-      />
+              {selectedDayData.sessions.map((session, index) => (
+                <View key={session.id || index} style={styles.sessionItem}>
+                  {renderSession({ item: session })}
+                </View>
+              ))}
+            </>
+          ) : (
+            <>
+              <View style={styles.selectedDayHeader}>
+                <Text style={styles.selectedDayTitle}>
+                  {selectedDayData
+                    ? `${toVietnameseDay(
+                        format(selectedDayData.date, "EEEE")
+                      )}, ${format(selectedDayData.date, "dd/MM/yyyy")}`
+                    : `${toVietnameseDay(format(new Date(), "EEEE"))}, ${format(
+                        new Date(),
+                        "dd/MM/yyyy"
+                      )}`}
+                </Text>
+              </View>
+              {renderEmptyDay()}
+            </>
+          )}
+        </ScrollView>
+
+        {/* Session Detail Modal */}
+        <SessionDetailModal
+          session={selectedSession}
+          isVisible={isModalVisible}
+          onClose={closeModal}
+        />
+      </View>
     </View>
   );
 };
@@ -441,13 +496,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F3F4F6",
   },
+  gestureContainer: {
+    flex: 1,
+  },
   weekHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderBottomWidth: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -467,6 +526,49 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#111827",
+  },
+  monthYear: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  weekRange: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  todayButtonPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: "#059669",
+    borderRadius: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  todayButtonPrimaryText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
+  },
+  swipeHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 6,
+    gap: 6,
+  },
+  swipeHintText: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontWeight: "500",
   },
   daysContainer: {
     flexDirection: "row",

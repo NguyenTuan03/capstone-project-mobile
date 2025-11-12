@@ -633,13 +633,16 @@ export default function CreateEditCourseModal({
                       <DateTimePicker
                         value={selectedDate}
                         mode="date"
-                        display="spinner"
+                        display="inline"
                         onChange={(event, date) => {
                           if (date) {
                             setSelectedDate(date);
                           }
                         }}
                         minimumDate={new Date()}
+                        textColor="#111827"
+                        accentColor="#059669"
+                        themeVariant="light"
                       />
                     </View>
                   </View>
@@ -670,7 +673,7 @@ export default function CreateEditCourseModal({
               </Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="123 Main St, City, Country"
+                placeholder="Nhập địa chỉ chi tiết"
                 value={address}
                 onChangeText={setAddress}
                 multiline
@@ -703,7 +706,7 @@ export default function CreateEditCourseModal({
                         ? selectedProvince.name
                         : loadingProvinces
                         ? "Đang tải..."
-                        : "Chọn tỉnh/thành phố"}
+                        : "Chọn"}
                     </Text>
                     <Ionicons name="chevron-down" size={20} color="#6B7280" />
                   </TouchableOpacity>
@@ -732,7 +735,7 @@ export default function CreateEditCourseModal({
                         ? "Đang tải..."
                         : selectedDistrict
                         ? selectedDistrict.name
-                        : "Chọn quận/huyện"}
+                        : "Chọn"}
                     </Text>
                     <Ionicons name="chevron-down" size={20} color="#6B7280" />
                   </TouchableOpacity>
@@ -986,10 +989,13 @@ export default function CreateEditCourseModal({
                             <DateTimePicker
                               value={selectedStartTime}
                               mode="time"
-                              display="spinner"
+                              display="inline"
                               onChange={(event, date) => {
                                 if (date) setSelectedStartTime(date);
                               }}
+                              textColor="#111827"
+                              accentColor="#059669"
+                              themeVariant="light"
                             />
                           </View>
                         </View>
@@ -1087,7 +1093,10 @@ export default function CreateEditCourseModal({
                             <DateTimePicker
                               value={selectedEndTime}
                               mode="time"
-                              display="spinner"
+                              display="inline"
+                              textColor="#111827"
+                              accentColor="#059669"
+                              themeVariant="light"
                               onChange={(event, date) => {
                                 if (date) setSelectedEndTime(date);
                               }}
