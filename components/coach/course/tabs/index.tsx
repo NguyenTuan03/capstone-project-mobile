@@ -1,10 +1,9 @@
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-type TabKey = "overview" | "students" | "schedule" | "edit";
+type TabKey = "overview" | "assignment" | "students" | "schedule" | "edit";
 
 type Props = {
   course: Course;
@@ -13,7 +12,6 @@ type Props = {
 };
 
 const CourseTabs: React.FC<Props> = ({ course, activeTab, onChangeTab }) => {
-  const router = useRouter();
   const scrollRef = useRef<ScrollView | null>(null);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
@@ -66,16 +64,18 @@ const CourseTabs: React.FC<Props> = ({ course, activeTab, onChangeTab }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab]}
-            onPress={() =>
-              router.push({
-                pathname: "/(coach)/course/assignment/[id]" as any,
-                params: { id: String(course.id) },
-              })
-            }
+            style={[styles.tab, activeTab === "assignment" && styles.tabActive]}
+            onPress={() => onChangeTab("assignment")}
           >
             <Ionicons name="clipboard" size={18} color="#6B7280" />
-            <Text style={styles.tabText}>Bài tập</Text>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "assignment" && styles.tabTextActive,
+              ]}
+            >
+              Bài tập
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity

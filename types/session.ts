@@ -64,3 +64,27 @@ export interface CalendarSession {
   videos: VideoType[];
   attendances?: AttendanceType[];
 }
+
+export type Exercise =
+  | {
+      id: string;
+      type: "video";
+      title: string;
+      subtitle?: string;
+      hasSample: boolean;
+      dueDate?: string;
+      submittedCount: number;
+      onSample?: () => void;
+      onViewSubmissions?: () => void;
+    }
+  | {
+      id: string;
+      type: "quiz";
+      title: string;
+      subtitle?: string;
+      hasSample: false;
+      dueDate?: string;
+      submittedCount: number;
+      onStartQuiz?: () => void;
+      onViewSubmissions?: () => void;
+    };

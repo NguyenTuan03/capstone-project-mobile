@@ -87,12 +87,10 @@ export default function CoachCourseScreen() {
     }
   };
 
-  // Refresh khi màn hình được focus (quay lại từ create screen)
   useFocusEffect(
     useCallback(() => {
       fetchCourses(1, false);
       fetchPlatformFee();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -157,8 +155,6 @@ export default function CoachCourseScreen() {
   const hasMore = courses.length < total;
 
   const RevenueTooltip = ({ course }: { course: Course }) => {
-    // local require to avoid changing top-level imports
-
     const [visible, setVisible] = useState(false);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const tooltipAnim = useRef(new Animated.Value(0)).current;
@@ -265,11 +261,6 @@ export default function CoachCourseScreen() {
           </Text>
         </AnimatedTouchable>
 
-        {/*
-          Tooltip is an Animated.View so it fades/slides into place.
-          It's absolutely positioned relative to the parent container,
-          same as the original implementation.
-        */}
         <Animated.View
           pointerEvents={visible ? "auto" : "none"}
           style={{
