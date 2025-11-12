@@ -59,16 +59,15 @@ export default function LessonDetailScreen() {
     }, [activeTab, lessonId])
   );
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
-  }
-
   const videoSource =
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
   const player = useVideoPlayer(videoSource, (player) => {
     player.loop = true;
     player.play();
   });
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
 
   return (
     <SafeAreaView
@@ -129,13 +128,15 @@ export default function LessonDetailScreen() {
               paddingVertical: 8,
               paddingHorizontal: 16,
               borderRadius: 20,
-              backgroundColor: activeTab === tab ? "#059669" : "transparent",
+              borderWidth: 1,
+              borderColor: "#059669",
+              backgroundColor: activeTab === tab ? "#CFF6EB" : "transparent",
             }}
           >
             <Text
               style={{
                 fontWeight: "600",
-                color: activeTab === tab ? "#ffff" : "#6B7280",
+                color: activeTab === tab ? "#059669" : "#6B7280",
               }}
             >
               {tab}
@@ -147,21 +148,43 @@ export default function LessonDetailScreen() {
         {activeTab === "VIDEO LESSON" ? (
           <>
             <View>
-              <TouchableOpacity
+              <View
                 style={{
-                  marginBottom: 16,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  backgroundColor: "#E5E7EB",
-                  borderRadius: 8,
-                  alignItems: "center",
+                  alignItems: "flex-end",
+                  marginTop: 12,
+                  marginRight: 16,
                 }}
-                onPress={() => console.log("Thêm video mới")}
               >
-                <Text style={{ fontWeight: "600", color: "#374151" }}>
-                  Thêm video mới
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-end",
+                    backgroundColor: "#059669",
+                    paddingVertical: 8,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                  }}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(coach)/menu/lesson/uploadVideo",
+                      params: { lessonId },
+                    })
+                  }
+                >
+                  <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontWeight: "600",
+                      fontSize: 14,
+                      marginLeft: 6,
+                    }}
+                  >
+                    Thêm video mới
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               <View style={{ marginBottom: 16 }}>
                 <Text
@@ -400,12 +423,12 @@ export default function LessonDetailScreen() {
 
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(coach)/menu/quizzes/edit",
-                          params: { quizId: quiz.id },
-                        })
-                      }
+                      // onPress={() =>
+                      //   router.push({
+                      //     pathname: "/(coach)/menu/quizzes/edit",
+                      //     params: { quizId: quiz.id },
+                      //   })
+                      // }
                       style={{
                         padding: 8,
                         borderRadius: 8,
