@@ -1,80 +1,59 @@
-import { Ionicons } from "@expo/vector-icons";
+import storageService from "@/services/storageService";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import axios from "axios";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Image,
-  StyleSheet,
-  Switch,
+  ActivityIndicator,
+  FlatList,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  FlatList,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function CoachPayoutsScreen() {
-  const [expenseType, setExpenseType] = useState("Expense");
-  const [saveAccount, setSaveAccount] = useState(false);
+  const [expenseType, setExpenseType] = useState<"Income" | "Expense">(
+    "Income"
+  );
+  const [wallet, setWallet] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data cho thu nhập
-  const incomeData = [
-    {
-      id: "1",
-      studentName: "Nguyễn Văn A",
-      amount: 500000,
-      date: "2024-11-10",
-      lesson: "Khóa học cơ bản",
-    },
-    {
-      id: "2",
-      studentName: "Trần Thị B",
-      amount: 800000,
-      date: "2024-11-09",
-      lesson: "Khóa học nâng cao",
-    },
-    {
-      id: "3",
-      studentName: "Lê Văn C",
-      amount: 300000,
-      date: "2024-11-08",
-      lesson: "Buổi học thử",
-    },
-  ];
+  const fetchWalletData = async () => {
+    try {
+      setLoading(true);
 
-  // Mock data cho giao dịch rút tiền
-  const transactionData = [
-    {
-      id: "1",
-      type: "withdraw",
-      amount: 2000000,
-      date: "2024-11-11",
-      status: "completed",
-      bankAccount: "Vietcombank - **** 7780",
-    },
-    {
-      id: "2",
-      type: "withdraw",
-      amount: 1500000,
-      date: "2024-11-05",
-      status: "completed",
-      bankAccount: "Vietcombank - **** 7780",
-    },
-    {
-      id: "3",
-      type: "withdraw",
-      amount: 1000000,
-      date: "2024-11-01",
-      status: "pending",
-      bankAccount: "Vietcombank - **** 7780",
-    },
-  ];
+      const token = await storageService.getToken();
 
-  const formatCurrency = (amount: number) => {
+      const res = await axios.get(`${API_URL}/v1/wallets/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("📦 Dữ liệu ví:", res.data);
+      setWallet(res.data);
+    } catch (err: any) {
+      console.error(
+        "❌ Lỗi khi lấy dữ liệu ví:",
+        err.response?.data || err.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWalletData();
+  }, []);
+
+  const formatCurrency = (amount: any) => {
+    const num = parseFloat(amount);
+    if (isNaN(num)) return "0 ₫";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount);
+      minimumFractionDigits: 0,
+    }).format(num);
   };
 
   const renderIncomeItem = ({ item }: any) => (
@@ -92,17 +71,21 @@ export default function CoachPayoutsScreen() {
       }}
     >
       <View
-        style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
       >
         <Text style={{ fontWeight: "600", fontSize: 15, color: "#222" }}>
-          {item.studentName}
+          {item.studentName || "Học viên"}
         </Text>
         <Text style={{ fontWeight: "bold", fontSize: 16, color: "#059669" }}>
           +{formatCurrency(item.amount)}
         </Text>
       </View>
       <Text style={{ color: "#888", fontSize: 13, marginBottom: 4 }}>
-        {item.lesson}
+        {item.lesson || "Buổi học"}
       </Text>
       <Text style={{ color: "#aaa", fontSize: 12 }}>{item.date}</Text>
     </View>
@@ -123,21 +106,42 @@ export default function CoachPayoutsScreen() {
       }}
     >
       <View
-        style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
       >
         <View>
-          <Text style={{ fontWeight: "600", fontSize: 15, color: "#222", marginBottom: 4 }}>
+          <Text
+            style={{
+              fontWeight: "600",
+              fontSize: 15,
+              color: "#222",
+              marginBottom: 4,
+            }}
+          >
             Rút tiền
           </Text>
-          <Text style={{ color: "#888", fontSize: 13 }}>{item.bankAccount}</Text>
+          <Text style={{ color: "#888", fontSize: 13 }}>
+            {item.bankAccount}
+          </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
-          <Text style={{ fontWeight: "bold", fontSize: 16, color: "#dc2626", marginBottom: 4 }}>
+          <Text
+            style={{
+              fontWeight: "bold",
+              fontSize: 16,
+              color: "#dc2626",
+              marginBottom: 4,
+            }}
+          >
             -{formatCurrency(item.amount)}
           </Text>
           <View
             style={{
-              backgroundColor: item.status === "completed" ? "#dcfce7" : "#fef3c7",
+              backgroundColor:
+                item.status === "completed" ? "#dcfce7" : "#fef3c7",
               paddingHorizontal: 8,
               paddingVertical: 2,
               borderRadius: 4,
@@ -160,14 +164,11 @@ export default function CoachPayoutsScreen() {
   );
 
   return (
-    <SafeAreaView
-      style={{ backgroundColor: "#f9fafb", flex: 1, paddingHorizontal: 20 }}
-    >
+    <View style={{ backgroundColor: "#fff", flex: 1, paddingHorizontal: 20 }}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingVertical: 16,
         }}
       >
         <TouchableOpacity onPress={() => router.back()}>
@@ -186,8 +187,6 @@ export default function CoachPayoutsScreen() {
         </Text>
         <View style={{ width: 24 }} />
       </View>
-
-      {/* Tab Switcher */}
       <View
         style={{
           flexDirection: "row",
@@ -201,7 +200,8 @@ export default function CoachPayoutsScreen() {
       >
         <TouchableOpacity
           style={{
-            backgroundColor: expenseType === "Income" ? "#059669" : "transparent",
+            backgroundColor:
+              expenseType === "Income" ? "#059669" : "transparent",
             borderRadius: 25,
             paddingVertical: 8,
             paddingHorizontal: 32,
@@ -219,7 +219,8 @@ export default function CoachPayoutsScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={{
-            backgroundColor: expenseType === "Expense" ? "#059669" : "transparent",
+            backgroundColor:
+              expenseType === "Expense" ? "#059669" : "transparent",
             borderRadius: 25,
             paddingVertical: 8,
             paddingHorizontal: 32,
@@ -237,96 +238,153 @@ export default function CoachPayoutsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Balance Card */}
-      <View
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: 16,
-          padding: 20,
-          marginBottom: 20,
-          alignItems: "center",
-          shadowColor: "#000",
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 3,
-        }}
-      >
-        <Text style={{ color: "#888", fontWeight: "600", marginBottom: 8 }}>
-          Số dư khả dụng
-        </Text>
-        <Text
-          style={{
-            fontSize: 32,
-            fontWeight: "bold",
-            color: "#059669",
-            marginBottom: 16,
-          }}
+      {loading ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          8.182.800 đ
-        </Text>
-        {expenseType === "Expense" && (
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#059669",
-              paddingVertical: 12,
-              paddingHorizontal: 40,
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>
-              Rút tiền
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Content based on selected tab */}
-      {expenseType === "Income" ? (
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "600",
-              color: "#222",
-              marginBottom: 12,
-            }}
-          >
-            Lịch sử thu nhập
+          <ActivityIndicator size="large" color="#059669" />
+          <Text style={{ color: "#555", marginTop: 10 }}>
+            Đang tải dữ liệu...
           </Text>
-          <FlatList
-            data={incomeData}
-            renderItem={renderIncomeItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-          />
         </View>
       ) : (
-        <View style={{ flex: 1 }}>
-          <Text
+        <>
+          <View
             style={{
-              fontSize: 16,
-              fontWeight: "600",
-              color: "#222",
-              marginBottom: 12,
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 20,
+              alignItems: "center",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 3,
             }}
           >
-            Lịch sử giao dịch
-          </Text>
-          <FlatList
-            data={transactionData}
-            renderItem={renderTransactionItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
+            <Text style={{ color: "#888", fontWeight: "600", marginBottom: 8 }}>
+              Số dư khả dụng
+            </Text>
+            <Text
+              style={{
+                fontSize: 32,
+                fontWeight: "bold",
+                color: "#059669",
+                marginBottom: 20,
+              }}
+            >
+              {formatCurrency(Number(wallet?.currentBalance))}
+            </Text>
+
+            {expenseType === "Expense" && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#059669",
+                  paddingVertical: 12,
+                  paddingHorizontal: 40,
+                  borderRadius: 12,
+                  marginTop: 20,
+                }}
+              >
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
+                >
+                  Rút tiền
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View
+            style={{
+              width: "100%",
+              height: 180,
+              borderRadius: 20,
+              borderColor: "#059669",
+              borderWidth: 2,
+              backgroundColor: "#f5f5f5",
+              overflow: "hidden",
+              padding: 20,
+              justifyContent: "space-between",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{ color: "#059669", fontSize: 22, fontWeight: "bold" }}
+              >
+                {wallet.bank}
+              </Text>
+              <TouchableOpacity>
+                <Feather name="edit" size={24} color="#059669" />
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={{
+                color: "#059669",
+                fontSize: 20,
+                letterSpacing: 2,
+                marginTop: 20,
+                marginBottom: 8,
+              }}
+            >
+              {wallet.bankAccountNumber}
+            </Text>
+
+            <Text style={{ color: "#059669", fontSize: 16, fontWeight: "600" }}>
+              {wallet?.userName || "NTTH"}
+            </Text>
+          </View>
+
+          {expenseType === "Income" ? (
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: "#222",
+                  marginBottom: 12,
+                }}
+              >
+                Lịch sử thu nhập
+              </Text>
+              <FlatList
+                data={wallet?.incomes || []}
+                renderItem={renderIncomeItem}
+                keyExtractor={(item, index) => index.toString()}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: "#222",
+                  marginTop: 12,
+                  marginBottom: 12,
+                }}
+              >
+                Lịch sử giao dịch
+              </Text>
+              <FlatList
+                data={wallet?.transactions}
+                renderItem={renderTransactionItem}
+                keyExtractor={(item, index) => index.toString()}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
+        </>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#fff", gap: 8 },
-  title: { fontWeight: "700", color: "#111827" },
-  meta: { color: "#6B7280" },
-});

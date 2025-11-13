@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Video } from "expo-av";
 import { post } from "@/services/http/httpService";
+import axios from "axios";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -27,7 +28,9 @@ export default function UploadVideoScreen() {
   const [drillName, setDrillName] = useState("");
   const [drillDescription, setDrillDescription] = useState("");
   const [drillPracticeSets, setDrillPracticeSets] = useState("");
-  const [video, setVideo] = useState<ImagePicker.ImagePickerAsset | undefined>();
+  const [video, setVideo] = useState<
+    ImagePicker.ImagePickerAsset | undefined
+  >();
   const [saving, setSaving] = useState(false);
   const videoRef = useRef<Video>(null);
 
@@ -37,7 +40,6 @@ export default function UploadVideoScreen() {
       Alert.alert("Quyền truy cập bị từ chối", "Cần quyền để chọn video.");
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: false,
@@ -59,12 +61,14 @@ export default function UploadVideoScreen() {
       Alert.alert("Lỗi", "Vui lòng chọn một video.");
       return;
     }
+
     const durNum = Number(duration);
     if (Number.isNaN(durNum) || durNum <= 0) {
       Alert.alert("Lỗi", "Thời lượng video không hợp lệ.");
       return;
     }
 
+    // === Chuẩn bị FormData ===
     const formData = new FormData();
     formData.append("title", title.trim());
     formData.append("description", description?.trim() || "");
@@ -77,23 +81,45 @@ export default function UploadVideoScreen() {
     formData.append("drillPracticeSets", drillPracticeSets?.trim() || "");
     formData.append("video", {
       uri: video.uri,
-      type: video.type || "video/mp4",
-      name: video.fileName || video.uri.split("/").pop(),
+      type: video.type,
+      name: video.fileName,
     } as any);
+    
 
     try {
       setSaving(true);
       console.log("📦 Payload FormData gửi lên:", formData);
-      await fetch(`${API_URL}/v1/videos/lessons/${lessonId}`, {
-        method: "POST",
-        body: formData,
-      });
-      Alert.alert("Thành công", "Video đã được tải lên!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Lỗi", "Không thể tải video. Vui lòng thử lại.");
+
+      const response = await axios.post(
+        `${API_URL}/v1/videos/lessons/${lessonId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+            );
+            console.log(`Đang tải lên: ${progress}%`);
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        Alert.alert("Thành công", "Video đã được tải lên!", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert("Lỗi", "Máy chủ phản hồi không hợp lệ.");
+        console.error("Server response:", response.data);
+      }
+    } catch (err: any) {
+      console.error("❌ Lỗi upload:", err.message);
+      Alert.alert(
+        "Lỗi",
+        err.response?.data?.message || "Không thể tải video. Vui lòng thử lại."
+      );
     } finally {
       setSaving(false);
     }
