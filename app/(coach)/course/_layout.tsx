@@ -11,7 +11,7 @@ export default function CourseStackLayout() {
         contentStyle: {
           backgroundColor: "#F3F4F6",
           paddingTop: insets.top,
-          paddingBottom: insets.bottom + 80,
+          paddingBottom: insets.bottom,
         },
       }}
     >

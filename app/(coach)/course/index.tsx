@@ -851,40 +851,28 @@ export default function CoachCourseScreen() {
         </View>
       </ScrollView>
 
-      {/* Create Course Button */}
+      {/* Create Course Button - Circular FAB */}
       <TouchableOpacity
         style={{
           position: "absolute",
-          bottom: 16,
+          bottom: 44,
           right: 16,
-          left: 16,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
           backgroundColor: "#059669",
-          flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
-          paddingVertical: 14,
-          borderRadius: 8,
           shadowColor: "#059669",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 4,
-          elevation: 3,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 6,
           zIndex: 10,
         }}
         onPress={() => router.push("/(coach)/course/create" as any)}
       >
-        <Ionicons name="add" size={24} color="#FFFFFF" />
-        <Text
-          style={{
-            color: "#FFFFFF",
-            fontSize: 15,
-            fontWeight: "700",
-            marginLeft: 8,
-            letterSpacing: 0.3,
-          }}
-        >
-          Tạo khóa học
-        </Text>
+        <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
