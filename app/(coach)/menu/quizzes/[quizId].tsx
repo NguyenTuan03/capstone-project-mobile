@@ -373,7 +373,15 @@ export default function QuizDetailScreen() {
                     />
                   </View>
 
-                  <View style={{ width: 52, height: 36, flexShrink: 0, justifyContent: "center", alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 52,
+                      height: 36,
+                      flexShrink: 0,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
                     <Switch
                       value={option.isCorrect}
                       onValueChange={(val) => handleToggleCorrect(option.id)}
@@ -782,5 +790,64 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: 0.3,
+  },
+  // Video Styles
+  videosSection: {
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  videoCard: {
+    width: 150,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  videoThumbnail: {
+    width: "100%",
+    height: 84,
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoInfo: {
+    padding: 10,
+    gap: 6,
+  },
+  videoTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+    lineHeight: 16,
+  },
+  videoDuration: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  videoStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  videoStatusText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
 });
