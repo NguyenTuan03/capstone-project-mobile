@@ -1,5 +1,6 @@
 import { Subject } from "@/types/subject";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -117,6 +118,26 @@ export default function SubjectSelectionModal({
                 <Text style={styles.confirmButtonText}>Chọn tài liệu này</Text>
               </TouchableOpacity>
             </ScrollView>
+          ) : subjects.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="folder-open-outline" size={48} color="#D1D5DB" />
+              </View>
+              <Text style={styles.emptyTitle}>Chưa có tài liệu nào</Text>
+              <Text style={styles.emptyDescription}>
+                Hãy tạo tài liệu mới để bắt đầu tạo khóa học
+              </Text>
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => {
+                  handleClose();
+                  router.dismissAll();
+                  router.push("/(coach)/menu/subject/create" as any);
+                }}
+              >
+                <Text style={styles.createButtonText}>Tạo tài liệu</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <ScrollView>
               {subjects.map((subject) => (
@@ -273,6 +294,54 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyDescription: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  createButton: {
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  createButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
     fontWeight: "700",
     letterSpacing: 0.3,
   },
