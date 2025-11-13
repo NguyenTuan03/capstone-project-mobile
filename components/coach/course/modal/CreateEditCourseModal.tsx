@@ -4,6 +4,7 @@ import { DAYS_OF_WEEK, DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
 import courtService from "@/services/court.service";
 import { get } from "@/services/http/httpService";
+import storageService from "@/services/storageService";
 import { LearningFormat, Schedule } from "@/types/course";
 import { Court } from "@/types/court";
 import { Subject } from "@/types/subject";
@@ -252,9 +253,10 @@ export default function CreateEditCourseModal({
   const fetchSubjects = async () => {
     try {
       setLoadingSubjects(true);
+      const user = await storageService.getUser();
       const url = subjectFilter
-        ? `/v1/subjects?filter=${subjectFilter}`
-        : "/v1/subjects";
+        ? `/v1/subjects?filter=${subjectFilter},createdBy.id_eq_${user?.id}`
+        : `/v1/subjects?filter=createdBy.id_eq_${user?.id}`;
       const res = await get<{ items: Subject[] }>(url);
       setSubjects(res.data.items || []);
     } catch (error) {

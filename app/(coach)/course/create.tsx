@@ -43,7 +43,7 @@ export default function CreateCourseScreen() {
 
   const handleClose = () => {
     setModalVisible(false);
-    router.back();
+    router.replace("/(coach)/course" as any);
   };
 
   return (
