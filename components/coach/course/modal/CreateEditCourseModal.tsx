@@ -47,6 +47,7 @@ type CourseFormData = {
   province: Province | null;
   district: District | null;
   schedules: Schedule[];
+  court: Court | null;
 };
 
 type CreateEditCourseModalProps = {

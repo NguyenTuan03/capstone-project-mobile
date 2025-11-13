@@ -13,11 +13,12 @@ export enum CoachVerificationStatus {
 }
 
 export type Coach = {
+  id: number;
   bio: string;
   specialties: string[];
   teachingMethods: string[];
   yearOfExperience: number;
-  verificationReason?: string;
+  verificationReason?: string | null;
   verificationStatus: CoachVerificationStatus;
 };
 
@@ -34,6 +35,7 @@ export enum PickleballLevel {
 }
 
 export type Learner = {
+  id: number;
   skillLevel: PickleballLevel;
   learningGoal: PickleballLevel;
   province: Province;
@@ -48,15 +50,27 @@ export type Credential = {
   issuedAt?: Date;
   expiresAt?: Date;
 };
-
+export type UserMetadata = {
+  metadata: {
+    user?: User;
+    accessToken?: string;
+    refreshToken?: string;
+  };
+};
 export type User = {
   id: number;
   fullName: string;
-  email?: string;
-  phoneNumber?: string;
-  profilePicture?: string;
-  createdAt: Date;
+  email: string;
+  phoneNumber: string;
+  profilePicture: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   role: Role;
   coach?: Coach[] | null;
   learner?: Learner[] | null;
+  emailVerificationToken?: string | null;
+  password?: string;
+  refreshToken?: string | null;
+  resetPasswordToken?: string | null;
+  wallet?: Record<string, unknown> | null;
 };

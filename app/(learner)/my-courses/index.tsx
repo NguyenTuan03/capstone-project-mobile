@@ -1,5 +1,5 @@
 import { get } from "@/services/http/httpService";
-import { Enrollment, EnrollmentsResponse } from "@/types/enrollments";
+import type { Course, CoursesResponse } from "@/types/course";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -16,16 +16,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function MyCoursesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   const fetchEnrollments = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await get<EnrollmentsResponse>(
-        "/v1/enrollments?filter=status_eq_CONFIRMED"
-      );
-      setEnrollments(res.data.items || []);
+      const res = await get<CoursesResponse>("/v1/courses/learner");
+      const { items = [], page = 1, pageSize = 10, total = 0 } = res.data ?? {};
+      setCourses(items);
+      setPagination({ page, pageSize, total });
     } catch (error) {
       console.error("Lỗi khi tải danh sách khóa học đã đăng ký:", error);
     } finally {
@@ -63,7 +68,7 @@ export default function MyCoursesScreen() {
           <View style={{ padding: 40, alignItems: "center" }}>
             <ActivityIndicator size="large" color="#10B981" />
           </View>
-        ) : enrollments.length === 0 ? (
+        ) : courses.length === 0 ? (
           <View style={{ padding: 40, alignItems: "center" }}>
             <Text style={{ color: "#6B7280", fontSize: 14 }}>
               Bạn chưa có khóa học nào
@@ -71,14 +76,16 @@ export default function MyCoursesScreen() {
           </View>
         ) : (
           <View style={{ gap: 16 }}>
-            {enrollments.map((enrollment) => {
-              const course = enrollment.course;
+            <Text style={{ color: "#6B7280", fontSize: 12 }}>
+              Tổng khóa học: {pagination.total}
+            </Text>
+            {courses.map((course) => {
               const progress = 0; // TODO: Calculate from completed sessions
               const progressPercent = Math.round(progress * 100);
 
               return (
                 <TouchableOpacity
-                  key={enrollment.id}
+                  key={course.id}
                   style={[styles.card, { padding: 0, overflow: "hidden" }]}
                   activeOpacity={0.8}
                   onPress={() => {
@@ -130,7 +137,7 @@ export default function MyCoursesScreen() {
                       style={styles.primaryBtn}
                       activeOpacity={0.9}
                       onPress={() =>
-                        router.push(`/(learner)/my-courses/${enrollment.id}`)
+                        router.push(`/(learner)/my-courses/${course.id}`)
                       }
                     >
                       <Text style={styles.primaryBtnText}>Xem chi tiết</Text>

@@ -4,13 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
@@ -27,7 +27,9 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
       try {
         setLoading(true);
         const res = await get<Session[]>(`/v1/sessions/courses/${courseId}`);
-        setSessions(res.data || []);
+        // Extract sessions from response - API returns array of sessions
+        const sessionsData = Array.isArray(res.data) ? res.data : [];
+        setSessions(sessionsData);
       } catch {
         Alert.alert("Lỗi", "Không thể tải danh sách bài học của khóa");
       } finally {
@@ -91,16 +93,21 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
                     Giờ: {start} - {end}
                   </Text>
                 </View>
-                {s.lesson?.videos?.length || s.lesson?.quizzes?.length ? (
+                {s.videos?.length ||
+                s.quizzes?.length ||
+                s.lesson?.videos?.length ||
+                s.lesson?.quizzes?.length ? (
                   <View style={styles.metaRow}>
-                    {s.lesson?.videos?.length ? (
+                    {s.videos?.length || s.lesson?.videos?.length ? (
                       <Text style={styles.meta}>
-                        Video: {s.lesson.videos.length}
+                        Video:{" "}
+                        {s.videos?.length || s.lesson?.videos?.length || 0}
                       </Text>
                     ) : null}
-                    {s.lesson?.quizzes?.length ? (
+                    {s.quizzes?.length || s.lesson?.quizzes?.length ? (
                       <Text style={styles.meta}>
-                        Quiz: {s.lesson.quizzes.length}
+                        Quiz:{" "}
+                        {s.quizzes?.length || s.lesson?.quizzes?.length || 0}
                       </Text>
                     ) : null}
                   </View>

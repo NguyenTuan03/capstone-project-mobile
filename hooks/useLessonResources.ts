@@ -53,8 +53,8 @@ export const useLessonResources = (
       setError(null);
 
       const [videosRes, quizzesRes] = await Promise.allSettled([
-        get<ApiCollection<VideoType>>(`/v1/videos/lessons/${lessonId}`),
-        get<ApiCollection<QuizType>>(`/v1/quizzes/lessons/${lessonId}`),
+        get<ApiCollection<VideoType>>(`/v1/videos/sessions/${lessonId}`),
+        get<ApiCollection<QuizType>>(`/v1/quizzes/sessions/${lessonId}`),
       ]);
 
       if (videosRes.status === "fulfilled") {

@@ -388,7 +388,7 @@ export default function CoursesScreen() {
                   <View style={styles.rowGap8}>
                     <View style={styles.pin} />
                     <Text style={styles.meta}>
-                      {c.district?.name}, {c.province?.name}
+                      {c.court?.district?.name}, {c.court?.province?.name}
                     </Text>
                   </View>
 

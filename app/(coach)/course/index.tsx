@@ -738,8 +738,9 @@ export default function CoachCourseScreen() {
                             marginLeft: 7,
                           }}
                         >
-                          Địa điểm: {course.court.name}
+                          Địa điểm: {course.address} - {course.court?.district?.name} - {course.court?.province?.name}
                         </Text>
+
                       </View>
                       <View
                         style={{

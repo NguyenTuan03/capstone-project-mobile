@@ -17,6 +17,8 @@ export interface Session {
   completedAt?: string | null;
   course: Course;
   lesson?: Lesson | null;
+  videos?: VideoType[];
+  quizzes?: QuizType[];
 }
 
 export interface Course {
