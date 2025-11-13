@@ -1,12 +1,14 @@
+import { get, put } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import axios from "axios";
+import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -19,24 +21,56 @@ export default function CoachPayoutsScreen() {
   );
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [userName, setUserName] = useState<string>("");
+  const [bankId, setBankId] = useState<string | null>(null);
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankList, setBankList] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchBanks = async () => {
+      try {
+        const res = await get(`${API_URL}/v1/wallets/banks`);
+        const data = (res as any)?.data;
+        if (Array.isArray(data)) {
+          setBankList(
+            data
+              .filter((b: any) => b && b.id && b.name)
+              .map((b: any) => ({ id: b.id, name: b.name }))
+          );
+        } else {
+          setBankList([]);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy danh sách ngân hàng:", err);
+      }
+    };
+    fetchBanks();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const user = await storageService.getUser(); 
+        setUserName(user?.fullName || "");
+      } catch (err) {
+        console.error("Lỗi lấy tên người dùng:", err);
+      }
+    };
+    fetchUserName();
+  }, []);
 
   const fetchWalletData = async () => {
     try {
       setLoading(true);
-
       const token = await storageService.getToken();
-
-      const res = await axios.get(`${API_URL}/v1/wallets/users`, {
+      const res = await get(`${API_URL}/v1/wallets/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      console.log("📦 Dữ liệu ví:", res.data);
       setWallet(res.data);
+      console.log("data vi",res.data)
     } catch (err: any) {
-      console.error(
-        "❌ Lỗi khi lấy dữ liệu ví:",
-        err.response?.data || err.message
-      );
+      console.error("❌ Lỗi khi lấy dữ liệu ví:", err.response?.data || err.message);
     } finally {
       setLoading(false);
     }
@@ -45,6 +79,33 @@ export default function CoachPayoutsScreen() {
   useEffect(() => {
     fetchWalletData();
   }, []);
+
+  useEffect(() => {
+    if (wallet) {
+      setBankId(wallet.bank); 
+      setAccountNumber(wallet.bankAccountNumber);
+    }
+  }, [wallet]);
+
+  const handleSave = async () => {
+    setIsEditing(false);
+    if (!wallet?.id || !bankId) return;
+
+    try {
+      const token = await storageService.getToken();
+      const payload = {
+        bank: bankId,
+        bankAccountNumber: accountNumber,
+      };
+      const res = await put(`${API_URL}/v1/wallets/${wallet.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("✅ Cập nhật thành công:", res.data);
+      setWallet(res.data);
+    } catch (err: any) {
+      console.error("❌ Lỗi cập nhật ví:", err.response?.data || err.message);
+    }
+  };
 
   const formatCurrency = (amount: any) => {
     const num = parseFloat(amount);
@@ -123,9 +184,7 @@ export default function CoachPayoutsScreen() {
           >
             Rút tiền
           </Text>
-          <Text style={{ color: "#888", fontSize: 13 }}>
-            {item.bankAccount}
-          </Text>
+          <Text style={{ color: "#888", fontSize: 13 }}>{item.bankAccount}</Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text
@@ -165,12 +224,7 @@ export default function CoachPayoutsScreen() {
 
   return (
     <View style={{ backgroundColor: "#fff", flex: 1, paddingHorizontal: 20 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#059669" />
         </TouchableOpacity>
@@ -187,6 +241,8 @@ export default function CoachPayoutsScreen() {
         </Text>
         <View style={{ width: 24 }} />
       </View>
+
+      {/* Toggle Income / Expense */}
       <View
         style={{
           flexDirection: "row",
@@ -200,8 +256,7 @@ export default function CoachPayoutsScreen() {
       >
         <TouchableOpacity
           style={{
-            backgroundColor:
-              expenseType === "Income" ? "#059669" : "transparent",
+            backgroundColor: expenseType === "Income" ? "#059669" : "transparent",
             borderRadius: 25,
             paddingVertical: 8,
             paddingHorizontal: 32,
@@ -219,8 +274,7 @@ export default function CoachPayoutsScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={{
-            backgroundColor:
-              expenseType === "Expense" ? "#059669" : "transparent",
+            backgroundColor: expenseType === "Expense" ? "#059669" : "transparent",
             borderRadius: 25,
             paddingVertical: 8,
             paddingHorizontal: 32,
@@ -239,13 +293,9 @@ export default function CoachPayoutsScreen() {
       </View>
 
       {loading ? (
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color="#059669" />
-          <Text style={{ color: "#555", marginTop: 10 }}>
-            Đang tải dữ liệu...
-          </Text>
+          <Text style={{ color: "#555", marginTop: 10 }}>Đang tải dữ liệu...</Text>
         </View>
       ) : (
         <>
@@ -287,9 +337,7 @@ export default function CoachPayoutsScreen() {
                   marginTop: 20,
                 }}
               >
-                <Text
-                  style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
-                >
+                <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>
                   Rút tiền
                 </Text>
               </TouchableOpacity>
@@ -309,50 +357,80 @@ export default function CoachPayoutsScreen() {
               justifyContent: "space-between",
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{ color: "#059669", fontSize: 22, fontWeight: "bold" }}
-              >
-                {wallet.bank}
-              </Text>
-              <TouchableOpacity>
-                <Feather name="edit" size={24} color="#059669" />
+    
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              {isEditing ? (
+                <Picker
+                  selectedValue={bankId}
+                  onValueChange={(itemValue) => setBankId(itemValue)}
+                  style={{
+                    color: "#059669",
+                    fontSize: 22,
+                    fontWeight: "bold",
+                    flex: 1,
+                  }}
+                >
+                  {bankList.map((b) => (
+                    <Picker.Item key={b.id} label={b.name} value={b.id} />
+                  ))}
+                </Picker>
+              ) : (
+                <Text style={{ color: "#059669", fontSize: 22, fontWeight: "bold" }}>
+                  {wallet.bank.name}
+                </Text>
+              )}
+
+              <TouchableOpacity onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
+                <Feather name={isEditing ? "check" : "edit"} size={24} color="#059669" />
               </TouchableOpacity>
             </View>
 
-            <Text
-              style={{
-                color: "#059669",
-                fontSize: 20,
-                letterSpacing: 2,
-                marginTop: 20,
-                marginBottom: 8,
-              }}
-            >
-              {wallet.bankAccountNumber}
-            </Text>
+            {isEditing ? (
+              <TextInput
+                value={accountNumber}
+                onChangeText={setAccountNumber}
+                style={{
+                  color: "orange",
+                  fontSize: 20,
+                  letterSpacing: 2,
+                  marginTop: 20,
+                  marginBottom: 8,
+                  borderWidth: 1,
+                  borderColor: "orange",
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                }}
+                keyboardType="number-pad"
+              />
+            ) : (
+              <Text
+                style={{
+                  color: "#059669",
+                  fontSize: 20,
+                  letterSpacing: 2,
+                  marginTop: 20,
+                  marginBottom: 8,
+                }}
+              >
+                {accountNumber}
+              </Text>
+            )}
 
             <Text style={{ color: "#059669", fontSize: 16, fontWeight: "600" }}>
-              {wallet?.userName || "NTTH"}
+              {userName.toUpperCase()}
             </Text>
           </View>
 
           {expenseType === "Income" ? (
             <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: "#222",
-                  marginBottom: 12,
-                }}
-              >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#222", marginBottom: 12,marginTop: 12, }}>
+                Tổng thu nhập
+              </Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#222", marginBottom: 12,marginTop: 12, }}>
+                 {formatCurrency(Number(wallet.totalIncome))}
+              </Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#222", marginBottom: 12,marginTop: 12, }}>
                 Lịch sử thu nhập
               </Text>
               <FlatList
@@ -364,19 +442,11 @@ export default function CoachPayoutsScreen() {
             </View>
           ) : (
             <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: "#222",
-                  marginTop: 12,
-                  marginBottom: 12,
-                }}
-              >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#222", marginTop: 12, marginBottom: 12 }}>
                 Lịch sử giao dịch
               </Text>
               <FlatList
-                data={wallet?.transactions}
+                data={wallet?.transactions || []}
                 renderItem={renderTransactionItem}
                 keyExtractor={(item, index) => index.toString()}
                 showsVerticalScrollIndicator={false}
