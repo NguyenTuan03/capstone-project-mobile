@@ -1,15 +1,18 @@
-// geminiService.ts
+// services/ai/geminiService.ts
 import type { CombinedAnalysisResult, VideoComparisonResult } from "@/types/ai";
-import { GoogleGenAI } from "@google/genai/web";
 
-// 🔑 Nhớ set EXPO_PUBLIC_GEMINI_API_KEY trong .env
-const ai = new GoogleGenAI({
-  apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY as string,
-});
+// 🔑 Env cho Expo (app.config + .env)
+const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const MODEL = "gemini-2.5-flash";
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-const model = "gemini-2.5-flash";
+if (!API_KEY) {
+  console.warn(
+    "[geminiService] EXPO_PUBLIC_GEMINI_API_KEY is missing. Please set it in your .env."
+  );
+}
 
-// Helper parse JSON từ response.text
+// Helper parse JSON từ text model trả về
 const parseJsonResponse = <T>(text: string): T => {
   try {
     const cleanedText = text.replace(/^```json\s*|```$/g, "").trim();
@@ -22,9 +25,43 @@ const parseJsonResponse = <T>(text: string): T => {
   }
 };
 
+// Call Gemini REST API, trả về text từ candidate đầu tiên
+const callGemini = async (body: unknown): Promise<string> => {
+  const url = `${GEMINI_ENDPOINT}?key=${API_KEY}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    console.error("[Gemini API error]", res.status, errText);
+    throw new Error(
+      "Gọi AI thất bại. Có thể do cấu hình API key hoặc mạng. Vui lòng thử lại."
+    );
+  }
+
+  const data: any = await res.json();
+
+  const text =
+    data?.candidates?.[0]?.content?.parts
+      ?.map((p: any) => p.text ?? "")
+      .join("") ?? "";
+
+  if (!text) {
+    console.error("[Gemini API] Empty text response", JSON.stringify(data));
+    throw new Error("AI không trả về nội dung hợp lệ.");
+  }
+
+  return text;
+};
+
 /**
  * ===== SCHEMA CHO PHÂN TÍCH 1 VIDEO =====
- * Dùng JSON Schema thuần, theo format mà GenAI docs recommend
  */
 const analyzeVideoSchema = {
   type: "object",
@@ -94,22 +131,20 @@ export const analyzeVideo = async (
   }));
 
   try {
-    const response = await ai.models.generateContent({
-      model,
+    const text = await callGemini({
       contents: [
         {
           role: "user",
           parts: [...imageParts, { text: prompt }],
         },
       ],
-      config: {
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: analyzeVideoSchema,
       },
     });
 
-    // SDK trả về JSON string trong response.text
-    return parseJsonResponse<CombinedAnalysisResult>(response.text ?? "");
+    return parseJsonResponse<CombinedAnalysisResult>(text);
   } catch (error) {
     console.error("Gemini API call failed in analyzeVideo:", error);
     throw new Error(
@@ -322,13 +357,7 @@ export const compareVideos = async (
 
     Sau đó, xác định những khác biệt chính, tóm tắt lại và đưa ra các đề xuất mang tính xây dựng, bao gồm các bài tập thực hành cụ thể cho Học viên. Cuối cùng, chấm điểm tổng thể cho Học viên.
 
-    Hãy trả lời CHỈ bằng một đối tượng JSON bằng tiếng Việt theo lược đồ đã cung cấp.
-    - Trong 'comparison', 'analysis' phải là một đoạn văn chi tiết. 'strengths' và 'weaknesses' phải là các điểm gạch đầu dòng ngắn gọn.
-    - Đối với mỗi phân tích, bạn PHẢI bao gồm dấu thời gian tương ứng trong khóa 'timestamp'.
-    - 'keyDifferences' phải nêu bật 2-3 khác biệt quan trọng nhất.
-    - 'recommendationsForPlayer2' phải bao gồm một bài tập thực hành ('drill') cho mỗi đề xuất. Mỗi 'drill' phải là một đối tượng có 'title', 'description' và 'practice_sets'.
-    - 'overallScoreForPlayer2' phải là một con số từ 1 đến 10.
-    - 'coachPoses' và 'learnerPoses' phải là mảng của các mảng, trong đó mỗi mảng con chứa các điểm khớp cho một khung hình.`;
+    Hãy trả lời CHỈ bằng một đối tượng JSON bằng tiếng Việt theo lược đồ đã cung cấp.`;
 
   const parts = [
     { text: "Khung hình từ Video Huấn luyện viên (player1):" },
@@ -343,21 +372,20 @@ export const compareVideos = async (
   ];
 
   try {
-    const response = await ai.models.generateContent({
-      model,
+    const text = await callGemini({
       contents: [
         {
           role: "user",
           parts,
         },
       ],
-      config: {
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: compareVideosSchema,
       },
     });
 
-    return parseJsonResponse<VideoComparisonResult>(response.text ?? "");
+    return parseJsonResponse<VideoComparisonResult>(text);
   } catch (error) {
     console.error("Gemini API call failed in compareVideos:", error);
     throw new Error(
