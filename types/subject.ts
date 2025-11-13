@@ -1,3 +1,6 @@
+import { QuizType } from "./quiz";
+import { VideoType } from "./video";
+
 export interface Subject {
   id: number;
   name: string;
@@ -14,7 +17,7 @@ export interface Subject {
     phoneNumber?: string;
     profilePicture?: string | null;
   };
-  lessons?: any[];
+  lessons?: Lesson[];
 }
 
 export interface CreatedBy {
@@ -38,6 +41,6 @@ export interface Lesson {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  video: any[];
-  quizzes: any[];
+  video: VideoType[];
+  quizzes: QuizType[];
 }
