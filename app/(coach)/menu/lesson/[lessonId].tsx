@@ -13,12 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function LessonDetailScreen() {
-  const insets = useSafeAreaInsets();
   const { lessonId, lessonName, lessonDescription } = useLocalSearchParams<{
     lessonId: string;
     lessonName: string;
@@ -77,10 +75,13 @@ export default function LessonDetailScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -187,7 +188,9 @@ export default function LessonDetailScreen() {
                 {/* Quiz Header */}
                 <View style={styles.quizHeader}>
                   <View>
-                    <Text style={styles.quizHeaderTitle}>Danh sách bài quiz</Text>
+                    <Text style={styles.quizHeaderTitle}>
+                      Danh sách bài quiz
+                    </Text>
                     <Text style={styles.quizCount}>{quizzes.length} quiz</Text>
                   </View>
                   <TouchableOpacity
@@ -249,7 +252,8 @@ export default function LessonDetailScreen() {
                               {
                                 text: "Xóa",
                                 style: "destructive",
-                                onPress: () => console.log("Xóa quiz:", quiz.id),
+                                onPress: () =>
+                                  console.log("Xóa quiz:", quiz.id),
                               },
                             ]
                           );
