@@ -2,7 +2,7 @@
 // Lightweight TypeScript types for QuestionOption (separated for single-responsibility)
 
 export interface QuestionOptionType {
-  id: number;
+  id?: number;
   content: string;
   isCorrect: boolean;
   // optional relation back to question (client-side)

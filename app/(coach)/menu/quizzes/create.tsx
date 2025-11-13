@@ -94,6 +94,16 @@ export default function CreateQuizScreen() {
     });
   };
 
+  const deleteOption = (qIndex: number, oIndex: number) => {
+    const questions = [...quiz.questions];
+    if (questions[qIndex].options && questions[qIndex].options.length > 1) {
+      questions[qIndex].options.splice(oIndex, 1);
+      setQuiz({ ...quiz, questions });
+    } else {
+      Alert.alert("Lỗi", "Câu hỏi phải có ít nhất 1 đáp án.");
+    }
+  };
+
   const addOption = (qIndex: number) => {
     const questions = [...quiz.questions];
     const newOption: QuizOptionType = {
@@ -219,6 +229,7 @@ export default function CreateQuizScreen() {
             marginBottom: 12,
           }}
           placeholder="Nhập tên bài quizz"
+          placeholderTextColor="#9CA3AF"
           value={quiz.title}
           onChangeText={(text) => updateQuizField("title", text)}
         />
@@ -234,6 +245,7 @@ export default function CreateQuizScreen() {
             marginBottom: 12,
           }}
           placeholder="(không bắt buộc)"
+          placeholderTextColor="#9CA3AF"
           value={quiz.description || ""}
           onChangeText={(text) => updateQuizField("description", text)}
           multiline
@@ -281,6 +293,7 @@ export default function CreateQuizScreen() {
                 marginBottom: 12,
               }}
               placeholder="Nhập câu hỏi"
+              placeholderTextColor="#9CA3AF"
               value={q.title}
               onChangeText={(text) => updateQuestionContent(qIndex, text)}
             />
@@ -292,6 +305,7 @@ export default function CreateQuizScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   marginBottom: 8,
+                  gap: 8,
                 }}
               >
                 <TextInput
@@ -301,9 +315,9 @@ export default function CreateQuizScreen() {
                     borderColor: "#ccc",
                     padding: 10,
                     borderRadius: 8,
-                    marginRight: 10,
                   }}
                   placeholder={`Đáp án ${oIndex + 1}`}
+                  placeholderTextColor="#9CA3AF"
                   value={o.content}
                   onChangeText={(text) => updateOption(qIndex, oIndex, text)}
                 />
@@ -313,6 +327,21 @@ export default function CreateQuizScreen() {
                     updateOption(qIndex, oIndex, undefined, val)
                   }
                 />
+                {q.options!.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => deleteOption(qIndex, oIndex)}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 6,
+                      backgroundColor: "#FEE2E2",
+                    }}
+                  >
+                    <Ionicons name="trash" size={20} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
               </View>
             ))}
 
