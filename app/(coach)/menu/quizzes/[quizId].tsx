@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -50,113 +51,286 @@ export default function QuizDetailScreen() {
 
   if (loading || !quiz) {
     return (
-      <ActivityIndicator size="large" color="#059669" style={{ flex: 1 }} />
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#059669" />
+      </View>
     );
   }
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: 20 }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingVertical: 16,
-        }}
-      >
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#059669" />
-        </TouchableOpacity>
-        <Text
-          style={{
-            flex: 1,
-            textAlign: "center",
-            fontSize: 18,
-            fontWeight: "600",
-            color: "#111827",
-          }}
+    <View style={[styles.container]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
         >
+          <Ionicons name="chevron-back" size={24} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
           {quiz.title}
         </Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView style={{ padding: 16 }}>
+      {/* Quiz Info */}
+      <View style={styles.quizInfoSection}>
+        <View style={styles.infoCard}>
+          <View style={styles.infoIcon}>
+            <Ionicons name="help-circle" size={24} color="#059669" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Tổng câu hỏi</Text>
+            <Text style={styles.infoValue}>{quiz.questions.length} câu</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Questions List */}
+      <ScrollView
+        style={styles.contentContainer}
+        contentContainerStyle={styles.contentPadding}
+        showsVerticalScrollIndicator={false}
+      >
         {quiz.questions.map((question, qIndex) => (
-          <View key={question.id} style={{ marginBottom: 24 }}>
-            <Text style={{ fontWeight: "700", fontSize: 16, marginBottom: 8 }}>
-              Câu hỏi {qIndex + 1}:
-            </Text>
-            <View
-              style={{
-                backgroundColor: "#F6ECFF",
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 12,
-              }}
-            >
-              <Text
-                style={{ color: "#1A1A1A", fontSize: 17, fontWeight: "bold" }}
-              >
-                {question.title}
-              </Text>
-              {question.explanation && (
-                <Text style={{ color: "#6B7280", marginTop: 4 }}>
-                  {question.explanation}
+          <View key={question.id} style={styles.questionCard}>
+            {/* Question Number and Title */}
+            <View style={styles.questionHeader}>
+              <View style={styles.questionNumberBadge}>
+                <Text style={styles.questionNumber}>{qIndex + 1}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.questionTitle} numberOfLines={3}>
+                  {question.title}
                 </Text>
+                {question.explanation && (
+                  <Text style={styles.questionExplanation} numberOfLines={2}>
+                    {question.explanation}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Options */}
+            <View style={styles.optionsContainer}>
+              {question.options.length === 0 ? (
+                <View style={styles.emptyOptions}>
+                  <Ionicons name="alert-circle" size={20} color="#9CA3AF" />
+                  <Text style={styles.emptyOptionsText}>Không có đáp án</Text>
+                </View>
+              ) : (
+                question.options.map((option, oIndex) => (
+                  <View
+                    key={option.id}
+                    style={[
+                      styles.optionButton,
+                      option.isCorrect && styles.optionCorrect,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.optionLetter,
+                        option.isCorrect && styles.optionLetterCorrect,
+                      ]}
+                    >
+                      <Text style={styles.optionLetterText}>
+                        {String.fromCharCode(97 + oIndex).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.optionText}>{option.content}</Text>
+                    {option.isCorrect && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color="#059669"
+                        style={{ marginLeft: "auto" }}
+                      />
+                    )}
+                  </View>
+                ))
               )}
             </View>
-            {question.options.length === 0 ? (
-              <View
-                style={{
-                  padding: 12,
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: 12,
-                  marginBottom: 8,
-                }}
-              >
-                <Text style={{ color: "#A5A5A5" }}>Không có đáp án</Text>
-              </View>
-            ) : (
-              question.options.map((option, oIndex) => (
-                <TouchableOpacity
-                  key={option.id}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderRadius: 12,
-                    padding: 12,
-                    marginBottom: 8,
-                    backgroundColor: option.isCorrect ? "#D1FAE5" : "#F3F4F6",
-                    borderWidth: option.isCorrect ? 2 : 0,
-                    borderColor: option.isCorrect ? "#10B981" : "transparent",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      backgroundColor: option.isCorrect ? "#10B981" : "#E5E7EB",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                      {String.fromCharCode(97 + oIndex).toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 16, color: "#1A1A1A" }}>
-                    {option.content}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            )}
           </View>
         ))}
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    flex: 1,
+    textAlign: "center",
+    marginHorizontal: 12,
+  },
+  quizInfoSection: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+  },
+  infoIcon: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#059669",
+    marginTop: 2,
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  contentPadding: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  questionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  questionHeader: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  questionNumberBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#10B981",
+    flexShrink: 0,
+  },
+  questionNumber: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#059669",
+  },
+  questionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  questionExplanation: {
+    fontSize: 12,
+    color: "#6B7280",
+    lineHeight: 16,
+  },
+  optionsContainer: {
+    gap: 10,
+  },
+  optionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 12,
+  },
+  optionCorrect: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#DCFCE7",
+  },
+  optionLetter: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
+    flexShrink: 0,
+  },
+  optionLetterCorrect: {
+    backgroundColor: "#10B981",
+  },
+  optionLetterText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  optionText: {
+    fontSize: 14,
+    color: "#1A1A1A",
+    fontWeight: "500",
+    flex: 1,
+  },
+  emptyOptions: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  emptyOptionsText: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    fontWeight: "600",
+  },
+});

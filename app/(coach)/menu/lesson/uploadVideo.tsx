@@ -1,7 +1,10 @@
-import React, { useRef, useState } from "react";
-import * as ImagePicker from "expo-image-picker";
+import storageService from "@/services/storageService";
 import { Ionicons, Octicons } from "@expo/vector-icons";
+import axios from "axios";
+import { Video } from "expo-av";
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,9 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Video } from "expo-av";
-import { post } from "@/services/http/httpService";
-import axios from "axios";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -53,6 +53,7 @@ export default function UploadVideoScreen() {
   };
 
   const handleUploadVideo = async () => {
+    const token = await storageService.getToken();
     if (!title.trim()) {
       Alert.alert("Lỗi", "Vui lòng nhập tiêu đề video.");
       return;
@@ -84,7 +85,6 @@ export default function UploadVideoScreen() {
       type: video.type,
       name: video.fileName,
     } as any);
-    
 
     try {
       setSaving(true);
@@ -95,6 +95,7 @@ export default function UploadVideoScreen() {
         formData,
         {
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
           onUploadProgress: (progressEvent) => {
