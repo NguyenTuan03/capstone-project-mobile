@@ -26,7 +26,7 @@ export default function AuthScreen() {
       });
       const { accessToken, refreshToken } = res.data.metadata;
       const user = res.data.metadata.user as User;
-      console.log("Logged in user:", user);
+      // console.log("Logged in user:", user);
 
       await AsyncStorage.setItem("token", accessToken);
       await AsyncStorage.setItem("refreshToken", refreshToken);

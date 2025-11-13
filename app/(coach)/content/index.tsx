@@ -76,7 +76,6 @@ export default function ContentScreen() {
               borderBottomWidth: 1,
               borderBottomColor: "#EAEAEA",
             }}
-            // onPress={() => router.push("/(coach)/course/create" as any)}
             onPress={() => router.push("/(coach)/menu/subject" as any)}
           >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -88,7 +87,7 @@ export default function ContentScreen() {
             <MaterialIcons name="navigate-next" size={24} color="black" />
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -102,7 +101,7 @@ export default function ContentScreen() {
               <Text style={{ marginLeft: 10, fontSize: 16 }}>Tạo bài học</Text>
             </View>
             <MaterialIcons name="navigate-next" size={24} color="black" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <Text style={{ color: "gray", fontSize: 13, marginBottom: 10 }}>
@@ -161,11 +160,12 @@ export default function ContentScreen() {
               paddingVertical: 12,
               paddingHorizontal: 16,
             }}
+            onPress={() => router.push("/(coach)/menu/payouts" as any)}
           >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="wallet-outline" size={22} color="#000" />
               <Text style={{ marginLeft: 10, fontSize: 16 }}>
-                Quản lý thanh toán
+                Quản lý ví tiền
               </Text>
             </View>
             <MaterialIcons name="navigate-next" size={24} color="black" />
