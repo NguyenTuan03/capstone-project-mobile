@@ -1,5 +1,5 @@
-import { UserType } from "./auth";
 import type { Lesson, Session } from "./session";
+import { User } from "./user";
 
 export interface VideoType {
   id: number;
@@ -13,7 +13,7 @@ export interface VideoType {
   publicUrl?: string;
   thumbnailUrl?: string;
   status: CoachVideoStatus;
-  uploadedBy: UserType;
+  uploadedBy: User;
   lesson: Lesson;
   session: Session;
 }
@@ -33,10 +33,6 @@ export type LearnerVideo = {
   thumbnailUrl: string | null;
   status: string;
   createdAt: string;
-  user: {
-    id: number;
-    fullName: string | null;
-    email: string | null;
-  };
+  user: User;
   session: Session;
 };

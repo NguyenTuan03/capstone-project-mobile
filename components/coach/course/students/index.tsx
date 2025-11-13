@@ -32,10 +32,7 @@ const StudentsTab: React.FC<Props> = ({ course }) => {
                     .toUpperCase();
 
                   return (
-                    <View
-                      key={e.id}
-                      style={styles.studentItem}
-                    >
+                    <View key={e.id} style={styles.studentItem}>
                       <View style={styles.avatar}>
                         <Text style={{ fontWeight: "700", color: "#374151" }}>
                           {initials}
@@ -43,20 +40,16 @@ const StudentsTab: React.FC<Props> = ({ course }) => {
                       </View>
 
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.studentName}>
-                          {name}
-                        </Text>
-                        {e.user.email ? (
-                          <Text style={styles.studentEmail}>
-                            {e.user.email}
+                        <Text style={styles.studentName}>{name}</Text>
+                        {e.user.phoneNumber ? (
+                          <Text style={styles.studentPhoneNumber}>
+                            {e.user.phoneNumber}
                           </Text>
                         ) : null}
                       </View>
 
                       <View style={{ marginLeft: 8, alignItems: "flex-end" }}>
-                        <Text style={styles.paidLabel}>
-                          Đã thanh toán
-                        </Text>
+                        <Text style={styles.paidLabel}>Đã thanh toán</Text>
                       </View>
                     </View>
                   );
@@ -129,7 +122,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#111827",
   },
-  studentEmail: { fontSize: 13, color: "#6B7280" },
+  studentPhoneNumber: { fontSize: 13, color: "#6B7280" },
   paidLabel: {
     fontSize: 12,
     color: "#059669",
@@ -146,5 +139,3 @@ const styles = StyleSheet.create({
 });
 
 export default StudentsTab;
-
-

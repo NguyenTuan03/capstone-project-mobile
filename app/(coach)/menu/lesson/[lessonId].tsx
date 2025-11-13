@@ -1,21 +1,17 @@
 import { get } from "@/services/http/httpService";
 import { QuizType } from "@/types/quiz";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Button,
-  Linking,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useVideoPlayer, VideoView } from "expo-video";
-import { useEvent } from "expo";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -70,7 +66,7 @@ export default function LessonDetailScreen() {
   }
 
   return (
-    <SafeAreaView
+    <View
       style={{ flex: 1, backgroundColor: "#FFFFFF", paddingHorizontal: 20 }}
     >
       <View
@@ -448,6 +444,6 @@ export default function LessonDetailScreen() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

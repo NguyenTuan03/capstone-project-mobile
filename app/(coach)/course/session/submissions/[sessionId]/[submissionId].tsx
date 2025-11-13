@@ -10,7 +10,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -243,7 +242,7 @@ const SubmissionReviewScreen: React.FC = () => {
     : "Learner";
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity
@@ -281,7 +280,10 @@ const SubmissionReviewScreen: React.FC = () => {
           <View style={styles.infoSection}>
             <Text style={styles.sectionTitle}>Thông tin bài nộp</Text>
             <InfoRow label="Học viên" value={learnerName} />
-            <InfoRow label="Email" value={submission.user?.email || "—"} />
+            <InfoRow
+              label="Số điện thoại"
+              value={submission.user?.phoneNumber || "—"}
+            />
             <InfoRow
               label="Thời gian nộp"
               value={formatDateTime(submission.createdAt)}
@@ -356,7 +358,7 @@ const SubmissionReviewScreen: React.FC = () => {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

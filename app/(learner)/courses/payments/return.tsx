@@ -3,18 +3,15 @@ import { useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const toBool = (v?: string) => (v ?? "").toLowerCase().trim() === "true";
 
 export default function PaymentReturnScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     code?: string;
     id?: string;
@@ -72,17 +69,12 @@ export default function PaymentReturnScreen() {
   }, [params]);
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={styles.container}>
       <View style={styles.content}>
         <ActivityIndicator size="large" color="#10B981" />
         <Text style={styles.text}>Đang xử lý kết quả thanh toán...</Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

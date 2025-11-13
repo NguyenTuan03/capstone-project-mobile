@@ -1,19 +1,14 @@
-import { post, put } from "@/services/http/httpService";
+import { put } from "@/services/http/httpService";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -66,7 +61,7 @@ export default function EditSubjectScreen() {
   };
 
   return (
-    <SafeAreaView
+    <View
       style={{
         flex: 1,
         backgroundColor: "#fff",
@@ -251,6 +246,6 @@ export default function EditSubjectScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

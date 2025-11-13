@@ -1,18 +1,17 @@
-import React, { useState } from "react";
 import { post } from "@/services/http/httpService";
+import { QuizFormDTO, QuizOptionType, QuizQuestionType } from "@/types/quiz";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import React, { useState } from "react";
 import {
+  Alert,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Switch,
-  Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { QuizFormDTO, QuizOptionType, QuizQuestionType } from "@/types/quiz";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -180,7 +179,7 @@ export default function CreateQuizScreen() {
   };
 
   return (
-    <SafeAreaView
+    <View
       style={{ flex: 1, backgroundColor: "#fff", paddingHorizontal: 20 }}
     >
       <View
@@ -362,6 +361,6 @@ export default function CreateQuizScreen() {
           <Text style={{ color: "#fff", fontWeight: "600" }}>Tạo Quiz</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
