@@ -598,69 +598,71 @@ export default function CreateEditCourseModal({
                 </Text>
                 <Ionicons name="calendar-outline" size={20} color="#059669" />
               </TouchableOpacity>
-              {Platform.OS === "ios" && showDatePicker && (
-                <Modal
-                  visible={showDatePicker}
-                  transparent
-                  animationType="slide"
-                  onRequestClose={() => setShowDatePicker(false)}
-                >
-                  <View style={styles.datePickerModal}>
-                    <View style={styles.datePickerContainer}>
-                      <View style={styles.datePickerHeader}>
-                        <TouchableOpacity
-                          onPress={() => setShowDatePicker(false)}
-                          style={styles.datePickerCancelButton}
-                        >
-                          <Text style={styles.datePickerCancelText}>Hủy</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.datePickerTitle}>Chọn ngày</Text>
-                        <TouchableOpacity
-                          onPress={() => {
-                            const formattedDate = selectedDate
-                              .toISOString()
-                              .split("T")[0];
-                            setStartDate(formattedDate);
-                            setShowDatePicker(false);
+              {showDatePicker &&
+                (Platform.OS === "ios" ? (
+                  <Modal
+                    visible={showDatePicker}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowDatePicker(false)}
+                  >
+                    <View style={styles.datePickerModal}>
+                      <View style={styles.datePickerContainer}>
+                        <View style={styles.datePickerHeader}>
+                          <TouchableOpacity
+                            onPress={() => setShowDatePicker(false)}
+                            style={styles.datePickerCancelButton}
+                          >
+                            <Text style={styles.datePickerCancelText}>Hủy</Text>
+                          </TouchableOpacity>
+                          <Text style={styles.datePickerTitle}>Chọn ngày</Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const formattedDate = selectedDate
+                                .toISOString()
+                                .split("T")[0];
+                              setStartDate(formattedDate);
+                              setShowDatePicker(false);
+                            }}
+                            style={styles.datePickerConfirmButton}
+                          >
+                            <Text style={styles.datePickerConfirmText}>
+                              Xác nhận
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                        <DateTimePicker
+                          value={selectedDate}
+                          mode="date"
+                          display="spinner"
+                          onChange={(event, date) => {
+                            if (date) {
+                              setSelectedDate(date);
+                            }
                           }}
-                          style={styles.datePickerConfirmButton}
-                        >
-                          <Text style={styles.datePickerConfirmText}>
-                            Xác nhận
-                          </Text>
-                        </TouchableOpacity>
+                          minimumDate={new Date()}
+                        />
                       </View>
-                      <DateTimePicker
-                        value={selectedDate}
-                        mode="date"
-                        display="spinner"
-                        onChange={(event, date) => {
-                          if (date) {
-                            setSelectedDate(date);
-                          }
-                        }}
-                        minimumDate={new Date()}
-                      />
                     </View>
-                  </View>
-                </Modal>
-              )}
-              {Platform.OS === "android" && showDatePicker && (
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display="default"
-                  onChange={(event, date) => {
-                    setShowDatePicker(false);
-                    if (date) {
-                      setSelectedDate(date);
-                      const formattedDate = date.toISOString().split("T")[0];
-                      setStartDate(formattedDate);
-                    }
-                  }}
-                  minimumDate={new Date()}
-                />
-              )}
+                  </Modal>
+                ) : (
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="default"
+                    onChange={(event, date) => {
+                      setShowDatePicker(false);
+                      if (date) {
+                        setSelectedDate(date);
+                        const formattedDate = date
+                          .toISOString()
+                          .split("T")[0];
+                        setStartDate(formattedDate);
+                      }
+                    }}
+                    minimumDate={new Date()}
+                  />
+                ))}
             </View>
 
             {/* Address */}
