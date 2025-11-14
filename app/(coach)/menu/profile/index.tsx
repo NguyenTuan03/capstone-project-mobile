@@ -244,6 +244,27 @@ export default function CoachProfileScreen() {
             )}
         </>
       )}
+
+      {/* Credentials Section Link */}
+      <View style={styles.section}>
+        <Pressable
+          style={styles.credentialLink}
+          onPress={() => router.push("/(coach)/menu/credentials" as any)}
+        >
+          <View style={styles.credentialLinkContent}>
+            <View style={styles.credentialLinkIcon}>
+              <Ionicons name="trophy" size={20} color="#059669" />
+            </View>
+            <View style={styles.credentialLinkText}>
+              <Text style={styles.credentialLinkTitle}>Chứng chỉ & Giải thưởng</Text>
+              <Text style={styles.credentialLinkSubtitle}>
+                Quản lý chứng chỉ và giải thưởng của bạn
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -401,5 +422,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#7F1D1D",
     lineHeight: 18,
+  },
+  credentialLink: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  credentialLinkContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  credentialLinkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  credentialLinkText: {
+    flex: 1,
+    gap: 2,
+  },
+  credentialLinkTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  credentialLinkSubtitle: {
+    fontSize: 12,
+    color: "#6B7280",
   },
 });

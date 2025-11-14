@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   StatusBar,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomWeeklyCalendar from "../../../components/coach/calendar/CustomWeeklyCalendar";
@@ -32,7 +31,6 @@ export default function CoachCalendarScreen() {
         setSessions(data);
       } catch (error) {
         console.error("❌ Failed to load sessions:", error);
-        Alert.alert("Lỗi", "Không thể tải lịch học. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
