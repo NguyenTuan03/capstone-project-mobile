@@ -1,3 +1,6 @@
+import { StyleProp, ViewStyle } from "react-native";
+import { LearnerVideo, VideoType } from "./video";
+
 export enum AnalysisType {
   VideoAnalysis = "Phân tích Video",
   VideoComparator = "So sánh Video",
@@ -75,4 +78,44 @@ export interface PoseLandmark {
   name: string;
   x: number;
   y: number;
+}
+
+export interface AiVideoCompareResult {
+  id: number;
+  summary: string | null;
+  learnerScore: number | null;
+  keyDifferents:
+    | {
+        aspect: string;
+        impact: string;
+        coachTechnique: string;
+        learnerTechnique: string;
+      }[]
+    | null;
+  details:
+    | {
+        type: string;
+        advanced: string;
+        userRole: string;
+        strengths?: string[];
+        weaknesses?: string[];
+      }[]
+    | null;
+  recommendationDrills:
+    | {
+        name: string;
+        description: string;
+        practiceSets: string;
+      }[]
+    | null;
+  coachNote: string | null;
+  createdAt: string;
+  video: VideoType | null;
+  learnerVideo: LearnerVideo | null;
+}
+
+export interface LessonResourcesTabsProps {
+  lessonId: number;
+  sessionId?: number;
+  style?: StyleProp<ViewStyle>;
 }

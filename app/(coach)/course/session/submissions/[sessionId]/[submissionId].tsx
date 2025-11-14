@@ -1,23 +1,26 @@
 import * as geminiService from "@/services/ai/geminiService";
-import { get } from "@/services/http/httpService";
+import { get, post } from "@/services/http/httpService";
 import type { VideoComparisonResult } from "@/types/ai";
 import type { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
+import { useEvent } from "expo";
 import * as FileSystem from "expo-file-system";
-import * as FileSystemLegacy from "expo-file-system/legacy";
+import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { formatAnalysisResult } from "@/helper/FormatAnalysisResult";
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "—";
@@ -26,7 +29,6 @@ const formatDateTime = (value?: string | null) => {
     "vi-VN"
   )}`;
 };
-
 const SubmissionReviewScreen: React.FC = () => {
   const router = useRouter();
   const { sessionId, submissionId } = useLocalSearchParams<{
@@ -42,31 +44,43 @@ const SubmissionReviewScreen: React.FC = () => {
   const [analysisResult, setAnalysisResult] =
     useState<VideoComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coachVideoReady, setCoachVideoReady] = useState(false);
+  const [learnerVideoReady, setLearnerVideoReady] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const ensureLocalFile = useCallback(async (url: string, name: string) => {
     if (!url) return null;
 
     try {
-      // Get cache directory from FileSystem (using type assertion for properties)
-      const fs = FileSystem as any;
-      const cacheDir = fs.cacheDirectory ?? fs.documentDirectory ?? "";
+      // Try to get FileSystem directories dynamically
+      const FileSystemAny = FileSystem as any;
+      const cacheDir = FileSystemAny.cacheDirectory;
+      const docDir = FileSystemAny.documentDirectory;
+      const baseDir = cacheDir || docDir;
 
-      if (!cacheDir || !FileSystem.getInfoAsync || !FileSystem.downloadAsync) {
-        console.warn("FileSystem not available, using URL directly");
-        return url;
+      if (!baseDir) {
+        console.log("📱 No cache directory available, using direct URL");
+        return url; // ✅ Sử dụng URL trực tiếp
       }
 
-      const filePath = `${cacheDir}${name}`;
+      const filePath = `${baseDir}${name}`;
+
+      // Check if file exists
       const info = await FileSystem.getInfoAsync(filePath);
       if (info.exists) {
+        console.log(`✅ Using cached file: ${filePath}`);
         return filePath;
       }
+
+      // Download file
+      console.log(`⬇️ Downloading: ${url.substring(0, 80)}...`);
       const { uri } = await FileSystem.downloadAsync(url, filePath);
+      console.log(`✅ Downloaded to: ${uri}`);
       return uri;
     } catch (e) {
-      console.error("Failed to cache video", e);
-      // Fallback to URL if caching fails
-      return url;
+      console.warn("⚠️ Failed to cache video, using URL directly:", e);
+      return url; // ✅ Fallback to URL
     }
   }, []);
 
@@ -113,6 +127,10 @@ const SubmissionReviewScreen: React.FC = () => {
       }
       const learnerUrl = submission.publicUrl ?? "";
       const coachUrl = submission.session?.lesson?.videos?.[0]?.publicUrl ?? "";
+
+      console.log("📹 Coach URL:", coachUrl);
+      console.log("📹 Learner URL:", learnerUrl);
+
       const [learnerPath, coachPath] = await Promise.all([
         ensureLocalFile(learnerUrl, `learner-${submission.id}.mp4`),
         ensureLocalFile(
@@ -120,7 +138,10 @@ const SubmissionReviewScreen: React.FC = () => {
           `coach-${submission.session?.id ?? "video"}.mp4`
         ),
       ]);
+
       if (!cancelled) {
+        console.log("✅ Coach local path:", coachPath);
+        console.log("✅ Learner local path:", learnerPath);
         setLearnerLocalPath(learnerPath);
         setCoachLocalPath(coachPath);
       }
@@ -154,6 +175,42 @@ const SubmissionReviewScreen: React.FC = () => {
     if (player) player.loop = false;
   });
 
+  // Theo dõi trạng thái tải của video coach
+  const coachStatusEvent = useEvent(coachPlayer, "statusChange", {
+    status: coachPlayer?.status,
+  });
+  const coachStatus = coachStatusEvent?.status ?? coachPlayer?.status;
+
+  useEffect(() => {
+    if (!coachSource) {
+      setCoachVideoReady(false);
+      return;
+    }
+    if (coachStatus === "readyToPlay") {
+      setCoachVideoReady(true);
+    } else if (coachStatus === "error") {
+      setCoachVideoReady(false);
+    }
+  }, [coachStatus, coachSource]);
+
+  // Theo dõi trạng thái tải của video learner
+  const learnerStatusEvent = useEvent(learnerPlayer, "statusChange", {
+    status: learnerPlayer?.status,
+  });
+  const learnerStatus = learnerStatusEvent?.status ?? learnerPlayer?.status;
+
+  useEffect(() => {
+    if (!learnerSource) {
+      setLearnerVideoReady(false);
+      return;
+    }
+    if (learnerStatus === "readyToPlay") {
+      setLearnerVideoReady(true);
+    } else if (learnerStatus === "error") {
+      setLearnerVideoReady(false);
+    }
+  }, [learnerStatus, learnerSource]);
+
   const learnerName =
     submission?.user?.fullName ??
     (submission?.user?.id ? `Learner #${submission.user.id}` : "Học viên");
@@ -172,65 +229,30 @@ const SubmissionReviewScreen: React.FC = () => {
       const frames: string[] = [];
       const used: number[] = [];
 
-      // Helper function to convert image URI to base64
-      const imageToBase64 = async (imageUri: string): Promise<string> => {
-        try {
-          const fs = FileSystem as any;
-          const fsLegacy = FileSystemLegacy as any;
-          
-          // For file:// URIs, use FileSystemLegacy.readAsStringAsync (legacy API)
-          if (imageUri.startsWith('file://') || imageUri.startsWith('/')) {
-            if (fsLegacy.readAsStringAsync) {
-              return await fsLegacy.readAsStringAsync(imageUri, {
-                encoding: fsLegacy.EncodingType?.Base64 || 'base64',
-              });
-            }
-            throw new Error("FileSystem.readAsStringAsync không khả dụng.");
-          }
-          
-          // For http/https URIs, fetch and convert using React Native compatible method
-          // Use expo-file-system's downloadAsync to cache, then read
-          const response = await fetch(imageUri);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.statusText}`);
-          }
-          
-          // Download to temp file and read as base64
-          if (fs.cacheDirectory && FileSystem.downloadAsync && fsLegacy.readAsStringAsync) {
-            const tempUri = `${fs.cacheDirectory}temp_${Date.now()}.jpg`;
-            const { uri } = await FileSystem.downloadAsync(imageUri, tempUri);
-            const base64 = await fsLegacy.readAsStringAsync(uri, {
-              encoding: fsLegacy.EncodingType?.Base64 || 'base64',
-            });
-            // Clean up temp file
-            if (FileSystem.deleteAsync) {
-              FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
-            }
-            return base64;
-          }
-          
-          // Last resort: return error
-          throw new Error("Không thể chuyển đổi image sang base64. FileSystem không đầy đủ.");
-        } catch (err) {
-          console.error("Error converting image to base64:", err);
-          throw err;
-        }
-      };
+      console.log(`🎬 Extracting frames from: ${uri}`);
+      console.log(`⏱️  Timestamps: ${timestamps.join(", ")}`);
 
       for (const seconds of timestamps) {
         try {
-          const { uri: thumbnailUri } = await VideoThumbnails.getThumbnailAsync(
-            uri,
-            {
-              time: Math.max(seconds * 1000, 0),
-              quality: 0.8,
-            }
-          );
-          const base64 = await imageToBase64(thumbnailUri);
+          console.log(`📸 Capturing frame at ${seconds}s...`);
+          const result = await VideoThumbnails.getThumbnailAsync(uri, {
+            time: Math.max(seconds * 1000, 0),
+            quality: 0.8,
+          });
+
+          console.log(`✅ Thumbnail URI: ${result.uri}`);
+
+          // ✅ Dùng legacy API để read base64
+          const base64 = await readAsStringAsync(result.uri, {
+            encoding: EncodingType.Base64,
+          });
+
+          console.log(`✅ Base64 length: ${base64.length}`);
+
           frames.push(base64);
           used.push(Number(seconds.toFixed(2)));
         } catch (err) {
-          console.warn("Failed to capture frame at", seconds, err);
+          console.error(`❌ Failed to capture frame at ${seconds}s:`, err);
         }
       }
 
@@ -238,6 +260,7 @@ const SubmissionReviewScreen: React.FC = () => {
         throw new Error("Không trích xuất được frame từ video.");
       }
 
+      console.log(`✅ Extracted ${frames.length} frames successfully`);
       return { frames, timestamps: used };
     },
     []
@@ -259,7 +282,6 @@ const SubmissionReviewScreen: React.FC = () => {
           "Fallback frame extraction failed, trying early timestamps",
           err
         );
-        // Last resort: try very early timestamps
         return await extractFrames(uri, [0.5, 1, 1.5]);
       }
     },
@@ -267,12 +289,20 @@ const SubmissionReviewScreen: React.FC = () => {
   );
 
   const handleAnalyzeTechnique = useCallback(async () => {
-    if (!coachLocalPath || !learnerLocalPath) return;
+    if (!coachLocalPath || !learnerLocalPath) {
+      Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
+      return;
+    }
+
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
 
     try {
+      console.log("🔍 Starting analysis...");
+      console.log("👨‍🏫 Coach video:", coachLocalPath);
+      console.log("👨‍🎓 Learner video:", learnerLocalPath);
+
       const [coachData, learnerData] = await Promise.all([
         extractKeyFrames(
           coachLocalPath,
@@ -281,17 +311,74 @@ const SubmissionReviewScreen: React.FC = () => {
         extractKeyFrames(learnerLocalPath, submission?.duration),
       ]);
 
+      console.log("🤖 Calling Gemini API...");
+      console.log(
+        `📦 Coach frames: ${
+          coachData.frames.length
+        }, timestamps: ${coachData.timestamps.join(", ")}`
+      );
+      console.log(
+        `📦 Learner frames: ${
+          learnerData.frames.length
+        }, timestamps: ${learnerData.timestamps.join(", ")}`
+      );
+
       const result = await geminiService.compareVideos(
         coachData.frames,
         coachData.timestamps,
         learnerData.frames,
         learnerData.timestamps
       );
+
+      // Log đầy đủ kết quả với JSON.stringify để xem tất cả các object
+      console.log("📊 Full Analysis Result:");
+      console.log(JSON.stringify(result, null, 2));
+
+      // Log từng phần riêng để dễ đọc hơn
+      if (result.summary) {
+        console.log("📝 Summary:", result.summary);
+      }
+      if (result.overallScoreForPlayer2 !== undefined) {
+        console.log("⭐ Overall Score:", result.overallScoreForPlayer2);
+      }
+      if (result.keyDifferences && Array.isArray(result.keyDifferences)) {
+        console.log(
+          "🔍 Key Differences:",
+          JSON.stringify(result.keyDifferences, null, 2)
+        );
+      }
+      if (
+        result.recommendationsForPlayer2 &&
+        Array.isArray(result.recommendationsForPlayer2)
+      ) {
+        console.log(
+          "💡 Recommendations:",
+          JSON.stringify(result.recommendationsForPlayer2, null, 2)
+        );
+      }
+      if (result.comparison) {
+        console.log(
+          "⚖️ Comparison:",
+          JSON.stringify(result.comparison, null, 2)
+        );
+      }
+
       setAnalysisResult(result);
     } catch (err) {
-      console.error(err);
+      console.error("Analysis failed:", err);
       if (err instanceof Error) {
-        setError(err.message);
+        if (err.message.includes("503") || err.message.includes("overloaded")) {
+          setError(
+            "Server AI đang quá tải. Vui lòng đợi 1-2 phút rồi thử lại."
+          );
+          Alert.alert(
+            "Server quá tải",
+            "Gemini API đang quá tải. Vui lòng thử lại sau 1-2 phút.",
+            [{ text: "OK" }]
+          );
+        } else {
+          setError(err.message);
+        }
       } else {
         setError("Đã xảy ra lỗi không xác định khi so sánh kỹ thuật.");
       }
@@ -307,8 +394,121 @@ const SubmissionReviewScreen: React.FC = () => {
   ]);
 
   const canAnalyze = Boolean(
-    coachLocalPath && learnerLocalPath && !isAnalyzing
+    coachLocalPath &&
+      learnerLocalPath &&
+      coachVideoReady &&
+      learnerVideoReady &&
+      !isAnalyzing
   );
+
+  // Nếu có lỗi, cho phép thử lại (nhưng vẫn cần video ready)
+  const canRetry =
+    error !== null
+      ? Boolean(
+          coachLocalPath &&
+            learnerLocalPath &&
+            coachVideoReady &&
+            learnerVideoReady &&
+            !isAnalyzing
+        )
+      : canAnalyze;
+
+  // Cho phép submit khi có feedback hoặc có kết quả phân tích
+  const canSubmitFeedback = Boolean(
+    (feedback.trim() || analysisResult) && !isSubmitting
+  );
+
+  const handleSubmitFeedback = useCallback(async () => {
+    if (!submissionId) {
+      Alert.alert("Lỗi", "Không tìm thấy bài nộp.");
+      return;
+    }
+
+    // Nếu không có feedback và không có kết quả phân tích
+    if (!feedback.trim() && !analysisResult) {
+      Alert.alert("Lỗi", "Vui lòng nhập feedback hoặc chờ kết quả phân tích.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let payload: any = {};
+
+      // Nếu có kết quả phân tích, gửi toàn bộ dữ liệu
+      if (analysisResult) {
+        payload.summary = analysisResult.summary;
+        payload.overallScoreForPlayer2 = analysisResult.overallScoreForPlayer2;
+        payload.comparison = analysisResult.comparison;
+
+        // Map keyDifferences để có coachTechnique và learnerTechnique
+        if (
+          analysisResult.keyDifferences &&
+          analysisResult.keyDifferences.length > 0
+        ) {
+          payload.keyDifferences = analysisResult.keyDifferences.map((kd) => ({
+            aspect: kd.aspect,
+            impact: kd.impact,
+            coachTechnique: kd.player1_technique,
+            learnerTechnique: kd.player2_technique,
+          }));
+        }
+
+        // Map recommendationsForPlayer2
+        if (
+          analysisResult.recommendationsForPlayer2 &&
+          analysisResult.recommendationsForPlayer2.length > 0
+        ) {
+          payload.recommendationsForPlayer2 =
+            analysisResult.recommendationsForPlayer2.map((rec) => ({
+              recommendation: rec.recommendation,
+              drill: rec.drill
+                ? {
+                    title: rec.drill.title,
+                    description: rec.drill.description,
+                    practice_sets: rec.drill.practice_sets,
+                  }
+                : undefined,
+            }));
+        }
+      }
+
+      // Thêm coachNote nếu có feedback
+      if (feedback.trim()) {
+        payload.coachNote = feedback.trim();
+      }
+
+      await post(`/v1/learner-videos/${submissionId}/ai-feedback`, payload);
+
+      Alert.alert("Thành công", "Đã gửi kết quả và feedback cho học viên.", [
+        {
+          text: "OK",
+          onPress: () => {
+            // Refresh submission data
+            if (sessionId && submissionId) {
+              get<LearnerVideo[]>(
+                `/v1/learner-videos?sessionId=${sessionId}`
+              ).then((res) => {
+                const list = Array.isArray(res.data) ? res.data : [];
+                const found = list.find(
+                  (item) => String(item.id) === String(submissionId)
+                );
+                if (found) {
+                  setSubmission(found);
+                }
+              });
+            }
+            // Clear feedback after successful submission
+            setFeedback("");
+          },
+        },
+      ]);
+    } catch (err) {
+      console.error("Failed to submit feedback:", err);
+      Alert.alert("Lỗi", "Không thể gửi feedback. Vui lòng thử lại sau.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [submissionId, analysisResult, feedback, sessionId]);
 
   return (
     <View style={styles.container}>
@@ -383,6 +583,7 @@ const SubmissionReviewScreen: React.FC = () => {
               <Text style={styles.emptyText}>Chưa có video mẫu</Text>
             )}
           </View>
+
           <View style={styles.videoCard}>
             <Text style={styles.cardTitle}>Video học viên</Text>
             {learnerSource ? (
@@ -401,13 +602,18 @@ const SubmissionReviewScreen: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.analyzeButton,
-                !canAnalyze && styles.analyzeButtonDisabled,
+                !canRetry && styles.analyzeButtonDisabled,
               ]}
               onPress={handleAnalyzeTechnique}
-              disabled={!canAnalyze}
+              disabled={!canRetry}
             >
               {isAnalyzing ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : error ? (
+                <>
+                  <Ionicons name="refresh" size={16} color="#FFFFFF" />
+                  <Text style={styles.analyzeText}>Thử lại</Text>
+                </>
               ) : (
                 <>
                   <Ionicons name="sparkles" size={16} color="#FFFFFF" />
@@ -417,13 +623,51 @@ const SubmissionReviewScreen: React.FC = () => {
             </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             {analysisResult ? (
-              <View style={styles.analysisCard}>
-                <Text style={styles.cardTitle}>Kết quả phân tích</Text>
-                <Text style={styles.analysisText}>
-                  {JSON.stringify(analysisResult, null, 2)}
-                </Text>
-              </View>
+              <>
+                <View style={styles.analysisCard}>
+                  <Text style={styles.cardTitle}>Kết quả phân tích</Text>
+                  <ScrollView
+                    style={{ maxHeight: 400 }}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <Text style={styles.analysisText}>
+                      {formatAnalysisResult(analysisResult)}
+                    </Text>
+                  </ScrollView>
+                </View>
+              </>
             ) : null}
+            <View style={styles.feedbackSection}>
+              <Text style={styles.feedbackLabel}>Feedback</Text>
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Nhập feedback cho học viên..."
+                placeholderTextColor="#9CA3AF"
+                value={feedback}
+                onChangeText={setFeedback}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  (!canSubmitFeedback || isSubmitting) &&
+                    styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmitFeedback}
+                disabled={!canSubmitFeedback || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={16} color="#FFFFFF" />
+                    <Text style={styles.submitText}>Trả kết quả</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       )}
@@ -540,9 +784,46 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   analysisText: {
-    fontSize: 12,
-    fontFamily: "monospace",
-    color: "#374151",
+    fontSize: 14,
+    color: "#111827",
+    lineHeight: 20,
+  },
+  feedbackSection: {
+    marginTop: 12,
+    gap: 12,
+  },
+  feedbackLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  feedbackInput: {
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: "#111827",
+    minHeight: 100,
+    maxHeight: 150,
+  },
+  submitButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+  },
+  submitText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
 

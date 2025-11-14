@@ -303,7 +303,7 @@ export default function CreateEditCourseModal({
         provinceId,
         districtId
       );
-      console.log("Courts by location API response:", res);
+
       setCourts(res || []);
     } catch (error) {
       console.error("Lỗi khi tải danh sách sân:", error);
@@ -318,7 +318,6 @@ export default function CreateEditCourseModal({
       const res = await get<{ metadata: Schedule[] }>(
         "/v1/schedules/coaches/available"
       );
-      console.log("Available Schedules API response:", res.data.metadata);
       setAvailableSchedules(res.data?.metadata || []);
     } catch (error) {
       console.error(

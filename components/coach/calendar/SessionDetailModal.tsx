@@ -172,39 +172,6 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
   const isCompleted = sessionData?.status === SessionStatus.COMPLETED;
 
-  // Try to reload the current page/app. Priority:
-  // 1) web: window.location.reload()
-  // 2) Expo: Updates.reloadAsync() (if available)
-  // 3) React Native DevSettings.reload() as a last resort
-  const reloadApp = async () => {
-    try {
-      if (
-        Platform.OS === "web" &&
-        typeof window !== "undefined" &&
-        window.location?.reload
-      ) {
-        window.location.reload();
-        return;
-      }
-
-      // Fallback: use DevSettings.reload() for native (dev) environments.
-      if (
-        (DevSettings as any) &&
-        typeof (DevSettings as any).reload === "function"
-      ) {
-        (DevSettings as any).reload();
-        return;
-      }
-
-      // If none of the above applied, warn the developer.
-      console.warn(
-        "No suitable reload method available (web/expo-updates/DevSettings)"
-      );
-    } catch (err) {
-      console.warn("Failed to reload app/screen:", err);
-    }
-  };
-
   const saveAttendance = () => {
     const attendedCount = Object.values(attendanceMap).filter(Boolean).length;
     const totalCount = (sessionData.course as any)?.enrollments?.length || 0;
@@ -246,12 +213,12 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
               // Instead of fetching the session again, reload the app/page so the
               // caller context will re-mount and fetch fresh data.
-              try {
-                await reloadApp();
-              } catch (reloadErr) {
-                console.warn("Failed to reload app after save:", reloadErr);
-              }
-
+              // try {
+              //   await reloadApp();
+              // } catch (reloadErr) {
+              //   console.warn("Failed to reload app after save:", reloadErr);
+              // }
+              onClose();
               Alert.alert("Thành công", "Đã lưu điểm danh thành công!");
             } catch (error: any) {
               console.error("Failed to save attendance:", error);
