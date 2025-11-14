@@ -88,73 +88,101 @@ export default function CourseDetailScreen() {
     });
   };
 
-const formatPrice = (price: string | null | undefined) => {
-  if (!price) return "N/A";
-  const numeric = Number(price);
-  if (Number.isNaN(numeric)) return price;
-  return `${new Intl.NumberFormat("vi-VN").format(numeric)} VNĐ`;
-};
+  const formatPrice = (price: string | null | undefined) => {
+    if (!price) return "N/A";
+    const numeric = Number(price);
+    if (Number.isNaN(numeric)) return price;
+    return `${new Intl.NumberFormat("vi-VN").format(numeric)} VNĐ`;
+  };
 
-const translateLearningFormat = (format?: string | null) => {
-  if (!format) return "N/A";
-  switch (format) {
-    case "INDIVIDUAL":
-      return "Cá nhân";
-    case "GROUP":
-      return "Nhóm";
+  const translateLearningFormat = (format?: string | null) => {
+    if (!format) return "N/A";
+    switch (format) {
+      case "INDIVIDUAL":
+        return "Cá nhân";
+      case "GROUP":
+        return "Nhóm";
+      default:
+        return format;
+    }
+  };
+
+  const getSessionStatusLabel = (status: string) => {
+    switch (status) {
+      case "SCHEDULED":
+        return "Đã lên lịch";
+      case "COMPLETED":
+        return "Đã hoàn thành";
+      case "IN_PROGRESS":
+        return "Đang diễn ra";
+      case "CANCELLED":
+        return "Đã hủy";
+      case "PENDING":
+        return "Đang chờ";
+      default:
+        return status;
+    }
+  };
+
+  const getCourseStatusLabel = (status: string) => {
+    switch (status) {
+      case "APPROVED":
+        return "Sẵn sàng đăng kí";
+      case "FULL":
+        return "Đã đủ người";
+      case "READY_OPENED":
+        return "Sẵn sàng đăng kí";
+      case "ON_GOING":
+        return "Đang diễn ra";
+      default:
+        return "";
+    }
+  };
+
+  const getEnrollmentStatusLabel = (status: Enrollment["status"]) => {
+    switch (status) {
+      case "CONFIRMED":
+        return "Đã xác nhận";
+      case "LEARNING":
+        return "Đang học";
+      case "PENDING_GROUP":
+        return "Chờ ghép lớp";
+      case "UNPAID":
+        return "Chưa thanh toán";
+      case "REFUNDED":
+        return "Đã hoàn tiền";
+      case "CANCELLED":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
+
+  const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
+    switch (status) {
+      case "CONFIRMED":
+      case "LEARNING":
+        return { color: "#10B981" };
+      case "PENDING_GROUP":
+      case "UNPAID":
+        return { color: "#F59E0B" };
+      default:
+        return { color: "#EF4444" };
+    }
+  };
+  const getLevelLabel = (level: string) => { 
+  switch (level) {
+    case "INTERMEDIATE":
+      return "Trung bình";
+    case "ADVANCED":
+      return "Nâng cao";
+    case "PROFESSIONAL":
+      return "Chuyên nghiệp";
     default:
-      return format;
+      return "Cơ bản"; 
   }
 };
 
-const getSessionStatusLabel = (status: string) => {
-  switch (status) {
-    case "SCHEDULED":
-      return "Đã lên lịch";
-    case "COMPLETED":
-      return "Đã hoàn thành";
-    case "IN_PROGRESS":
-      return "Đang diễn ra";
-    case "CANCELLED":
-      return "Đã hủy";
-    case "PENDING":
-      return "Đang chờ";
-    default:
-      return status;
-  }
-};
-
-const getEnrollmentStatusLabel = (status: Enrollment["status"]) => {
-  switch (status) {
-    case "CONFIRMED":
-      return "Đã xác nhận";
-    case "LEARNING":
-      return "Đang học";
-    case "PENDING_GROUP":
-      return "Chờ ghép lớp";
-    case "UNPAID":
-      return "Chưa thanh toán";
-    case "REFUNDED":
-      return "Đã hoàn tiền";
-    case "CANCELLED":
-      return "Đã hủy";
-    default:
-      return status;
-  }
-};
-
-const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
-  switch (status) {
-    case "CONFIRMED":
-    case "LEARNING":
-      return { color: "#10B981" };
-    case "PENDING_GROUP":
-    case "UNPAID":
-      return { color: "#F59E0B" };
-    default:
-      return { color: "#EF4444" };
-  }
-};
 
   if (loading) {
     return (
@@ -178,8 +206,8 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
 
   const currentUserId =
     user?.id ??
-    (user as unknown as { metadata?: { user?: { id?: number } } })?.metadata?.user
-      ?.id;
+    (user as unknown as { metadata?: { user?: { id?: number } } })?.metadata
+      ?.user?.id;
 
   const learnerEnrollment =
     course.enrollments?.find(
@@ -234,7 +262,9 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
                 <Text style={styles.courseName}>{course.name}</Text>
                 {course.status ? (
                   <View style={styles.statusPill}>
-                    <Text style={styles.statusPillText}>{course.status}</Text>
+                    <Text style={styles.statusPillText}>
+                      {getCourseStatusLabel(course.status)}
+                    </Text>
                   </View>
                 ) : null}
               </View>
@@ -245,7 +275,7 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
               ) : null}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Trình độ</Text>
-                <Text style={styles.infoValue}>{course.level}</Text>
+                <Text style={styles.infoValue}>{getLevelLabel(course.level)}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Hình thức</Text>

@@ -840,7 +840,7 @@ export default function CreateEditCourseModal({
             {/* Schedules */}
             <View style={styles.section}>
               <View style={styles.scheduleHeader}>
-                <Text style={styles.label}>Lịch học (Tùy chọn)</Text>
+                <Text style={styles.label}>Lịch học</Text>
                 <TouchableOpacity
                   style={styles.addButton}
                   onPress={handleAddSchedule}

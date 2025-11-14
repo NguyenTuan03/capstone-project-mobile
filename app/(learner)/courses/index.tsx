@@ -451,7 +451,7 @@ export default function CoursesScreen() {
 
                   {/* Location */}
                   <View style={styles.locationRow}>
-                    <Ionicons name="location" size={14} color="#6B7280" />
+                    <Ionicons name="location" size={14} color="#3B82F6" />
                     <Text style={styles.locationText}>{c.court?.address}</Text>
                   </View>
 
@@ -620,14 +620,18 @@ export default function CoursesScreen() {
                       <View style={styles.participantsSection}>
                         <View style={styles.participantRow}>
                           <View style={styles.participantColumn}>
-                            <Text style={styles.participantLabel}>Hiện tại</Text>
+                            <Text style={styles.participantLabel}>
+                              Hiện tại
+                            </Text>
                             <Text style={styles.participantValue}>
                               {selectedCourse.currentParticipants}
                             </Text>
                           </View>
                           <View style={styles.participantDivider} />
                           <View style={styles.participantColumn}>
-                            <Text style={styles.participantLabel}>Tối thiểu</Text>
+                            <Text style={styles.participantLabel}>
+                              Tối thiểu
+                            </Text>
                             <Text style={styles.participantValue}>
                               {selectedCourse.minParticipants}
                             </Text>
@@ -681,11 +685,17 @@ export default function CoursesScreen() {
                       <View
                         style={[
                           styles.statusDot,
-                          { backgroundColor: getStatusColor(selectedCourse.status) },
+                          {
+                            backgroundColor: getStatusColor(
+                              selectedCourse.status
+                            ),
+                          },
                         ]}
                       />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.statusLabel}>Trạng thái khóa học</Text>
+                        <Text style={styles.statusLabel}>
+                          Trạng thái khóa học
+                        </Text>
                         <Text
                           style={[
                             styles.statusValue,
