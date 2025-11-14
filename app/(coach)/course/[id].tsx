@@ -231,8 +231,8 @@ export default function CourseDetailScreen() {
           pricePerParticipant: course.pricePerParticipant,
           startDate: course.startDate,
           address: course.address,
-          province: course.province,
-          district: course.district,
+          province: course.court.province,
+          district: course.court.district,
           schedules: course.schedules,
         }}
       />

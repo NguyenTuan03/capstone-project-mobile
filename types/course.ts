@@ -3,6 +3,17 @@ import { Enrollment } from "./enrollments";
 
 export type LearningFormat = "GROUP" | "INDIVIDUAL";
 
+export enum CourseStatus {
+  PENDING_APPROVAL = "PENDING_APPROVAL",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED",
+  FULL = "FULL",
+  READY_OPENED = "READY_OPENED",
+  ON_GOING = "ON_GOING",
+}
+
 export type Schedule = {
   id?: number;
   dayOfWeek: string;
@@ -17,7 +28,7 @@ export type Course = {
   description: string;
   level: string;
   learningFormat: "GROUP" | "INDIVIDUAL";
-  status: string;
+  status: CourseStatus;
   minParticipants: number;
   maxParticipants: number;
   pricePerParticipant: string;
@@ -43,14 +54,13 @@ export type Course = {
   enrollments: Enrollment[];
 };
 
-
 export type CourseResponse = {
   id: number;
   name: string;
   description: string;
   level: string;
   learningFormat: "GROUP" | "INDIVIDUAL";
-  status: string;
+  status: CourseStatus;
   minParticipants: number;
   maxParticipants: number;
   pricePerParticipant: string;

@@ -5,22 +5,21 @@ import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-export default function CoachPayoutsScreen() {
-  const [expenseType, setExpenseType] = useState<"Income" | "Expense">(
-    "Income"
-  );
+export default function LearnerPayoutsScreen() {
+  const insets = useSafeAreaInsets();
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -110,10 +109,10 @@ export default function CoachPayoutsScreen() {
       console.log("✅ Cập nhật thành công:", res.data);
       setWallet(res.data);
       setIsEditing(false);
-      
+
       // Reload wallet data after successful update
       await fetchWalletData();
-      
+
       Alert.alert("Thành công", "Cập nhật thông tin ngân hàng thành công!");
     } catch (err: any) {
       console.error("❌ Lỗi cập nhật ví:", err.response?.data || err.message);
@@ -131,33 +130,17 @@ export default function CoachPayoutsScreen() {
     }).format(num);
   };
 
-  const renderIncomeItem = ({ item }: any) => (
-    <View style={styles.transactionCard}>
-      <View style={styles.transactionHeader}>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>
-            {item.studentName || "Học viên"}
-          </Text>
-          <Text style={styles.transactionSubtitle}>
-            {item.lesson || "Buổi học"}
-          </Text>
-        </View>
-        <Text style={styles.incomeAmount}>+{formatCurrency(item.amount)}</Text>
-      </View>
-      <Text style={styles.transactionDate}>{item.date}</Text>
-    </View>
-  );
-
   const renderTransactionItem = ({ item }: any) => (
     <View style={styles.transactionCard}>
       <View style={styles.transactionHeader}>
         <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>Rút tiền</Text>
-          <Text style={styles.transactionSubtitle}>{item.bankAccount}</Text>
+          <Text style={styles.transactionTitle}>{item.description || "Giao dịch"}</Text>
+          <Text style={styles.transactionSubtitle}>{item.type}</Text>
         </View>
         <View style={styles.transactionAmountContainer}>
-          <Text style={styles.expenseAmount}>
-            -{formatCurrency(item.amount)}
+          <Text style={styles.transactionAmount}>
+            {item.type === "debit" ? "-" : "+"}
+            {formatCurrency(Math.abs(item.amount))}
           </Text>
           <View
             style={[
@@ -187,7 +170,7 @@ export default function CoachPayoutsScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -208,60 +191,22 @@ export default function CoachPayoutsScreen() {
           data={[{ type: "content" }]}
           renderItem={() => (
             <View style={styles.content}>
-              {/* Toggle Income / Expense */}
-              <View style={styles.toggleContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    expenseType === "Income" && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => setExpenseType("Income")}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      expenseType === "Income" && styles.toggleTextActive,
-                    ]}
-                  >
-                    Thu nhập
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    expenseType === "Expense" && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => setExpenseType("Expense")}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      expenseType === "Expense" && styles.toggleTextActive,
-                    ]}
-                  >
-                    Giao dịch
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
               {/* Balance Card */}
               <View style={styles.balanceCard}>
                 <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
                 <Text style={styles.balanceAmount}>
                   {formatCurrency(Number(wallet?.currentBalance))}
                 </Text>
-                {expenseType === "Expense" && (
-                  <TouchableOpacity style={styles.withdrawButton}>
-                    <Ionicons name="cash" size={18} color="#FFFFFF" />
-                    <Text style={styles.withdrawButtonText}>Rút tiền</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity style={styles.withdrawButton}>
+                  <Ionicons name="cash" size={18} color="#FFFFFF" />
+                  <Text style={styles.withdrawButtonText}>Rút tiền</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Bank Card */}
               <View style={styles.bankCard}>
                 <View style={styles.bankCardContent}>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.bankLabel}>Ngân hàng</Text>
                     {isEditing ? (
                       <View style={styles.pickerContainer}>
@@ -314,33 +259,28 @@ export default function CoachPayoutsScreen() {
               </View>
 
               {/* Transactions List */}
-              {expenseType === "Income" ? (
-                <View style={styles.transactionSection}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Tổng thu nhập</Text>
-                    <Text style={styles.sectionAmount}>
-                      {formatCurrency(Number(wallet.totalIncome))}
-                    </Text>
-                  </View>
-                  <Text style={styles.historyTitle}>Lịch sử thu nhập</Text>
-                  <FlatList
-                    data={wallet?.incomes || []}
-                    renderItem={renderIncomeItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    scrollEnabled={false}
-                  />
+              <View style={styles.transactionSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Lịch sử giao dịch</Text>
+                  <Text style={styles.sectionAmount}>
+                    {formatCurrency(Number(wallet?.totalBalance))}
+                  </Text>
                 </View>
-              ) : (
-                <View style={styles.transactionSection}>
-                  <Text style={styles.historyTitle}>Lịch sử giao dịch</Text>
-                  <FlatList
-                    data={wallet?.transactions || []}
-                    renderItem={renderTransactionItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    scrollEnabled={false}
-                  />
-                </View>
-              )}
+                <FlatList
+                  data={wallet?.transactions || []}
+                  renderItem={renderTransactionItem}
+                  keyExtractor={(item, index) => index.toString()}
+                  scrollEnabled={false}
+                  ListEmptyComponent={
+                    <View style={styles.emptyState}>
+                      <Ionicons name="swap-horizontal" size={48} color="#D1D5DB" />
+                      <Text style={styles.emptyStateText}>
+                        Chưa có giao dịch nào
+                      </Text>
+                    </View>
+                  }
+                />
+              </View>
             </View>
           )}
           keyExtractor={(item) => item.type}
@@ -398,33 +338,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 32,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    padding: 6,
-    marginBottom: 20,
-    gap: 6,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    backgroundColor: "transparent",
-  },
-  toggleButtonActive: {
-    backgroundColor: "#059669",
-  },
-  toggleText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-  toggleTextActive: {
-    color: "#FFFFFF",
   },
   balanceCard: {
     backgroundColor: "#FFFFFF",
@@ -573,12 +486,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#059669",
   },
-  historyTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 12,
-  },
   transactionCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -615,15 +522,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 6,
   },
-  incomeAmount: {
+  transactionAmount: {
     fontSize: 14,
     fontWeight: "700",
     color: "#059669",
-  },
-  expenseAmount: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#EF4444",
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -648,6 +550,17 @@ const styles = StyleSheet.create({
   },
   transactionDate: {
     fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "500",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    gap: 12,
+  },
+  emptyStateText: {
+    fontSize: 14,
     color: "#9CA3AF",
     fontWeight: "500",
   },

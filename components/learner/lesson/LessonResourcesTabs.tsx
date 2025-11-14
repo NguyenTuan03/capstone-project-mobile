@@ -1,9 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { get } from "@/services/http/httpService";
 import { useEvent } from "expo";
 import * as ImagePicker from "expo-image-picker";
 import type { PlayerError } from "expo-video";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import {
   ActivityIndicator,
@@ -16,18 +16,18 @@ import {
 import { useLessonResources } from "../../../hooks/useLessonResources";
 import http from "../../../services/http/interceptor";
 import { QuizType } from "../../../types/quiz";
-import { VideoType } from "../../../types/video";
+import { LearnerVideo, VideoType } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
-
 type LessonResourcesTab = "videos" | "quizzes";
 
 export interface LessonResourcesTabsProps {
   lessonId: number;
+  sessionId?: number;
   style?: StyleProp<ViewStyle>;
 }
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
-  ({ lessonId, style }) => {
+  ({ lessonId, sessionId, style }) => {
     const { quizzes, videos, loading, error } = useLessonResources(lessonId);
     const [activeTab, setActiveTab] = useState<LessonResourcesTab>("videos");
     const [localVideo, setLocalVideo] = useState<{
@@ -112,29 +112,29 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
-    const loadSubmittedVideo = async () => {
+    const loadSubmittedVideo = useCallback(async () => {
+      if (!sessionId) {
+        setSubmittedVideo(null);
+        return;
+      }
+
       try {
-        const userString = await AsyncStorage.getItem("user");
-        if (!userString) return;
-        const userData = JSON.parse(userString);
-        // normalize user id from possible shapes
-        const userId =
-          userData?.metadata?.user?.id ??
-          userData?.user?.id ??
-          userData?.id ??
-          userData?.metadata?.user?.userId ??
-          userData?.userId;
-        if (!userId) return;
-        const res = await http.get(`/v1/learner-videos/user/${userId}`);
+        const res = await get<LearnerVideo[]>(
+          `/v1/learner-videos?sessionId=${sessionId}`
+        );
         const list = Array.isArray(res?.data) ? res.data : [];
-        if (list.length === 0) return;
+        if (list.length === 0) {
+          setSubmittedVideo(null);
+          return;
+        }
         // pick the most recent by createdAt if available, else first item
         const picked =
           list
             .slice()
-            .sort((a: any, b: any) =>
-              new Date(b?.createdAt ?? 0).getTime() -
-              new Date(a?.createdAt ?? 0).getTime()
+            .sort(
+              (a: any, b: any) =>
+                new Date(b?.createdAt ?? 0).getTime() -
+                new Date(a?.createdAt ?? 0).getTime()
             )[0] ?? list[0];
         if (picked?.publicUrl) {
           setSubmittedVideo({
@@ -144,11 +144,14 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             createdAt: picked.createdAt,
             id: picked.id,
           });
+        } else {
+          setSubmittedVideo(null);
         }
-      } catch {
+      } catch (err) {
+        console.error("Failed to load learner video:", err);
         // ignore silently; not critical to block UI
       }
-    };
+    }, [sessionId]);
 
     const handleUploadVideo = async () => {
       if (!localVideo) return;
@@ -308,9 +311,9 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     };
 
     // Load submitted video on mount or when lesson changes
-    React.useEffect(() => {
-      loadSubmittedVideo();
-    }, [lessonId]);
+    useEffect(() => {
+      void loadSubmittedVideo();
+    }, [loadSubmittedVideo]);
 
     const renderQuizzes = (items: QuizType[]) => {
       if (items.length === 0) {

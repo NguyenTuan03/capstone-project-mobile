@@ -1,4 +1,4 @@
-import { User } from "@/types/user";
+import type { User } from "@/types/user";
 import {
   createContext,
   ReactNode,
@@ -51,35 +51,57 @@ export const useJWTAuthActions = () => useContext(JWTAuthActionsContext);
 
 const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
   const [jwtAuthData, setJwtAuthData] = useState<JWTAuthContextProps>({
-    user: null,
+    user: undefined,
     isAuthenticated: false,
     isLoading: false,
   });
   useEffect(() => {
     const getAuthUser = async () => {
-      const token = await storageService.getToken();
-      if (!token) {
-        setJwtAuthData({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-        return;
-      }
-      setAuthToken(token);
+      setJwtAuthData((prevState) => ({
+        ...prevState,
+        isLoading: true,
+      }));
+
       try {
+        const [token, storedUser] = await Promise.all([
+          storageService.getToken(),
+          storageService.getUser(),
+        ]);
+
+        if (storedUser) {
+          setJwtAuthData((prevState) => ({
+            ...prevState,
+            user: storedUser,
+            isAuthenticated: true,
+            isLoading: true,
+          }));
+        }
+
+        if (!token) {
+          setJwtAuthData((prevState) => ({
+            ...prevState,
+            user: storedUser ?? undefined,
+            isAuthenticated: Boolean(storedUser),
+            isLoading: false,
+          }));
+          return;
+        }
+
+        setAuthToken(token);
         const { data } = await jwtAxios.get("/auth/current-user", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        console.log("Fetched auth user:", data);
+
+        await storageService.setUser(data);
         setJwtAuthData({
           user: data,
           isAuthenticated: true,
           isLoading: false,
         });
-      } catch {
+      } catch (error) {
+        console.error("Failed to initialize auth user:", error);
         setJwtAuthData({
           user: null,
           isAuthenticated: false,
