@@ -39,7 +39,7 @@ export default function CourseDetailScreen() {
       setFeedbacks([]);
 
       const [courseRes, feedbacksRes] = await Promise.allSettled([
-        get<LearnerCourseDetail>(`/v1/courses/learner/${courseId}`),
+        get<LearnerCourseDetail>(`/v1/courses/${courseId}`),
         get<Feedback[]>(`/v1/feedbacks/courses/${courseId}`),
       ]);
 

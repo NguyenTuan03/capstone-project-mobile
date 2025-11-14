@@ -19,7 +19,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -203,16 +202,6 @@ export default function CourseDetailScreen() {
       {renderHeader()}
       {renderTabs()}
       {renderTabContent()}
-
-      {/* Fixed Bottom Button */}
-      <View style={styles.bottomButton}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.closeButtonText}>Đóng</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Edit Course Modal */}
       <CreateEditCourseModal
