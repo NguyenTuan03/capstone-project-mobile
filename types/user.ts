@@ -20,6 +20,7 @@ export type Coach = {
   yearOfExperience: number;
   verificationReason?: string | null;
   verificationStatus: CoachVerificationStatus;
+  credentials?: Credential[];
 };
 
 export enum CourseCredentialType {
@@ -43,6 +44,7 @@ export type Learner = {
 };
 
 export type Credential = {
+  id?: string | number;
   name: string;
   description?: string;
   type: CourseCredentialType;
