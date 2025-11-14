@@ -2,16 +2,15 @@ import { get, post } from "@/services/http/httpService";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Linking from "expo-linking";
 import { useFocusEffect } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 import {
   ActivityIndicator,
   Alert,
   Image,
   Modal,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -54,6 +53,47 @@ type PaymentLinkResponse = {
   };
 };
 
+// Map course level to Vietnamese
+const getLevelInVietnamese = (level: string): string => {
+  const levelMap: Record<string, string> = {
+    BEGINNER: "Cơ bản",
+    INTERMEDIATE: "Trung bình",
+    ADVANCED: "Nâng cao",
+    PROFESSIONAL: "Chuyên nghiệp",
+  };
+  return levelMap[level] || level;
+};
+
+// Map course status to Vietnamese
+const getStatusInVietnamese = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    PENDING_APPROVAL: "Chờ duyệt",
+    APPROVED: "Đã duyệt",
+    REJECTED: "Từ chối",
+    CANCELLED: "Đã hủy",
+    COMPLETED: "Hoàn thành",
+    FULL: "Đã đủ người",
+    READY_OPENED: "Sẵn sàng mở",
+    ON_GOING: "Đang diễn ra",
+  };
+  return statusMap[status] || status;
+};
+
+// Get status badge color
+const getStatusColor = (status: string): string => {
+  const colorMap: Record<string, string> = {
+    PENDING_APPROVAL: "#F59E0B",
+    APPROVED: "#10B981",
+    REJECTED: "#EF4444",
+    CANCELLED: "#6B7280",
+    COMPLETED: "#3B82F6",
+    FULL: "#8B5CF6",
+    READY_OPENED: "#10B981",
+    ON_GOING: "#10B981",
+  };
+  return colorMap[status] || "#6B7280";
+};
+
 export default function CoursesScreen() {
   const insets = useSafeAreaInsets();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -79,6 +119,8 @@ export default function CoursesScreen() {
   const [processingPayment, setProcessingPayment] = useState<number | null>(
     null
   );
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
 
   const fetchProvinces = async () => {
     try {
@@ -280,29 +322,39 @@ export default function CoursesScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safe,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 50 },
-      ]}
-    >
+    <View style={[styles.safe]}>
+      {/* Header */}
+      <View style={styles.headerSection}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Khóa học</Text>
+          <Text style={styles.headerSubtitle}>
+            Khám phá các khóa học pickleball
+          </Text>
+        </View>
+      </View>
+
       <ScrollView contentContainerStyle={styles.container}>
         {/* Search & Filter */}
         <View style={styles.searchRow}>
           <View style={styles.searchBar}>
-            <View style={styles.searchIcon} />
+            <Ionicons name="search" size={18} color="#9CA3AF" />
             <TextInput
               placeholder="Tìm kiếm khóa học..."
               placeholderTextColor="#9CA3AF"
               style={styles.searchInput}
             />
           </View>
-          <View style={styles.filterBtn} />
+          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
+            <Ionicons name="funnel" size={20} color="#059669" />
+          </TouchableOpacity>
         </View>
 
         {/* Province & District Filter */}
         <View style={styles.filterSection}>
-          <Text style={styles.filterTitle}>Lọc theo địa điểm</Text>
+          <View style={styles.filterSectionHeader}>
+            <Ionicons name="location" size={16} color="#059669" />
+            <Text style={styles.filterTitle}>Lọc theo địa điểm</Text>
+          </View>
           <View style={styles.filterRow}>
             <TouchableOpacity
               style={styles.filterSelect}
@@ -367,67 +419,80 @@ export default function CoursesScreen() {
             </Text>
           </View>
         ) : (
-          <View style={{ gap: 16 }}>
+          <View style={{ gap: 12 }}>
             {courses.map((c) => (
-              <View
-                key={c.id}
-                style={[styles.card, { padding: 0, overflow: "hidden" }]}
-              >
-                <Image
-                  source={{
-                    uri: "https://via.placeholder.com/400x160?text=Course",
-                  }}
-                  style={styles.cover}
-                />
-                <View style={{ padding: 16, gap: 8 }}>
-                  <Text style={styles.courseTitle}>{c.name}</Text>
-                  <Text style={styles.courseCoach}>
-                    {c.createdBy?.fullName || "Huấn luyện viên"}
-                  </Text>
-
-                  <View style={styles.rowGap8}>
-                    <View style={styles.pin} />
-                    <Text style={styles.meta}>
-                      {c.court?.district?.name}, {c.court?.province?.name}
-                    </Text>
-                  </View>
-
-                  <View style={styles.badgesRow}>
+              <View key={c.id} style={styles.card}>
+                <View style={styles.cardImageWrapper}>
+                  <Image
+                    source={{
+                      uri: "https://via.placeholder.com/400x160?text=Course",
+                    }}
+                    style={styles.cover}
+                  />
+                  <View style={styles.cardBadges}>
                     <View style={[styles.badge, styles.badgePrimary]}>
                       <Text style={styles.badgeText}>
                         {c.learningFormat === "INDIVIDUAL" ? "Cá nhân" : "Nhóm"}
                       </Text>
                     </View>
-                    <View style={[styles.badge, styles.badgeNeutral]}>
-                      <Text style={[styles.badgeText, { color: "#111827" }]}>
-                        {c.level}
+                  </View>
+                </View>
+
+                <View style={styles.cardContent}>
+                  {/* Title & Coach */}
+                  <View>
+                    <Text style={styles.courseTitle} numberOfLines={2}>
+                      {c.name}
+                    </Text>
+                    <Text style={styles.courseCoach}>
+                      {c.createdBy?.fullName || "Huấn luyện viên"}
+                    </Text>
+                  </View>
+
+                  {/* Location */}
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location" size={14} color="#6B7280" />
+                    <Text style={styles.locationText}>{c.court?.address}</Text>
+                  </View>
+
+                  {/* Level Badge & Participants */}
+                  <View style={styles.levelBadgeContainer}>
+                    <View style={styles.levelBadge}>
+                      <Text style={styles.levelBadgeText}>
+                        {getLevelInVietnamese(c.level)}
+                      </Text>
+                    </View>
+                    <View style={styles.participantBadge}>
+                      <Text style={styles.participantBadgeText}>
+                        {c.currentParticipants}/{c.maxParticipants} học viên
                       </Text>
                     </View>
                   </View>
 
-                  <Text style={styles.price}>
-                    {formatPrice(c.pricePerParticipant)}
-                  </Text>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.primaryBtn,
-                      processingPayment === c.id && styles.primaryBtnDisabled,
-                    ]}
-                    activeOpacity={0.9}
-                    onPress={() => handleRegister(c.id)}
-                    disabled={processingPayment === c.id}
-                  >
-                    {processingPayment === c.id ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={styles.primaryBtnText}>
-                        {c.learningFormat === "INDIVIDUAL"
-                          ? "Đăng ký cá nhân"
-                          : "Đăng ký"}
+                  {/* Footer - Price & Button */}
+                  <View style={styles.cardFooter}>
+                    <View>
+                      <Text style={styles.priceLabel}>Giá khóa học</Text>
+                      <Text style={styles.price}>
+                        {formatPrice(c.pricePerParticipant)}
                       </Text>
-                    )}
-                  </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.detailBtn}
+                      activeOpacity={0.9}
+                      onPress={() => {
+                        setSelectedCourse(c);
+                        setShowCourseDetailModal(true);
+                      }}
+                    >
+                      <Text style={styles.detailBtnText}>Xem chi tiết</Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color="#059669"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             ))}
@@ -448,6 +513,350 @@ export default function CoursesScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Course Detail Modal */}
+      <Modal
+        visible={showCourseDetailModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCourseDetailModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.courseModalContent,
+              { paddingBottom: insets.bottom + 20 },
+            ]}
+          >
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Header with Close Button */}
+              <View style={styles.courseModalHeader}>
+                <Text style={styles.courseModalTitle}>Chi tiết khóa học</Text>
+                <TouchableOpacity
+                  onPress={() => setShowCourseDetailModal(false)}
+                  activeOpacity={0.7}
+                  style={styles.closeBtn}
+                >
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              {selectedCourse && (
+                <View style={styles.courseDetailContent}>
+                  {/* Course Image with Overlay Badge */}
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{
+                        uri: "https://via.placeholder.com/400x200?text=Course",
+                      }}
+                      style={styles.courseDetailImage}
+                    />
+                    {/* Status Badge */}
+                    <View style={styles.statusBadgeOverlay}>
+                      <View style={[styles.badge, styles.badgePrimary]}>
+                        <Text style={styles.badgeText}>
+                          {selectedCourse.learningFormat === "INDIVIDUAL"
+                            ? "Cá nhân"
+                            : "Nhóm"}
+                        </Text>
+                      </View>
+                      <View style={styles.levelBadge}>
+                        <Text style={styles.levelBadgeText}>
+                          {getLevelInVietnamese(selectedCourse.level)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Course Info */}
+                  <View style={styles.courseInfoSection}>
+                    {/* Title Section */}
+                    <View>
+                      <Text style={styles.courseDetailTitle} numberOfLines={3}>
+                        {selectedCourse.name}
+                      </Text>
+                      <Text style={styles.courseDetailCoach} numberOfLines={1}>
+                        {selectedCourse.createdBy?.fullName ||
+                          "Huấn luyện viên"}
+                      </Text>
+                    </View>
+
+                    {/* Quick Info Row - Location & Sessions */}
+                    <View style={styles.quickInfoRow}>
+                      <View style={styles.quickInfoItem}>
+                        <Ionicons name="location" size={14} color="#059669" />
+                        <Text style={styles.quickInfoText} numberOfLines={2}>
+                          {selectedCourse.court?.address || "N/A"}
+                        </Text>
+                      </View>
+                      <View style={styles.divider} />
+                      <View style={styles.quickInfoItem}>
+                        <Ionicons name="calendar" size={14} color="#059669" />
+                        <Text style={styles.quickInfoText}>
+                          {selectedCourse.totalSessions} buổi
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Description with Visual Accent */}
+                    {selectedCourse.description && (
+                      <View style={styles.descriptionSection}>
+                        <View style={styles.descriptionHeader}>
+                          <Ionicons
+                            name="document-text"
+                            size={14}
+                            color="#059669"
+                          />
+                          <Text style={styles.descriptionTitle}>Mô tả</Text>
+                        </View>
+                        <Text style={styles.descriptionText}>
+                          {selectedCourse.description}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Participants Info - Prominent (Only for GROUP courses) */}
+                    {selectedCourse.learningFormat === "GROUP" && (
+                      <View style={styles.participantsSection}>
+                        <View style={styles.participantRow}>
+                          <View style={styles.participantColumn}>
+                            <Text style={styles.participantLabel}>Hiện tại</Text>
+                            <Text style={styles.participantValue}>
+                              {selectedCourse.currentParticipants}
+                            </Text>
+                          </View>
+                          <View style={styles.participantDivider} />
+                          <View style={styles.participantColumn}>
+                            <Text style={styles.participantLabel}>Tối thiểu</Text>
+                            <Text style={styles.participantValue}>
+                              {selectedCourse.minParticipants}
+                            </Text>
+                          </View>
+                          <View style={styles.participantDivider} />
+                          <View style={styles.participantColumn}>
+                            <Text style={styles.participantLabel}>Tối đa</Text>
+                            <Text style={styles.participantValue}>
+                              {selectedCourse.maxParticipants}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Individual Course Info */}
+                    {selectedCourse.learningFormat === "INDIVIDUAL" && (
+                      <View style={styles.individualCourseInfo}>
+                        <Ionicons name="person" size={16} color="#059669" />
+                        <Text style={styles.individualCourseText}>
+                          Khóa học cá nhân
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Current Participants = 0 Warning */}
+                    {selectedCourse.currentParticipants === 0 &&
+                      selectedCourse.learningFormat === "GROUP" && (
+                        <View style={styles.warningSection}>
+                          <Ionicons
+                            name="alert-circle"
+                            size={16}
+                            color="#F59E0B"
+                          />
+                          <Text style={styles.warningText}>
+                            Chưa có học viên đăng ký
+                          </Text>
+                        </View>
+                      )}
+
+                    {/* Course Status Badge */}
+                    <View
+                      style={[
+                        styles.statusBadgeSection,
+                        {
+                          backgroundColor:
+                            getStatusColor(selectedCourse.status) + "20",
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          { backgroundColor: getStatusColor(selectedCourse.status) },
+                        ]}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.statusLabel}>Trạng thái khóa học</Text>
+                        <Text
+                          style={[
+                            styles.statusValue,
+                            { color: getStatusColor(selectedCourse.status) },
+                          ]}
+                        >
+                          {getStatusInVietnamese(selectedCourse.status)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Course Details - High Density Grid */}
+                    <View style={styles.detailsGrid}>
+                      {/* Subject */}
+                      <View style={styles.detailCard}>
+                        <Text style={styles.detailCardLabel}>Chủ đề</Text>
+                        <Text style={styles.detailCardValue} numberOfLines={2}>
+                          {selectedCourse.subject?.name || "N/A"}
+                        </Text>
+                      </View>
+
+                      {/* Duration */}
+                      <View style={styles.detailCard}>
+                        <Text style={styles.detailCardLabel}>Bắt đầu</Text>
+                        <Text style={styles.detailCardValue}>
+                          {new Date(
+                            selectedCourse.startDate
+                          ).toLocaleDateString("vi-VN", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </Text>
+                      </View>
+
+                      {/* Level */}
+                      <View style={styles.detailCard}>
+                        <Text style={styles.detailCardLabel}>Trình độ</Text>
+                        <Text style={styles.detailCardValue}>
+                          {getLevelInVietnamese(selectedCourse.level)}
+                        </Text>
+                      </View>
+
+                      {/* Total Sessions */}
+                      <View style={styles.detailCard}>
+                        <Text style={styles.detailCardLabel}>Tổng buổi</Text>
+                        <Text style={styles.detailCardValue}>
+                          {selectedCourse.totalSessions}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Progress Bar */}
+                    <View style={styles.progressSection}>
+                      <View style={styles.progressHeader}>
+                        <Text style={styles.progressLabel}>Tiến độ</Text>
+                        <Text style={styles.progressValue}>
+                          {Math.round(selectedCourse.progressPct)}%
+                        </Text>
+                      </View>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${selectedCourse.progressPct}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Schedule Section - Compact */}
+                    {selectedCourse.schedules &&
+                      selectedCourse.schedules.length > 0 && (
+                        <View style={styles.scheduleSection}>
+                          <Text style={styles.sectionTitle}>Lịch học</Text>
+                          <View style={styles.scheduleList}>
+                            {selectedCourse.schedules
+                              .slice(0, 2)
+                              .map((schedule, idx) => (
+                                <View key={idx} style={styles.scheduleItem}>
+                                  <Text style={styles.scheduleDay}>
+                                    {schedule.dayOfWeek}
+                                  </Text>
+                                  <Text style={styles.scheduleTime}>
+                                    {schedule.startTime} - {schedule.endTime}
+                                  </Text>
+                                </View>
+                              ))}
+                            {selectedCourse.schedules.length > 2 && (
+                              <Text style={styles.moreSchedules}>
+                                +{selectedCourse.schedules.length - 2} buổi khác
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      )}
+
+                    {/* Price Section - Prominent */}
+                    <View style={styles.priceSectionLarge}>
+                      <View>
+                        <Text style={styles.priceSectionLabel}>
+                          Giá khóa học
+                        </Text>
+                        <Text style={styles.priceSectionValue}>
+                          {formatPrice(selectedCourse.pricePerParticipant)}
+                        </Text>
+                      </View>
+                      <View style={styles.priceInfo}>
+                        <Text style={styles.priceInfoText}>
+                          {selectedCourse.maxParticipants -
+                            selectedCourse.currentParticipants >
+                          0
+                            ? `${
+                                selectedCourse.maxParticipants -
+                                selectedCourse.currentParticipants
+                              } chỗ còn`
+                            : "Đã đủ học viên"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Register Button - Full Width, Touch Friendly */}
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryBtn,
+                        styles.registerBtn,
+                        processingPayment === selectedCourse.id &&
+                          styles.primaryBtnDisabled,
+                        selectedCourse.maxParticipants -
+                          selectedCourse.currentParticipants <=
+                          0 && styles.disabledBtn,
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        handleRegister(selectedCourse.id);
+                        setShowCourseDetailModal(false);
+                      }}
+                      disabled={
+                        processingPayment === selectedCourse.id ||
+                        selectedCourse.maxParticipants -
+                          selectedCourse.currentParticipants <=
+                          0
+                      }
+                    >
+                      {processingPayment === selectedCourse.id ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : selectedCourse.maxParticipants -
+                          selectedCourse.currentParticipants <=
+                        0 ? (
+                        <Text style={styles.primaryBtnText}>
+                          Khóa học đã đủ học viên
+                        </Text>
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={18}
+                            color="#FFFFFF"
+                          />
+                          <Text style={styles.primaryBtnText}>
+                            Đăng ký ngay
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Province Modal */}
       <Modal
@@ -604,19 +1013,66 @@ export default function CoursesScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F9FAFB" },
-  container: { padding: 16, gap: 16 },
+  safe: { flex: 1, backgroundColor: "#FFFFFF" },
+  headerSection: {
+    backgroundColor: "#059669",
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  headerContent: {
+    gap: 4,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "500",
+  },
+  container: { padding: 16, gap: 12, paddingBottom: 20 },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
+    overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardImageWrapper: {
+    position: "relative",
+    overflow: "hidden",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  cardBadges: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    gap: 6,
+  },
+  cardContent: {
+    padding: 14,
+    gap: 10,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 4,
   },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   searchBar: {
@@ -624,30 +1080,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
-  searchIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#9CA3AF",
-  },
-  searchInput: { flex: 1, color: "#111827" },
+  searchInput: { flex: 1, color: "#111827", fontSize: 14, fontWeight: "500" },
   filterBtn: {
     width: 40,
     height: 40,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 8,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
-  filterSection: { gap: 8 },
-  filterTitle: { color: "#111827", fontWeight: "600" },
+  filterSection: { gap: 10 },
+  filterSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  filterTitle: {
+    color: "#059669",
+    fontWeight: "700",
+    fontSize: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   filterRow: {
     flexDirection: "row",
     gap: 8,
@@ -658,8 +1126,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     paddingHorizontal: 12,
@@ -673,6 +1141,7 @@ const styles = StyleSheet.create({
     color: "#111827",
     fontSize: 14,
     flex: 1,
+    fontWeight: "500",
   },
   filterSelectPlaceholder: {
     color: "#9CA3AF",
@@ -689,7 +1158,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
@@ -730,41 +1199,457 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   modalItemTextActive: {
-    color: "#10B981",
+    color: "#059669",
     fontWeight: "600",
   },
   cover: { width: "100%", height: 160, backgroundColor: "#E5E7EB" },
-  courseTitle: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  courseCoach: { color: "#6B7280", fontSize: 12 },
-  rowGap8: { flexDirection: "row", alignItems: "center", gap: 6 },
-  star: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#FBBF24" },
-  pin: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#9CA3AF" },
-  meta: { color: "#6B7280", fontSize: 12 },
-  badgesRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  badgePrimary: { backgroundColor: "#10B981" },
+  courseTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 20,
+  },
+  courseCoach: { color: "#6B7280", fontSize: 12, fontWeight: "500" },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  locationText: { color: "#6B7280", fontSize: 12, fontWeight: "500", flex: 1 },
+  levelBadgeContainer: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+  levelBadge: {
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  levelBadgeText: { color: "#059669", fontSize: 12, fontWeight: "600" },
+  participantBadge: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  participantBadgeText: { color: "#D97706", fontSize: 12, fontWeight: "600" },
+  badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  badgePrimary: { backgroundColor: "#059669" },
   badgeNeutral: { backgroundColor: "#E5E7EB" },
-  badgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  price: { color: "#10B981", fontWeight: "700", marginTop: 6 },
+  badgeText: { color: "#FFFFFF", fontSize: 12, fontWeight: "600" },
+  priceLabel: {
+    color: "#6B7280",
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  price: { color: "#059669", fontWeight: "700", fontSize: 16 },
   primaryBtn: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#059669",
     borderRadius: 10,
     alignItems: "center",
-    paddingVertical: 12,
-    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    minWidth: 90,
   },
   primaryBtnDisabled: {
     opacity: 0.7,
   },
-  primaryBtnText: { color: "#fff", fontWeight: "700" },
+  primaryBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
   loadMoreBtn: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#10B981",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#059669",
     borderRadius: 10,
     alignItems: "center",
     paddingVertical: 12,
     marginTop: 8,
   },
-  loadMoreText: { color: "#10B981", fontWeight: "700" },
+  loadMoreText: { color: "#059669", fontWeight: "700" },
+  detailBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#059669",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  detailBtnText: {
+    color: "#059669",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  courseModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "90%",
+    paddingTop: 0,
+  },
+  courseModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  courseModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  courseDetailContent: {
+    padding: 0,
+  },
+  imageContainer: {
+    position: "relative",
+    overflow: "hidden",
+  },
+  courseDetailImage: {
+    width: "100%",
+    height: 180,
+    backgroundColor: "#E5E7EB",
+  },
+  statusBadgeOverlay: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    gap: 8,
+    zIndex: 10,
+  },
+  courseInfoSection: {
+    padding: 16,
+    gap: 12,
+  },
+  courseDetailTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 24,
+  },
+  courseDetailCoach: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+    marginTop: 4,
+  },
+  quickInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  quickInfoItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  quickInfoText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+    flex: 1,
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: "#E5E7EB",
+  },
+  descriptionSection: {
+    backgroundColor: "#F9FAFB",
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  descriptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  descriptionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  descriptionText: {
+    fontSize: 13,
+    color: "#111827",
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  detailsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  detailCard: {
+    flex: 1,
+    minWidth: "47%",
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 8,
+    gap: 4,
+  },
+  detailCardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  detailCardValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 18,
+  },
+  participantsSection: {
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 8,
+    gap: 0,
+  },
+  participantRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  participantColumn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+  },
+  participantLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  participantValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  participantDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: "#C6F6D5",
+  },
+  individualCourseInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
+  },
+  individualCourseText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#059669",
+  },
+  warningSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FEF3C7",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F59E0B",
+  },
+  warningText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#D97706",
+  },
+  statusBadgeSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statusLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  statusValue: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  progressSection: {
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  progressValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#059669",
+    borderRadius: 3,
+  },
+  scheduleSection: {
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  scheduleList: {
+    gap: 6,
+  },
+  scheduleItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  scheduleDay: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+    minWidth: 50,
+  },
+  scheduleTime: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+    flex: 1,
+  },
+  moreSchedules: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 6,
+  },
+  priceSectionLarge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F0FDF4",
+    padding: 14,
+    borderRadius: 10,
+    gap: 10,
+  },
+  priceSectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  priceSectionValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#059669",
+    marginTop: 2,
+  },
+  priceInfo: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  priceInfoText: {
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "600",
+  },
+  registerBtn: {
+    flexDirection: "row",
+    width: "100%",
+    minWidth: "auto",
+    marginTop: 4,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  disabledBtn: {
+    backgroundColor: "#D1D5DB",
+  },
+  detailCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  detailRowText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+    flex: 1,
+  },
+  badgesDetailRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
 });

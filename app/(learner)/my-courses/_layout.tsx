@@ -11,7 +11,6 @@ export default function MyCoursesLayout() {
         contentStyle: {
           backgroundColor: "#FFFFFF",
           paddingTop: insets.top,
-          paddingBottom: insets.bottom + 80,
         },
       }}
     >

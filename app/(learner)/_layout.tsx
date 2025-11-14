@@ -67,6 +67,18 @@ export default function LearnerTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="payouts/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
