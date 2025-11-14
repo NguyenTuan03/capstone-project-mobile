@@ -1,4 +1,4 @@
-import { get } from "@/services/http/httpService";
+import { get, post } from "@/services/http/httpService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
 import type { Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
@@ -10,9 +10,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -30,6 +32,13 @@ export default function CourseDetailScreen() {
   const [course, setCourse] = useState<LearnerCourseDetail | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({
+    comment: "",
+    rating: 5,
+    isAnonymous: false,
+  });
 
   const fetchDetail = useCallback(async () => {
     if (!courseId) return;
@@ -67,6 +76,57 @@ export default function CourseDetailScreen() {
     fetchDetail();
   }, [fetchDetail]);
 
+  const handleSubmitFeedback = useCallback(async () => {
+    if (!courseId) {
+      Alert.alert("Lỗi", "Không tìm thấy khóa học.");
+      return;
+    }
+
+    if (!feedbackForm.comment.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập đánh giá của bạn.");
+      return;
+    }
+
+    if (feedbackForm.rating < 1 || feedbackForm.rating > 5) {
+      Alert.alert("Lỗi", "Vui lòng chọn điểm đánh giá từ 1 đến 5.");
+      return;
+    }
+
+    setSubmittingFeedback(true);
+    try {
+      await post(`/v1/feedbacks/courses/${courseId}`, {
+        comment: feedbackForm.comment.trim(),
+        rating: feedbackForm.rating,
+        isAnonymous: feedbackForm.isAnonymous,
+      });
+
+      Alert.alert("Thành công", "Cảm ơn bạn đã đánh giá khóa học!", [
+        {
+          text: "OK",
+          onPress: () => {
+            setShowFeedbackModal(false);
+            setFeedbackForm({
+              comment: "",
+              rating: 5,
+              isAnonymous: false,
+            });
+            // Refresh feedbacks
+            fetchDetail();
+          },
+        },
+      ]);
+    } catch (err: any) {
+      console.error("Failed to submit feedback:", err);
+      Alert.alert(
+        "Lỗi",
+        err?.response?.data?.message ||
+          "Không thể gửi đánh giá. Vui lòng thử lại."
+      );
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  }, [courseId, feedbackForm, fetchDetail]);
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -88,73 +148,73 @@ export default function CourseDetailScreen() {
     });
   };
 
-const formatPrice = (price: string | null | undefined) => {
-  if (!price) return "N/A";
-  const numeric = Number(price);
-  if (Number.isNaN(numeric)) return price;
-  return `${new Intl.NumberFormat("vi-VN").format(numeric)} VNĐ`;
-};
+  const formatPrice = (price: string | null | undefined) => {
+    if (!price) return "N/A";
+    const numeric = Number(price);
+    if (Number.isNaN(numeric)) return price;
+    return `${new Intl.NumberFormat("vi-VN").format(numeric)} VNĐ`;
+  };
 
-const translateLearningFormat = (format?: string | null) => {
-  if (!format) return "N/A";
-  switch (format) {
-    case "INDIVIDUAL":
-      return "Cá nhân";
-    case "GROUP":
-      return "Nhóm";
-    default:
-      return format;
-  }
-};
+  const translateLearningFormat = (format?: string | null) => {
+    if (!format) return "N/A";
+    switch (format) {
+      case "INDIVIDUAL":
+        return "Cá nhân";
+      case "GROUP":
+        return "Nhóm";
+      default:
+        return format;
+    }
+  };
 
-const getSessionStatusLabel = (status: string) => {
-  switch (status) {
-    case "SCHEDULED":
-      return "Đã lên lịch";
-    case "COMPLETED":
-      return "Đã hoàn thành";
-    case "IN_PROGRESS":
-      return "Đang diễn ra";
-    case "CANCELLED":
-      return "Đã hủy";
-    case "PENDING":
-      return "Đang chờ";
-    default:
-      return status;
-  }
-};
+  const getSessionStatusLabel = (status: string) => {
+    switch (status) {
+      case "SCHEDULED":
+        return "Đã lên lịch";
+      case "COMPLETED":
+        return "Đã hoàn thành";
+      case "IN_PROGRESS":
+        return "Đang diễn ra";
+      case "CANCELLED":
+        return "Đã hủy";
+      case "PENDING":
+        return "Đang chờ";
+      default:
+        return status;
+    }
+  };
 
-const getEnrollmentStatusLabel = (status: Enrollment["status"]) => {
-  switch (status) {
-    case "CONFIRMED":
-      return "Đã xác nhận";
-    case "LEARNING":
-      return "Đang học";
-    case "PENDING_GROUP":
-      return "Chờ ghép lớp";
-    case "UNPAID":
-      return "Chưa thanh toán";
-    case "REFUNDED":
-      return "Đã hoàn tiền";
-    case "CANCELLED":
-      return "Đã hủy";
-    default:
-      return status;
-  }
-};
+  const getEnrollmentStatusLabel = (status: Enrollment["status"]) => {
+    switch (status) {
+      case "CONFIRMED":
+        return "Đã xác nhận";
+      case "LEARNING":
+        return "Đang học";
+      case "PENDING_GROUP":
+        return "Chờ ghép lớp";
+      case "UNPAID":
+        return "Chưa thanh toán";
+      case "REFUNDED":
+        return "Đã hoàn tiền";
+      case "CANCELLED":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
 
-const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
-  switch (status) {
-    case "CONFIRMED":
-    case "LEARNING":
-      return { color: "#10B981" };
-    case "PENDING_GROUP":
-    case "UNPAID":
-      return { color: "#F59E0B" };
-    default:
-      return { color: "#EF4444" };
-  }
-};
+  const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
+    switch (status) {
+      case "CONFIRMED":
+      case "LEARNING":
+        return { color: "#10B981" };
+      case "PENDING_GROUP":
+      case "UNPAID":
+        return { color: "#F59E0B" };
+      default:
+        return { color: "#EF4444" };
+    }
+  };
 
   if (loading) {
     return (
@@ -178,8 +238,8 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
 
   const currentUserId =
     user?.id ??
-    (user as unknown as { metadata?: { user?: { id?: number } } })?.metadata?.user
-      ?.id;
+    (user as unknown as { metadata?: { user?: { id?: number } } })?.metadata
+      ?.user?.id;
 
   const learnerEnrollment =
     course.enrollments?.find(
@@ -187,6 +247,13 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
     ) ?? course.enrollments?.[0];
   const sessions = course.sessions ?? [];
   const schedules = course.schedules ?? [];
+
+  // Kiểm tra xem user hiện tại đã viết feedback chưa
+  const hasUserFeedback = feedbacks.some((feedback) => {
+    const feedbackUserId =
+      (feedback as any).createdBy?.id || feedback.created_by?.id;
+    return feedbackUserId === currentUserId;
+  });
 
   return (
     <View style={styles.safe}>
@@ -484,9 +551,30 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
 
           {/* Feedbacks Info */}
           <View style={styles.detailSection}>
-            <Text style={styles.detailSectionTitle}>
-              Đánh giá ({feedbacks.length})
-            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Text style={styles.detailSectionTitle}>
+                Đánh giá ({feedbacks.length})
+              </Text>
+              {!hasUserFeedback && (
+                <TouchableOpacity
+                  style={styles.writeFeedbackButton}
+                  onPress={() => setShowFeedbackModal(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.writeFeedbackButtonText}>
+                    Viết đánh giá
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {feedbacks.length === 0 ? (
               <Text style={{ color: "#6B7280", fontSize: 14 }}>
                 Chưa có đánh giá nào
@@ -510,11 +598,24 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
                           />
                         ))}
                       </View>
-                      <Text style={styles.feedbackAuthor}>
-                        {feedback.isAnonymous
-                          ? "Ẩn danh"
-                          : feedback.created_by?.fullName || "Người dùng"}
-                      </Text>
+                      <View style={styles.feedbackAuthorContainer}>
+                        {feedback.isAnonymous ? (
+                          <>
+                            <Ionicons
+                              name="eye-off-outline"
+                              size={14}
+                              color="#6B7280"
+                            />
+                            <Text style={styles.feedbackAuthor}>Ẩn danh</Text>
+                          </>
+                        ) : (
+                          <Text style={styles.feedbackAuthor}>
+                            {(feedback as any).createdBy?.fullName ||
+                              feedback.created_by?.fullName ||
+                              "Người dùng"}
+                          </Text>
+                        )}
+                      </View>
                     </View>
                     {feedback.comment && (
                       <Text style={styles.feedbackComment}>
@@ -533,6 +634,122 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Feedback Modal */}
+      <Modal
+        visible={showFeedbackModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFeedbackModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Viết đánh giá</Text>
+              <TouchableOpacity
+                onPress={() => setShowFeedbackModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Rating Selection */}
+              <View style={styles.ratingSection}>
+                <Text style={styles.ratingLabel}>Đánh giá của bạn</Text>
+                <View style={styles.starContainer}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                      key={star}
+                      onPress={() =>
+                        setFeedbackForm({ ...feedbackForm, rating: star })
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={
+                          star <= feedbackForm.rating ? "star" : "star-outline"
+                        }
+                        size={40}
+                        color={
+                          star <= feedbackForm.rating ? "#FBBF24" : "#D1D5DB"
+                        }
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Comment Input */}
+              <View style={styles.commentSection}>
+                <Text style={styles.commentLabel}>Nhận xét</Text>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Chia sẻ trải nghiệm của bạn về khóa học này..."
+                  placeholderTextColor="#9CA3AF"
+                  value={feedbackForm.comment}
+                  onChangeText={(text) =>
+                    setFeedbackForm({ ...feedbackForm, comment: text })
+                  }
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              {/* Anonymous Option */}
+              <TouchableOpacity
+                style={styles.anonymousOption}
+                onPress={() =>
+                  setFeedbackForm({
+                    ...feedbackForm,
+                    isAnonymous: !feedbackForm.isAnonymous,
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={
+                    feedbackForm.isAnonymous ? "checkbox" : "checkbox-outline"
+                  }
+                  size={24}
+                  color={feedbackForm.isAnonymous ? "#059669" : "#9CA3AF"}
+                />
+                <Text style={styles.anonymousLabel}>Đánh giá ẩn danh</Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            {/* Modal Footer */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowFeedbackModal(false)}
+                disabled={submittingFeedback}
+              >
+                <Text style={styles.modalCancelButtonText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalSubmitButton,
+                  submittingFeedback && styles.modalSubmitButtonDisabled,
+                ]}
+                onPress={handleSubmitFeedback}
+                disabled={submittingFeedback}
+              >
+                {submittingFeedback ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.modalSubmitButtonText}>Gửi đánh giá</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -757,6 +974,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 2,
   },
+  feedbackAuthorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
   feedbackAuthor: {
     fontSize: 12,
     color: "#6B7280",
@@ -771,5 +993,137 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#9CA3AF",
     marginTop: 4,
+  },
+  writeFeedbackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#059669",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  writeFeedbackButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  /* Modal Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "90%",
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalBody: {
+    padding: 16,
+    maxHeight: 500,
+  },
+  ratingSection: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  ratingLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 12,
+  },
+  starContainer: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  commentSection: {
+    marginBottom: 20,
+  },
+  commentLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  commentInput: {
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: "#111827",
+    minHeight: 120,
+    textAlignVertical: "top",
+  },
+  anonymousOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+  },
+  anonymousLabel: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 12,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCancelButtonText: {
+    color: "#6B7280",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modalSubmitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#059669",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSubmitButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+  },
+  modalSubmitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
