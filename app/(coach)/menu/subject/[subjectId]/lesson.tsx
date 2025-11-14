@@ -35,6 +35,7 @@ const CoachLessonScreen = () => {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [expandedLesson, setExpandedLesson] = useState<number | null>(null);
 
   const handleOpenMenu = (lesson: Lesson) => {
     setSelectedLesson(lesson);
@@ -111,7 +112,7 @@ const CoachLessonScreen = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="add" size={20} color="#FFFFFF" />
-          <Text style={styles.createButtonText}>Thêm bài</Text>
+          <Text style={styles.createButtonText}>Thêm bài học</Text>
         </TouchableOpacity>
       </View>
       {loading ? (
@@ -148,51 +149,91 @@ const CoachLessonScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           {lessons.map((lesson, index) => (
-            <TouchableOpacity
+            <View
               key={lesson.id}
-              style={styles.lessonCard}
-              onPress={() =>
-                router.push({
-                  pathname: "/(coach)/menu/lesson/[lessonId]",
-                  params: {
-                    lessonId: lesson.id,
-                    lessonName: lesson.name,
-                    lessonDuration: lesson.duration,
-                    lessonDescription: lesson.description,
-                  },
-                })
-              }
-              activeOpacity={0.7}
+              style={styles.lessonCardWrapper}
             >
-              <View style={styles.lessonBadge}>
-                <Text style={styles.lessonIndex}>{index + 1}</Text>
-              </View>
-
-              <View style={styles.lessonContent}>
-                <Text style={styles.lessonName} numberOfLines={2}>
-                  {lesson.name}
-                </Text>
-                {lesson.description && (
-                  <Text style={styles.lessonDesc} numberOfLines={1}>
-                    {lesson.description}
-                  </Text>
-                )}
-                {lesson.duration && (
-                  <View style={styles.durationTag}>
-                    <Ionicons name="time-outline" size={12} color="#059669" />
-                    <Text style={styles.durationText}>{lesson.duration} phút</Text>
-                  </View>
-                )}
-              </View>
-
               <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => handleOpenMenu(lesson)}
-                hitSlop={8}
+                style={styles.lessonCard}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(coach)/menu/lesson/[lessonId]",
+                    params: {
+                      lessonId: lesson.id,
+                      lessonName: lesson.name,
+                      lessonDuration: lesson.duration,
+                      lessonDescription: lesson.description,
+                    },
+                  })
+                }
+                activeOpacity={0.7}
               >
-                <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+                <View style={styles.lessonBadge}>
+                  <Text style={styles.lessonIndex}>{index + 1}</Text>
+                </View>
+
+                <View style={styles.lessonContent}>
+                  <Text style={styles.lessonName} numberOfLines={2}>
+                    {lesson.name}
+                  </Text>
+                  {lesson.duration && (
+                    <View style={styles.durationTag}>
+                      <Ionicons name="time-outline" size={12} color="#059669" />
+                      <Text style={styles.durationText}>{lesson.duration} phút</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.menuButton}
+                  onPress={() => handleOpenMenu(lesson)}
+                  hitSlop={8}
+                >
+                  <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+                </TouchableOpacity>
               </TouchableOpacity>
-            </TouchableOpacity>
+
+              {/* Expandable Description Section */}
+              {lesson.description && (
+                <View style={styles.descriptionContainer}>
+                  <TouchableOpacity
+                    style={styles.descriptionHeader}
+                    onPress={() =>
+                      setExpandedLesson(
+                        expandedLesson === lesson.id ? null : lesson.id
+                      )
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.descriptionHeaderLeft}>
+                      <Ionicons
+                        name="document-text"
+                        size={14}
+                        color="#059669"
+                      />
+                      <Text style={styles.descriptionHeaderText}>Mô tả</Text>
+                    </View>
+                    <Ionicons
+                      name={
+                        expandedLesson === lesson.id
+                          ? "chevron-up"
+                          : "chevron-down"
+                      }
+                      size={16}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
+
+                  {expandedLesson === lesson.id && (
+                    <View style={styles.descriptionContent}>
+                      <Text style={styles.descriptionText}>
+                        {lesson.description}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
           ))}
         </ScrollView>
       )}
@@ -463,11 +504,6 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginBottom: 4,
   },
-  lessonDesc: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 6,
-  },
   durationTag: {
     flexDirection: "row",
     alignItems: "center",
@@ -636,6 +672,55 @@ const styles = StyleSheet.create({
   menuDivider: {
     height: 1,
     backgroundColor: "#E5E7EB",
+  },
+
+  /* Lesson Card Wrapper */
+  lessonCardWrapper: {
+    gap: 0,
+    marginBottom: 4,
+  },
+
+  /* Description Container */
+  descriptionContainer: {
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  descriptionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#F9FAFB",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  descriptionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  descriptionHeaderText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  descriptionContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#FFFFFF",
+  },
+  descriptionText: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#374151",
+    lineHeight: 18,
   },
 });
 

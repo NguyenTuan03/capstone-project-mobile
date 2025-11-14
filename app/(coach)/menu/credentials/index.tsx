@@ -473,7 +473,7 @@ export default function CredentialsScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="Ví dụ: Pickleball Chuyên nghiệp"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#6B7280"
                   value={formData.name}
                   onChangeText={(text) => {
                     console.log("Name input changed:", text);
@@ -527,7 +527,7 @@ export default function CredentialsScreen() {
                 <TextInput
                   style={[styles.textInput, styles.textInputLarge]}
                   placeholder="Thêm mô tả chi tiết về chứng chỉ"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#6B7280"
                   value={formData.description}
                   onChangeText={(text) =>
                     setFormData({ ...formData, description: text })

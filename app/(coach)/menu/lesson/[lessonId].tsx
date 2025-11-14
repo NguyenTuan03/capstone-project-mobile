@@ -4,6 +4,7 @@ import { VideoType } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -34,6 +35,30 @@ export default function LessonDetailScreen() {
   const [videos, setVideos] = useState<VideoType[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoType | null>(null);
+  const [expandedDrill, setExpandedDrill] = useState<number | null>(null);
+  const [generatedThumbnails, setGeneratedThumbnails] = useState<Record<number, string>>({});
+
+  // Generate thumbnail from video on demand
+  const generateThumbnail = useCallback(async (videoId: number, videoUrl: string) => {
+    // Skip if already generated
+    if (generatedThumbnails[videoId]) {
+      return;
+    }
+    
+    try {
+      const { uri } = await VideoThumbnails.getThumbnailAsync(videoUrl, {
+        time: 1000, // 1 second into the video
+      });
+      setGeneratedThumbnails(prev => ({
+        ...prev,
+        [videoId]: uri
+      }));
+      console.log("✓ Thumbnail generated for video", videoId);
+    } catch (error) {
+      console.warn("⚠️ Failed to generate thumbnail for video", videoId, error);
+      // Continue without thumbnail - it's optional
+    }
+  }, [generatedThumbnails]);
 
   // Create player instance for selected video
   const player = useVideoPlayer(selectedVideo?.publicUrl || null);
@@ -61,12 +86,20 @@ export default function LessonDetailScreen() {
       const response = await get<VideoType[]>(
         `${API_URL}/v1/videos/lessons/${lessonId}`
       );
-      setVideos(Array.isArray(response.data) ? response.data : []);
+      const videoList = Array.isArray(response.data) ? response.data : [];
+      setVideos(videoList);
+      
+      // Generate thumbnails for all videos that don't have one
+      videoList.forEach(video => {
+        if (video.publicUrl && !video.thumbnailUrl) {
+          generateThumbnail(video.id, video.publicUrl);
+        }
+      });
     } catch (error) {
       console.error("Lỗi khi tải danh sách videos:", error);
       setVideos([]);
     }
-  }, [lessonId]);
+  }, [lessonId, generateThumbnail]);
 
   useEffect(() => {
     if (activeTab === "QUIZZ" && lessonId) {
@@ -206,9 +239,9 @@ export default function LessonDetailScreen() {
                   >
                     {/* Video Thumbnail */}
                     <View style={styles.videoThumbnail}>
-                      {video.thumbnailUrl ? (
+                      {video.thumbnailUrl || generatedThumbnails[video.id] ? (
                         <Image
-                          source={{ uri: video.thumbnailUrl }}
+                          source={{ uri: video.thumbnailUrl || generatedThumbnails[video.id] }}
                           style={{ width: "100%", height: "100%" }}
                         />
                       ) : (
@@ -279,54 +312,103 @@ export default function LessonDetailScreen() {
                       </View>
                     )}
 
-                    {/* Metadata Section - Organized in two columns */}
-                    <View style={styles.videoMetadataSection}>
-                      <View style={styles.metadataColumn}>
-                        <View style={styles.metadataItem}>
-                          <Ionicons name="time" size={16} color="#059669" />
-                          <View>
-                            <Text style={styles.metadataLabel}>Thời lượng</Text>
-                            <Text style={styles.metadataValue}>
-                              {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, "0")} phút
+                    {/* Quick Metadata Row */}
+                    <View style={styles.quickMetadataRow}>
+                      <View style={styles.quickMetadataItem}>
+                        <Ionicons name="time" size={14} color="#059669" />
+                        <Text style={styles.quickMetadataText}>
+                          {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, "0")}
+                        </Text>
+                      </View>
+                      {video.drillPracticeSets && (
+                        <View style={styles.quickMetadataItem}>
+                          <Ionicons name="fitness" size={14} color="#059669" />
+                          <Text style={styles.quickMetadataText}>{video.drillPracticeSets} bộ</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Drill Information - Expandable Section */}
+                    {(video.drillName || video.drillDescription) && (
+                      <View style={styles.drillInfoSection}>
+                        <TouchableOpacity
+                          style={styles.drillInfoHeader}
+                          onPress={() =>
+                            setExpandedDrill(
+                              expandedDrill === video.id ? null : video.id
+                            )
+                          }
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.drillInfoTitleContainer}>
+                            <Ionicons
+                              name="barbell"
+                              size={16}
+                              color="#FFFFFF"
+                              style={{marginRight: 8}}
+                            />
+                            <Text style={styles.drillInfoTitle}>
+                              Thông tin bài tập
                             </Text>
                           </View>
-                        </View>
-                        {video.drillPracticeSets && (
-                          <View style={styles.metadataItem}>
-                            <Ionicons name="fitness" size={16} color="#059669" />
-                            <View>
-                              <Text style={styles.metadataLabel}>Bộ tập</Text>
-                              <Text style={styles.metadataValue}>{video.drillPracticeSets}</Text>
-                            </View>
-                          </View>
-                        )}
-                      </View>
+                          <Ionicons
+                            name={
+                              expandedDrill === video.id
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
+                            size={20}
+                            color="#FFFFFF"
+                          />
+                        </TouchableOpacity>
 
-                      <View style={styles.metadataColumn}>
-                        {video.drillName && (
-                          <View style={styles.metadataItem}>
-                            <Ionicons name="ellipse" size={16} color="#059669" />
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.metadataLabel}>Bài tập</Text>
-                              <Text style={styles.metadataValue} numberOfLines={1}>
-                                {video.drillName}
-                              </Text>
-                            </View>
-                          </View>
-                        )}
-                        {video.drillDescription && (
-                          <View style={styles.metadataItem}>
-                            <Ionicons name="information-circle" size={16} color="#059669" />
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.metadataLabel}>Mô tả</Text>
-                              <Text style={styles.metadataValue} numberOfLines={1}>
-                                {video.drillDescription}
-                              </Text>
-                            </View>
+                        {expandedDrill === video.id && (
+                          <View style={styles.drillInfoContent}>
+                            {video.drillName && (
+                              <View style={styles.drillInfoItem}>
+                                <View style={styles.drillInfoItemIcon}>
+                                  <Ionicons
+                                    name="ellipse"
+                                    size={6}
+                                    color="#059669"
+                                  />
+                                </View>
+                                <View style={styles.drillInfoItemText}>
+                                  <Text style={styles.drillInfoLabel}>
+                                    Tên bài tập
+                                  </Text>
+                                  <Text style={styles.drillInfoValue}>
+                                    {video.drillName}
+                                  </Text>
+                                </View>
+                              </View>
+                            )}
+
+                            {video.drillDescription && (
+                              <View style={styles.drillInfoItem}>
+                                <View style={styles.drillInfoItemIcon}>
+                                  <Ionicons
+                                    name="ellipse"
+                                    size={6}
+                                    color="#059669"
+                                  />
+                                </View>
+                                <View style={styles.drillInfoItemText}>
+                                  <Text style={styles.drillInfoLabel}>
+                                    Mô tả chi tiết
+                                  </Text>
+                                  <Text
+                                    style={styles.drillInfoDescValue}
+                                  >
+                                    {video.drillDescription}
+                                  </Text>
+                                </View>
+                              </View>
+                            )}
                           </View>
                         )}
                       </View>
-                    </View>
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -981,5 +1063,93 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 16 / 9,
     backgroundColor: "#000000",
+  },
+
+  /* Quick Metadata Row */
+  quickMetadataRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  quickMetadataItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F0FDF4",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    flex: 1,
+  },
+  quickMetadataText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#059669",
+  },
+
+  /* Drill Information Section */
+  drillInfoSection: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  drillInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  drillInfoTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  drillInfoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  drillInfoContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  drillInfoItem: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+  },
+  drillInfoItemIcon: {
+    width: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 3,
+  },
+  drillInfoItemText: {
+    flex: 1,
+    gap: 4,
+  },
+  drillInfoLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  drillInfoValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  drillInfoDescValue: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#374151",
+    lineHeight: 18,
   },
 });

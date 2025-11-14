@@ -94,6 +94,7 @@ export default function EditSubjectScreen() {
           value={editNameLesson}
           onChangeText={setEditNameLesson}
           placeholder={lessonName}
+          placeholderTextColor="#6B7280"
           style={{
             borderWidth: 1,
             borderColor: "#ccc",
@@ -110,6 +111,7 @@ export default function EditSubjectScreen() {
           value={editDescriptionLesson}
           onChangeText={setEditDescriptionLesson}
           placeholder={lessonDescription}
+          placeholderTextColor="#6B7280"
           multiline
           style={{
             borderWidth: 1,
@@ -162,6 +164,7 @@ export default function EditSubjectScreen() {
               setEditDuration(sanitized);
             }}
             placeholder={lessonDuration}
+            placeholderTextColor="#6B7280"
             keyboardType="numeric"
             editable={!saving}
             style={{
