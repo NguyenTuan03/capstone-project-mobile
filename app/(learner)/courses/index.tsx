@@ -569,7 +569,7 @@ export default function CoursesScreen() {
 
                   {/* Location */}
                   <View style={styles.locationRow}>
-                    <Ionicons name="location" size={14} color="#6B7280" />
+                    <Ionicons name="location" size={14} color="#3B82F6" />
                     <Text style={styles.locationText}>{c.court?.address}</Text>
                   </View>
 

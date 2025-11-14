@@ -184,6 +184,21 @@ export default function CourseDetailScreen() {
     }
   };
 
+  const getCourseStatusLabel = (status: string) => {
+    switch (status) {
+      case "APPROVED":
+        return "Sẵn sàng đăng kí";
+      case "FULL":
+        return "Đã đủ người";
+      case "READY_OPENED":
+        return "Sẵn sàng đăng kí";
+      case "ON_GOING":
+        return "Đang diễn ra";
+      default:
+        return "";
+    }
+  };
+
   const getEnrollmentStatusLabel = (status: Enrollment["status"]) => {
     switch (status) {
       case "CONFIRMED":
@@ -215,6 +230,19 @@ export default function CourseDetailScreen() {
         return { color: "#EF4444" };
     }
   };
+  const getLevelLabel = (level: string) => { 
+  switch (level) {
+    case "INTERMEDIATE":
+      return "Trung bình";
+    case "ADVANCED":
+      return "Nâng cao";
+    case "PROFESSIONAL":
+      return "Chuyên nghiệp";
+    default:
+      return "Cơ bản"; 
+  }
+};
+
 
   if (loading) {
     return (
@@ -301,7 +329,9 @@ export default function CourseDetailScreen() {
                 <Text style={styles.courseName}>{course.name}</Text>
                 {course.status ? (
                   <View style={styles.statusPill}>
-                    <Text style={styles.statusPillText}>{course.status}</Text>
+                    <Text style={styles.statusPillText}>
+                      {getCourseStatusLabel(course.status)}
+                    </Text>
                   </View>
                 ) : null}
               </View>
@@ -312,7 +342,7 @@ export default function CourseDetailScreen() {
               ) : null}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Trình độ</Text>
-                <Text style={styles.infoValue}>{course.level}</Text>
+                <Text style={styles.infoValue}>{getLevelLabel(course.level)}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Hình thức</Text>

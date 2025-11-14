@@ -14,7 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -106,7 +105,6 @@ export default function UploadVideoScreen() {
           },
         }
       );
-
       if (response.status === 200 || response.status === 201) {
         Alert.alert("Thành công", "Video đã được tải lên!", [
           { text: "OK", onPress: () => router.back() },
@@ -139,7 +137,7 @@ export default function UploadVideoScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView
         style={{ paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
@@ -376,6 +374,6 @@ export default function UploadVideoScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
