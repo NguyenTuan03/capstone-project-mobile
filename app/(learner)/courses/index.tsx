@@ -121,6 +121,7 @@ export default function CoursesScreen() {
   );
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
+  const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
 
   const fetchProvinces = async () => {
     try {
@@ -212,6 +213,104 @@ export default function CoursesScreen() {
     }
   }, [selectedProvince]);
 
+  const fetchCoachRating = async (coachId: number): Promise<number | null> => {
+    try {
+      // API: GET /v1/coaches/:coachId/rating/overall
+      const res = await get<{
+        statusCode: number;
+        message: string;
+        metadata: number;
+      }>(`/v1/coaches/${coachId}/rating/overall`);
+
+      // Response structure: { statusCode: 200, message: "Success", metadata: 5 }
+      const responseData = res?.data;
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        "metadata" in responseData
+      ) {
+        const rating = responseData.metadata;
+        if (typeof rating === "number" && rating > 0) {
+          return rating;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error(`Lỗi khi tải rating cho coach ${coachId}:`, error);
+      return null;
+    }
+  };
+
+  const fetchUserCoachId = async (userId: number): Promise<number | null> => {
+    try {
+      const res = await get<{
+        id: number;
+        coach?: { id: number }[] | null;
+      }>(`/v1/users/${userId}`);
+
+      if (res?.data?.coach && res.data.coach.length > 0) {
+        return res.data.coach[0].id;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Lỗi khi tải coach ID cho user ${userId}:`, error);
+      return null;
+    }
+  };
+
+  const fetchCoachesRatings = async (userIds: number[]) => {
+    try {
+      const uniqueUserIds = [...new Set(userIds)];
+
+      // First, get coach IDs from user IDs
+      // createdBy.id is userId, need to fetch user profile to get coach[0].id
+      const coachIdPromises = uniqueUserIds.map((userId) =>
+        fetchUserCoachId(userId).then((coachId) => ({ userId, coachId }))
+      );
+      const coachIdResults = await Promise.allSettled(coachIdPromises);
+
+      // Map userId -> coachId
+      const userIdToCoachIdMap: Record<number, number> = {};
+      const coachIds: number[] = [];
+
+      coachIdResults.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.coachId !== null) {
+          userIdToCoachIdMap[result.value.userId] = result.value.coachId;
+          coachIds.push(result.value.coachId);
+        }
+      });
+
+      // Then, fetch ratings for all coaches using coach ID
+      // API: GET /v1/coaches/:coachId/rating/overall
+      const ratingPromises = coachIds.map((coachId) =>
+        fetchCoachRating(coachId).then((rating) => ({ coachId, rating }))
+      );
+      const ratingResults = await Promise.allSettled(ratingPromises);
+
+      // Map coachId -> rating, then convert to userId -> rating
+      const coachIdToRatingMap: Record<number, number> = {};
+      ratingResults.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.rating !== null) {
+          coachIdToRatingMap[result.value.coachId] = result.value.rating;
+        }
+      });
+
+      // Convert to userId -> rating mapping
+      const ratingsMap: Record<number, number> = {};
+      Object.keys(userIdToCoachIdMap).forEach((userIdStr) => {
+        const userId = Number(userIdStr);
+        const coachId = userIdToCoachIdMap[userId];
+        if (coachIdToRatingMap[coachId] !== undefined) {
+          ratingsMap[userId] = coachIdToRatingMap[coachId];
+        }
+      });
+
+      setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
+    } catch (error) {
+      console.error("Lỗi khi tải coach ratings:", error);
+    }
+  };
+
   const fetchCourses = async (pageNum: number = 1, append: boolean = false) => {
     try {
       if (append) {
@@ -233,14 +332,26 @@ export default function CoursesScreen() {
       const url = `/v1/courses?page=${pageNum}&pageSize=${pageSize}&filter=${filterQuery}`;
       const res = await get<CoursesResponse>(url);
 
+      const newCourses = res.data.items || [];
+      console.log("newCourses", newCourses);
+
       if (append) {
-        setCourses((prev) => [...prev, ...(res.data.items || [])]);
+        setCourses((prev) => [...prev, ...newCourses]);
       } else {
-        setCourses(res.data.items || []);
+        setCourses(newCourses);
       }
 
       setTotal(res.data.total || 0);
       setPage(res.data.page || 1);
+
+      // Fetch coach ratings for all courses
+      // Get user IDs from createdBy (these are user IDs, not coach IDs)
+      const userIds = newCourses
+        .map((c) => c.createdBy?.id)
+        .filter((id): id is number => id !== undefined);
+      if (userIds.length > 0) {
+        fetchCoachesRatings(userIds);
+      }
     } catch (error) {
       console.error("Lỗi khi tải danh sách khóa học:", error);
       Alert.alert("Lỗi", "Không thể tải danh sách khóa học");
@@ -440,9 +551,20 @@ export default function CoursesScreen() {
                     <Text style={styles.courseTitle} numberOfLines={2}>
                       {c.name}
                     </Text>
-                    <Text style={styles.courseCoach}>
-                      {c.createdBy?.fullName || "Huấn luyện viên"}
-                    </Text>
+                    <View style={styles.coachRow}>
+                      <Text style={styles.courseCoach}>
+                        {c.createdBy?.fullName || "Huấn luyện viên"}
+                      </Text>
+                      {c.createdBy?.id &&
+                        coachRatings[c.createdBy.id] !== undefined && (
+                          <Ionicons
+                            name="star"
+                            size={14}
+                            color="#FBBF24"
+                            style={styles.coachStarIcon}
+                          />
+                        )}
+                    </View>
                   </View>
 
                   {/* Location */}
@@ -571,10 +693,25 @@ export default function CoursesScreen() {
                       <Text style={styles.courseDetailTitle} numberOfLines={3}>
                         {selectedCourse.name}
                       </Text>
-                      <Text style={styles.courseDetailCoach} numberOfLines={1}>
-                        {selectedCourse.createdBy?.fullName ||
-                          "Huấn luyện viên"}
-                      </Text>
+                      <View style={styles.coachRow}>
+                        <Text
+                          style={styles.courseDetailCoach}
+                          numberOfLines={1}
+                        >
+                          {selectedCourse.createdBy?.fullName ||
+                            "Huấn luyện viên"}
+                        </Text>
+                        {selectedCourse.createdBy?.id &&
+                          coachRatings[selectedCourse.createdBy.id] !==
+                            undefined && (
+                            <Ionicons
+                              name="star"
+                              size={14}
+                              color="#FBBF24"
+                              style={styles.coachStarIcon}
+                            />
+                          )}
+                      </View>
                     </View>
 
                     {/* Quick Info Row - Location & Sessions */}
@@ -1216,6 +1353,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   courseCoach: { color: "#6B7280", fontSize: 12, fontWeight: "500" },
+  coachRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  coachStarIcon: {
+    marginLeft: 2,
+  },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   locationText: { color: "#6B7280", fontSize: 12, fontWeight: "500", flex: 1 },
   levelBadgeContainer: { flexDirection: "row", gap: 6, flexWrap: "wrap" },

@@ -107,9 +107,7 @@ export default function MyCoursesScreen() {
       <View style={styles.headerSection}>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Khóa học của tôi</Text>
-          <Text style={styles.headerSubtitle}>
-            Theo dõi tiến độ học tập
-          </Text>
+          <Text style={styles.headerSubtitle}>Theo dõi tiến độ học tập</Text>
         </View>
       </View>
 
@@ -124,9 +122,7 @@ export default function MyCoursesScreen() {
         ) : courses.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="book-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyStateTitle}>
-              Chưa có khóa học nào
-            </Text>
+            <Text style={styles.emptyStateTitle}>Chưa có khóa học nào</Text>
             <Text style={styles.emptyStateSubtitle}>
               Hãy khám phá các khóa học mới để bắt đầu học tập
             </Text>
@@ -288,7 +284,8 @@ export default function MyCoursesScreen() {
                           <View style={{ flex: 1 }}>
                             <Text style={styles.infoLabel}>Người tham gia</Text>
                             <Text style={styles.infoValue}>
-                              {course.currentParticipants}/{course.maxParticipants}
+                              {course.currentParticipants}/
+                              {course.maxParticipants}
                             </Text>
                           </View>
                         </View>
@@ -298,7 +295,11 @@ export default function MyCoursesScreen() {
                     {/* Start & End Dates Row */}
                     <View style={styles.datesRow}>
                       <View style={styles.dateItem}>
-                        <Ionicons name="calendar-clear" size={14} color="#059669" />
+                        <Ionicons
+                          name="calendar-clear"
+                          size={14}
+                          color="#059669"
+                        />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.dateLabel}>Bắt đầu</Text>
                           <Text style={styles.dateValue}>
@@ -308,7 +309,11 @@ export default function MyCoursesScreen() {
                       </View>
                       {course.endDate && (
                         <View style={styles.dateItem}>
-                          <Ionicons name="calendar-clear" size={14} color="#D97706" />
+                          <Ionicons
+                            name="calendar-clear"
+                            size={14}
+                            color="#D97706"
+                          />
                           <View style={{ flex: 1 }}>
                             <Text style={styles.dateLabel}>Kết thúc</Text>
                             <Text style={styles.dateValue}>
@@ -325,6 +330,21 @@ export default function MyCoursesScreen() {
                         <Ionicons name="location" size={14} color="#059669" />
                         <Text style={styles.locationText} numberOfLines={2}>
                           {course.court.address}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Feedback Section for Completed Courses */}
+                    {course.status === "COMPLETED" && (
+                      <View style={styles.feedbackSection}>
+                        <Ionicons
+                          name="chatbubble-ellipses"
+                          size={16}
+                          color="#059669"
+                        />
+                        <Text style={styles.feedbackText}>
+                          Bạn đã hoàn thành khóa học này. Hãy viết feedback để
+                          chia sẻ trải nghiệm của bạn!
                         </Text>
                       </View>
                     )}
@@ -644,6 +664,25 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
+  /* Feedback Section */
+  feedbackSection: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#EFF6FF",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#3B82F6",
+  },
+  feedbackText: {
+    fontSize: 12,
+    color: "#1E40AF",
+    fontWeight: "500",
+    flex: 1,
+    lineHeight: 18,
+  },
+
   /* Details Row */
   detailsRow: {
     flexDirection: "row",
@@ -707,4 +746,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

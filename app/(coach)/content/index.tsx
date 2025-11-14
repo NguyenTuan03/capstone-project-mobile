@@ -1,3 +1,4 @@
+import { get } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { CoachVerificationStatus, User } from "@/types/user";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -84,48 +85,70 @@ const getVerificationBadgeStyle = (status: CoachVerificationStatus) => {
 export default function ContentScreen() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [rating, setRating] = useState<number | null>(null);
+
+  const loadRating = useCallback(async (coachId: number) => {
+    try {
+      const res = await get<{
+        statusCode: number;
+        message: string;
+        metadata: number;
+      }>(`/v1/coaches/${coachId}/rating/overall`);
+      if (res?.data?.metadata !== undefined) {
+        setRating(res.data.metadata);
+      }
+    } catch (error) {
+      console.error("Error loading rating:", error);
+      setRating(null);
+    }
+  }, []);
+
+  const loadUser = useCallback(async () => {
+    try {
+      const userData = await storageService.getUser();
+      setUser(userData);
+
+      // Load rating if user has coach profile
+      if (
+        userData?.coach &&
+        userData.coach.length > 0 &&
+        userData.coach[0].id
+      ) {
+        loadRating(userData.coach[0].id);
+      }
+    } catch (error) {
+      console.error("Error loading user:", error);
+    }
+  }, [loadRating]);
 
   useFocusEffect(
     useCallback(() => {
       loadUser();
-    }, [])
+    }, [loadUser])
   );
 
-  const loadUser = async () => {
-    try {
-      const userData = await storageService.getUser();
-      setUser(userData);
-    } catch (error) {
-      console.error("Error loading user:", error);
-    }
-  };
-
   const handleLogout = () => {
-    Alert.alert(
-      "Xác nhận đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Đăng xuất",
-          style: "destructive",
-          onPress: () => {
-            setLoading(true);
-            // Add logout logic here
-            setTimeout(() => {
-              setLoading(false);
-              router.replace("/(auth)");
-            }, 500);
-          },
+    Alert.alert("Xác nhận đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: () => {
+          setLoading(true);
+          // Add logout logic here
+          setTimeout(() => {
+            setLoading(false);
+            router.replace("/(auth)");
+          }, 500);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#059669" />
-      
+
       {/* Header with Green Background */}
       <View style={styles.headerSection}>
         <View style={styles.profileCard}>
@@ -144,7 +167,7 @@ export default function ContentScreen() {
               />
             )}
           </View>
-          
+
           {/* Full Name with Verification Badge */}
           <View style={styles.nameWithBadgeContainer}>
             <Text style={styles.profileName}>{user?.fullName || "Coach"}</Text>
@@ -152,9 +175,7 @@ export default function ContentScreen() {
               <View
                 style={[
                   styles.verificationBadge,
-                  getVerificationBadgeStyle(
-                    user.coach[0].verificationStatus
-                  ),
+                  getVerificationBadgeStyle(user.coach[0].verificationStatus),
                 ]}
               >
                 <Ionicons
@@ -174,6 +195,25 @@ export default function ContentScreen() {
                 >
                   {getVerificationLabel(user.coach[0].verificationStatus)}
                 </Text>
+              </View>
+            )}
+            {/* Rating Display */}
+            {rating !== null && (
+              <View style={styles.ratingContainer}>
+                <View style={styles.ratingStars}>
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const roundedRating = Math.round(rating);
+                    const isFilled = star <= roundedRating;
+                    return (
+                      <Ionicons
+                        key={star}
+                        name={isFilled ? "star" : "star-outline"}
+                        size={16}
+                        color={isFilled ? "#FBBF24" : "#D1D5DB"}
+                      />
+                    );
+                  })}
+                </View>
               </View>
             )}
           </View>
@@ -218,7 +258,9 @@ export default function ContentScreen() {
             </View>
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Tài liệu khóa học</Text>
-              <Text style={styles.menuDescription}>Quản lý chương, bài học, video</Text>
+              <Text style={styles.menuDescription}>
+                Quản lý chương, bài học, video
+              </Text>
             </View>
             <MaterialIcons name="chevron-right" size={28} color="#D1D5DB" />
           </TouchableOpacity>
@@ -237,11 +279,17 @@ export default function ContentScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.menuIconContainer}>
-              <Ionicons name="person-circle-outline" size={24} color="#059669" />
+              <Ionicons
+                name="person-circle-outline"
+                size={24}
+                color="#059669"
+              />
             </View>
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Thông tin cá nhân</Text>
-              <Text style={styles.menuDescription}>Cập nhật hồ sơ và thông tin liên hệ</Text>
+              <Text style={styles.menuDescription}>
+                Cập nhật hồ sơ và thông tin liên hệ
+              </Text>
             </View>
             <MaterialIcons name="chevron-right" size={28} color="#D1D5DB" />
           </TouchableOpacity>
@@ -256,7 +304,9 @@ export default function ContentScreen() {
             </View>
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Hiệu suất giảng dạy</Text>
-              <Text style={styles.menuDescription}>Xem thống kê và báo cáo hiệu suất</Text>
+              <Text style={styles.menuDescription}>
+                Xem thống kê và báo cáo hiệu suất
+              </Text>
             </View>
             <MaterialIcons name="chevron-right" size={28} color="#D1D5DB" />
           </TouchableOpacity>
@@ -271,7 +321,9 @@ export default function ContentScreen() {
             </View>
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Quản lý ví tiền</Text>
-              <Text style={styles.menuDescription}>Kiểm tra thu nhập và giao dịch</Text>
+              <Text style={styles.menuDescription}>
+                Kiểm tra thu nhập và giao dịch
+              </Text>
             </View>
             <MaterialIcons name="chevron-right" size={28} color="#D1D5DB" />
           </TouchableOpacity>
@@ -285,12 +337,16 @@ export default function ContentScreen() {
             activeOpacity={0.7}
             disabled={loading}
           >
-            <View style={[styles.menuIconContainer, styles.logoutIconContainer]}>
+            <View
+              style={[styles.menuIconContainer, styles.logoutIconContainer]}
+            >
               <MaterialIcons name="logout" size={24} color="#DC2626" />
             </View>
             <View style={styles.menuContent}>
               <Text style={styles.logoutTitle}>Đăng xuất</Text>
-              <Text style={styles.logoutDescription}>Đăng xuất khỏi tài khoản của bạn</Text>
+              <Text style={styles.logoutDescription}>
+                Đăng xuất khỏi tài khoản của bạn
+              </Text>
             </View>
             {loading ? (
               <ActivityIndicator size="small" color="#DC2626" />
@@ -360,6 +416,13 @@ const styles = StyleSheet.create({
   verificationBadgeText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  ratingContainer: {
+    marginTop: 4,
+  },
+  ratingStars: {
+    flexDirection: "row",
+    gap: 2,
   },
   contactInfoContainer: {
     gap: 8,
