@@ -15,16 +15,13 @@ import {
 } from "react-native";
 import { useLessonResources } from "../../../hooks/useLessonResources";
 import http from "../../../services/http/interceptor";
+import storageService from "../../../services/storageService";
 import { QuizType } from "../../../types/quiz";
 import { LearnerVideo, VideoType } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
-type LessonResourcesTab = "videos" | "quizzes";
+import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
 
-export interface LessonResourcesTabsProps {
-  lessonId: number;
-  sessionId?: number;
-  style?: StyleProp<ViewStyle>;
-}
+type LessonResourcesTab = "videos" | "quizzes";
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, sessionId, style }) => {
@@ -45,6 +42,9 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       createdAt?: string;
       id?: number;
     } | null>(null);
+    const [aiAnalysisResult, setAiAnalysisResult] =
+      useState<AiVideoCompareResult | null>(null);
+    const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
@@ -113,21 +113,49 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     };
 
     const loadSubmittedVideo = useCallback(async () => {
+      console.log("🔍 loadSubmittedVideo called, sessionId:", sessionId);
+
       if (!sessionId) {
+        console.log("⚠️ No sessionId, skipping loadSubmittedVideo");
         setSubmittedVideo(null);
         return;
       }
 
       try {
-        const res = await get<LearnerVideo[]>(
-          `/v1/learner-videos?sessionId=${sessionId}`
-        );
-        const list = Array.isArray(res?.data) ? res.data : [];
-        if (list.length === 0) {
+        console.log("✅ Starting to load submitted video...");
+        // Lấy userId từ storage
+        const user = await storageService.getUser();
+        console.log("👤 User from storage:", user);
+        if (!user?.id) {
+          console.warn("❌ User not found, cannot load learner video");
           setSubmittedVideo(null);
           return;
         }
-        // pick the most recent by createdAt if available, else first item
+
+        // Gọi API mới với userId và sessionId
+        const res = await get<LearnerVideo[]>(
+          `/v1/learner-videos/user/${user.id}?sessionId=${sessionId}`
+        );
+        console.log("res", res);
+        // API trả về array trong res.data
+        const list = Array.isArray(res?.data) ? res.data : [];
+        console.log("📹 Loaded learner videos:", list.length);
+        if (list.length > 0) {
+          console.log("📹 First video:", {
+            id: list[0]?.id,
+            hasPublicUrl: !!list[0]?.publicUrl,
+            publicUrl: list[0]?.publicUrl?.substring(0, 50),
+            status: list[0]?.status,
+          });
+        }
+
+        if (list.length === 0) {
+          console.log("📹 No learner videos found");
+          setSubmittedVideo(null);
+          return;
+        }
+
+        // Lấy video mới nhất (sắp xếp theo createdAt giảm dần)
         const picked =
           list
             .slice()
@@ -136,7 +164,15 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                 new Date(b?.createdAt ?? 0).getTime() -
                 new Date(a?.createdAt ?? 0).getTime()
             )[0] ?? list[0];
-        if (picked?.publicUrl) {
+
+        console.log("📹 Picked video:", {
+          id: picked?.id,
+          hasPublicUrl: !!picked?.publicUrl,
+          status: picked?.status,
+        });
+
+        // Kiểm tra chặt chẽ: publicUrl phải tồn tại và không rỗng
+        if (picked?.publicUrl && picked.publicUrl.trim().length > 0) {
           setSubmittedVideo({
             publicUrl: picked.publicUrl,
             thumbnailUrl: picked.thumbnailUrl,
@@ -144,12 +180,15 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             createdAt: picked.createdAt,
             id: picked.id,
           });
+          console.log("✅ Set submitted video successfully");
         } else {
+          console.log("⚠️ Video found but no valid publicUrl");
           setSubmittedVideo(null);
         }
       } catch (err) {
-        console.error("Failed to load learner video:", err);
+        console.error("❌ Failed to load learner video:", err);
         // ignore silently; not critical to block UI
+        setSubmittedVideo(null);
       }
     }, [sessionId]);
 
@@ -215,6 +254,90 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
               <LessonVideoPlayer source={submittedVideo.publicUrl} />
             </View>
           )}
+
+          {loadingAnalysis ? (
+            <View style={styles.resourceCard}>
+              <ActivityIndicator size="small" color="#10B981" />
+              <Text style={styles.metaText}>Đang tải kết quả phân tích...</Text>
+            </View>
+          ) : aiAnalysisResult ? (
+            <View style={styles.resourceCard}>
+              <Text style={styles.resourceTitle}>📊 Kết quả phân tích AI</Text>
+              {aiAnalysisResult.learnerScore !== null && (
+                <Text style={styles.metaText}>
+                  ⭐ Điểm số: {aiAnalysisResult.learnerScore}/100
+                </Text>
+              )}
+              {aiAnalysisResult.summary && (
+                <View style={styles.analysisSection}>
+                  <Text style={styles.analysisLabel}>📝 Tóm tắt:</Text>
+                  <Text style={styles.analysisText}>
+                    {aiAnalysisResult.summary}
+                  </Text>
+                </View>
+              )}
+              {aiAnalysisResult.coachNote && (
+                <View style={styles.analysisSection}>
+                  <Text style={styles.analysisLabel}>
+                    💬 Feedback từ coach:
+                  </Text>
+                  <Text style={styles.analysisText}>
+                    {aiAnalysisResult.coachNote}
+                  </Text>
+                </View>
+              )}
+              {aiAnalysisResult.keyDifferents &&
+                aiAnalysisResult.keyDifferents.length > 0 && (
+                  <View style={styles.analysisSection}>
+                    <Text style={styles.analysisLabel}>
+                      🔍 Các điểm khác biệt chính:
+                    </Text>
+                    {aiAnalysisResult.keyDifferents.map((diff, index) => (
+                      <View key={index} style={styles.differenceItem}>
+                        <Text style={styles.differenceAspect}>
+                          {diff.aspect}
+                        </Text>
+                        <Text style={styles.analysisText}>
+                          Kỹ thuật của bạn: {diff.learnerTechnique}
+                        </Text>
+                        <Text style={styles.analysisText}>
+                          Tác động: {diff.impact}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              {aiAnalysisResult.recommendationDrills &&
+                aiAnalysisResult.recommendationDrills.length > 0 && (
+                  <View style={styles.analysisSection}>
+                    <Text style={styles.analysisLabel}>💡 Khuyến nghị:</Text>
+                    {aiAnalysisResult.recommendationDrills.map((rec, index) => (
+                      <View key={index} style={styles.recommendationItem}>
+                        <Text style={styles.analysisText}>
+                          {index + 1}. {rec.name || "Bài tập"}
+                        </Text>
+                        {rec.description && (
+                          <Text style={styles.analysisText}>
+                            Mô tả: {rec.description}
+                          </Text>
+                        )}
+                        {rec.practiceSets && (
+                          <Text style={styles.analysisText}>
+                            Số hiệp tập: {rec.practiceSets}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              {aiAnalysisResult.createdAt && (
+                <Text style={styles.metaText}>
+                  Phân tích lúc:{" "}
+                  {new Date(aiAnalysisResult.createdAt).toLocaleString()}
+                </Text>
+              )}
+            </View>
+          ) : null}
 
           {!localVideo && !submittedVideo && (
             <TouchableOpacity
@@ -311,9 +434,46 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     };
 
     // Load submitted video on mount or when lesson changes
+    const loadAiAnalysisResult = useCallback(async () => {
+      if (!sessionId) {
+        setAiAnalysisResult(null);
+        return;
+      }
+
+      try {
+        setLoadingAnalysis(true);
+        const res = await get<AiVideoCompareResult[]>(
+          `/v1/ai-video-compare-results/sessions/${sessionId}`
+        );
+
+        const list = Array.isArray(res?.data) ? res.data : [];
+        if (list.length > 0) {
+          const latest = list
+            .slice()
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            )[0];
+          setAiAnalysisResult(latest);
+        } else {
+          setAiAnalysisResult(null);
+        }
+      } catch (err) {
+        console.error("Failed to load AI analysis result:", err);
+        setAiAnalysisResult(null);
+      } finally {
+        setLoadingAnalysis(false);
+      }
+    }, [sessionId]);
+
     useEffect(() => {
       void loadSubmittedVideo();
     }, [loadSubmittedVideo]);
+
+    useEffect(() => {
+      void loadAiAnalysisResult();
+    }, [loadAiAnalysisResult]);
 
     const renderQuizzes = (items: QuizType[]) => {
       if (items.length === 0) {
@@ -545,6 +705,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#DC2626",
     textAlign: "center",
+  },
+  analysisSection: {
+    marginTop: 12,
+    gap: 8,
+  },
+  analysisLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  analysisText: {
+    fontSize: 12,
+    color: "#374151",
+    lineHeight: 18,
+  },
+  differenceItem: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 6,
+    gap: 4,
+  },
+  differenceAspect: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  recommendationItem: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: "#F0FDF4",
+    borderRadius: 6,
+    gap: 4,
   },
   tagContainer: {
     flexDirection: "row",

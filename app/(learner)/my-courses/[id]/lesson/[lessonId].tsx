@@ -15,10 +15,12 @@ const LessonResourcesScreen: React.FC = () => {
     id?: string;
     lessonId?: string;
     lessonName?: string;
+    sessionId?: string;
   }>();
 
   const lessonId = params.lessonId ? Number(params.lessonId) : null;
   const lessonName = params.lessonName;
+  const sessionId = params.sessionId ? Number(params.sessionId) : undefined;
 
   const heading = useMemo(() => {
     if (lessonName && lessonName.trim().length > 0) return lessonName;
@@ -55,7 +57,7 @@ const LessonResourcesScreen: React.FC = () => {
         </View>
 
         {lessonId ? (
-          <LessonResourcesTabs lessonId={lessonId} />
+          <LessonResourcesTabs lessonId={lessonId} sessionId={sessionId} />
         ) : (
           <View style={styles.fallback}>
             <Text style={styles.fallbackText}>

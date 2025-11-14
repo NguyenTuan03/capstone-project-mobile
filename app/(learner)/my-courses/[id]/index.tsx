@@ -463,6 +463,7 @@ const enrollmentStatusStyle = (status?: Enrollment["status"]) => {
                                       id: courseId?.toString() ?? "",
                                       lessonId: lesson.id.toString(),
                                       lessonName: lessonLabel,
+                                      sessionId: session.id.toString(),
                                     },
                                   })
                                 }

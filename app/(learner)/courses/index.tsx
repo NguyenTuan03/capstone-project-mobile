@@ -256,11 +256,7 @@ export default function CoursesScreen() {
 
       let callbackUrl = typeof winner === "string" ? winner : winner.url;
       if (!callbackUrl) {
-        // fallback đóng tab nếu cần
-        try {
-          await WebBrowser.dismissBrowser();
-        } catch {}
-        throw new Error("Không nhận được callback");
+        return;
       }
 
       const { status = "", cancel = "", orderCode } = getParams(callbackUrl);

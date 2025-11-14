@@ -1,7 +1,6 @@
 // services/ai/geminiService.ts
 import type { CombinedAnalysisResult, VideoComparisonResult } from "@/types/ai";
 
-// 🔑 Env cho Expo (app.config + .env)
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 const MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -12,7 +11,6 @@ if (!API_KEY) {
   );
 }
 
-// Helper parse JSON từ text model trả về
 const parseJsonResponse = <T>(text: string): T => {
   try {
     const cleanedText = text.replace(/^```json\s*|```$/g, "").trim();
@@ -25,39 +23,90 @@ const parseJsonResponse = <T>(text: string): T => {
   }
 };
 
-// Call Gemini REST API, trả về text từ candidate đầu tiên
-const callGemini = async (body: unknown): Promise<string> => {
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const callGemini = async (body: unknown, retries = 5): Promise<string> => {
   const url = `${GEMINI_ENDPOINT}?key=${API_KEY}`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`🔄 Attempt ${attempt}/${retries}...`);
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    console.error("[Gemini API error]", res.status, errText);
-    throw new Error(
-      "Gọi AI thất bại. Có thể do cấu hình API key hoặc mạng. Vui lòng thử lại."
-    );
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(errText);
+        } catch {}
+
+        console.error(
+          `[Gemini API error] Attempt ${attempt}:`,
+          res.status,
+          errText
+        );
+
+        // 🔥 Nếu 503 (overloaded) và còn retry, thử lại với wait time dài hơn
+        if (res.status === 503 && attempt < retries) {
+          const waitTime = attempt * 5000; // 5s, 10s, 15s, 20s, 25s
+          console.log(`⏳ Server overloaded, retrying in ${waitTime}ms...`);
+          await sleep(waitTime);
+          continue;
+        }
+
+        // 🔥 Nếu 429 (rate limit) và còn retry
+        if (res.status === 429 && attempt < retries) {
+          const waitTime = attempt * 3000; // 3s, 6s, 9s...
+          console.log(`⏳ Rate limited, retrying in ${waitTime}ms...`);
+          await sleep(waitTime);
+          continue;
+        }
+
+        throw new Error(
+          `Gọi AI thất bại (${res.status}). ${
+            errorData?.error?.message || "Không rõ lỗi"
+          }`
+        );
+      }
+
+      const data: any = await res.json();
+
+      const text =
+        data?.candidates?.[0]?.content?.parts
+          ?.map((p: any) => p.text ?? "")
+          .join("") ?? "";
+
+      if (!text) {
+        console.error("[Gemini API] Empty text response", JSON.stringify(data));
+        throw new Error("AI không trả về nội dung hợp lệ.");
+      }
+
+      console.log(`✅ Request successful on attempt ${attempt}`);
+      return text;
+    } catch (error) {
+      // Nếu là lỗi network và còn retry
+      if (attempt < retries && error instanceof TypeError) {
+        console.log(`⏳ Network error, retrying in 3s...`);
+        await sleep(3000);
+        continue;
+      }
+
+      // Nếu hết retry hoặc lỗi khác, throw
+      throw error;
+    }
   }
 
-  const data: any = await res.json();
-
-  const text =
-    data?.candidates?.[0]?.content?.parts
-      ?.map((p: any) => p.text ?? "")
-      .join("") ?? "";
-
-  if (!text) {
-    console.error("[Gemini API] Empty text response", JSON.stringify(data));
-    throw new Error("AI không trả về nội dung hợp lệ.");
-  }
-
-  return text;
+  throw new Error(
+    "Đã thử lại nhiều lần nhưng vẫn thất bại. Vui lòng thử lại sau."
+  );
 };
 
 /**
@@ -104,11 +153,8 @@ const analyzeVideoSchema = {
     "tags",
     "description",
   ],
-} as const;
+};
 
-/**
- * Phân tích 1 video từ list frame base64
- */
 export const analyzeVideo = async (
   base64Frames: string[]
 ): Promise<CombinedAnalysisResult> => {
@@ -127,7 +173,10 @@ export const analyzeVideo = async (
     Hãy trả lời CHỈ bằng một đối tượng JSON bằng tiếng Việt theo lược đồ đã cung cấp.`;
 
   const imageParts = base64Frames.map((frame) => ({
-    inlineData: { mimeType: "image/jpeg", data: frame },
+    inline_data: {
+      mime_type: "image/jpeg",
+      data: frame,
+    },
   }));
 
   try {
@@ -139,8 +188,8 @@ export const analyzeVideo = async (
         },
       ],
       generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: analyzeVideoSchema,
+        response_mime_type: "application/json",
+        response_schema: analyzeVideoSchema,
       },
     });
 
@@ -156,96 +205,16 @@ export const analyzeVideo = async (
 /**
  * ===== SCHEMA CHO SO SÁNH 2 VIDEO =====
  */
-
 const comparisonDetailSchema = {
   type: "object",
   properties: {
-    analysis: {
-      type: "string",
-      description:
-        "Phân tích chi tiết về kỹ thuật của người chơi trong giai đoạn này.",
-    },
-    strengths: {
-      type: "array",
-      items: { type: "string" },
-      description: "Danh sách các điểm mạnh cụ thể.",
-    },
-    weaknesses: {
-      type: "array",
-      items: { type: "string" },
-      description: "Danh sách các điểm yếu cụ thể cần cải thiện.",
-    },
-    timestamp: {
-      type: "number",
-      description:
-        "Dấu thời gian (tính bằng giây) trong video mà phân tích này áp dụng.",
-    },
+    analysis: { type: "string" },
+    strengths: { type: "array", items: { type: "string" } },
+    weaknesses: { type: "array", items: { type: "string" } },
+    timestamp: { type: "number" },
   },
   required: ["analysis", "strengths", "weaknesses", "timestamp"],
-} as const;
-
-const keyDifferenceSchema = {
-  type: "object",
-  properties: {
-    aspect: {
-      type: "string",
-      description:
-        "Khía cạnh kỹ thuật được so sánh (ví dụ: Dáng đứng, Vung vợt, Chuyển động chân).",
-    },
-    player1_technique: {
-      type: "string",
-      description: "Mô tả kỹ thuật của Huấn luyện viên.",
-    },
-    player2_technique: {
-      type: "string",
-      description: "Mô tả kỹ thuật của Học viên.",
-    },
-    impact: {
-      type: "string",
-      description: "Phân tích tác động của sự khác biệt này đối với cú đánh.",
-    },
-  },
-  required: ["aspect", "player1_technique", "player2_technique", "impact"],
-} as const;
-
-const drillSchema = {
-  type: "object",
-  properties: {
-    title: { type: "string", description: "Tiêu đề của bài tập." },
-    description: {
-      type: "string",
-      description: "Mô tả chi tiết về cách thực hiện bài tập.",
-    },
-    practice_sets: {
-      type: "string",
-      description:
-        "Các hiệp thực hành được đề xuất (ví dụ: '3 hiệp, mỗi hiệp 10 lần lặp').",
-    },
-  },
-  required: ["title", "description", "practice_sets"],
-} as const;
-
-const recommendationWithDrillSchema = {
-  type: "object",
-  properties: {
-    recommendation: {
-      type: "string",
-      description: "Một đề xuất cụ thể để cải thiện.",
-    },
-    drill: drillSchema,
-  },
-  required: ["recommendation", "drill"],
-} as const;
-
-const poseLandmarkSchema = {
-  type: "object",
-  properties: {
-    name: { type: "string" },
-    x: { type: "number" },
-    y: { type: "number" },
-  },
-  required: ["name", "x", "y"],
-} as const;
+};
 
 const compareVideosSchema = {
   type: "object",
@@ -285,34 +254,71 @@ const compareVideosSchema = {
     },
     keyDifferences: {
       type: "array",
-      items: keyDifferenceSchema,
+      items: {
+        type: "object",
+        properties: {
+          aspect: { type: "string" },
+          player1_technique: { type: "string" },
+          player2_technique: { type: "string" },
+          impact: { type: "string" },
+        },
+        required: [
+          "aspect",
+          "player1_technique",
+          "player2_technique",
+          "impact",
+        ],
+      },
     },
     summary: { type: "string" },
     recommendationsForPlayer2: {
       type: "array",
-      items: recommendationWithDrillSchema,
+      items: {
+        type: "object",
+        properties: {
+          recommendation: { type: "string" },
+          drill: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              practice_sets: { type: "string" },
+            },
+            required: ["title", "description", "practice_sets"],
+          },
+        },
+        required: ["recommendation", "drill"],
+      },
     },
-    overallScoreForPlayer2: {
-      type: "number",
-      description:
-        "Điểm tổng thể cho kỹ thuật của Học viên trên thang điểm 10.",
-    },
+    overallScoreForPlayer2: { type: "number" },
     coachPoses: {
       type: "array",
-      description:
-        "Một mảng chứa các mảng điểm khớp cho mỗi khung hình của huấn luyện viên.",
       items: {
         type: "array",
-        items: poseLandmarkSchema,
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            x: { type: "number" },
+            y: { type: "number" },
+          },
+          required: ["name", "x", "y"],
+        },
       },
     },
     learnerPoses: {
       type: "array",
-      description:
-        "Một mảng chứa các mảng điểm khớp cho mỗi khung hình của học viên.",
       items: {
         type: "array",
-        items: poseLandmarkSchema,
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            x: { type: "number" },
+            y: { type: "number" },
+          },
+          required: ["name", "x", "y"],
+        },
       },
     },
   },
@@ -325,11 +331,8 @@ const compareVideosSchema = {
     "coachPoses",
     "learnerPoses",
   ],
-} as const;
+};
 
-/**
- * So sánh 2 video (coach vs learner)
- */
 export const compareVideos = async (
   coachFrames: string[],
   coachTimestamps: number[],
@@ -362,11 +365,11 @@ export const compareVideos = async (
   const parts = [
     { text: "Khung hình từ Video Huấn luyện viên (player1):" },
     ...coachFrames.map((frame) => ({
-      inlineData: { mimeType: "image/jpeg", data: frame },
+      inline_data: { mime_type: "image/jpeg", data: frame },
     })),
     { text: "Khung hình từ Video Học viên (player2):" },
     ...learnerFrames.map((frame) => ({
-      inlineData: { mimeType: "image/jpeg", data: frame },
+      inline_data: { mime_type: "image/jpeg", data: frame },
     })),
     { text: prompt },
   ];
@@ -380,8 +383,8 @@ export const compareVideos = async (
         },
       ],
       generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: compareVideosSchema,
+        response_mime_type: "application/json",
+        response_schema: compareVideosSchema,
       },
     });
 
