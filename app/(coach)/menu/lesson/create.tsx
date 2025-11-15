@@ -113,7 +113,7 @@ export default function CreateLessonScreen() {
                 placeholder="Nhập tên bài học"
                 editable={!saving}
                 style={styles.textInput}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#6B7280"
               />
             </View>
 
@@ -159,7 +159,7 @@ export default function CreateLessonScreen() {
                     setDuration(sanitized);
                   }}
                   placeholder="0"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#6B7280"
                   keyboardType="numeric"
                   editable={!saving}
                   style={styles.durationInput}

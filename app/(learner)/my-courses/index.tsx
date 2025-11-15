@@ -18,12 +18,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const getStatusInVietnamese = (status: string): string => {
   const statusMap: Record<string, string> = {
     PENDING_APPROVAL: "Chờ duyệt",
-    APPROVED: "Đã duyệt",
-    REJECTED: "Từ chối",
+    APPROVED: "Chờ đủ người",
+    REJECTED: "Đã hủy",
     CANCELLED: "Đã hủy",
     COMPLETED: "Hoàn thành",
-    FULL: "Đã đủ người",
-    READY_OPENED: "Sẵn sàng mở",
+    FULL: "Sắp học",
+    READY_OPENED: "Sắp học",
     ON_GOING: "Đang diễn ra",
   };
   return statusMap[status] || status;
@@ -70,6 +70,7 @@ export default function MyCoursesScreen() {
     pageSize: 10,
     total: 0,
   });
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
   const fetchEnrollments = useCallback(async () => {
     try {
@@ -100,6 +101,11 @@ export default function MyCoursesScreen() {
       year: "numeric",
     });
   };
+
+  // Filter courses by status
+  const filteredCourses = filterStatus
+    ? courses.filter((c) => c.status === filterStatus)
+    : courses;
 
   return (
     <View style={[styles.safe, { paddingBottom: insets.bottom }]}>
@@ -137,233 +143,162 @@ export default function MyCoursesScreen() {
           </View>
         ) : (
           <View style={{ gap: 12 }}>
-            {/* Summary Card */}
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryItem}>
-                <View style={styles.summaryIconContainer}>
-                  <Ionicons name="book" size={24} color="#059669" />
-                </View>
-                <View>
-                  <Text style={styles.summaryValue}>{pagination.total}</Text>
-                  <Text style={styles.summaryLabel}>Khóa học</Text>
-                </View>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <View style={styles.summaryIconContainer}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                </View>
-                <View>
-                  <Text style={styles.summaryValue}>
-                    {courses.filter((c) => c.status === "COMPLETED").length}
+            {/* Filter Tabs - Compact */}
+            <View style={styles.filterContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterScroll}
+              >
+                <TouchableOpacity
+                  onPress={() => setFilterStatus(null)}
+                  style={[
+                    styles.filterTab,
+                    !filterStatus && styles.filterTabActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      !filterStatus && styles.filterTabTextActive,
+                    ]}
+                  >
+                    Tất cả
                   </Text>
-                  <Text style={styles.summaryLabel}>Hoàn thành</Text>
-                </View>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <View style={styles.summaryIconContainer}>
-                  <Ionicons name="play-circle" size={24} color="#F59E0B" />
-                </View>
-                <View>
-                  <Text style={styles.summaryValue}>
-                    {courses.filter((c) => c.status === "ON_GOING").length}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFilterStatus("ON_GOING")}
+                  style={[
+                    styles.filterTab,
+                    filterStatus === "ON_GOING" && styles.filterTabActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      filterStatus === "ON_GOING" && styles.filterTabTextActive,
+                    ]}
+                  >
+                    Đang học
                   </Text>
-                  <Text style={styles.summaryLabel}>Đang học</Text>
-                </View>
-              </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFilterStatus("COMPLETED")}
+                  style={[
+                    styles.filterTab,
+                    filterStatus === "COMPLETED" && styles.filterTabActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      filterStatus === "COMPLETED" && styles.filterTabTextActive,
+                    ]}
+                  >
+                    Hoàn thành
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFilterStatus("READY_OPENED")}
+                  style={[
+                    styles.filterTab,
+                    filterStatus === "READY_OPENED" && styles.filterTabActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      filterStatus === "READY_OPENED" &&
+                        styles.filterTabTextActive,
+                    ]}
+                  >
+                    Sắp học
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
 
-            {/* Course Cards */}
-            {courses.map((course) => {
+            {/* Course Cards - Compact */}
+            {filteredCourses.map((course) => {
               const progress = course.progressPct || 0;
 
               return (
                 <TouchableOpacity
                   key={course.id}
-                  style={styles.card}
+                  style={styles.compactCard}
                   activeOpacity={0.85}
                   onPress={() =>
                     router.push(`/(learner)/my-courses/${course.id}`)
                   }
                 >
-                  {/* Image Container */}
-                  <View style={styles.cardImageWrapper}>
+                  {/* Thumbnail */}
+                  <View style={styles.compactThumbnail}>
                     <Image
                       source={{
-                        uri: "https://via.placeholder.com/400x160?text=Course",
+                        uri: "https://via.placeholder.com/120x90?text=Course",
                       }}
-                      style={styles.cover}
+                      style={styles.compactImage}
                     />
-                    {/* Status Badge Overlay */}
-                    <View style={styles.statusBadgeOverlay}>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: getStatusColor(course.status),
-                          },
-                        ]}
-                      >
-                        <Text style={styles.statusBadgeText}>
-                          {getStatusInVietnamese(course.status)}
-                        </Text>
-                      </View>
+                    <View
+                      style={[
+                        styles.compactStatusBadge,
+                        {
+                          backgroundColor: getStatusColor(course.status),
+                        },
+                      ]}
+                    >
+                      <Text style={styles.compactStatusText}>
+                        {getStatusInVietnamese(course.status)}
+                      </Text>
                     </View>
                   </View>
 
-                  {/* Course Info */}
-                  <View style={styles.cardContent}>
+                  {/* Content */}
+                  <View style={styles.compactContent}>
                     {/* Title & Coach */}
-                    <View>
-                      <Text style={styles.courseTitle} numberOfLines={2}>
-                        {course.name}
-                      </Text>
-                      <View style={styles.coachRow}>
-                        <Ionicons name="person" size={12} color="#6B7280" />
-                        <Text style={styles.courseCoach} numberOfLines={1}>
-                          {course.createdBy?.fullName || "Huấn luyện viên"}
-                        </Text>
-                      </View>
-                    </View>
+                    <Text style={styles.compactTitle} numberOfLines={1}>
+                      {course.name}
+                    </Text>
+                    <Text style={styles.compactCoach} numberOfLines={1}>
+                      {course.createdBy?.fullName || "Huấn luyện viên"}
+                    </Text>
 
-                    {/* Progress Section */}
-                    <View style={styles.progressSection}>
-                      <View style={styles.progressHeader}>
-                        <Text style={styles.progressLabel}>Tiến độ</Text>
-                        <Text style={styles.progressPercent}>
-                          {Math.round(progress)}%
-                        </Text>
-                      </View>
-                      <View style={styles.progressTrack}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            { width: `${progress}%` },
-                          ]}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Course Details Grid - 3 columns */}
-                    <View style={styles.detailsGrid}>
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Trình độ</Text>
-                        <Text style={styles.detailCardValue}>
-                          {getLevelInVietnamese(course.level)}
-                        </Text>
-                      </View>
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Hình thức</Text>
-                        <Text style={styles.detailCardValue}>
-                          {getLearningFormatInVietnamese(course.learningFormat)}
-                        </Text>
-                      </View>
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Buổi học</Text>
-                        <Text style={styles.detailCardValue}>
-                          {course.totalSessions}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Subject & Participants Row */}
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoItem}>
-                        <Ionicons name="bookmark" size={14} color="#059669" />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.infoLabel}>Chủ đề</Text>
-                          <Text style={styles.infoValue} numberOfLines={1}>
-                            {course.subject?.name || "N/A"}
-                          </Text>
-                        </View>
-                      </View>
-                      {course.learningFormat === "GROUP" && (
-                        <View style={styles.infoItem}>
-                          <Ionicons name="people" size={14} color="#059669" />
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.infoLabel}>Người tham gia</Text>
-                            <Text style={styles.infoValue}>
-                              {course.currentParticipants}/
-                              {course.maxParticipants}
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Start & End Dates Row */}
-                    <View style={styles.datesRow}>
-                      <View style={styles.dateItem}>
-                        <Ionicons
-                          name="calendar-clear"
-                          size={14}
-                          color="#059669"
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.dateLabel}>Bắt đầu</Text>
-                          <Text style={styles.dateValue}>
-                            {formatDate(course.startDate)}
-                          </Text>
-                        </View>
-                      </View>
-                      {course.endDate && (
-                        <View style={styles.dateItem}>
-                          <Ionicons
-                            name="calendar-clear"
-                            size={14}
-                            color="#D97706"
-                          />
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.dateLabel}>Kết thúc</Text>
-                            <Text style={styles.dateValue}>
-                              {formatDate(course.endDate)}
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Location Row */}
-                    {course.court?.address && (
-                      <View style={styles.locationSection}>
-                        <Ionicons name="location" size={14} color="#059669" />
-                        <Text style={styles.locationText} numberOfLines={2}>
-                          {course.court.address}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Feedback Section for Completed Courses */}
-                    {course.status === "COMPLETED" && (
-                      <View style={styles.feedbackSection}>
-                        <Ionicons
-                          name="chatbubble-ellipses"
-                          size={16}
-                          color="#059669"
-                        />
-                        <Text style={styles.feedbackText}>
-                          Bạn đã hoàn thành khóa học này. Hãy viết feedback để
-                          chia sẻ trải nghiệm của bạn!
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Button */}
-                    <TouchableOpacity
-                      style={styles.detailBtn}
-                      activeOpacity={0.8}
-                      onPress={() =>
-                        router.push(`/(learner)/my-courses/${course.id}`)
-                      }
-                    >
-                      <Text style={styles.detailBtnText}>Xem chi tiết</Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={16}
-                        color="#059669"
+                    {/* Progress Bar */}
+                    <View style={styles.compactProgressTrack}>
+                      <View
+                        style={[
+                          styles.compactProgressFill,
+                          { width: `${progress}%` },
+                        ]}
                       />
-                    </TouchableOpacity>
+                    </View>
+
+                    {/* Info Row - Compact */}
+                    <View style={styles.compactInfoRow}>
+                      <Text style={styles.compactInfo}>
+                        {getLevelInVietnamese(course.level)}
+                      </Text>
+                      <Text style={styles.compactInfo}>
+                        {course.totalSessions} buổi
+                      </Text>
+                      <Text style={styles.compactInfo}>
+                        {Math.round(progress)}%
+                      </Text>
+                    </View>
+
+                    {/* Dates Row - Compact */}
+                    <View style={styles.compactDatesRow}>
+                      <Text style={styles.compactDate} numberOfLines={1}>
+                        <Text style={styles.compactDateLabel}>Từ: </Text>
+                        {formatDate(course.startDate)}
+                        {course.endDate && (
+                          <>
+                            <Text style={styles.compactDateLabel}> - Đến: </Text>
+                            {formatDate(course.endDate)}
+                          </>
+                        )}
+                      </Text>
+                    </View>
                   </View>
                 </TouchableOpacity>
               );
@@ -376,26 +311,26 @@ export default function MyCoursesScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFFFFF" },
+  safe: { flex: 1, backgroundColor: "#F9FAFB" },
   headerSection: {
     backgroundColor: "#059669",
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
   headerContent: {
     gap: 4,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
     color: "#FFFFFF",
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: "rgba(255, 255, 255, 0.8)",
     fontWeight: "500",
   },
-  container: { padding: 16, gap: 12, paddingBottom: 20 },
+  container: { padding: 12, gap: 10, paddingBottom: 20 },
 
   /* Empty State */
   emptyState: {
@@ -419,330 +354,181 @@ const styles = StyleSheet.create({
   exploreCourseBtn: {
     flexDirection: "row",
     backgroundColor: "#059669",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     marginTop: 8,
   },
   exploreCourseText: {
     color: "#FFFFFF",
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13,
   },
 
-  /* Summary Card */
+  /* Summary Card - Compact */
   summaryCard: {
     backgroundColor: "#F0FDF4",
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 10,
+    padding: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 6,
   },
   summaryItem: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   summaryIconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: "#E0F2FE",
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    backgroundColor: "#DCFCE7",
+    borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",
   },
   summaryValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
     color: "#059669",
   },
   summaryLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#6B7280",
     fontWeight: "500",
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   summaryDivider: {
     width: 1,
-    height: 32,
+    height: 28,
     backgroundColor: "#C6F6D5",
   },
 
-  /* Card */
-  card: {
+  /* Filter Container */
+  filterContainer: {
+    marginBottom: 8,
+  },
+  filterScroll: {
+    paddingHorizontal: 0,
+    gap: 6,
+  },
+  filterTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  filterTabActive: {
+    backgroundColor: "#059669",
+    borderColor: "#059669",
+  },
+  filterTabText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  filterTabTextActive: {
+    color: "#FFFFFF",
+  },
+
+  /* Compact Card */
+  compactCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardImageWrapper: {
-    position: "relative",
-    overflow: "hidden",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  cover: { width: "100%", height: 140, backgroundColor: "#E5E7EB" },
-  statusBadgeOverlay: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  statusBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  cardContent: {
-    padding: 12,
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
     gap: 10,
-  },
-  courseTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 20,
-  },
-  coachRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  courseCoach: {
-    color: "#6B7280",
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-  },
-
-  /* Progress */
-  progressSection: {
-    gap: 6,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  progressLabel: {
-    color: "#6B7280",
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  progressPercent: {
-    color: "#059669",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  progressTrack: {
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: { height: 6, backgroundColor: "#059669", borderRadius: 3 },
-
-  /* Details Grid */
-  detailsGrid: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  detailCard: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
     padding: 10,
+  },
+  compactThumbnail: {
+    position: "relative",
+    width: 100,
+    height: 80,
     borderRadius: 8,
-    gap: 4,
-    alignItems: "center",
+    overflow: "hidden",
+    flexShrink: 0,
   },
-  detailCardLabel: {
+  compactImage: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E5E7EB",
+  },
+  compactStatusBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  compactStatusText: {
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+    fontWeight: "600",
   },
-  detailCardValue: {
+  compactContent: {
+    flex: 1,
+    justifyContent: "space-between",
+    gap: 4,
+  },
+  compactTitle: {
     fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    textAlign: "center",
   },
-
-  /* Info Row */
-  infoRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  infoItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: "#F9FAFB",
-    padding: 10,
-    borderRadius: 8,
-  },
-  infoLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  infoValue: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
-    marginTop: 2,
-  },
-
-  /* Dates Row */
-  datesRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  dateItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: "#F9FAFB",
-    padding: 10,
-    borderRadius: 8,
-  },
-  dateLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  dateValue: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
-    marginTop: 2,
-  },
-
-  /* Location Section */
-  locationSection: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: "#F0FDF4",
-    padding: 10,
-    borderRadius: 8,
-    borderLeftWidth: 2,
-    borderLeftColor: "#059669",
-  },
-  locationText: {
-    fontSize: 12,
-    color: "#111827",
-    fontWeight: "500",
-    flex: 1,
-    lineHeight: 16,
-  },
-
-  /* Feedback Section */
-  feedbackSection: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    backgroundColor: "#EFF6FF",
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#3B82F6",
-  },
-  feedbackText: {
-    fontSize: 12,
-    color: "#1E40AF",
-    fontWeight: "500",
-    flex: 1,
-    lineHeight: 18,
-  },
-
-  /* Details Row */
-  detailsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    padding: 10,
-    borderRadius: 8,
-    gap: 8,
-  },
-  detailItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  detailText: {
+  compactCoach: {
+    fontSize: 11,
     color: "#6B7280",
-    fontSize: 12,
     fontWeight: "500",
-    flex: 1,
   },
-  detailDivider: {
-    width: 1,
-    height: 20,
+  compactProgressTrack: {
+    height: 5,
     backgroundColor: "#E5E7EB",
+    borderRadius: 2,
+    overflow: "hidden",
+    marginVertical: 4,
+  },
+  compactProgressFill: {
+    height: 5,
+    backgroundColor: "#059669",
+    borderRadius: 2,
+  },
+  compactInfoRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 2,
+  },
+  compactInfo: {
+    fontSize: 10,
+    color: "#059669",
+    fontWeight: "600",
   },
 
-  /* End Date Info */
-  endDateInfo: {
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderLeftWidth: 2,
-    borderLeftColor: "#F59E0B",
+  /* Compact Dates Row */
+  compactDatesRow: {
+    marginTop: 2,
   },
-  endDateLabel: {
-    fontSize: 12,
-    color: "#D97706",
+  compactDate: {
+    fontSize: 9,
+    color: "#6B7280",
     fontWeight: "500",
   },
-  endDateValue: {
-    fontWeight: "700",
-  },
-
-  /* Button */
-  detailBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: "#059669",
-    borderRadius: 10,
-    paddingVertical: 10,
-  },
-  detailBtnText: {
-    color: "#059669",
-    fontWeight: "700",
-    fontSize: 14,
+  compactDateLabel: {
+    fontWeight: "600",
+    color: "#374151",
   },
 });

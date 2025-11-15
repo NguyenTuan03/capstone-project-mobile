@@ -1,3 +1,4 @@
+import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -6,7 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { QuestionType } from "../../../types/question";
 import { QuestionOptionType } from "../../../types/question-option";
@@ -15,13 +16,12 @@ import { CalendarSession } from "../../../types/session";
 
 interface Props {
   session: CalendarSession | null;
-  course: any;
+  course: Course;
   styles: any;
 }
 
 const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
-  const quizzes: QuizType[] =
-    (session?.quizzes as QuizType[]) || (course?.quizzes as QuizType[]) || [];
+  const quizzes: QuizType[] = (session?.quizzes as QuizType[]) || [];
   const [selectedQuiz, setSelectedQuiz] = useState<QuizType | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -36,6 +36,8 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
       setSelectedQuiz(null);
     }, 300);
   };
+
+  console.log("Quizzes in SessionDetailQuiz:", quizzes[0].questions);
 
   if (!quizzes || quizzes.length === 0) return null;
 
@@ -52,7 +54,7 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
           </View>
         </View>
         <View style={styles.sectionContent}>
-          {quizzes.map((quiz: any, index: number) => (
+          {quizzes.map((quiz: QuizType, index: number) => (
             <TouchableOpacity
               key={quiz.id || index}
               style={localStyles.quizCard}
@@ -114,11 +116,7 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
                 <View style={localStyles.sheetHeader}>
                   <View style={localStyles.sheetTitleRow}>
                     <View style={localStyles.sheetIcon}>
-                      <Ionicons
-                        name="help-circle"
-                        size={24}
-                        color="#059669"
-                      />
+                      <Ionicons name="help-circle" size={24} color="#059669" />
                     </View>
                     <Text style={localStyles.sheetTitle} numberOfLines={2}>
                       {selectedQuiz.title}
@@ -126,149 +124,141 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
                   </View>
 
                   <View style={localStyles.sheetMetaRow}>
-                      <View style={localStyles.sheetMetaItem}>
-                        <Ionicons
-                          name="list-outline"
-                          size={16}
-                          color="#6B7280"
-                        />
-                        <Text style={localStyles.sheetMetaText}>
-                          {selectedQuiz.totalQuestions} câu hỏi
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {selectedQuiz.description && (
-                    <View style={localStyles.descriptionCard}>
-                      <Text style={localStyles.descriptionText}>
-                        {selectedQuiz.description}
+                    <View style={localStyles.sheetMetaItem}>
+                      <Ionicons name="list-outline" size={16} color="#6B7280" />
+                      <Text style={localStyles.sheetMetaText}>
+                        {selectedQuiz.totalQuestions} câu hỏi
                       </Text>
                     </View>
-                  )}
+                  </View>
+                </View>
 
-                  <View style={localStyles.questionsContainer}>
-                    {(selectedQuiz.questions || []).map(
-                      (q: QuestionType | any, qi: number) => {
-                        const opts: (QuestionOptionType | string)[] =
-                          (q as any).options || (q as any).optionList || [];
-                        return (
-                          <View
-                            key={q.id || qi}
-                            style={localStyles.questionCard}
-                          >
-                            <View style={localStyles.questionHeader}>
-                              <View style={localStyles.questionNumberBadge}>
-                                <Text style={localStyles.questionNumberText}>
-                                  {qi + 1}
-                                </Text>
-                              </View>
-                              <Text style={localStyles.questionText}>
-                                {q.title || q.content || "Câu hỏi"}
+                {selectedQuiz.description && (
+                  <View style={localStyles.descriptionCard}>
+                    <Text style={localStyles.descriptionText}>
+                      {selectedQuiz.description}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={localStyles.questionsContainer}>
+                  {(selectedQuiz.questions || []).map(
+                    (q: QuestionType | any, qi: number) => {
+                      const opts: (QuestionOptionType | string)[] =
+                        (q as any).options || (q as any).optionList || [];
+                      return (
+                        <View key={q.id || qi} style={localStyles.questionCard}>
+                          <View style={localStyles.questionHeader}>
+                            <View style={localStyles.questionNumberBadge}>
+                              <Text style={localStyles.questionNumberText}>
+                                {qi + 1}
                               </Text>
                             </View>
+                            <Text style={localStyles.questionText}>
+                              {q.title || q.content || "Câu hỏi"}
+                            </Text>
+                          </View>
 
-                            {opts.length === 0 && q.correctIndex != null && (
-                              <View style={localStyles.noOptionsContainer}>
-                                <Ionicons
-                                  name="alert-circle-outline"
-                                  size={16}
-                                  color="#F59E0B"
-                                />
-                                <Text style={localStyles.noOptionsText}>
-                                  Không có danh sách đáp án — đáp án đúng:{" "}
-                                  {q.correctIndex}
-                                </Text>
-                              </View>
-                            )}
+                          {opts.length === 0 && q.correctIndex != null && (
+                            <View style={localStyles.noOptionsContainer}>
+                              <Ionicons
+                                name="alert-circle-outline"
+                                size={16}
+                                color="#F59E0B"
+                              />
+                              <Text style={localStyles.noOptionsText}>
+                                Không có danh sách đáp án — đáp án đúng:{" "}
+                                {q.correctIndex}
+                              </Text>
+                            </View>
+                          )}
 
-                            <View style={localStyles.optionsContainer}>
-                              {opts.map((opt: any, oi: number) => {
-                                const label = String.fromCharCode(65 + oi); // A, B, C...
-                                const text =
-                                  typeof opt === "string"
-                                    ? opt
-                                    : opt.content || opt.text;
-                                const isCorrect =
-                                  (typeof opt === "object" && opt.isCorrect) ||
-                                  (q.correctIndex != null &&
-                                    q.correctIndex === oi);
-                                return (
+                          <View style={localStyles.optionsContainer}>
+                            {opts.map((opt: any, oi: number) => {
+                              const label = String.fromCharCode(65 + oi); // A, B, C...
+                              const text =
+                                typeof opt === "string"
+                                  ? opt
+                                  : opt.content || opt.text;
+                              const isCorrect =
+                                (typeof opt === "object" && opt.isCorrect) ||
+                                (q.correctIndex != null &&
+                                  q.correctIndex === oi);
+                              return (
+                                <View
+                                  key={opt.id || oi}
+                                  style={[
+                                    localStyles.optionItem,
+                                    isCorrect && localStyles.optionItemCorrect,
+                                  ]}
+                                >
                                   <View
-                                    key={opt.id || oi}
                                     style={[
-                                      localStyles.optionItem,
+                                      localStyles.optionLabel,
                                       isCorrect &&
-                                        localStyles.optionItemCorrect,
+                                        localStyles.optionLabelCorrect,
                                     ]}
                                   >
-                                    <View
-                                      style={[
-                                        localStyles.optionLabel,
-                                        isCorrect &&
-                                          localStyles.optionLabelCorrect,
-                                      ]}
-                                    >
-                                      <Text
-                                        style={[
-                                          localStyles.optionLabelText,
-                                          isCorrect &&
-                                            localStyles.optionLabelTextCorrect,
-                                        ]}
-                                      >
-                                        {label}
-                                      </Text>
-                                    </View>
                                     <Text
                                       style={[
-                                        localStyles.optionText,
+                                        localStyles.optionLabelText,
                                         isCorrect &&
-                                          localStyles.optionTextCorrect,
+                                          localStyles.optionLabelTextCorrect,
                                       ]}
                                     >
-                                      {text}
+                                      {label}
                                     </Text>
-                                    {isCorrect && (
-                                      <View
-                                        style={localStyles.correctIconContainer}
-                                      >
-                                        <Ionicons
-                                          name="checkmark-circle"
-                                          size={20}
-                                          color="#059669"
-                                        />
-                                      </View>
-                                    )}
                                   </View>
-                                );
-                              })}
-                            </View>
-
-                            {q.explanation && (
-                              <View style={localStyles.explanationContainer}>
-                                <View style={localStyles.explanationHeader}>
-                                  <Ionicons
-                                    name="bulb-outline"
-                                    size={16}
-                                    color="#3B82F6"
-                                  />
-                                  <Text style={localStyles.explanationTitle}>
-                                    Giải thích
+                                  <Text
+                                    style={[
+                                      localStyles.optionText,
+                                      isCorrect &&
+                                        localStyles.optionTextCorrect,
+                                    ]}
+                                  >
+                                    {text}
                                   </Text>
+                                  {isCorrect && (
+                                    <View
+                                      style={localStyles.correctIconContainer}
+                                    >
+                                      <Ionicons
+                                        name="checkmark-circle"
+                                        size={20}
+                                        color="#059669"
+                                      />
+                                    </View>
+                                  )}
                                 </View>
-                                <Text style={localStyles.explanationText}>
-                                  {q.explanation}
+                              );
+                            })}
+                          </View>
+
+                          {q.explanation && (
+                            <View style={localStyles.explanationContainer}>
+                              <View style={localStyles.explanationHeader}>
+                                <Ionicons
+                                  name="bulb-outline"
+                                  size={16}
+                                  color="#3B82F6"
+                                />
+                                <Text style={localStyles.explanationTitle}>
+                                  Giải thích
                                 </Text>
                               </View>
-                            )}
-                          </View>
-                        );
-                      }
-                    )}
-                  </View>
-                </>
-              )}
-            </ScrollView>
+                              <Text style={localStyles.explanationText}>
+                                {q.explanation}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
+                  )}
+                </View>
+              </>
+            )}
+          </ScrollView>
         </View>
       </Modal>
     </>

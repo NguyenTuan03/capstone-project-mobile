@@ -1,6 +1,7 @@
 import CourtSelectionModal from "@/components/coach/course/modal/CourtSelectionModal";
 import SubjectSelectionModal from "@/components/coach/course/modal/SubjectSelectionModal";
 import { DAYS_OF_WEEK, DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import RangeSlider from "@/components/common/RangeSlider";
 import configurationService from "@/services/configurationService";
 import courtService from "@/services/court.service";
 import { get } from "@/services/http/httpService";
@@ -102,7 +103,6 @@ export default function CreateEditCourseModal({
     initialData?.pricePerParticipant || ""
   );
   const [startDate, setStartDate] = useState(initialData?.startDate || "");
-  const [address, setAddress] = useState(initialData?.address || "");
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(
     initialData?.province || null
   );
@@ -157,7 +157,6 @@ export default function CreateEditCourseModal({
         setMaxParticipants(initialData.maxParticipants || "");
         setPricePerParticipant(initialData.pricePerParticipant || "");
         setStartDate(initialData.startDate || "");
-        setAddress(initialData.address || "");
         setSelectedProvince(initialData.province || null);
         setSelectedDistrict(initialData.district || null);
         setSchedules(initialData.schedules || []);
@@ -169,7 +168,6 @@ export default function CreateEditCourseModal({
         setMaxParticipants("");
         setPricePerParticipant("");
         setStartDate("");
-        setAddress("");
         setSelectedProvince(null);
         setSelectedDistrict(null);
         setSchedules([]);
@@ -378,44 +376,51 @@ export default function CreateEditCourseModal({
   };
 
   const handleSubmit = async () => {
-    // Validation với thông báo lỗi
+    // Validation with error messages
     if (!selectedSubjectId) {
-      console.error("Validation error: Chưa chọn tài liệu");
+      Alert.alert("Lỗi", "Vui lòng chọn tài liệu");
       return;
     }
     if (learningFormat === "GROUP") {
       if (!minParticipants || !maxParticipants) {
-        console.error("Validation error: Chưa nhập số lượng học viên");
+        Alert.alert("Lỗi", "Vui lòng nhập số lượng học viên tối thiểu và tối đa");
         return;
       }
-      if (parseInt(minParticipants) > parseInt(maxParticipants)) {
-        console.error("Validation error: Số học viên tối thiểu lớn hơn tối đa");
+      const minVal = parseInt(minParticipants);
+      const maxVal = parseInt(maxParticipants);
+      if (minVal > maxVal) {
+        Alert.alert("Lỗi", "Số học viên tối thiểu không được lớn hơn tối đa");
         return;
       }
     }
     if (!pricePerParticipant) {
-      console.error("Validation error: Chưa nhập giá");
+      Alert.alert("Lỗi", "Vui lòng nhập giá cho mỗi học viên");
       return;
     }
     if (!startDate) {
-      console.error("Validation error: Chưa chọn ngày bắt đầu");
+      Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu");
       return;
     }
 
     if (!selectedCourt) {
-      Alert.alert("Lỗi", "Vui lòng chọn sân tập cho khóa học.");
+      Alert.alert("Lỗi", "Vui lòng chọn sân tập cho khóa học");
       return;
     }
 
     try {
       setSubmitting(true);
 
+      // Ensure minParticipants and maxParticipants are valid numbers
+      const minVal = parseInt(minParticipants) || 1;
+      const maxVal = parseInt(maxParticipants) || 10;
+      const priceVal = parseInt(pricePerParticipant.replace(/,/g, "")) || 0;
+
       const payload = {
         subjectId: selectedSubjectId,
         learningFormat,
-        minParticipants: parseInt(minParticipants),
-        maxParticipants: parseInt(maxParticipants),
-        pricePerParticipant: parseInt(pricePerParticipant.replace(/,/g, "")),
+        minParticipants: minVal,
+        maxParticipants: maxVal,
+        pricePerParticipant: priceVal,
         startDate: new Date(startDate).toISOString(),
         court: selectedCourt ? selectedCourt.id : undefined,
         schedules: schedules.length > 0 ? schedules : undefined,
@@ -465,14 +470,9 @@ export default function CreateEditCourseModal({
               <Text style={styles.label}>
                 Tài liệu <Text style={styles.required}>*</Text>
               </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#6B7280",
-                }}
-              >
+              <Text style={styles.hintText}>
                 Chỉ những tài liệu{" "}
-                <Text style={{ fontWeight: "bold" }}>ĐÃ XUẤT BẢN</Text> mới có
+                <Text style={styles.highlightedText}>ĐÃ XUẤT BẢN</Text> mới có
                 thể sử dụng
               </Text>
               <TouchableOpacity
@@ -528,32 +528,17 @@ export default function CreateEditCourseModal({
                 <Text style={styles.label}>
                   Số lượng học viên <Text style={styles.required}>*</Text>
                 </Text>
-                <View style={styles.row}>
-                  <View
-                    style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}
-                  >
-                    <Text style={styles.inputLabel}>Tối thiểu</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="1"
-                      value={minParticipants}
-                      onChangeText={setMinParticipants}
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                  <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.inputLabel}>Tối đa</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="10"
-                      value={maxParticipants}
-                      onChangeText={setMaxParticipants}
-                      keyboardType="numeric"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-                </View>
+                <RangeSlider
+                  min={1}
+                  max={12}
+                  step={1}
+                  minValue={parseInt(minParticipants) || 2}
+                  maxValue={parseInt(maxParticipants) || 6}
+                  onMinChange={(value: number) => setMinParticipants(value.toString())}
+                  onMaxChange={(value: number) => setMaxParticipants(value.toString())}
+                  minLabel="Tối thiểu"
+                  maxLabel="Tối đa"
+                />
               </View>
             )}
 
@@ -737,9 +722,12 @@ export default function CreateEditCourseModal({
               <Text style={styles.label}>
                 Ngày bắt đầu <Text style={styles.required}>*</Text>
               </Text>
-              <Text style={{ color: "gray" }}>
+              <Text style={styles.hintText}>
                 Ngày bắt đầu phải cách it nhất{" "}
-                {courseStartDateAfterDaysFromNow || ""} ngày từ hôm nay.
+                <Text style={styles.highlightedText}>
+                  {courseStartDateAfterDaysFromNow || ""} ngày
+                </Text>{" "}
+                từ hôm nay.
               </Text>
               <TouchableOpacity
                 style={styles.dateInput}
@@ -839,7 +827,9 @@ export default function CreateEditCourseModal({
             {/* Schedules */}
             <View style={styles.section}>
               <View style={styles.scheduleHeader}>
-                <Text style={styles.label}>Lịch học</Text>
+                <Text style={styles.label}>
+                  Lịch học <Text style={styles.required}>*</Text>
+                </Text>
                 <TouchableOpacity
                   style={styles.addButton}
                   onPress={handleAddSchedule}
@@ -1181,89 +1171,93 @@ export default function CreateEditCourseModal({
                   </View>
                   <View
                     style={[
-                      styles.section,
+                      styles.warningSection,
                       { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" },
                     ]}
                   >
                     <View
                       style={{
                         flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
+                        alignItems: "flex-start",
+                        marginBottom: 6,
+                        gap: 6,
                       }}
                     >
                       <Ionicons
                         name="warning"
-                        size={20}
+                        size={16}
                         color="#92400E"
-                        style={{ marginRight: 8 }}
+                        style={{ marginTop: 2 }}
                       />
-                      <Text style={[styles.label, { color: "#92400E" }]}>
-                        Lịch học các khóa khác (Cảnh báo)
+                      <Text style={[styles.warningLabel, { color: "#92400E" }]}>
+                        Lịch các khóa khác
                       </Text>
                     </View>
 
                     <Text
                       style={{
                         color: "#92400E",
-                        fontSize: 13,
+                        fontSize: 11,
                         marginBottom: 8,
+                        lineHeight: 14,
                       }}
                     >
-                      Chú ý: Lịch bên dưới hiển thị các khung giờ các khóa học
-                      khác của bạn. Vui lòng chọn khung giờ không trùng lặp để
-                      tránh xung đột lịch học.
+                      Chú ý: Lịch bên dưới hiển thị khung giờ các khóa học khác.
+                      Chọn khung giờ không trùng lặp.
                     </Text>
 
                     {loadingAvailableSchedules ? (
                       <ActivityIndicator size="small" color="#92400E" />
                     ) : availableSchedules.length === 0 ? (
-                      <Text style={styles.hint}>Không có lịch có sẵn</Text>
+                      <Text style={styles.hint}>Không có lịch xung đột</Text>
                     ) : (
-                      availableSchedules.map((sch, i) => {
-                        const dayIndex = DAYS_OF_WEEK.indexOf(sch.dayOfWeek);
-                        const dayName =
-                          dayIndex >= 0
-                            ? DAYS_OF_WEEK_VI[dayIndex]
-                            : sch.dayOfWeek;
-                        const isSelected =
-                          sch.dayOfWeek === tempSchedule.dayOfWeek &&
-                          sch.startTime === tempSchedule.startTime &&
-                          sch.endTime === tempSchedule.endTime;
+                      <View style={{ gap: 6 }}>
+                        {availableSchedules.map((sch, i) => {
+                          const dayIndex = DAYS_OF_WEEK.indexOf(sch.dayOfWeek);
+                          const dayName =
+                            dayIndex >= 0
+                              ? DAYS_OF_WEEK_VI[dayIndex]
+                              : sch.dayOfWeek;
+                          const isSelected =
+                            sch.dayOfWeek === tempSchedule.dayOfWeek &&
+                            sch.startTime === tempSchedule.startTime &&
+                            sch.endTime === tempSchedule.endTime;
 
-                        return (
-                          <View
-                            key={i}
-                            style={[
-                              styles.modalItem,
-                              isSelected && styles.modalItemSelected,
-                              {
-                                backgroundColor: isSelected
-                                  ? "#FEF3C7"
-                                  : "#FFF7ED",
-                              },
-                            ]}
-                          >
-                            <Text style={styles.modalItemText}>
-                              {dayName}: {sch.startTime} - {sch.endTime}
-                            </Text>
-                            <Text style={styles.hint}>
-                              Từ ngày{" "}
-                              {sch.course?.startDate
-                                ? new Date(
-                                    sch.course.startDate
-                                  ).toLocaleDateString("vi-VN")
-                                : "—"}
-                              {" đến "}
-                              {sch.course?.endDate
-                                ? new Date(
-                                    sch.course.endDate
-                                  ).toLocaleDateString("vi-VN")
-                                : "—"}
-                            </Text>
-                          </View>
-                        );
-                      })
+                          return (
+                            <View
+                              key={i}
+                              style={[
+                                styles.warningItem,
+                                isSelected && styles.warningItemSelected,
+                                {
+                                  backgroundColor: isSelected
+                                    ? "#FEF3C7"
+                                    : "#FFF7ED",
+                                },
+                              ]}
+                            >
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.warningItemTime}>
+                                  {dayName}: {sch.startTime} - {sch.endTime}
+                                </Text>
+                                <Text style={styles.warningItemMeta}>
+                                  {sch.course?.startDate
+                                    ? new Date(
+                                        sch.course.startDate
+                                      ).toLocaleDateString("vi-VN")
+                                    : "—"}{" "}
+                                  đến{" "}
+                                  {sch.course?.endDate
+                                    ? new Date(
+                                        sch.course.endDate
+                                      ).toLocaleDateString("vi-VN")
+                                    : "—"}
+                                </Text>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
                     )}
                   </View>
 
@@ -1407,8 +1401,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#F9FAFB",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     maxHeight: "90%",
     flex: 1,
   },
@@ -1417,7 +1411,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -1438,17 +1432,19 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: "#FFFFFF",
-    padding: 16,
-    marginTop: 12,
+    padding: 12,
+    marginTop: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#E5E7EB",
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#111827",
-    marginBottom: 12,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   required: {
     color: "#EF4444",
@@ -1461,15 +1457,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
   },
   selectButtonDisabled: {
     opacity: 0.5,
     backgroundColor: "#F3F4F6",
   },
   selectButtonText: {
-    fontSize: 16,
+    fontSize: 13,
     color: "#111827",
+    fontWeight: "500",
   },
   placeholderText: {
     color: "#9CA3AF",
@@ -1481,55 +1478,59 @@ const styles = StyleSheet.create({
   radioOption: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 2,
     borderColor: "#059669",
     alignItems: "center",
     justifyContent: "center",
   },
   radioSelected: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: "#059669",
   },
   radioLabel: {
-    fontSize: 16,
+    fontSize: 13,
     color: "#111827",
+    fontWeight: "500",
   },
   row: {
     flexDirection: "row",
   },
   inputGroup: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#6B7280",
-    marginBottom: 6,
+    marginBottom: 4,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
   },
   input: {
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 13,
     color: "#111827",
   },
   priceInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   priceButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#059669",
@@ -1543,8 +1544,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 13,
     color: "#111827",
   },
   dateInput: {
@@ -1555,12 +1556,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
   },
   dateInputText: {
-    fontSize: 16,
+    fontSize: 13,
     color: "#111827",
     flex: 1,
+    fontWeight: "500",
   },
   datePickerModal: {
     flex: 1,
@@ -1614,38 +1616,43 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: "#059669",
   },
   addButtonText: {
     color: "#059669",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   scheduleItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#F9FAFB",
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   scheduleInfo: {
     flex: 1,
   },
   scheduleText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#111827",
+    fontWeight: "500",
   },
   scheduleActions: {
     flexDirection: "row",
@@ -1657,14 +1664,15 @@ const styles = StyleSheet.create({
   footer: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
   },
   submitButton: {
     backgroundColor: "#059669",
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignItems: "center",
   },
   submitButtonDisabled: {
@@ -1672,20 +1680,21 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: "#111827",
   },
   modalCloseButton: {
@@ -1695,7 +1704,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
@@ -1703,18 +1712,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0FDF4",
   },
   modalItemText: {
-    fontSize: 16,
+    fontSize: 13,
     color: "#111827",
+    fontWeight: "500",
   },
   daySelector: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
   },
   dayButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#F9FAFB",
@@ -1724,67 +1734,118 @@ const styles = StyleSheet.create({
     borderColor: "#059669",
   },
   dayButtonText: {
-    fontSize: 14,
+    fontSize: 11,
     color: "#6B7280",
+    fontWeight: "500",
   },
   dayButtonTextSelected: {
     color: "#059669",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   saveButton: {
     backgroundColor: "#059669",
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignItems: "center",
-    margin: 16,
-    marginTop: 24,
+    margin: 12,
+    marginTop: 16,
   },
   saveButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   courtInfo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 4,
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     backgroundColor: "#F9FAFB",
-    borderRadius: 8,
+    borderRadius: 6,
   },
   courtInfoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 11,
     color: "#6B7280",
   },
   courtPriceHighlight: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#059669",
     fontWeight: "700",
-    marginTop: 4,
+    marginTop: 3,
   },
   labelWithAction: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   clearButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     backgroundColor: "#FEF2F2",
-    borderRadius: 6,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: "#FEE2E2",
   },
   clearButtonText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#EF4444",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  warningSection: {
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 10,
+    marginHorizontal: 0,
+    marginVertical: 12,
+  },
+  warningLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  warningItem: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FED7AA",
+  },
+  warningItemSelected: {
+    borderColor: "#F59E0B",
+  },
+  warningItemTime: {
+    fontSize: 12,
     fontWeight: "600",
+    color: "#92400E",
+  },
+  warningItemMeta: {
+    fontSize: 10,
+    color: "#B45309",
+    marginTop: 2,
+  },
+  hintText: {
+    fontSize: 11,
+    color: "#6B7280",
+    lineHeight: 15,
+    marginBottom: 8,
+  },
+  highlightedText: {
+    color: "#059669",
+    fontWeight: "700",
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
 });

@@ -135,9 +135,12 @@ export default function CoachCourseScreen() {
       COMPLETED: "Đã hoàn thành",
       ON_GOING: "Đang diễn ra",
       CANCELLED: "Đã hủy",
+      FULL:'Đủ học viên'
     };
     return statusMap[status] || status;
   };
+
+
 
   const getStatusColor = (status: string) => {
     const colorMap: Record<string, { bg: string; text: string }> = {
@@ -147,6 +150,24 @@ export default function CoachCourseScreen() {
       COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
     };
     return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
+  };
+
+  const getLevelLabel = (level?: string) => {
+    const levelMap: Record<string, string> = {
+      BEGINNER: "Cơ bản",
+      INTERMEDIATE: "Trung cấp",
+      ADVANCED: "Nâng cao",
+    };
+    return levelMap[level ?? ""] ?? level ?? "";
+  };
+
+  const getLevelColor = (level?: string) => {
+    const colorMap: Record<string, { bg: string; text: string }> = {
+      BEGINNER: { bg: "#DBEAFE", text: "#0284C7" },
+      INTERMEDIATE: { bg: "#FCD34D", text: "#92400E" },
+      ADVANCED: { bg: "#DDD6FE", text: "#4F46E5" },
+    };
+    return colorMap[level ?? ""] || { bg: "#F3F4F6", text: "#6B7280" };
   };
 
   const filteredCourses =
@@ -571,6 +592,8 @@ export default function CoachCourseScreen() {
             <>
               {filteredCourses.map((course) => {
                 const statusColors = getStatusColor(course.status);
+                const levelColors = getLevelColor(course.level);
+                const levelLabel = getLevelLabel(course.level);
                 return (
                   <TouchableOpacity
                     key={course.id}
@@ -635,17 +658,17 @@ export default function CoachCourseScreen() {
                             paddingHorizontal: 8,
                             paddingVertical: 3,
                             borderRadius: 8,
-                            backgroundColor: "#EFF6FF",
+                            backgroundColor: levelColors.bg,
                           }}
                         >
                           <Text
                             style={{
                               fontSize: 11,
-                              color: "#3B82F6",
+                              color: levelColors.text,
                               fontWeight: "600",
                             }}
                           >
-                            {course.level}
+                            {levelLabel}
                           </Text>
                         </View>
                         <View
@@ -738,9 +761,8 @@ export default function CoachCourseScreen() {
                             marginLeft: 7,
                           }}
                         >
-                          Địa điểm: {course.address} - {course.court?.district?.name} - {course.court?.province?.name}
+                          Địa điểm: {course.court.address}
                         </Text>
-
                       </View>
                       <View
                         style={{

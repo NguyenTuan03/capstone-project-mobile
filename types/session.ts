@@ -1,4 +1,5 @@
 import type { AttendanceType } from "./attendance";
+import { Course } from "./course";
 import type { QuizType } from "./quiz";
 import type { VideoType } from "./video";
 
@@ -19,11 +20,6 @@ export interface Session {
   lesson?: Lesson | null;
   videos?: VideoType[];
   quizzes?: QuizType[];
-}
-
-export interface Course {
-  id: number;
-  name?: string | null;
 }
 
 export interface Lesson {
@@ -61,7 +57,7 @@ export interface CalendarSession {
   courseName: string;
   courseId: number;
   scheduleDate: string;
-  course?: any; // Full course object with address, enrollments, etc.
+  course?: Course; // Full course object with address, enrollments, etc.
   quizzes: QuizType[];
   videos: VideoType[];
   attendances?: AttendanceType[];

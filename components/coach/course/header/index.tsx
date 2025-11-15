@@ -7,6 +7,8 @@ type Props = {
   course: Course;
   statusLabel: string;
   statusColors: { bg: string; text: string };
+  levelLabel?: string;
+  levelColors?: { bg: string; text: string };
   onBack: () => void;
 };
 
@@ -14,6 +16,8 @@ const CourseHeader: React.FC<Props> = ({
   course,
   statusLabel,
   statusColors,
+  levelLabel,
+  levelColors,
   onBack,
 }) => {
   return (
@@ -31,9 +35,9 @@ const CourseHeader: React.FC<Props> = ({
               {statusLabel}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: "#EFF6FF" }]}>
-            <Text style={[styles.statusBadgeText, { color: "#3B82F6" }]}>
-              {course.level}
+          <View style={[styles.statusBadge, { backgroundColor: levelColors?.bg || "#EFF6FF" }]}>
+            <Text style={[styles.statusBadgeText, { color: levelColors?.text || "#3B82F6" }]}>
+              {levelLabel || course.level}
             </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: "#F3F4F6" }]}>
