@@ -9,7 +9,6 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   ScrollView,
@@ -20,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 type CoursesResponse = {
   items: Course[];
@@ -346,7 +346,13 @@ export default function CoursesScreen() {
         fetchCoachesRatings(userIds);
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể tải danh sách khóa học");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách khóa học",
+        position: "top",
+        visibilityTime: 4000,
+      });
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -409,12 +415,30 @@ export default function CoursesScreen() {
         status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
 
       if (paid) {
-        Alert.alert("Thành công", `Mã đơn: ${orderCode || "N/A"}`);
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: `Mã đơn: ${orderCode || "N/A"}`,
+          position: "top",
+          visibilityTime: 4000,
+        });
       } else {
-        Alert.alert("Đã hủy", "Thanh toán không thành công.");
+        Toast.show({
+          type: "error",
+          text1: "Đã hủy",
+          text2: "Thanh toán không thành công.",
+          position: "top",
+          visibilityTime: 4000,
+        });
       }
     } catch (e: any) {
-      Alert.alert("Lỗi", e?.message ?? "Có lỗi khi thanh toán.");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: e?.message ?? "Có lỗi khi thanh toán.",
+        position: "top",
+        visibilityTime: 4000,
+      });
     } finally {
       setProcessingPayment(null);
     }
