@@ -24,8 +24,10 @@ type LessonResourcesTab = "videos" | "quizzes";
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, sessionId, style }) => {
-    const { quizzes, videos, loading, error } = useLessonResources(lessonId);
+    const { quizzes, videos, loading, error, refresh } =
+      useLessonResources(lessonId);
     const [activeTab, setActiveTab] = useState<LessonResourcesTab>("videos");
+    const [tabLoading, setTabLoading] = useState(false);
     const [localVideo, setLocalVideo] = useState<{
       uri: string;
       name: string;
@@ -44,6 +46,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const [aiAnalysisResult, setAiAnalysisResult] =
       useState<AiVideoCompareResult | null>(null);
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+    const [overlayVideoUrl, setOverlayVideoUrl] = useState<string | null>(null);
+    const [generatingOverlay, setGeneratingOverlay] = useState(false);
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
@@ -194,10 +198,16 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const handleUploadVideo = async (coachVideoId: number) => {
       if (!localVideo) return;
 
+      if (!localVideo.duration) {
+        Alert.alert("Lỗi", "Vui lòng chọn video có thông tin độ dài");
+        return;
+      }
+
       setIsUploading(true);
       try {
         const fd = new FormData();
 
+        // File field name phải là 'video' theo API
         fd.append("video", {
           uri: localVideo.uri.startsWith("file://")
             ? localVideo.uri
@@ -232,6 +242,69 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         );
       } finally {
         setIsUploading(false);
+      }
+    };
+
+    const handleGenerateOverlay = async () => {
+      if (!submittedVideo?.id) {
+        Alert.alert("Lỗi", "Không tìm thấy video để so sánh");
+        return;
+      }
+
+      try {
+        setGeneratingOverlay(true);
+        setOverlayVideoUrl(null);
+
+        // Gọi API POST để tạo overlay video
+        const response = await http.post(
+          `/v1/learner-videos/${submittedVideo.id}/overlay-video`,
+          new FormData(), // Empty FormData vì API chỉ cần learnerVideoId
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+
+        // Parse HTML response để lấy URL
+        const htmlResponse = response.data;
+        let extractedUrl: string | null = null;
+
+        if (typeof htmlResponse === "string") {
+          // Tìm URL trong HTML (có thể là trong thẻ <a>, <video>, hoặc text)
+          const urlMatch = htmlResponse.match(/https?:\/\/[^\s<>"']+\.mp4/g);
+          if (urlMatch && urlMatch.length > 0) {
+            extractedUrl = urlMatch[0];
+          } else {
+            // Nếu không tìm thấy trong HTML, thử lấy từ response trực tiếp
+            if (htmlResponse.includes("pickaball-public-bucket")) {
+              const bucketMatch = htmlResponse.match(
+                /https:\/\/pickaball-public-bucket\.s3\.us-east-1\.amazonaws\.com\/[^\s<>"']+\.mp4/g
+              );
+              if (bucketMatch && bucketMatch.length > 0) {
+                extractedUrl = bucketMatch[0];
+              }
+            }
+          }
+        } else if (response.data?.url || response.data?.publicUrl) {
+          // Nếu response là object có url
+          extractedUrl = response.data.url || response.data.publicUrl;
+        }
+
+        if (extractedUrl) {
+          setOverlayVideoUrl(extractedUrl);
+        } else {
+          Alert.alert(
+            "Thông báo",
+            "Đang tạo video overlay, vui lòng đợi và thử lại sau"
+          );
+        }
+      } catch (err: any) {
+        console.error("Error generating overlay video:", err);
+        Alert.alert(
+          "Lỗi",
+          err?.response?.data?.message || "Không thể tạo video overlay"
+        );
+      } finally {
+        setGeneratingOverlay(false);
       }
     };
 
@@ -272,6 +345,40 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                 </Text>
               )}
               <LessonVideoPlayer source={submittedVideo.publicUrl} />
+
+              {/* Nút so sánh với coach */}
+              <TouchableOpacity
+                style={[
+                  styles.compareButton,
+                  generatingOverlay && styles.compareButtonDisabled,
+                ]}
+                onPress={handleGenerateOverlay}
+                disabled={generatingOverlay}
+                activeOpacity={0.7}
+              >
+                {generatingOverlay ? (
+                  <View style={styles.compareButtonContent}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.compareButtonText}>
+                      Đang tạo video overlay...
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.compareButtonText}>
+                    🔄 So sánh với Coach
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Hiển thị video overlay nếu có */}
+              {overlayVideoUrl && (
+                <View style={styles.overlayVideoCard}>
+                  <Text style={styles.overlayVideoTitle}>
+                    📊 Video so sánh với Coach
+                  </Text>
+                  <LessonVideoPlayer source={overlayVideoUrl} />
+                </View>
+              )}
             </View>
           )}
 
@@ -574,11 +681,33 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         );
       }
 
-      return items.map((quiz) => (
-        <View key={quiz.id} style={styles.resourceCard}>
-          <QuizAttemptCard quiz={quiz} />
-        </View>
-      ));
+      return items.map((quiz) => {
+        // Transform QuizType to match Quiz type expected by QuizAttemptCard
+        const transformedQuiz = {
+          id: quiz.id,
+          title: quiz.title,
+          description: quiz.description,
+          totalQuestions: quiz.totalQuestions,
+          questions: quiz.questions.map((q) => ({
+            id: q.id,
+            title: q.title,
+            explanation: q.explanation,
+            options: q.options
+              .filter((opt) => opt.id !== undefined)
+              .map((opt) => ({
+                id: opt.id!,
+                content: opt.content,
+                isCorrect: opt.isCorrect,
+              })),
+          })),
+        };
+
+        return (
+          <View key={quiz.id} style={styles.resourceCard}>
+            <QuizAttemptCard quiz={transformedQuiz} />
+          </View>
+        );
+      });
     };
     if (!lessonId) {
       return null;
@@ -592,7 +721,19 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             return (
               <TouchableOpacity
                 key={tab.key}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={async () => {
+                  if (tab.key !== activeTab) {
+                    setTabLoading(true);
+                    setActiveTab(tab.key);
+                    try {
+                      await refresh();
+                    } catch (err) {
+                      console.error("Error refreshing resources:", err);
+                    } finally {
+                      setTabLoading(false);
+                    }
+                  }
+                }}
                 style={[styles.tabButton, isActive && styles.tabButtonActive]}
                 activeOpacity={0.8}
               >
@@ -608,8 +749,15 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         </View>
 
         <View style={styles.content}>
-          {loading ? (
-            <ActivityIndicator size="small" color="#10B981" />
+          {loading || tabLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#059669" />
+              <Text style={styles.loadingText}>
+                {activeTab === "videos"
+                  ? "Đang tải video..."
+                  : "Đang tải quiz..."}
+              </Text>
+            </View>
           ) : error ? (
             <Text style={styles.errorText}>{error}</Text>
           ) : activeTab === "videos" ? (
@@ -675,6 +823,19 @@ const styles = StyleSheet.create({
   content: {
     padding: 10,
     gap: 10,
+    minHeight: 200,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   // Submitted Video Card
   submittedVideoCard: {
@@ -821,6 +982,49 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "700",
+  },
+  compareButton: {
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3.5,
+    elevation: 3,
+  },
+  compareButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    opacity: 0.8,
+  },
+  compareButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  compareButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  overlayVideoCard: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 9,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  overlayVideoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
+    marginBottom: 8,
   },
   // Resource Cards
   resourceCard: {
@@ -1046,6 +1250,36 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#000000",
   },
+  videoLoadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    gap: 8,
+  },
+  videoLoadingText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 8,
+  },
+  videoErrorOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    padding: 16,
+  },
   videoControls: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1082,8 +1316,16 @@ const LessonVideoPlayer: React.FC<{ source: string }> = ({ source }) => {
   const status = statusEvent?.status ?? player.status;
   const playerError: PlayerError | undefined = statusEvent?.error ?? undefined;
 
+  const isLoading = status === "loading";
+
   return (
     <View style={styles.videoContainer}>
+      {isLoading && (
+        <View style={styles.videoLoadingOverlay}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.videoLoadingText}>Đang tải video...</Text>
+        </View>
+      )}
       <VideoView
         style={styles.videoPlayer}
         player={player}
@@ -1092,9 +1334,11 @@ const LessonVideoPlayer: React.FC<{ source: string }> = ({ source }) => {
         crossOrigin="anonymous" // quan trọng cho web
       />
       {status === "error" && (
-        <Text style={styles.errorText}>
-          Không phát được video trong app: {String(playerError ?? "Unknown")}
-        </Text>
+        <View style={styles.videoErrorOverlay}>
+          <Text style={styles.errorText}>
+            Không phát được video trong app: {String(playerError ?? "Unknown")}
+          </Text>
+        </View>
       )}
       {/* controls giữ nguyên */}
     </View>
