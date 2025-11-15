@@ -1,4 +1,10 @@
-import { get } from "@/services/http/httpService";
+// Key updates in this version:
+// 1. Auto-load overlayVideoUrl from API response when entering video tab
+// 2. Show "Xem so sánh" button if overlayVideoUrl exists
+// 3. Show "So sánh với Coach" button if overlayVideoUrl doesn't exist
+// 4. After generating new overlay, reload the submitted video to get latest overlayVideoUrl
+
+import { get, post } from "@/services/http/httpService";
 import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
 import { useEvent } from "expo";
 import * as ImagePicker from "expo-image-picker";
@@ -8,6 +14,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
+  Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,6 +30,8 @@ import { LearnerVideo, VideoType } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
 
 type LessonResourcesTab = "videos" | "quizzes";
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, sessionId, style }) => {
@@ -48,6 +59,30 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
     const [overlayVideoUrl, setOverlayVideoUrl] = useState<string | null>(null);
     const [generatingOverlay, setGeneratingOverlay] = useState(false);
+    const [showOverlayModal, setShowOverlayModal] = useState(false);
+
+    // Create video player at top level to avoid conditional hook call
+    const overlayVideoPlayer = useVideoPlayer(
+      overlayVideoUrl ? { uri: overlayVideoUrl, contentType: "auto" } : null,
+      (p) => {
+        p.loop = false;
+      }
+    );
+
+    // Update player source when overlayVideoUrl changes
+    useEffect(() => {
+      if (overlayVideoUrl && overlayVideoPlayer) {
+        overlayVideoPlayer.replaceAsync({ uri: overlayVideoUrl, contentType: "auto" });
+      }
+    }, [overlayVideoUrl, overlayVideoPlayer]);
+
+    // Track overlay video player status for loading state
+    const overlayStatusEvent = useEvent(overlayVideoPlayer, "statusChange", {
+      status: overlayVideoPlayer.status,
+    });
+    const overlayStatus = overlayStatusEvent?.status ?? overlayVideoPlayer.status;
+    const overlayPlayerError: PlayerError | undefined = overlayStatusEvent?.error ?? undefined;
+    const isOverlayLoading = overlayStatus === "loading";
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
@@ -115,50 +150,43 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
+    // UPDATED: Load both submitted video and overlayVideoUrl
     const loadSubmittedVideo = useCallback(async () => {
       console.log("🔍 loadSubmittedVideo called, sessionId:", sessionId);
 
       if (!sessionId) {
         console.log("⚠️ No sessionId, skipping loadSubmittedVideo");
         setSubmittedVideo(null);
+        setOverlayVideoUrl(null);
         return;
       }
 
       try {
         console.log("✅ Starting to load submitted video...");
-        // Lấy userId từ storage
         const user = await storageService.getUser();
         console.log("👤 User from storage:", user);
         if (!user?.id) {
           console.warn("❌ User not found, cannot load learner video");
           setSubmittedVideo(null);
+          setOverlayVideoUrl(null);
           return;
         }
 
-        // Gọi API mới với userId và sessionId
         const res = await get<LearnerVideo[]>(
           `/v1/learner-videos/user/${user.id}?sessionId=${sessionId}`
         );
-        console.log("res", res);
-        // API trả về array trong res.data
+        console.log("📹 API Response:", res);
         const list = Array.isArray(res?.data) ? res.data : [];
         console.log("📹 Loaded learner videos:", list.length);
-        if (list.length > 0) {
-          console.log("📹 First video:", {
-            id: list[0]?.id,
-            hasPublicUrl: !!list[0]?.publicUrl,
-            publicUrl: list[0]?.publicUrl?.substring(0, 50),
-            status: list[0]?.status,
-          });
-        }
 
         if (list.length === 0) {
           console.log("📹 No learner videos found");
           setSubmittedVideo(null);
+          setOverlayVideoUrl(null);
           return;
         }
 
-        // Lấy video mới nhất (sắp xếp theo createdAt giảm dần)
+        // Get the latest video
         const picked =
           list
             .slice()
@@ -168,13 +196,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                 new Date(a?.createdAt ?? 0).getTime()
             )[0] ?? list[0];
 
-        console.log("📹 Picked video:", {
-          id: picked?.id,
-          hasPublicUrl: !!picked?.publicUrl,
-          status: picked?.status,
-        });
+        console.log("📹 Picked video:", picked);
 
-        // Kiểm tra chặt chẽ: publicUrl phải tồn tại và không rỗng
         if (picked?.publicUrl && picked.publicUrl.trim().length > 0) {
           setSubmittedVideo({
             publicUrl: picked.publicUrl,
@@ -184,14 +207,30 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             id: picked.id,
           });
           console.log("✅ Set submitted video successfully");
+
+          // IMPORTANT: Check and set overlayVideoUrl if it exists
+          if (
+            picked.overlayVideoUrl &&
+            picked.overlayVideoUrl.trim().length > 0
+          ) {
+            setOverlayVideoUrl(picked.overlayVideoUrl);
+            console.log(
+              "✅ Found existing overlay video URL:",
+              picked.overlayVideoUrl
+            );
+          } else {
+            setOverlayVideoUrl(null);
+            console.log("⚠️ No overlay video URL found");
+          }
         } else {
           console.log("⚠️ Video found but no valid publicUrl");
           setSubmittedVideo(null);
+          setOverlayVideoUrl(null);
         }
       } catch (err) {
         console.error("❌ Failed to load learner video:", err);
-        // ignore silently; not critical to block UI
         setSubmittedVideo(null);
+        setOverlayVideoUrl(null);
       }
     }, [sessionId]);
 
@@ -207,7 +246,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       try {
         const fd = new FormData();
 
-        // File field name phải là 'video' theo API
         fd.append("video", {
           uri: localVideo.uri.startsWith("file://")
             ? localVideo.uri
@@ -230,7 +268,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
           headers: { "Content-Type": "multipart/form-data" },
         });
         Alert.alert("Thành công", "Video đã được upload thành công!");
-        // mark uploaded, then fetch submitted video and replace local preview
         setLocalVideo((prev) => (prev ? { ...prev, uploaded: true } : null));
         await loadSubmittedVideo();
         setLocalVideo(null);
@@ -251,7 +288,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         return;
       }
 
-      // Tìm video của coach (video đầu tiên trong danh sách videos)
       const coachVideo = videos.length > 0 ? videos[0] : null;
       if (!coachVideo?.id) {
         Alert.alert("Lỗi", "Không tìm thấy video của coach để so sánh");
@@ -260,52 +296,36 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
       try {
         setGeneratingOverlay(true);
-        setOverlayVideoUrl(null);
 
-        // Gọi API POST để tạo overlay video với coachVideoId
-        const response = await http.post(
-          `/v1/learner-videos/${submittedVideo.id}/overlay-video/${coachVideo.id}`,
-          new FormData(), // Empty FormData vì API chỉ cần learnerVideoId và coachVideoId trong URL
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
+        console.log("🔍 Learner video ID:", submittedVideo.id);
+        console.log("🔍 Coach video ID:", coachVideo.id);
+
+        const response = await post(
+          `/v1/learner-videos/${submittedVideo.id}/overlay-video/${coachVideo.id}`
         );
 
-        // Parse HTML response để lấy URL
-        const htmlResponse = response.data;
-        let extractedUrl: string | null = null;
+        console.log("✅ Generate overlay response:", response);
 
-        if (typeof htmlResponse === "string") {
-          // Tìm URL trong HTML (có thể là trong thẻ <a>, <video>, hoặc text)
-          const urlMatch = htmlResponse.match(/https?:\/\/[^\s<>"']+\.mp4/g);
-          if (urlMatch && urlMatch.length > 0) {
-            extractedUrl = urlMatch[0];
+        if (response.data && typeof response.data === "string") {
+          if (response.data.startsWith("http")) {
+            // Reload submitted video to get updated overlayVideoUrl from database
+            await loadSubmittedVideo();
+            setShowOverlayModal(true);
+            Alert.alert("Thành công", "Video overlay đã được tạo!");
           } else {
-            // Nếu không tìm thấy trong HTML, thử lấy từ response trực tiếp
-            if (htmlResponse.includes("pickaball-public-bucket")) {
-              const bucketMatch = htmlResponse.match(
-                /https:\/\/pickaball-public-bucket\.s3\.us-east-1\.amazonaws\.com\/[^\s<>"']+\.mp4/g
-              );
-              if (bucketMatch && bucketMatch.length > 0) {
-                extractedUrl = bucketMatch[0];
-              }
-            }
+            Alert.alert(
+              "Thông báo",
+              "Đang tạo video lồng nhau, vui lòng đợi và thử lại sau"
+            );
           }
-        } else if (response.data?.url || response.data?.publicUrl) {
-          // Nếu response là object có url
-          extractedUrl = response.data.url || response.data.publicUrl;
-        }
-
-        if (extractedUrl) {
-          setOverlayVideoUrl(extractedUrl);
         } else {
           Alert.alert(
             "Thông báo",
-            "Đang tạo video overlay, vui lòng đợi và thử lại sau"
+            "Đang tạo video lồng nhau, vui lòng đợi và thử lại sau"
           );
         }
       } catch (err: any) {
-        console.error("Error generating overlay video:", err);
+        console.error("❌ Error generating overlay video:", err);
         Alert.alert(
           "Lỗi",
           err?.response?.data?.message || "Không thể tạo video overlay"
@@ -353,41 +373,176 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
               )}
               <LessonVideoPlayer source={submittedVideo.publicUrl} />
 
-              {/* Nút so sánh với coach */}
-              <TouchableOpacity
-                style={[
-                  styles.compareButton,
-                  generatingOverlay && styles.compareButtonDisabled,
-                ]}
-                onPress={handleGenerateOverlay}
-                disabled={generatingOverlay}
-                activeOpacity={0.7}
-              >
-                {generatingOverlay ? (
-                  <View style={styles.compareButtonContent}>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+              {/* Conditional rendering: Show different buttons based on overlayVideoUrl */}
+              {overlayVideoUrl ? (
+                // If overlayVideoUrl exists, show "Xem so sánh" button
+                <TouchableOpacity
+                  style={styles.viewOverlayButton}
+                  onPress={() => setShowOverlayModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.viewOverlayButtonText}>
+                    👁️ Xem so sánh với Coach
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                // If overlayVideoUrl doesn't exist, show "So sánh với Coach" button
+                <TouchableOpacity
+                  style={[
+                    styles.compareButton,
+                    generatingOverlay && styles.compareButtonDisabled,
+                  ]}
+                  onPress={handleGenerateOverlay}
+                  disabled={generatingOverlay}
+                  activeOpacity={0.7}
+                >
+                  {generatingOverlay ? (
+                    <View style={styles.compareButtonContent}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text style={styles.compareButtonText}>
+                        Đang tạo video overlay...
+                      </Text>
+                    </View>
+                  ) : (
                     <Text style={styles.compareButtonText}>
-                      Đang tạo video overlay...
+                      🔄 So sánh với Coach
                     </Text>
-                  </View>
-                ) : (
-                  <Text style={styles.compareButtonText}>
-                    🔄 So sánh với Coach
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              {/* Hiển thị video overlay nếu có */}
-              {overlayVideoUrl && (
-                <View style={styles.overlayVideoCard}>
-                  <Text style={styles.overlayVideoTitle}>
-                    📊 Video so sánh với Coach
-                  </Text>
-                  <LessonVideoPlayer source={overlayVideoUrl} />
-                </View>
+                  )}
+                </TouchableOpacity>
               )}
             </View>
           )}
+
+          {!localVideo && !submittedVideo && (
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={handlePickVideo}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.uploadButtonText}>
+                📤 Upload video của bạn tại đây
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {localVideo && (
+            <View style={[styles.resourceCard, { backgroundColor: "#F0F9FF" }]}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resourceTitle}>{localVideo.name}</Text>
+                  <Text style={styles.metaText}>Từ thiết bị của bạn</Text>
+                </View>
+                {localVideo.uploaded && (
+                  <View style={styles.uploadedBadge}>
+                    <Text style={styles.uploadedBadgeText}>✓ Đã upload</Text>
+                  </View>
+                )}
+              </View>
+              {localVideo.duration && (
+                <Text style={{ ...styles.metaText, marginTop: 5 }}>
+                  ⏱ {localVideo.duration} phút
+                </Text>
+              )}
+              <LessonVideoPlayer source={localVideo.uri} />
+              {!localVideo.uploaded && videos.length > 0 && (
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    isUploading && styles.submitButtonDisabled,
+                  ]}
+                  onPress={() => handleUploadVideo(videos[0].id)}
+                  disabled={isUploading}
+                  activeOpacity={0.85}
+                >
+                  {isUploading ? (
+                    <View style={styles.submitButtonContent}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text style={styles.submitButtonText}>
+                        Đang upload...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.submitButtonText}>📤 Nộp bài</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {items.length === 0 && !localVideo ? (
+            <Text style={styles.emptyText}>
+              Chưa có video nào cho bài học này.
+            </Text>
+          ) : null}
+
+          {items.map((video) => (
+            <View key={video.id} style={styles.resourceCard}>
+              <Text style={styles.resourceTitle}>{video.title}</Text>
+              {video.description && (
+                <Text style={styles.resourceDescription}>
+                  {video.description}
+                </Text>
+              )}
+              <View style={{ gap: 5, marginTop: 4 }}>
+                {video.drillName && (
+                  <Text
+                    style={{
+                      ...styles.metaText,
+                      fontWeight: "600",
+                      color: "#059669",
+                    }}
+                  >
+                    🎯 {video.drillName}
+                  </Text>
+                )}
+                {video.drillDescription && (
+                  <Text style={styles.metaText}>{video.drillDescription}</Text>
+                )}
+              </View>
+              <View style={styles.metaRow}>
+                {video.duration != null && (
+                  <Text style={styles.metaText}>⏱ {video.duration} phút</Text>
+                )}
+                {video.drillPracticeSets && (
+                  <Text style={styles.metaText}>
+                    📊 {video.drillPracticeSets} hiệp tập
+                  </Text>
+                )}
+              </View>
+              {renderTags(video.tags)}
+              <View style={{ marginTop: 6 }}>
+                {video.publicUrl ? (
+                  <LessonVideoPlayer source={video.publicUrl} />
+                ) : (
+                  <View
+                    style={{
+                      backgroundColor: "#FEE2E2",
+                      padding: 8,
+                      borderRadius: 6,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#EF4444",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#7F1D1D",
+                        fontWeight: "500",
+                      }}
+                    >
+                      ⚠️ Video hiện chưa khả dụng
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          ))}
 
           {loadingAnalysis ? (
             <View style={styles.resourceCard}>
@@ -502,142 +657,10 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
               )}
             </View>
           ) : null}
-
-          {!localVideo && !submittedVideo && (
-            <TouchableOpacity
-              style={styles.uploadButton}
-              onPress={handlePickVideo}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.uploadButtonText}>
-                📤 Upload video của bạn tại đây
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {localVideo && (
-            <View style={[styles.resourceCard, { backgroundColor: "#F0F9FF" }]}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.resourceTitle}>{localVideo.name}</Text>
-                  <Text style={styles.metaText}>Từ thiết bị của bạn</Text>
-                </View>
-                {localVideo.uploaded && (
-                  <View style={styles.uploadedBadge}>
-                    <Text style={styles.uploadedBadgeText}>✓ Đã upload</Text>
-                  </View>
-                )}
-              </View>
-              {localVideo.duration && (
-                <Text style={{ ...styles.metaText, marginTop: 5 }}>
-                  ⏱ {localVideo.duration} phút
-                </Text>
-              )}
-              <LessonVideoPlayer source={localVideo.uri} />
-              {!localVideo.uploaded && (
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    isUploading && styles.submitButtonDisabled,
-                  ]}
-                  onPress={() => handleUploadVideo(videos[0].id)}
-                  disabled={isUploading}
-                  activeOpacity={0.85}
-                >
-                  {isUploading ? (
-                    <View style={styles.submitButtonContent}>
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                      <Text style={styles.submitButtonText}>
-                        Đang upload...
-                      </Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.submitButtonText}>📤 Nộp bài</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
-          {items.length === 0 && !localVideo ? (
-            <Text style={styles.emptyText}>
-              Chưa có video nào cho bài học này.
-            </Text>
-          ) : null}
-
-          {items.map((video) => (
-            <View key={video.id} style={styles.resourceCard}>
-              <Text style={styles.resourceTitle}>{video.title}</Text>
-              {video.description && (
-                <Text style={styles.resourceDescription}>
-                  {video.description}
-                </Text>
-              )}
-              <View style={{ gap: 5, marginTop: 4 }}>
-                {video.drillName && (
-                  <Text
-                    style={{
-                      ...styles.metaText,
-                      fontWeight: "600",
-                      color: "#059669",
-                    }}
-                  >
-                    🎯 {video.drillName}
-                  </Text>
-                )}
-                {video.drillDescription && (
-                  <Text style={styles.metaText}>{video.drillDescription}</Text>
-                )}
-              </View>
-              <View style={styles.metaRow}>
-                {video.duration != null && (
-                  <Text style={styles.metaText}>⏱ {video.duration} phút</Text>
-                )}
-                {video.drillPracticeSets && (
-                  <Text style={styles.metaText}>
-                    📊 {video.drillPracticeSets} hiệp tập
-                  </Text>
-                )}
-              </View>
-              {renderTags(video.tags)}
-              <View style={{ marginTop: 6 }}>
-                {video.publicUrl ? (
-                  <LessonVideoPlayer source={video.publicUrl} />
-                ) : (
-                  <View
-                    style={{
-                      backgroundColor: "#FEE2E2",
-                      padding: 8,
-                      borderRadius: 6,
-                      borderLeftWidth: 3,
-                      borderLeftColor: "#EF4444",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: "#7F1D1D",
-                        fontWeight: "500",
-                      }}
-                    >
-                      ⚠️ Video hiện chưa khả dụng
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          ))}
         </>
       );
     };
 
-    // Load submitted video on mount or when lesson changes
     const loadAiAnalysisResult = useCallback(async () => {
       if (!sessionId) {
         setAiAnalysisResult(null);
@@ -689,7 +712,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
 
       return items.map((quiz) => {
-        // Transform QuizType to match Quiz type expected by QuizAttemptCard
         const transformedQuiz = {
           id: quiz.id,
           title: quiz.title,
@@ -716,6 +738,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         );
       });
     };
+
     if (!lessonId) {
       return null;
     }
@@ -773,6 +796,78 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             renderQuizzes(quizzes)
           )}
         </View>
+
+        {/* Modal hiển thị video overlay */}
+        <Modal
+          visible={showOverlayModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowOverlayModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  📊 Video So Sánh với Coach
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowOverlayModal(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalCloseButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.modalContent}
+                contentContainerStyle={styles.modalContentContainer}
+              >
+                {overlayVideoUrl && (
+                  <View style={styles.modalVideoWrapper}>
+                    <LessonVideoPlayer source={overlayVideoUrl} />
+                    <Text style={styles.modalVideoDescription}>
+                      Video này là kết quả so sánh giữa kỹ thuật của bạn và
+                      coach. Video của bạn được hiển thị với độ mờ 50% chồng lên
+                      video mẫu của coach.
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+              <View style={styles.modalVideoContainer}>
+                {isOverlayLoading && (
+                  <View style={styles.videoLoadingOverlay}>
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                    <Text style={styles.videoLoadingText}>Đang tải video...</Text>
+                  </View>
+                )}
+                <VideoView
+                  style={styles.videoPlayer}
+                  player={overlayVideoPlayer}
+                  allowsFullscreen
+                  allowsPictureInPicture
+                  crossOrigin="anonymous"
+                />
+                {overlayStatus === "error" && (
+                  <View style={styles.videoErrorOverlay}>
+                    <Text style={styles.errorText}>
+                      Không phát được video: {String(overlayPlayerError ?? "Unknown")}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={styles.modalFooterButton}
+                  onPress={() => setShowOverlayModal(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalFooterButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -780,6 +875,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
 LessonResourcesTabs.displayName = "LessonResourcesTabs";
 
+// Styles remain the same... (copy from previous file)
 const styles = StyleSheet.create({
   container: {
     marginTop: 10,
@@ -844,7 +940,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontWeight: "500",
   },
-  // Submitted Video Card
   submittedVideoCard: {
     padding: 10,
     borderRadius: 10,
@@ -903,7 +998,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#854D0E",
   },
-  // Upload Button
   uploadButton: {
     backgroundColor: "transparent",
     paddingVertical: 16,
@@ -971,25 +1065,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
-  reuploadButton: {
-    backgroundColor: "#3B82F6",
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-    shadowColor: "#3B82F6",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  reuploadButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-  },
   compareButton: {
     backgroundColor: "#7C3AED",
     paddingVertical: 12,
@@ -1019,21 +1094,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
   },
-  overlayVideoCard: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 9,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
+  viewOverlayButton: {
+    backgroundColor: "#3B82F6",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3.5,
+    elevation: 3,
   },
-  overlayVideoTitle: {
-    fontSize: 14,
+  viewOverlayButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
     fontWeight: "700",
-    color: "#059669",
-    marginBottom: 8,
+    letterSpacing: 0.3,
   },
-  // Resource Cards
   resourceCard: {
     padding: 10,
     borderRadius: 9,
@@ -1068,40 +1148,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#6B7280",
   },
-  actionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 6,
-  },
-  linkButton: {
-    backgroundColor: "#059669",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  linkButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  outlineButton: {
-    borderWidth: 1,
-    borderColor: "#059669",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  outlineButtonText: {
-    color: "#047857",
-    fontWeight: "600",
-    fontSize: 12,
-  },
   emptyText: {
     fontSize: 12,
     color: "#9CA3AF",
@@ -1114,7 +1160,6 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     textAlign: "center",
   },
-  // Analysis Section
   analysisSection: {
     marginTop: 9,
     gap: 6,
@@ -1179,63 +1224,6 @@ const styles = StyleSheet.create({
     color: "#0369A1",
     fontWeight: "500",
   },
-  questionList: {
-    marginTop: 10,
-    gap: 9,
-  },
-  questionItem: {
-    gap: 6,
-    padding: 9,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0.5 },
-    shadowOpacity: 0.04,
-    shadowRadius: 1.5,
-    elevation: 1,
-  },
-  questionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  questionExplanation: {
-    fontSize: 11,
-    color: "#4B5563",
-    lineHeight: 15,
-  },
-  optionList: {
-    gap: 5,
-    marginTop: 5,
-  },
-  optionItem: {
-    padding: 7,
-    borderRadius: 6,
-    backgroundColor: "#F3F4F6",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  optionItemCorrect: {
-    backgroundColor: "#DCFCE7",
-    borderWidth: 1,
-    borderColor: "#34D399",
-  },
-  optionText: {
-    fontSize: 11,
-    color: "#374151",
-  },
-  optionTextCorrect: {
-    color: "#047857",
-    fontWeight: "600",
-  },
-  optionBadge: {
-    marginTop: 3,
-    fontSize: 10,
-    color: "#047857",
-    fontWeight: "600",
-  },
   videoContainer: {
     marginTop: 9,
     gap: 8,
@@ -1287,35 +1275,117 @@ const styles = StyleSheet.create({
     zIndex: 10,
     padding: 16,
   },
-  videoControls: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: SCREEN_WIDTH * 0.95,
+    maxHeight: SCREEN_HEIGHT * 0.9,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    padding: 16,
+    backgroundColor: "#059669",
+    borderBottomWidth: 1,
+    borderBottomColor: "#047857",
   },
-  controlButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#111827",
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    flex: 1,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseButtonText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalContentContainer: {
+    padding: 16,
+  },
+  modalVideoWrapper: {
+    gap: 12,
+  },
+  modalVideoDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+    lineHeight: 18,
+    textAlign: "center",
+    paddingHorizontal: 8,
+  },
+  modalVideoContainer: {
+    marginTop: 9,
+    marginHorizontal: 16,
+    marginBottom: 9,
+    gap: 8,
+    padding: 8,
+    borderRadius: 9,
+    backgroundColor: "#1F2937",
     borderWidth: 1,
-    borderColor: "#4B5563",
+    borderColor: "#374151",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+    position: "relative",
   },
-  controlButtonLabel: {
-    color: "#F9FAFB",
-    fontWeight: "600",
-    fontSize: 11,
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+  },
+  modalFooterButton: {
+    backgroundColor: "#059669",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  modalFooterButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });
 
 export default LessonResourcesTabs;
 
 const LessonVideoPlayer: React.FC<{ source: string }> = ({ source }) => {
-  const player = useVideoPlayer(
-    { uri: source, contentType: "auto" }, // MP4 -> auto là đủ
-    (p) => {
-      p.loop = false;
-    }
-  );
+  const player = useVideoPlayer({ uri: source, contentType: "auto" }, (p) => {
+    p.loop = false;
+  });
 
   const statusEvent = useEvent(player, "statusChange", {
     status: player.status,
@@ -1338,16 +1408,15 @@ const LessonVideoPlayer: React.FC<{ source: string }> = ({ source }) => {
         player={player}
         allowsFullscreen
         allowsPictureInPicture
-        crossOrigin="anonymous" // quan trọng cho web
+        crossOrigin="anonymous"
       />
       {status === "error" && (
         <View style={styles.videoErrorOverlay}>
           <Text style={styles.errorText}>
-            Không phát được video trong app: {String(playerError ?? "Unknown")}
+            Không phát được video: {String(playerError ?? "Unknown")}
           </Text>
         </View>
       )}
-      {/* controls giữ nguyên */}
     </View>
   );
 };

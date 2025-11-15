@@ -611,12 +611,25 @@ const SubmissionReviewScreen: React.FC = () => {
               <Text style={styles.cardTitle}>Video mẫu - Coach</Text>
             </View>
             {coachSource ? (
-              <VideoView
-                style={styles.videoPlayer}
-                allowsFullscreen
-                allowsPictureInPicture
-                player={coachPlayer}
-              />
+              <View style={styles.videoPlayerContainer}>
+                {(coachStatus === "loading" || !coachVideoReady) && (
+                  <View style={styles.videoLoadingOverlay}>
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                    <Text style={styles.videoLoadingText}>Đang tải video...</Text>
+                  </View>
+                )}
+                <VideoView
+                  style={styles.videoPlayer}
+                  allowsFullscreen
+                  allowsPictureInPicture
+                  player={coachPlayer}
+                />
+                {coachStatus === "error" && (
+                  <View style={styles.videoErrorOverlay}>
+                    <Text style={styles.errorText}>Không thể tải video</Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <Text style={styles.emptyText}>Chưa có video mẫu</Text>
             )}
@@ -625,12 +638,25 @@ const SubmissionReviewScreen: React.FC = () => {
           <View style={styles.videoCard}>
             <Text style={styles.cardTitle}>Video học viên</Text>
             {learnerSource ? (
-              <VideoView
-                style={styles.videoPlayer}
-                allowsFullscreen
-                allowsPictureInPicture
-                player={learnerPlayer}
-              />
+              <View style={styles.videoPlayerContainer}>
+                {(learnerStatus === "loading" || !learnerVideoReady) && (
+                  <View style={styles.videoLoadingOverlay}>
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                    <Text style={styles.videoLoadingText}>Đang tải video...</Text>
+                  </View>
+                )}
+                <VideoView
+                  style={styles.videoPlayer}
+                  allowsFullscreen
+                  allowsPictureInPicture
+                  player={learnerPlayer}
+                />
+                {learnerStatus === "error" && (
+                  <View style={styles.videoErrorOverlay}>
+                    <Text style={styles.errorText}>Không thể tải video</Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <Text style={styles.emptyText}>Video đang được xử lý</Text>
             )}
@@ -890,12 +916,47 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 13, color: "#6B7280" },
   infoValue: { fontSize: 13, color: "#111827", fontWeight: "600" },
   videoHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  videoPlayer: {
+  videoPlayerContainer: {
+    position: "relative",
     width: "100%",
     aspectRatio: 16 / 9,
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: "#000",
+  },
+  videoPlayer: {
+    width: "100%",
+    height: "100%",
+  },
+  videoLoadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    gap: 8,
+  },
+  videoLoadingText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 8,
+  },
+  videoErrorOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    padding: 16,
   },
   actionCard: {
     backgroundColor: "#FFFFFF",

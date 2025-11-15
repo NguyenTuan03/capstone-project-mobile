@@ -35,4 +35,5 @@ export type LearnerVideo = {
   createdAt: string;
   user: User;
   session: Session;
+  overlayVideoUrl: string | null;
 };

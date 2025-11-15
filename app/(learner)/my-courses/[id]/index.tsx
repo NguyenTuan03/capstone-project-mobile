@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#111827",
     fontWeight: "500",
-    textAlign: "right",
+    textAlign: "left",
     flex: 1,
   },
   infoValueBold: {
