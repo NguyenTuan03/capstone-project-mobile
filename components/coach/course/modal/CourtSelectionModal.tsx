@@ -87,7 +87,7 @@ export default function CourtSelectionModal({
                       </Text>
                     </View>
 
-                    {court.phoneNumber && (
+                    {court?.phoneNumber && (
                       <View style={styles.courtDetailRow}>
                         <Ionicons name="call" size={12} color="#6B7280" />
                         <Text style={styles.courtDetailText}>
