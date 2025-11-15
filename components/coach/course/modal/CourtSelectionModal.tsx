@@ -83,7 +83,7 @@ export default function CourtSelectionModal({
                     <View style={styles.courtDetailRow}>
                       <Ionicons name="business" size={12} color="#6B7280" />
                       <Text style={styles.courtDetailText}>
-                        {court.province.name} - {court.district.name}
+                        {court?.province?.name} - {court?.district?.name}
                       </Text>
                     </View>
 

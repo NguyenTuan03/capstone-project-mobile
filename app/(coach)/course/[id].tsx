@@ -309,12 +309,12 @@ export default function CourseDetailScreen() {
           maxParticipants: String(course.maxParticipants),
           pricePerParticipant: course.pricePerParticipant,
           startDate: course.startDate,
-          court: course.court,
-          province: course.court.province.id
-            ? { id: course.court.province.id, name: course.court.province.name }
+          court: course?.court,
+          province: course.court?.province.id
+            ? { id: course.court?.province.id, name: course.court?.province.name }
             : null,
-          district: course.court.district.id
-            ? { id: course.court.district.id, name: course.court.district.name }
+          district: course.court?.district.id
+            ? { id: course.court?.district.id, name: course.court?.district.name }
             : null,
           schedules: course.schedules,
         }}
