@@ -191,7 +191,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     }, [sessionId]);
 
-    const handleUploadVideo = async () => {
+    const handleUploadVideo = async (coachVideoId: number) => {
       if (!localVideo) return;
 
       setIsUploading(true);
@@ -208,7 +208,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             : "video.mp4",
         } as any);
 
-        fd.append("lessonId", String(lessonId));
+        fd.append("coachVideoId", String(coachVideoId));
+        fd.append("sessionId", String(lessonId));
         if (localVideo.duration != null)
           fd.append("duration", String(Math.round(localVideo.duration)));
         if (localVideo.tags?.length) {
@@ -431,7 +432,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                     styles.submitButton,
                     isUploading && styles.submitButtonDisabled,
                   ]}
-                  onPress={handleUploadVideo}
+                  onPress={() => handleUploadVideo(videos[0].id)}
                   disabled={isUploading}
                   activeOpacity={0.85}
                 >
