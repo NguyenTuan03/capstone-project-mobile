@@ -222,7 +222,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         fd.append("sessionId", String(lessonId));
         if (localVideo.duration != null)
           fd.append("duration", String(Math.round(localVideo.duration)));
-        if (localVideo.tags?.length) {
+        if (localVideo.tags && localVideo.tags.length > 0) {
           fd.append("tags", JSON.stringify(localVideo.tags));
         }
 
