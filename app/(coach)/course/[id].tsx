@@ -7,7 +7,7 @@ import ScheduleTab from "@/components/coach/course/schedule";
 import StudentsTab from "@/components/coach/course/students";
 import CourseTabs from "@/components/coach/course/tabs";
 import { get, put } from "@/services/http/httpService";
-import { Course } from "@/types/course";
+import { Course, LearningFormat, Schedule } from "@/types/course";
 import { formatPrice } from "@/utils/priceFormat";
 import { formatSchedule } from "@/utils/scheduleFormat";
 import { Ionicons } from "@expo/vector-icons";
@@ -61,15 +61,13 @@ export default function CourseDetailScreen() {
 
   const handleUpdateCourse = async (data: {
     subjectId: number;
-    learningFormat: string;
+    learningFormat: LearningFormat;
     minParticipants: number;
     maxParticipants: number;
     pricePerParticipant: number;
     startDate: string;
-    address: string;
-    province: number;
-    district: number;
-    schedules?: any[];
+    court?: number | undefined;
+    schedules?: Schedule[];
   }) => {
     try {
       const { subjectId, ...payload } = data;
@@ -114,7 +112,7 @@ export default function CourseDetailScreen() {
       APPROVED: "Đã duyệt",
       PENDING_APPROVAL: "Chờ duyệt",
       REJECTED: "Đã từ chối",
-      FULL:"Đủ học viên",
+      FULL: "Đủ học viên",
       COMPLETED: "Đã hoàn thành",
       ON_GOING: "Đang diễn ra",
     };
@@ -151,7 +149,16 @@ export default function CourseDetailScreen() {
   };
 
   const getStatusMessage = (status: string) => {
-    const messages: Record<string, { text: string; icon: string; bg: string; textColor: string; borderColor: string }> = {
+    const messages: Record<
+      string,
+      {
+        text: string;
+        icon: string;
+        bg: string;
+        textColor: string;
+        borderColor: string;
+      }
+    > = {
       FULL: {
         text: "Khóa học này đã đủ số lượng học viên. Lịch dạy sẽ được hiển thị khi khóa học diễn ra",
         icon: "information-circle",
@@ -247,7 +254,7 @@ export default function CourseDetailScreen() {
     <View style={styles.container}>
       {renderHeader()}
       {renderTabs()}
-      
+
       {/* Status Information Banner */}
       {course && getStatusMessage(course.status) && (
         <View
@@ -302,9 +309,13 @@ export default function CourseDetailScreen() {
           maxParticipants: String(course.maxParticipants),
           pricePerParticipant: course.pricePerParticipant,
           startDate: course.startDate,
-          address: course.address,
-          province: course.court.province,
-          district: course.court.district,
+          court: course.court,
+          province: course.court.province.id
+            ? { id: course.court.province.id, name: course.court.province.name }
+            : null,
+          district: course.court.district.id
+            ? { id: course.court.district.id, name: course.court.district.name }
+            : null,
           schedules: course.schedules,
         }}
       />
