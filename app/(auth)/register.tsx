@@ -12,6 +12,7 @@ import {
   Text,
   View
 } from "react-native";
+import Toast from "react-native-toast-message";
 import { RegistrationStep1 } from "../../components/auth/RegistrationStep1";
 import { RegistrationStep2Coach } from "../../components/auth/RegistrationStep2Coach";
 import { RegistrationStep2Learner } from "../../components/auth/RegistrationStep2Learner";
@@ -183,13 +184,30 @@ const Register = () => {
         await axios.post(`${API_URL}/v1/auth/register`, learnerPayload);
       }
 
+      // Show success toast message
+      Toast.show({
+        type: "success",
+        text1: "Đăng ký thành công!",
+        text2: "Vui lòng xác thực số điện thoại của bạn",
+        position: "top",
+        visibilityTime: 3000,
+      });
+
       // Navigate to phone verification
       router.push({
         pathname: "/(auth)/verify-phone",
         params: { phoneNumber: formattedPhone },
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || "Đăng ký thất bại");
+      const errorMessage = err.response?.data?.message || "Đăng ký thất bại";
+      setError(errorMessage);
+      Toast.show({
+        type: "error",
+        text1: "Đăng ký thất bại",
+        text2: errorMessage,
+        position: "top",
+        visibilityTime: 4000,
+      });
     } finally {
       setSubmitting(false);
     }

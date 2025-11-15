@@ -4,7 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Href, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import Toast from "react-native-toast-message";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -32,6 +33,15 @@ export default function AuthScreen() {
       await AsyncStorage.setItem("refreshToken", refreshToken);
       await AsyncStorage.setItem("user", JSON.stringify(user));
 
+      // Show success toast message
+      Toast.show({
+        type: "success",
+        text1: "Đăng nhập thành công!",
+        text2: `Chào mừng ${user.fullName} 👋`,
+        position: "top",
+        visibilityTime: 3000,
+      });
+
       if (user.role.name === "COACH") {
         router.push("/(coach)/home" as Href);
       }
@@ -39,12 +49,15 @@ export default function AuthScreen() {
         router.push("/(learner)/home" as Href);
       }
     } catch (err: any) {
-      console.error("Login error:", err);
-      Alert.alert(
-        "Đăng nhập thất bại",
-        "Vui lòng kiểm tra lại sdt và mật khẩu của bạn.",
-        [{ text: "OK" }]
-      );
+      Toast.show({
+        type: "error",
+        text1: "Đăng nhập thất bại",
+        text2:
+          err.response?.data?.message ||
+          "Vui lòng kiểm tra lại số điện thoại và mật khẩu của bạn.",
+        position: "top",
+        visibilityTime: 4000,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -76,14 +89,24 @@ export default function AuthScreen() {
           <Pressable
             onPress={() => router.push("/(auth)/forgot-password" as Href)}
           >
-            <Text style={{ color: "#6b7280", fontSize: 13, textDecorationLine: "underline" }}>
+            <Text
+              style={{
+                color: "#6b7280",
+                fontSize: 13,
+                textDecorationLine: "underline",
+              }}
+            >
               Quên mật khẩu?
             </Text>
           </Pressable>
           <View style={{ flexDirection: "row", gap: 6 }}>
-            <Text style={{ color: "#6b7280", fontSize: 13 }}>Chưa có tài khoản?</Text>
+            <Text style={{ color: "#6b7280", fontSize: 13 }}>
+              Chưa có tài khoản?
+            </Text>
             <Pressable onPress={() => router.push("/(auth)/register" as Href)}>
-              <Text style={{ color: "#059669", fontWeight: "700", fontSize: 13 }}>
+              <Text
+                style={{ color: "#059669", fontWeight: "700", fontSize: 13 }}
+              >
                 Đăng ký
               </Text>
             </Pressable>
