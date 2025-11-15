@@ -1,6 +1,6 @@
 import { get, post } from "@/services/http/httpService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
-import type { Course as BaseCourse } from "@/types/course";
+import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
 import { Feedback } from "@/types/feecbacks";
 import type { Session } from "@/types/session";
@@ -187,11 +187,11 @@ export default function CourseDetailScreen() {
   const getCourseStatusLabel = (status: string) => {
     switch (status) {
       case "APPROVED":
-        return "Sẵn sàng đăng kí";
+        return "Chờ đủ người";
       case "FULL":
-        return "Đã đủ người";
+        return "Sắp học";
       case "READY_OPENED":
-        return "Sẵn sàng đăng kí";
+        return "Sắp học";
       case "ON_GOING":
         return "Đang diễn ra";
       default:
@@ -230,19 +230,18 @@ export default function CourseDetailScreen() {
         return { color: "#EF4444" };
     }
   };
-  const getLevelLabel = (level: string) => { 
-  switch (level) {
-    case "INTERMEDIATE":
-      return "Trung bình";
-    case "ADVANCED":
-      return "Nâng cao";
-    case "PROFESSIONAL":
-      return "Chuyên nghiệp";
-    default:
-      return "Cơ bản"; 
-  }
-};
-
+  const getLevelLabel = (level: string) => {
+    switch (level) {
+      case "INTERMEDIATE":
+        return "Trung bình";
+      case "ADVANCED":
+        return "Nâng cao";
+      case "PROFESSIONAL":
+        return "Chuyên nghiệp";
+      default:
+        return "Cơ bản";
+    }
+  };
 
   if (loading) {
     return (
@@ -321,10 +320,10 @@ export default function CourseDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
-        <View style={{ gap: 16 }}>
+        <View style={{ gap: 12 }}>
           <View style={styles.detailSection}>
             <Text style={styles.detailSectionTitle}>Thông tin khóa học</Text>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 8 }}>
               <View style={styles.infoHeader}>
                 <Text style={styles.courseName}>{course.name}</Text>
                 {course.status ? (
@@ -342,7 +341,9 @@ export default function CourseDetailScreen() {
               ) : null}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Trình độ</Text>
-                <Text style={styles.infoValue}>{getLevelLabel(course.level)}</Text>
+                <Text style={styles.infoValue}>
+                  {getLevelLabel(course.level)}
+                </Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Hình thức</Text>
@@ -389,7 +390,7 @@ export default function CourseDetailScreen() {
                 </View>
               ) : null}
               {course.court ? (
-                <View style={{ gap: 6 }}>
+                <View style={{ gap: 4 }}>
                   <Text style={styles.infoLabel}>Địa điểm</Text>
                   <View style={styles.courtCard}>
                     <Text style={styles.infoValue}>{course.court.name}</Text>
@@ -415,9 +416,9 @@ export default function CourseDetailScreen() {
                 </View>
               ) : null}
               {schedules.length > 0 ? (
-                <View style={{ gap: 6 }}>
+                <View style={{ gap: 4 }}>
                   <Text style={styles.infoLabel}>Lịch học</Text>
-                  <View style={{ gap: 4 }}>
+                  <View style={{ gap: 3 }}>
                     {schedules.map((schedule) => (
                       <View key={schedule.id} style={styles.scheduleRow}>
                         <Ionicons
@@ -477,7 +478,7 @@ export default function CourseDetailScreen() {
                 Chưa có buổi học nào
               </Text>
             ) : (
-              <View style={{ gap: 12 }}>
+              <View style={{ gap: 10 }}>
                 {sessions.map((session) => (
                   <View key={session.id} style={styles.sessionItem}>
                     <View style={styles.sessionHeader}>
@@ -580,88 +581,95 @@ export default function CourseDetailScreen() {
           </View>
 
           {/* Feedbacks Info */}
-          <View style={styles.detailSection}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 4,
-              }}
-            >
-              <Text style={styles.detailSectionTitle}>
-                Đánh giá ({feedbacks.length})
-              </Text>
-              {!hasUserFeedback && (
-                <TouchableOpacity
-                  style={styles.writeFeedbackButton}
-                  onPress={() => setShowFeedbackModal(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-                  <Text style={styles.writeFeedbackButtonText}>
-                    Viết đánh giá
-                  </Text>
-                </TouchableOpacity>
+          {course.status === CourseStatus.COMPLETED && (
+            <View style={styles.detailSection}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 4,
+                }}
+              >
+                <Text style={styles.detailSectionTitle}>
+                  Đánh giá ({feedbacks.length})
+                </Text>
+                {!hasUserFeedback && (
+                  <TouchableOpacity
+                    style={styles.writeFeedbackButton}
+                    onPress={() => setShowFeedbackModal(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#FFFFFF" />
+                    <Text style={styles.writeFeedbackButtonText}>
+                      Viết đánh giá
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {feedbacks.length === 0 ? (
+                <Text style={{ color: "#6B7280", fontSize: 14 }}>
+                  Chưa có đánh giá nào
+                </Text>
+              ) : (
+                <View style={{ gap: 10 }}>
+                  {feedbacks.map((feedback, index) => (
+                    <View
+                      key={feedback.id || index}
+                      style={styles.feedbackItem}
+                    >
+                      <View style={styles.feedbackHeader}>
+                        <View style={styles.ratingContainer}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Ionicons
+                              key={star}
+                              name={
+                                star <= feedback.rating
+                                  ? "star"
+                                  : "star-outline"
+                              }
+                              size={16}
+                              color={
+                                star <= feedback.rating ? "#FBBF24" : "#D1D5DB"
+                              }
+                            />
+                          ))}
+                        </View>
+                        <View style={styles.feedbackAuthorContainer}>
+                          {feedback.isAnonymous ? (
+                            <>
+                              <Ionicons
+                                name="eye-off-outline"
+                                size={14}
+                                color="#6B7280"
+                              />
+                              <Text style={styles.feedbackAuthor}>Ẩn danh</Text>
+                            </>
+                          ) : (
+                            <Text style={styles.feedbackAuthor}>
+                              {(feedback as any).createdBy?.fullName ||
+                                feedback.created_by?.fullName ||
+                                "Người dùng"}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      {feedback.comment && (
+                        <Text style={styles.feedbackComment}>
+                          {feedback.comment}
+                        </Text>
+                      )}
+                      {feedback.createdAt && (
+                        <Text style={styles.feedbackDate}>
+                          {formatDateTime(feedback.createdAt)}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
               )}
             </View>
-            {feedbacks.length === 0 ? (
-              <Text style={{ color: "#6B7280", fontSize: 14 }}>
-                Chưa có đánh giá nào
-              </Text>
-            ) : (
-              <View style={{ gap: 12 }}>
-                {feedbacks.map((feedback, index) => (
-                  <View key={feedback.id || index} style={styles.feedbackItem}>
-                    <View style={styles.feedbackHeader}>
-                      <View style={styles.ratingContainer}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Ionicons
-                            key={star}
-                            name={
-                              star <= feedback.rating ? "star" : "star-outline"
-                            }
-                            size={16}
-                            color={
-                              star <= feedback.rating ? "#FBBF24" : "#D1D5DB"
-                            }
-                          />
-                        ))}
-                      </View>
-                      <View style={styles.feedbackAuthorContainer}>
-                        {feedback.isAnonymous ? (
-                          <>
-                            <Ionicons
-                              name="eye-off-outline"
-                              size={14}
-                              color="#6B7280"
-                            />
-                            <Text style={styles.feedbackAuthor}>Ẩn danh</Text>
-                          </>
-                        ) : (
-                          <Text style={styles.feedbackAuthor}>
-                            {(feedback as any).createdBy?.fullName ||
-                              feedback.created_by?.fullName ||
-                              "Người dùng"}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    {feedback.comment && (
-                      <Text style={styles.feedbackComment}>
-                        {feedback.comment}
-                      </Text>
-                    )}
-                    {feedback.createdAt && (
-                      <Text style={styles.feedbackDate}>
-                        {formatDateTime(feedback.createdAt)}
-                      </Text>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+          )}
         </View>
       </ScrollView>
 
@@ -796,249 +804,282 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
   infoButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  container: { padding: 16, gap: 16 },
-  detailSection: {
-    padding: 16,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    gap: 12,
-  },
-  detailSectionTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 4,
+  },
+  container: { padding: 12, gap: 12, paddingBottom: 20 },
+
+  /* Detail Section - Compact */
+  detailSection: {
+    padding: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 2,
   },
   infoHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 8,
   },
   courseName: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
+    lineHeight: 18,
   },
   statusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#E0F2F1",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#DCFCE7",
     alignSelf: "flex-start",
   },
   statusPillText: {
     color: "#047857",
     fontWeight: "600",
-    fontSize: 12,
+    fontSize: 10,
     textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   courseDescription: {
-    fontSize: 13,
-    color: "#4B5563",
-    lineHeight: 18,
+    fontSize: 12,
+    color: "#6B7280",
+    lineHeight: 16,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
+    paddingVertical: 6,
   },
   infoLabel: {
-    fontSize: 13,
-    color: "#6B7280",
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    width: "40%",
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#111827",
     fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
   },
   infoValueBold: {
     fontWeight: "700",
   },
   courtCard: {
     gap: 4,
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
   courtAddress: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#111827",
+    fontWeight: "500",
   },
   courtMeta: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
   },
   scheduleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
+    paddingVertical: 4,
   },
   scheduleText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#1F2937",
+    fontWeight: "500",
   },
+
+  /* Session Item - Compact */
   sessionItem: {
-    padding: 12,
-    backgroundColor: "#fff",
+    padding: 10,
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 8,
+    gap: 6,
   },
   sessionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
   sessionNumberBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#10B981",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#059669",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   sessionNumberText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
   },
   sessionName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
+    flex: 1,
   },
   sessionStatus: {
-    fontSize: 12,
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  sessionDescription: {
+    fontSize: 11,
     color: "#6B7280",
     marginTop: 2,
   },
-  sessionDescription: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 4,
-  },
   sessionInfo: {
     flexDirection: "row",
-    gap: 16,
-    marginTop: 8,
+    gap: 12,
+    marginTop: 6,
   },
   sessionInfoRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    flex: 1,
   },
   sessionInfoText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
+    fontWeight: "500",
   },
   lessonInfo: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 6,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
-    gap: 4,
+    gap: 3,
   },
   lessonTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#111827",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   lessonMeta: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#6B7280",
   },
   lessonResourcesButton: {
-    marginTop: 12,
-    backgroundColor: "#10B981",
-    paddingVertical: 10,
-    borderRadius: 8,
+    marginTop: 8,
+    backgroundColor: "#059669",
+    paddingVertical: 8,
+    borderRadius: 6,
     alignItems: "center",
   },
   lessonResourcesButtonText: {
     color: "#FFFFFF",
     fontWeight: "600",
-    fontSize: 13,
+    fontSize: 12,
   },
+
+  /* Feedback Item - Compact */
   feedbackItem: {
-    padding: 12,
-    backgroundColor: "#fff",
+    padding: 10,
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 8,
+    gap: 6,
   },
   feedbackHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
   },
   ratingContainer: {
     flexDirection: "row",
-    gap: 2,
+    gap: 1,
   },
   feedbackAuthorContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    flex: 1,
   },
   feedbackAuthor: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
     fontWeight: "500",
   },
   feedbackComment: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#111827",
-    marginTop: 4,
+    lineHeight: 16,
   },
   feedbackDate: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#9CA3AF",
-    marginTop: 4,
   },
   writeFeedbackButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     backgroundColor: "#059669",
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   writeFeedbackButtonText: {
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
-  /* Modal Styles */
+
+  /* Modal Styles - Compact */
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -1046,21 +1087,21 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     maxHeight: "90%",
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
   },
@@ -1071,41 +1112,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modalBody: {
-    padding: 16,
-    maxHeight: 500,
+    padding: 12,
+    maxHeight: 450,
   },
   ratingSection: {
-    marginBottom: 20,
+    marginBottom: 16,
     alignItems: "center",
   },
   ratingLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   starContainer: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   commentSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   commentLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   commentInput: {
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
+    padding: 10,
+    fontSize: 13,
     color: "#111827",
-    minHeight: 120,
+    minHeight: 100,
     textAlignVertical: "top",
   },
   anonymousOption: {
@@ -1115,20 +1156,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   anonymousLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#374151",
     fontWeight: "500",
   },
   modalFooter: {
     flexDirection: "row",
-    gap: 12,
-    padding: 16,
+    gap: 10,
+    padding: 12,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
   },
   modalCancelButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -1137,12 +1178,12 @@ const styles = StyleSheet.create({
   },
   modalCancelButtonText: {
     color: "#6B7280",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
   modalSubmitButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: "#059669",
     alignItems: "center",
@@ -1153,7 +1194,7 @@ const styles = StyleSheet.create({
   },
   modalSubmitButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
   },
 });

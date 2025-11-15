@@ -160,7 +160,6 @@ export default function CreateQuizScreen() {
         formattedQuestions.push({
           title: q.title.trim(),
           options: validOptions.map((opt, idx) => ({
-            id: idx + 1,
             content: opt.content,
             isCorrect: opt.isCorrect,
           })),
@@ -189,9 +188,7 @@ export default function CreateQuizScreen() {
   };
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: "#fff", paddingHorizontal: 20 }}
-    >
+    <View style={{ flex: 1, backgroundColor: "#fff", paddingHorizontal: 20 }}>
       <View
         style={{
           flexDirection: "row",

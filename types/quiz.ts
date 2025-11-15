@@ -1,5 +1,5 @@
 export interface QuizOptionType {
-  id: number;
+  id?: number;
   content: string;
   isCorrect: boolean;
 }
