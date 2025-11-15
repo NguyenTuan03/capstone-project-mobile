@@ -255,14 +255,21 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         return;
       }
 
+      // Tìm video của coach (video đầu tiên trong danh sách videos)
+      const coachVideo = videos.length > 0 ? videos[0] : null;
+      if (!coachVideo?.id) {
+        Alert.alert("Lỗi", "Không tìm thấy video của coach để so sánh");
+        return;
+      }
+
       try {
         setGeneratingOverlay(true);
         setOverlayVideoUrl(null);
 
-        // Gọi API POST để tạo overlay video
+        // Gọi API POST để tạo overlay video với coachVideoId
         const response = await http.post(
-          `/v1/learner-videos/${submittedVideo.id}/overlay-video`,
-          new FormData(), // Empty FormData vì API chỉ cần learnerVideoId
+          `/v1/learner-videos/${submittedVideo.id}/overlay-video/${coachVideo.id}`,
+          new FormData(), // Empty FormData vì API chỉ cần learnerVideoId và coachVideoId trong URL
           {
             headers: { "Content-Type": "multipart/form-data" },
           }
