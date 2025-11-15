@@ -24,7 +24,8 @@ type LessonResourcesTab = "videos" | "quizzes";
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, sessionId, style }) => {
-    const { quizzes, videos, loading, error, refresh } = useLessonResources(lessonId);
+    const { quizzes, videos, loading, error, refresh } =
+      useLessonResources(lessonId);
     const [activeTab, setActiveTab] = useState<LessonResourcesTab>("videos");
     const [tabLoading, setTabLoading] = useState(false);
     const [localVideo, setLocalVideo] = useState<{
@@ -269,9 +270,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
         if (typeof htmlResponse === "string") {
           // Tìm URL trong HTML (có thể là trong thẻ <a>, <video>, hoặc text)
-          const urlMatch = htmlResponse.match(
-            /https?:\/\/[^\s<>"']+\.mp4/g
-          );
+          const urlMatch = htmlResponse.match(/https?:\/\/[^\s<>"']+\.mp4/g);
           if (urlMatch && urlMatch.length > 0) {
             extractedUrl = urlMatch[0];
           } else {
@@ -346,7 +345,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                 </Text>
               )}
               <LessonVideoPlayer source={submittedVideo.publicUrl} />
-              
+
               {/* Nút so sánh với coach */}
               <TouchableOpacity
                 style={[
@@ -754,7 +753,9 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#059669" />
               <Text style={styles.loadingText}>
-                {activeTab === "videos" ? "Đang tải video..." : "Đang tải quiz..."}
+                {activeTab === "videos"
+                  ? "Đang tải video..."
+                  : "Đang tải quiz..."}
               </Text>
             </View>
           ) : error ? (
