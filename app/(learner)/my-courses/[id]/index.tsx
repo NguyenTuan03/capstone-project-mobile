@@ -394,7 +394,7 @@ export default function CourseDetailScreen() {
                 <View style={{ gap: 4 }}>
                   <Text style={styles.infoLabel}>Địa điểm</Text>
                   <View style={styles.courtCard}>
-                    <Text style={styles.infoValue}>{course.court.name}</Text>
+                    <Text style={styles.infoValue}>{course?.court?.name}</Text>
                     {course.court.address ? (
                       <Text style={styles.courtAddress}>
                         {course.court.address}

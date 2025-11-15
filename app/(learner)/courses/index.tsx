@@ -123,6 +123,7 @@ export default function CoursesScreen() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const fetchProvinces = async () => {
     try {
       setLoadingProvinces(true);
@@ -152,6 +153,17 @@ export default function CoursesScreen() {
       const userString = await AsyncStorage.getItem("user");
       if (userString) {
         const userData = JSON.parse(userString);
+
+        // Get user ID
+        let userId = null;
+        if (userData?.metadata?.user?.id) {
+          userId = userData.metadata.user.id;
+        } else if (userData?.id) {
+          userId = userData.id;
+        }
+        if (userId) {
+          setCurrentUserId(userId);
+        }
 
         // Xử lý cả 2 trường hợp: có metadata wrapper hoặc chỉ user object
         let learner = null;
@@ -315,14 +327,21 @@ export default function CoursesScreen() {
 
       // Build filter query
       const filters: string[] = ["status_eq_APPROVED"];
+      
+      // Auto-filter: courses with unpaid enrollments for current user
+      if (currentUserId) {
+        filters.push(`enrollments.status_eq_UNPAID`);
+        filters.push(`enrollments.user_id_eq_${currentUserId}`);
+      }
+      
       if (selectedProvince) {
-        filters.push(`province.id_eq_${selectedProvince.id}`);
+        filters.push(`court.province.id_eq_${selectedProvince.id}`);
       }
       if (selectedDistrict) {
-        filters.push(`district.id_eq_${selectedDistrict.id}`);
+        filters.push(`court.district.id_eq_${selectedDistrict.id}`);
       }
 
-      const filterQuery = filters.join("&");
+      const filterQuery = filters.join(",");
       const url = `/v1/courses?page=${pageNum}&pageSize=${pageSize}&filter=${filterQuery}`;
       const res = await get<CoursesResponse>(url);
 
@@ -363,7 +382,7 @@ export default function CoursesScreen() {
     useCallback(() => {
       fetchCourses(1, false);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedProvince, selectedDistrict])
+    }, [selectedProvince, selectedDistrict, currentUserId])
   );
 
   const formatPrice = (price: string) => {
@@ -432,10 +451,11 @@ export default function CoursesScreen() {
         });
       }
     } catch (e: any) {
+      console.log("e", e);
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: e?.message ?? "Có lỗi khi thanh toán.",
+        text2: e?.Message ?? "Có lỗi khi thanh toán.",
         position: "top",
         visibilityTime: 4000,
       });
