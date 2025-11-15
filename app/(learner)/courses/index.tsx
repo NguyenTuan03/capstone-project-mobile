@@ -1,5 +1,6 @@
 import { get, post } from "@/services/http/httpService";
 import { Course } from "@/types/course";
+import { convertDayOfWeekToVietnamese } from "@/utils/scheduleFormat";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
@@ -122,14 +123,12 @@ export default function CoursesScreen() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
-
   const fetchProvinces = async () => {
     try {
       setLoadingProvinces(true);
       const res = await get<Province[]>("/v1/provinces");
       setProvinces(res.data || []);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách tỉnh/thành phố:", error);
     } finally {
       setLoadingProvinces(false);
     }
@@ -143,7 +142,6 @@ export default function CoursesScreen() {
       );
       setDistricts(res.data || []);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách quận/huyện:", error);
     } finally {
       setLoadingDistricts(false);
     }
@@ -191,7 +189,6 @@ export default function CoursesScreen() {
         }
       }
     } catch (error) {
-      console.error("Lỗi khi tải thông tin địa điểm từ user:", error);
     }
   }, [provinces]);
 
@@ -236,7 +233,6 @@ export default function CoursesScreen() {
       }
       return null;
     } catch (error) {
-      console.error(`Lỗi khi tải rating cho coach ${coachId}:`, error);
       return null;
     }
   };
@@ -252,8 +248,7 @@ export default function CoursesScreen() {
         return res.data.coach[0].id;
       }
       return null;
-    } catch (error) {
-      console.error(`Lỗi khi tải coach ID cho user ${userId}:`, error);
+    } catch {
       return null;
     }
   };
@@ -307,7 +302,6 @@ export default function CoursesScreen() {
 
       setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
     } catch (error) {
-      console.error("Lỗi khi tải coach ratings:", error);
     }
   };
 
@@ -333,7 +327,6 @@ export default function CoursesScreen() {
       const res = await get<CoursesResponse>(url);
 
       const newCourses = res.data.items || [];
-      console.log("newCourses", newCourses);
 
       if (append) {
         setCourses((prev) => [...prev, ...newCourses]);
@@ -353,7 +346,6 @@ export default function CoursesScreen() {
         fetchCoachesRatings(userIds);
       }
     } catch (error) {
-      console.error("Lỗi khi tải danh sách khóa học:", error);
       Alert.alert("Lỗi", "Không thể tải danh sách khóa học");
     } finally {
       setLoading(false);
@@ -532,14 +524,14 @@ export default function CoursesScreen() {
                 c.level === "BEGINNER"
                   ? "Cơ bản"
                   : c.level === "INTERMEDIATE"
-                    ? "Trung cấp"
-                    : "Nâng cao";
+                  ? "Trung cấp"
+                  : "Nâng cao";
               const levelColor =
                 c.level === "BEGINNER"
                   ? { bg: "#DBEAFE", text: "#0284C7" }
                   : c.level === "INTERMEDIATE"
-                    ? { bg: "#FCD34D", text: "#92400E" }
-                    : { bg: "#DDD6FE", text: "#4F46E5" };
+                  ? { bg: "#FCD34D", text: "#92400E" }
+                  : { bg: "#DDD6FE", text: "#4F46E5" };
 
               return (
                 <TouchableOpacity
@@ -584,7 +576,9 @@ export default function CoursesScreen() {
                             },
                           ]}
                         >
-                          {c.learningFormat === "INDIVIDUAL" ? "Cá nhân" : "Nhóm"}
+                          {c.learningFormat === "INDIVIDUAL"
+                            ? "Cá nhân"
+                            : "Nhóm"}
                         </Text>
                       </View>
                     </View>
@@ -608,9 +602,7 @@ export default function CoursesScreen() {
                                 : "checkmark-circle-outline"
                             }
                             size={11}
-                            color={
-                              c.status === "FULL" ? "#0284C7" : "#16A34A"
-                            }
+                            color={c.status === "FULL" ? "#0284C7" : "#16A34A"}
                             style={{ marginRight: 3 }}
                           />
                           <Text
@@ -618,9 +610,7 @@ export default function CoursesScreen() {
                               styles.statusBadgeText,
                               {
                                 color:
-                                  c.status === "FULL"
-                                    ? "#0284C7"
-                                    : "#16A34A",
+                                  c.status === "FULL" ? "#0284C7" : "#16A34A",
                               },
                             ]}
                             numberOfLines={1}
@@ -647,10 +637,7 @@ export default function CoursesScreen() {
                         color="#059669"
                         style={{ marginRight: 6 }}
                       />
-                      <Text
-                        style={styles.courseCoach}
-                        numberOfLines={1}
-                      >
+                      <Text style={styles.courseCoach} numberOfLines={1}>
                         {c.createdBy?.fullName || "Huấn luyện viên"}
                       </Text>
                       {c.createdBy?.id &&
@@ -911,7 +898,8 @@ export default function CoursesScreen() {
                             color="#F59E0B"
                           />
                           <Text style={styles.warningText}>
-                            Chưa có học viên đăng ký {"\n"} Hãy là người đầu tiên!
+                            Chưa có học viên đăng ký {"\n"} Hãy là người đầu
+                            tiên!
                           </Text>
                         </View>
                       )}
@@ -1020,7 +1008,7 @@ export default function CoursesScreen() {
                               .map((schedule, idx) => (
                                 <View key={idx} style={styles.scheduleItem}>
                                   <Text style={styles.scheduleDay}>
-                                    {schedule.dayOfWeek}
+                                    {convertDayOfWeekToVietnamese(schedule.dayOfWeek)}
                                   </Text>
                                   <Text style={styles.scheduleTime}>
                                     {schedule.startTime} - {schedule.endTime}

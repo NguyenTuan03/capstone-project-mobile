@@ -98,7 +98,6 @@ export default function ContentScreen() {
         setRating(res.data.metadata);
       }
     } catch (error) {
-      console.error("Error loading rating:", error);
       setRating(null);
     }
   }, []);
@@ -117,7 +116,6 @@ export default function ContentScreen() {
         loadRating(userData.coach[0].id);
       }
     } catch (error) {
-      console.error("Error loading user:", error);
     }
   }, [loadRating]);
 

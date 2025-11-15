@@ -15,7 +15,6 @@ export default function CoachProfileScreen() {
     const fetchUser = async () => {
       const storedUser = await storageService.getUser();
       setUser(storedUser);
-      console.log("Fetched user sss:", storedUser);
       setCoach(storedUser?.coach?.[0] || null);
     };
     fetchUser();

@@ -4,6 +4,7 @@ import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
 import { Feedback } from "@/types/feecbacks";
 import type { Session } from "@/types/session";
+import { convertDayOfWeekToVietnamese } from "@/utils/scheduleFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -427,8 +428,8 @@ export default function CourseDetailScreen() {
                           color="#10B981"
                         />
                         <Text style={styles.scheduleText}>
-                          {schedule.dayOfWeek} • {schedule.startTime} -{" "}
-                          {schedule.endTime}
+                          {convertDayOfWeekToVietnamese(schedule.dayOfWeek)} •{" "}
+                          {schedule.startTime} - {schedule.endTime}
                         </Text>
                       </View>
                     ))}
