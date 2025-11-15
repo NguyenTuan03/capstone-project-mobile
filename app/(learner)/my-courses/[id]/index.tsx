@@ -525,7 +525,7 @@ export default function CourseDetailScreen() {
                         </Text>
                       </View>
                     </View>
-                    {session.lesson &&
+                    {session &&
                       (() => {
                         const lesson = session;
                         const lessonLabel =

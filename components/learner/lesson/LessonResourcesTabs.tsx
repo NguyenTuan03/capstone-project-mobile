@@ -1,10 +1,10 @@
 import { get } from "@/services/http/httpService";
+import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
 import { useEvent } from "expo";
 import * as ImagePicker from "expo-image-picker";
 import type { PlayerError } from "expo-video";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import type { StyleProp, ViewStyle } from "react-native";
 import {
   ActivityIndicator,
   Alert,
@@ -19,7 +19,6 @@ import storageService from "../../../services/storageService";
 import { QuizType } from "../../../types/quiz";
 import { LearnerVideo, VideoType } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
-import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
 
 type LessonResourcesTab = "videos" | "quizzes";
 
@@ -239,15 +238,35 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       return (
         <>
           {submittedVideo && (
-            <View style={styles.resourceCard}>
-              <Text style={styles.resourceTitle}>Video bạn đã nộp</Text>
-              {submittedVideo.status && (
-                <Text style={styles.metaText}>
-                  Trạng thái: {submittedVideo.status}
-                </Text>
-              )}
+            <View style={styles.submittedVideoCard}>
+              <View style={styles.submittedVideoHeader}>
+                <View>
+                  <Text style={styles.submittedVideoTitle}>
+                    📹 Video bạn đã nộp
+                  </Text>
+                  {submittedVideo.status && (
+                    <View style={styles.statusBadgeContainer}>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          submittedVideo.status === "PROCESSING" &&
+                            styles.statusProcessing,
+                          submittedVideo.status === "COMPLETED" &&
+                            styles.statusCompleted,
+                          submittedVideo.status === "FAILED" &&
+                            styles.statusFailed,
+                        ]}
+                      >
+                        <Text style={styles.statusBadgeText}>
+                          {submittedVideo.status}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
               {submittedVideo.createdAt && (
-                <Text style={styles.metaText}>
+                <Text style={styles.submittedVideoMeta}>
                   Nộp lúc: {new Date(submittedVideo.createdAt).toLocaleString()}
                 </Text>
               )}
@@ -257,16 +276,38 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
           {loadingAnalysis ? (
             <View style={styles.resourceCard}>
-              <ActivityIndicator size="small" color="#10B981" />
-              <Text style={styles.metaText}>Đang tải kết quả phân tích...</Text>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <ActivityIndicator size="small" color="#059669" />
+                <Text style={styles.metaText}>
+                  Đang tải kết quả phân tích...
+                </Text>
+              </View>
             </View>
           ) : aiAnalysisResult ? (
-            <View style={styles.resourceCard}>
+            <View style={[styles.resourceCard, { backgroundColor: "#FFFBEB" }]}>
               <Text style={styles.resourceTitle}>📊 Kết quả phân tích AI</Text>
               {aiAnalysisResult.learnerScore !== null && (
-                <Text style={styles.metaText}>
-                  ⭐ Điểm số: {aiAnalysisResult.learnerScore}/100
-                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                    gap: 8,
+                    marginVertical: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "700",
+                      color: "#059669",
+                    }}
+                  >
+                    ⭐ {aiAnalysisResult.learnerScore}
+                  </Text>
+                  <Text style={styles.metaText}>/100</Text>
+                </View>
               )}
               {aiAnalysisResult.summary && (
                 <View style={styles.analysisSection}>
@@ -314,7 +355,9 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                     {aiAnalysisResult.recommendationDrills.map((rec, index) => (
                       <View key={index} style={styles.recommendationItem}>
                         <Text style={styles.analysisText}>
-                          {index + 1}. {rec.name || "Bài tập"}
+                          <Text style={{ fontWeight: "700" }}>
+                            {index + 1}. {rec.name || "Bài tập"}
+                          </Text>
                         </Text>
                         {rec.description && (
                           <Text style={styles.analysisText}>
@@ -331,7 +374,13 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                   </View>
                 )}
               {aiAnalysisResult.createdAt && (
-                <Text style={styles.metaText}>
+                <Text
+                  style={{
+                    ...styles.metaText,
+                    marginTop: 6,
+                    fontStyle: "italic",
+                  }}
+                >
                   Phân tích lúc:{" "}
                   {new Date(aiAnalysisResult.createdAt).toLocaleString()}
                 </Text>
@@ -343,7 +392,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={handlePickVideo}
-              activeOpacity={0.85}
+              activeOpacity={0.7}
             >
               <Text style={styles.uploadButtonText}>
                 📤 Upload video của bạn tại đây
@@ -352,18 +401,28 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
           )}
 
           {localVideo && (
-            <View style={styles.resourceCard}>
-              <Text style={styles.resourceTitle}>{localVideo.name}</Text>
-              <Text style={styles.metaText}>Video từ thiết bị của bạn</Text>
+            <View style={[styles.resourceCard, { backgroundColor: "#F0F9FF" }]}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resourceTitle}>{localVideo.name}</Text>
+                  <Text style={styles.metaText}>Từ thiết bị của bạn</Text>
+                </View>
+                {localVideo.uploaded && (
+                  <View style={styles.uploadedBadge}>
+                    <Text style={styles.uploadedBadgeText}>✓ Đã upload</Text>
+                  </View>
+                )}
+              </View>
               {localVideo.duration && (
-                <Text style={styles.metaText}>
+                <Text style={{ ...styles.metaText, marginTop: 5 }}>
                   ⏱ {localVideo.duration} phút
                 </Text>
-              )}
-              {localVideo.uploaded && (
-                <View style={styles.uploadedBadge}>
-                  <Text style={styles.uploadedBadgeText}>✓ Đã upload</Text>
-                </View>
               )}
               <LessonVideoPlayer source={localVideo.uri} />
               {!localVideo.uploaded && (
@@ -405,28 +464,58 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                   {video.description}
                 </Text>
               )}
-              {video.drillName && (
-                <Text style={styles.metaText}>🎯 {video.drillName}</Text>
-              )}
-              {video.drillDescription && (
-                <Text style={styles.metaText}>{video.drillDescription}</Text>
-              )}
+              <View style={{ gap: 5, marginTop: 4 }}>
+                {video.drillName && (
+                  <Text
+                    style={{
+                      ...styles.metaText,
+                      fontWeight: "600",
+                      color: "#059669",
+                    }}
+                  >
+                    🎯 {video.drillName}
+                  </Text>
+                )}
+                {video.drillDescription && (
+                  <Text style={styles.metaText}>{video.drillDescription}</Text>
+                )}
+              </View>
               <View style={styles.metaRow}>
                 {video.duration != null && (
                   <Text style={styles.metaText}>⏱ {video.duration} phút</Text>
                 )}
                 {video.drillPracticeSets && (
-                  <Text style={styles.metaText}>{video.drillPracticeSets}</Text>
+                  <Text style={styles.metaText}>
+                    📊 {video.drillPracticeSets} hiệp tập
+                  </Text>
                 )}
               </View>
               {renderTags(video.tags)}
-              {video.publicUrl ? (
-                <LessonVideoPlayer source={video.publicUrl} />
-              ) : (
-                <Text style={styles.metaText}>
-                  Video hiện chưa khả dụng trong ứng dụng.
-                </Text>
-              )}
+              <View style={{ marginTop: 6 }}>
+                {video.publicUrl ? (
+                  <LessonVideoPlayer source={video.publicUrl} />
+                ) : (
+                  <View
+                    style={{
+                      backgroundColor: "#FEE2E2",
+                      padding: 8,
+                      borderRadius: 6,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#EF4444",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#7F1D1D",
+                        fontWeight: "500",
+                      }}
+                    >
+                      ⚠️ Video hiện chưa khả dụng
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           ))}
         </>
@@ -537,254 +626,384 @@ LessonResourcesTabs.displayName = "LessonResourcesTabs";
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 12,
+    marginTop: 10,
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    overflow: "hidden",
   },
   tabRow: {
     flexDirection: "row",
-    padding: 8,
-    gap: 8,
+    padding: 6,
+    gap: 6,
     backgroundColor: "#F3F4F6",
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "transparent",
   },
   tabButtonActive: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#059669",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   tabLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#6B7280",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   tabLabelActive: {
     color: "#FFFFFF",
     fontWeight: "700",
+    letterSpacing: 0.3,
   },
   tabCounter: {
-    fontWeight: "400",
+    fontWeight: "500",
+    fontSize: 12,
   },
   content: {
-    padding: 12,
-    gap: 12,
+    padding: 10,
+    gap: 10,
   },
+  // Submitted Video Card
+  submittedVideoCard: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBEF63",
+    gap: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  submittedVideoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  submittedVideoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#047857",
+    marginBottom: 4,
+  },
+  submittedVideoMeta: {
+    fontSize: 10,
+    color: "#059669",
+    fontStyle: "italic",
+  },
+  statusBadgeContainer: {
+    flexDirection: "row",
+    gap: 5,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#FEF08A",
+    borderWidth: 0.5,
+    borderColor: "#EAB308",
+  },
+  statusProcessing: {
+    backgroundColor: "#FEF08A",
+    borderColor: "#EAB308",
+  },
+  statusCompleted: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#34D399",
+  },
+  statusFailed: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#F87171",
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#854D0E",
+  },
+  // Upload Button
   uploadButton: {
-    backgroundColor: "#10B981",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    backgroundColor: "transparent",
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#059669",
     borderStyle: "dashed",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   uploadButtonText: {
-    color: "#FFFFFF",
-    fontSize: 15,
+    color: "#059669",
+    fontSize: 14,
     fontWeight: "700",
+    letterSpacing: 0.3,
   },
   submitButton: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#059669",
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 12,
+    marginTop: 10,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3.5,
+    elevation: 3,
   },
   submitButtonDisabled: {
-    backgroundColor: "#6B7280",
-    opacity: 0.7,
+    backgroundColor: "#9CA3AF",
+    opacity: 0.8,
+    shadowOpacity: 0.1,
   },
   submitButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   submitButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
+    letterSpacing: 0.3,
   },
   uploadedBadge: {
     backgroundColor: "#DCFCE7",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 6,
     alignSelf: "flex-start",
-    marginTop: 8,
+    marginTop: 6,
+    borderWidth: 0.5,
+    borderColor: "#34D399",
   },
   uploadedBadgeText: {
     color: "#047857",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
   reuploadButton: {
     backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 12,
+    marginTop: 10,
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   reuploadButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
   },
+  // Resource Cards
   resourceCard: {
-    padding: 12,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 9,
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 6,
+    gap: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.04,
+    shadowRadius: 1.5,
+    elevation: 1,
   },
   resourceTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
+    marginBottom: 2,
   },
   resourceDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#4B5563",
+    lineHeight: 15,
   },
   metaRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
+    marginTop: 2,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
   },
   actionRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
+    gap: 6,
+    marginTop: 6,
   },
   linkButton: {
-    backgroundColor: "#10B981",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: "#059669",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 1,
   },
   linkButtonText: {
     color: "#FFFFFF",
     fontWeight: "600",
+    fontSize: 12,
   },
   outlineButton: {
     borderWidth: 1,
-    borderColor: "#10B981",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderColor: "#059669",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
   },
   outlineButtonText: {
     color: "#047857",
     fontWeight: "600",
+    fontSize: 12,
   },
   emptyText: {
-    fontSize: 13,
-    color: "#6B7280",
+    fontSize: 12,
+    color: "#9CA3AF",
     textAlign: "center",
+    paddingVertical: 20,
+    fontStyle: "italic",
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#DC2626",
     textAlign: "center",
   },
+  // Analysis Section
   analysisSection: {
-    marginTop: 12,
-    gap: 8,
+    marginTop: 9,
+    gap: 6,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
   },
   analysisLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#111827",
     marginBottom: 4,
   },
   analysisText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#374151",
-    lineHeight: 18,
+    lineHeight: 16,
   },
   differenceItem: {
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: "#F3F4F6",
+    marginTop: 6,
+    padding: 7,
+    backgroundColor: "#FFF7ED",
     borderRadius: 6,
-    gap: 4,
+    gap: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: "#FB923C",
   },
   differenceAspect: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#111827",
+    color: "#92400E",
   },
   recommendationItem: {
-    marginTop: 8,
-    padding: 8,
+    marginTop: 6,
+    padding: 7,
     backgroundColor: "#F0FDF4",
     borderRadius: 6,
-    gap: 4,
+    gap: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: "#34D399",
   },
   tagContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
+    gap: 4,
     marginTop: 4,
   },
   tag: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: 6,
     backgroundColor: "#E0F2FE",
+    borderWidth: 0.5,
+    borderColor: "#0EA5E9",
   },
   tagText: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#0369A1",
     fontWeight: "500",
   },
   questionList: {
-    marginTop: 12,
-    gap: 12,
+    marginTop: 10,
+    gap: 9,
   },
   questionItem: {
-    gap: 8,
-    padding: 12,
+    gap: 6,
+    padding: 9,
     borderRadius: 8,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.04,
+    shadowRadius: 1.5,
+    elevation: 1,
   },
   questionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: "#111827",
   },
   questionExplanation: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#4B5563",
+    lineHeight: 15,
   },
   optionList: {
-    gap: 6,
+    gap: 5,
+    marginTop: 5,
   },
   optionItem: {
-    padding: 8,
+    padding: 7,
     borderRadius: 6,
     backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   optionItemCorrect: {
     backgroundColor: "#DCFCE7",
@@ -792,7 +1011,7 @@ const styles = StyleSheet.create({
     borderColor: "#34D399",
   },
   optionText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#374151",
   },
   optionTextCorrect: {
@@ -800,23 +1019,31 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   optionBadge: {
-    marginTop: 4,
-    fontSize: 11,
+    marginTop: 3,
+    fontSize: 10,
     color: "#047857",
     fontWeight: "600",
   },
   videoContainer: {
-    marginTop: 12,
-    gap: 12,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "#000000",
+    marginTop: 9,
+    gap: 8,
+    padding: 8,
+    borderRadius: 9,
+    backgroundColor: "#1F2937",
+    borderWidth: 1,
+    borderColor: "#374151",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   videoPlayer: {
     width: "100%",
     aspectRatio: 16 / 9,
-    borderRadius: 8,
+    borderRadius: 6,
     overflow: "hidden",
+    backgroundColor: "#000000",
   },
   videoControls: {
     flexDirection: "row",
@@ -824,14 +1051,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   controlButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#4B5563",
   },
   controlButtonLabel: {
     color: "#F9FAFB",
     fontWeight: "600",
+    fontSize: 11,
   },
 });
 

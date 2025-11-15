@@ -55,6 +55,7 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
         questionOption: Number(answers[q.id]),
       })),
     };
+    console.log("Submitting payload:", payload, quiz.id);
     const res = await submitAttempt(quiz.id, payload);
     if (res) {
       setSubmitted(true);
