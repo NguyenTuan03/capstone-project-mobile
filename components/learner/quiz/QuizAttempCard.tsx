@@ -1,5 +1,6 @@
 // components/QuizAttemptCard.tsx
-import React, { useMemo, useState } from "react";
+import { MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -8,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useAttemptQuiz } from "../../../hooks/use-attemp-quiz";
+import quizService from "../../../services/quiz.service";
 
 type Option = { id: number; content: string; isCorrect?: boolean };
 type Question = {
@@ -24,6 +26,18 @@ type Quiz = {
   questions: Question[];
 };
 
+type QuizAttempt = {
+  id?: number;
+  attemptNumber?: number;
+  score?: number;
+  createdAt?: string;
+  learnerAnswers?: {
+    isCorrect: boolean;
+    question: Question;
+    questionOption: Option;
+  }[];
+};
+
 type Props = {
   quiz: Quiz;
 };
@@ -38,8 +52,29 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
     correctCount: number;
     total: number;
   } | null>(null);
+  const [previousAttempts, setPreviousAttempts] = useState<QuizAttempt[]>([]);
+  const [showAttempts, setShowAttempts] = useState(false);
+  const [expandedAttemptId, setExpandedAttemptId] = useState<number | null>(
+    null
+  );
 
   const { submitAttempt, submitting, error } = useAttemptQuiz();
+
+  // Load previous attempts on mount
+  useEffect(() => {
+    const loadAttempts = async () => {
+      if (!quiz.id) return;
+      try {
+        const data = await quizService.getQuizAttempts(quiz.id);
+        const attemptsList = Array.isArray(data) ? data : data?.data || [];
+        setPreviousAttempts(attemptsList);
+      } catch (err) {
+        console.error("Failed to load quiz attempts:", err);
+      }
+    };
+
+    loadAttempts();
+  }, [quiz.id]);
 
   const onSelect = (questionId: number, optionId: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
@@ -60,7 +95,33 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
     if (res) {
       setSubmitted(true);
       setResult({ correctCount: res.correctCount, total: res.total });
+      // Refresh attempts list
+      const data = await quizService.getQuizAttempts(quiz.id);
+      const attemptsList = Array.isArray(data) ? data : data?.data || [];
+      setPreviousAttempts(attemptsList);
     }
+  };
+
+  const calculatePercentage = (attempt: QuizAttempt) => {
+    if (!attempt.score || !quiz.totalQuestions) return 0;
+    return Math.round((attempt.score / quiz.totalQuestions) * 100);
+  };
+
+  const getScoreColor = (percentage: number) => {
+    if (percentage >= 80) return "#047857"; // Green
+    if (percentage >= 60) return "#EA580C"; // Orange
+    return "#DC2626"; // Red
+  };
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -71,7 +132,134 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
         Tổng câu hỏi: {quiz.totalQuestions ?? questions.length}
       </Text>
 
+      {/* Previous Attempts Section */}
+      {previousAttempts.length > 0 && (
+        <View style={s.attemptsSection}>
+          <TouchableOpacity
+            style={s.attemptsHeader}
+            onPress={() => setShowAttempts(!showAttempts)}
+            activeOpacity={0.7}
+          >
+            <View style={s.attemptsHeaderLeft}>
+              <View style={s.attemptsHeaderContent}>
+                <MaterialIcons name="history" size={18} color="#047857" />
+                <Text style={s.attemptsTitle}>
+                  Lần làm trước ({previousAttempts.length})
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons
+              name={showAttempts ? "expand-less" : "expand-more"}
+              size={20}
+              color="#6B7280"
+            />
+          </TouchableOpacity>
+
+          {showAttempts && (
+            <View style={s.attemptsList}>
+              {previousAttempts.map((attempt, index) => {
+                const percentage = calculatePercentage(attempt);
+                const scoreColor = getScoreColor(percentage);
+                const isExpanded = expandedAttemptId === attempt.id;
+
+                return (
+                  <View key={attempt.id || index} style={s.attemptItem}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setExpandedAttemptId(
+                          isExpanded ? null : attempt.id || null
+                        )
+                      }
+                      activeOpacity={0.7}
+                      style={s.attemptItemHeader}
+                    >
+                      <View style={s.attemptInfo}>
+                        <View
+                          style={[
+                            s.scoreCircle,
+                            {
+                              backgroundColor: scoreColor + "20",
+                              borderColor: scoreColor,
+                            },
+                          ]}
+                        >
+                          <Text style={[s.scoreText, { color: scoreColor }]}>
+                            {attempt.score}
+                          </Text>
+                        </View>
+                        <View style={s.attemptDetails}>
+                          <Text style={s.attemptLabel}>
+                            Lần {attempt.attemptNumber || index + 1}
+                          </Text>
+                          <Text style={s.attemptMeta}>
+                            {formatDate(attempt.createdAt)}
+                          </Text>
+                        </View>
+                      </View>
+                      <MaterialIcons
+                        name={isExpanded ? "expand-less" : "expand-more"}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+
+                    {isExpanded && attempt.learnerAnswers && (
+                      <View style={s.attemptAnswers}>
+                        {attempt.learnerAnswers.map((answer, answerIdx) => (
+                          <View key={answerIdx} style={s.answerItem}>
+                            <View
+                              style={[
+                                s.answerIndicator,
+                                answer.isCorrect
+                                  ? s.answerCorrect
+                                  : s.answerIncorrect,
+                              ]}
+                            >
+                              <MaterialIcons
+                                name={answer.isCorrect ? "check" : "close"}
+                                size={16}
+                                color="#FFFFFF"
+                              />
+                            </View>
+                            <View style={s.answerContent}>
+                              <Text style={s.answerQuestion}>
+                                Câu {answerIdx + 1}: {answer.question.title}
+                              </Text>
+                              <Text style={s.answerSelected}>
+                                Trả lời: {answer.questionOption.content}
+                              </Text>
+                              {answer.question.explanation && (
+                                <View style={s.explanationBox}>
+                                  <MaterialIcons
+                                    name="info"
+                                    size={12}
+                                    color="#047857"
+                                    style={{ marginRight: 4 }}
+                                  />
+                                  <Text style={s.answerExplanation}>
+                                    {answer.question.explanation}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      )}
+
       <View style={s.divider} />
+
+      <View style={s.newAttemptHeader}>
+        <MaterialIcons name="edit-note" size={18} color="#059669" />
+        <Text style={s.sectionTitle}>Làm bài mới</Text>
+      </View>
 
       {questions.map((q, idx) => (
         <View key={q.id} style={s.qBox}>
@@ -113,7 +301,7 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
           activeOpacity={0.85}
         >
           {submitting ? (
-            <ActivityIndicator />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={s.btnLabel}>Nộp bài</Text>
           )}
@@ -122,8 +310,12 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
 
       {submitted && result && (
         <View style={s.resultBox}>
-          <Text style={s.resultText}>
-            Kết quả: {result.correctCount}/{result.total}
+          <Text style={s.resultLabel}>Kết quả lần này:</Text>
+          <Text style={s.resultScore}>
+            {result.correctCount}/{result.total}{" "}
+            <Text style={s.resultPercentage}>
+              ({Math.round((result.correctCount / result.total) * 100)}%)
+            </Text>
           </Text>
         </View>
       )}
@@ -139,57 +331,348 @@ const s = StyleSheet.create({
     borderColor: "#E5E7EB",
     backgroundColor: "#FFFFFF",
     gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.04,
+    shadowRadius: 1.5,
+    elevation: 1,
   },
-  title: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  desc: { fontSize: 13, color: "#4B5563" },
-  meta: { fontSize: 12, color: "#6B7280" },
-  divider: { height: 1, backgroundColor: "#F3F4F6", marginVertical: 6 },
-  qBox: { paddingVertical: 8, gap: 8 },
-  qIndex: { fontSize: 12, color: "#6B7280", fontWeight: "600" },
-  qTitle: { fontSize: 14, color: "#111827", fontWeight: "600" },
-  optList: { gap: 8, marginTop: 4 },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    letterSpacing: 0.3,
+  },
+  desc: {
+    fontSize: 13,
+    color: "#4B5563",
+    lineHeight: 18,
+  },
+  meta: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  // Attempts Section
+  attemptsSection: {
+    backgroundColor: "#F0FDF4",
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: "#BBEF63",
+    overflow: "hidden",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  attemptsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 11,
+    paddingHorizontal: 11,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1.5,
+    borderBottomColor: "#E5E7EB",
+  },
+  attemptsHeaderLeft: {
+    flex: 1,
+  },
+  attemptsHeaderContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  attemptsTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#047857",
+    letterSpacing: 0.2,
+  },
+  attemptsList: {
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    gap: 9,
+    backgroundColor: "#F9FAFB",
+  },
+  attemptItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.04,
+    shadowRadius: 1.5,
+    elevation: 1,
+  },
+  attemptItemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 11,
+  },
+  attemptInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    flex: 1,
+  },
+  scoreCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+  },
+  scoreText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  attemptDetails: {
+    gap: 3,
+    flex: 1,
+  },
+  attemptLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  attemptMeta: {
+    fontSize: 10,
+    color: "#6B7280",
+  },
+  attemptAnswers: {
+    paddingTop: 9,
+    paddingHorizontal: 11,
+    paddingBottom: 11,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    backgroundColor: "#FAFBFC",
+    gap: 9,
+  },
+  answerItem: {
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0.25 },
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
+    elevation: 0.5,
+  },
+  answerIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 7,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 32,
+  },
+  answerCorrect: {
+    backgroundColor: "#DCFCE7",
+    borderWidth: 1.5,
+    borderColor: "#34D399",
+  },
+  answerIncorrect: {
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1.5,
+    borderColor: "#F87171",
+  },
+  answerContent: {
+    flex: 1,
+    gap: 4,
+    justifyContent: "center",
+  },
+  answerQuestion: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  answerSelected: {
+    fontSize: 11,
+    color: "#4B5563",
+    fontStyle: "italic",
+  },
+  explanationBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 5,
+    marginTop: 3,
+    paddingTop: 6,
+    paddingLeft: 6,
+    borderLeftWidth: 2,
+    borderLeftColor: "#34D399",
+  },
+  answerExplanation: {
+    fontSize: 10,
+    color: "#047857",
+    flex: 1,
+    fontStyle: "italic",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+    marginVertical: 10,
+  },
+  newAttemptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 2,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+    letterSpacing: 0.2,
+  },
+  qBox: {
+    paddingVertical: 9,
+    gap: 8,
+  },
+  qIndex: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  qTitle: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
+    lineHeight: 18,
+  },
+  optList: {
+    gap: 8,
+    marginTop: 6,
+  },
   optItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 10,
-    borderRadius: 8,
+    gap: 11,
+    padding: 11,
+    borderRadius: 9,
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0.25 },
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
+    elevation: 0.5,
   },
-  optItemSelected: { backgroundColor: "#ECFDF5", borderColor: "#34D399" },
+  optItemSelected: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#34D399",
+    borderWidth: 1.5,
+  },
   radio: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     borderRadius: 999,
     borderWidth: 2,
     borderColor: "#9CA3AF",
     backgroundColor: "transparent",
   },
-  radioActive: { borderColor: "#10B981", backgroundColor: "#10B981" },
-  optText: { fontSize: 13, color: "#374151" },
-  optTextActive: { color: "#065F46", fontWeight: "600" },
-  explain: { marginTop: 6, fontSize: 12, color: "#065F46" },
-  actions: { marginTop: 10, flexDirection: "row" },
+  radioActive: {
+    borderColor: "#059669",
+    backgroundColor: "#059669",
+  },
+  optText: {
+    fontSize: 13,
+    color: "#374151",
+    flex: 1,
+  },
+  optTextActive: {
+    color: "#047857",
+    fontWeight: "600",
+  },
+  explain: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#047857",
+    paddingLeft: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: "#34D399",
+    paddingVertical: 6,
+  },
+  actions: {
+    marginTop: 12,
+    flexDirection: "row",
+    gap: 8,
+  },
   btn: {
-    backgroundColor: "#10B981",
-    paddingVertical: 10,
+    flex: 1,
+    backgroundColor: "#059669",
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3.5,
+    elevation: 3,
   },
-  btnDisabled: { opacity: 0.5 },
-  btnLabel: { color: "#FFFFFF", fontWeight: "700" },
-  error: { color: "#DC2626", marginTop: 6 },
+  btnDisabled: {
+    opacity: 0.6,
+    shadowOpacity: 0.1,
+  },
+  btnLabel: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 13,
+    letterSpacing: 0.3,
+  },
+  error: {
+    color: "#DC2626",
+    marginTop: 8,
+    fontSize: 12,
+    paddingHorizontal: 8,
+  },
   resultBox: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 8,
+    marginTop: 12,
+    padding: 11,
+    borderRadius: 9,
     backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
+    borderLeftWidth: 3,
+    borderLeftColor: "#3B82F6",
+    borderTopWidth: 1,
+    borderTopColor: "#BFDBFE",
+    borderRightWidth: 1,
+    borderRightColor: "#BFDBFE",
+    borderBottomWidth: 1,
+    borderBottomColor: "#BFDBFE",
+    gap: 5,
   },
-  resultText: { color: "#1D4ED8", fontWeight: "700" },
+  resultLabel: {
+    fontSize: 11,
+    color: "#1D4ED8",
+    fontWeight: "600",
+  },
+  resultScore: {
+    fontSize: 17,
+    color: "#1D4ED8",
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  resultPercentage: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#3B82F6",
+  },
 });
 
 export default QuizAttemptCard;

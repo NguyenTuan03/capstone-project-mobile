@@ -194,7 +194,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     }, [sessionId]);
 
-    const handleUploadVideo = async () => {
+    const handleUploadVideo = async (coachVideoId: number) => {
       if (!localVideo) return;
 
       if (!localVideo.duration) {
@@ -217,15 +217,10 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             : "video.mp4",
         } as any);
 
-        // API yêu cầu sessionId (optional) thay vì lessonId
-        if (sessionId) {
-          fd.append("sessionId", String(sessionId));
-        }
-
-        // duration là required field
-        fd.append("duration", String(Math.round(localVideo.duration)));
-
-        // tags là optional, gửi dạng JSON string nếu có
+        fd.append("coachVideoId", String(coachVideoId));
+        fd.append("sessionId", String(lessonId));
+        if (localVideo.duration != null)
+          fd.append("duration", String(Math.round(localVideo.duration)));
         if (localVideo.tags && localVideo.tags.length > 0) {
           fd.append("tags", JSON.stringify(localVideo.tags));
         }
@@ -545,7 +540,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                     styles.submitButton,
                     isUploading && styles.submitButtonDisabled,
                   ]}
-                  onPress={handleUploadVideo}
+                  onPress={() => handleUploadVideo(videos[0].id)}
                   disabled={isUploading}
                   activeOpacity={0.85}
                 >

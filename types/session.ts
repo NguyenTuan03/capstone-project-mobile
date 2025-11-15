@@ -1,6 +1,7 @@
 import type { AttendanceType } from "./attendance";
 import { Course } from "./course";
-import type { QuizType } from "./quiz";
+import { QuestionType } from "./question";
+import type { QuizOptionType, QuizType } from "./quiz";
 import type { VideoType } from "./video";
 
 export interface Session {
@@ -86,3 +87,17 @@ export type Exercise =
       onStartQuiz?: () => void;
       onViewSubmissions?: () => void;
     };
+
+export type LearnerAnswer = {
+  id?: number;
+  attemptNumber?: number;
+  score?: number;
+  createdAt?: string;
+  learnerAnswers: [
+    {
+      isCorrect: boolean;
+      question: QuestionType;
+      questionOption: QuizOptionType;
+    }
+  ];
+};
