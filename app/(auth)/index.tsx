@@ -4,8 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Href, useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import Toast from "react-native-toast-message";
+import { Alert, Pressable, Text, View } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
@@ -33,15 +32,6 @@ export default function AuthScreen() {
       await AsyncStorage.setItem("refreshToken", refreshToken);
       await AsyncStorage.setItem("user", JSON.stringify(user));
 
-      // Show success toast message
-      Toast.show({
-        type: "success",
-        text1: "Đăng nhập thành công!",
-        text2: `Chào mừng ${user.fullName} 👋`,
-        position: "top",
-        visibilityTime: 3000,
-      });
-
       if (user.role.name === "COACH") {
         router.push("/(coach)/home" as Href);
       }
@@ -49,15 +39,12 @@ export default function AuthScreen() {
         router.push("/(learner)/home" as Href);
       }
     } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Đăng nhập thất bại",
-        text2:
-          err.response?.data?.message ||
-          "Vui lòng kiểm tra lại số điện thoại và mật khẩu của bạn.",
-        position: "top",
-        visibilityTime: 4000,
-      });
+      console.error("Login error:", err);
+      Alert.alert(
+        "Đăng nhập thất bại",
+        "Vui lòng kiểm tra lại sdt và mật khẩu của bạn.",
+        [{ text: "OK" }]
+      );
     } finally {
       setSubmitting(false);
     }

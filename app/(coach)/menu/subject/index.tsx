@@ -7,8 +7,8 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Modal,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,10 +16,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+interface PaginatedResponse {
+  items: Subject[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 const CoachSubjectScreen = () => {
   const insets = useSafeAreaInsets();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -33,7 +44,7 @@ const CoachSubjectScreen = () => {
     if (!s) return;
     setModalVisible(false);
     router.push({
-      pathname: "/(coach)/menu/subject/edit" as any,
+      pathname: "/(coach)/menu/subject/edit",
       params: {
         subjectId: s.id,
         subjectName: s.name,
@@ -58,9 +69,11 @@ const CoachSubjectScreen = () => {
             try {
               await remove(`/v1/subjects/${subject.id}`);
 
-              setSubjects((prev) =>
-                prev.filter((item) => item.id !== subject.id)
-              );
+              setSubjects((prev) => {
+                const updated = prev.filter((item) => item.id !== subject.id);
+                setTotal((prevTotal) => Math.max(0, prevTotal - 1));
+                return updated;
+              });
               setModalVisible(false);
             } catch (error) {
               console.error("Lỗi khi xóa tài liệu:", error);
@@ -76,9 +89,14 @@ const CoachSubjectScreen = () => {
     );
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       const user = await storageService.getUser();
       if (!user) {
         console.warn("Không tìm thấy thông tin người dùng");
@@ -86,21 +104,52 @@ const CoachSubjectScreen = () => {
       }
       const userId = user.id;
 
-      const res = await get<{ items: Subject[] }>(
-        `/v1/subjects?filter=createdBy_eq_${userId}`
+      const res = await get<PaginatedResponse>(
+        `/v1/subjects?filter=createdBy_eq_${userId}&page=${pageNum}&pageSize=10`
       );
-      setSubjects(res.data.items || []);
+
+      if (append) {
+        setSubjects((prev) => {
+          const newItems = res.data.items || [];
+          const updatedSubjects = [...prev, ...newItems];
+          
+          // Update pagination state
+          const newPage = res.data.page;
+          const newTotal = res.data.total;
+          setPage(newPage);
+          setTotal(newTotal);
+          setHasMore(updatedSubjects.length < newTotal);
+          
+          return updatedSubjects;
+        });
+      } else {
+        const newItems = res.data.items || [];
+        setSubjects(newItems);
+        
+        const newPage = res.data.page;
+        const newTotal = res.data.total;
+        setPage(newPage);
+        setTotal(newTotal);
+        setHasMore(newItems.length < newTotal);
+      }
     } catch (error) {
       console.error("Lỗi khi tải danh sách tài liệu:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, []);
+
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchSubjects(page + 1, true);
+    }
+  }, [loadingMore, hasMore, page, fetchSubjects]);
 
   useFocusEffect(
     useCallback(() => {
       fetchSubjects();
-    }, [])
+    }, [fetchSubjects])
   );
 
   if (loading) {
@@ -125,7 +174,9 @@ const CoachSubjectScreen = () => {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Tài liệu của tôi</Text>
-          <Text style={styles.subheader}>{subjects.length} tài liệu</Text>
+          <Text style={styles.subheader}>
+            {`${total} tài liệu`}
+          </Text>
         </View>
 
         <View style={{ width: 32 }} />
@@ -161,14 +212,13 @@ const CoachSubjectScreen = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           style={styles.listContainer}
           contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {subjects.map((subject) => (
+          data={subjects}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item: subject }) => (
             <TouchableOpacity
-              key={subject.id}
               style={styles.subjectCard}
               onPress={() =>
                 router.push({
@@ -223,7 +273,11 @@ const CoachSubjectScreen = () => {
                   onPress={() => handleOpenMenu(subject)}
                   hitSlop={8}
                 >
-                  <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+                  <Ionicons
+                    name="ellipsis-vertical"
+                    size={20}
+                    color="#6B7280"
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -232,8 +286,19 @@ const CoachSubjectScreen = () => {
                 {subject.description || "Không có mô tả cho tài liệu này"}
               </Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.loadMoreContainer}>
+                <ActivityIndicator size="small" color="#059669" />
+                <Text style={styles.loadMoreText}>Đang tải thêm...</Text>
+              </View>
+            ) : null
+          }
+          showsVerticalScrollIndicator={false}
+        />
       )}
 
       {/* Context Menu Modal */}
@@ -307,7 +372,9 @@ const CoachSubjectScreen = () => {
               style={[styles.actionButton, styles.deleteButton]}
               activeOpacity={0.7}
             >
-              <View style={[styles.actionButtonIcon, styles.deleteIconContainer]}>
+              <View
+                style={[styles.actionButtonIcon, styles.deleteIconContainer]}
+              >
                 <Ionicons name="trash" size={20} color="#EF4444" />
               </View>
               <View style={{ flex: 1 }}>
@@ -510,6 +577,17 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
+    color: "#6B7280",
+  },
+  loadMoreContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 13,
     color: "#6B7280",
   },
   modalContainer: {

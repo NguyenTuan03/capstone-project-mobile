@@ -1,5 +1,4 @@
 import { AxiosRequestConfig, AxiosResponse } from "axios";
-
 import http from "@/services/http/interceptor";
 
 export const get = async <T = unknown>(
@@ -16,10 +15,17 @@ export const post = async <T = any>(
   option: AxiosRequestConfig = {}
 ): Promise<AxiosResponse<T>> => {
   try {
+    const isFormData = data && typeof data === "object" && "_parts" in data;
+
+    if (isFormData && option.headers) {
+      const { "Content-Type": _, ...restHeaders } = option.headers as any;
+      option.headers = restHeaders;
+    }
+
     const res: AxiosResponse<T> = await http.post(url, data, option);
     return res;
   } catch (err) {
-    console.error("Error in post()", err);
+    console.error("Error in post():", err);
     throw err;
   }
 };
@@ -50,7 +56,9 @@ export const patch = async <T = unknown>(
     const res: AxiosResponse<T> = await http.patch(url, data, option);
     return res;
   } catch (err) {
-    console.error("Error in patch()", err);
+    console.error("Error in patch():", err);
     throw err;
   }
 };
+
+export default http;

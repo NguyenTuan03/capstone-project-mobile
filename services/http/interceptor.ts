@@ -4,9 +4,6 @@ import { router } from "expo-router";
 
 const http = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_BASE_URL,
-  // headers: {
-  //     "Content-Type": "application/json",
-  // },
 });
 
 http.interceptors.request.use(async (config) => {
@@ -14,6 +11,38 @@ http.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  const isFormData =
+    config.data && typeof config.data === "object" && "_parts" in config.data;
+
+  if (isFormData) {
+    delete config.headers["Content-Type"];
+
+    if (config.headers.common) {
+      delete config.headers.common["Content-Type"];
+    }
+
+    if (config.headers.post) {
+      delete config.headers.post["Content-Type"];
+    }
+
+    config.transformRequest = [(data) => data];
+
+    console.log("🔧 FormData detected - Content-Type removed");
+  }
+
+  // Add ngrok header if using ngrok URL
+  if (config.baseURL?.includes("ngrok")) {
+    config.headers["ngrok-skip-browser-warning"] = "true";
+  }
+
+  console.log("🚀 Request:", {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    isFormData,
+    headers: config.headers,
+  });
+
   return config;
 });
 
@@ -30,9 +59,20 @@ const onRefreshed = (newToken: string) => {
 };
 
 http.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("✅ Response:", response.status, response.config.url);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+
+    // Log error details
+    console.error("❌ Response Error:", {
+      status: error.response?.status,
+      message: error.message,
+      url: originalRequest?.url,
+      response: error.request?._response,
+    });
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
