@@ -1,8 +1,15 @@
-import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { Course } from "@/types/course";
+import {
+  formatPrice,
+  formatSchedule,
+  getLevelColor,
+  getLevelLabel,
+  getStatusColor,
+  getStatusLabel,
+} from "@/utils/courseUtilFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -10,8 +17,10 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Image,
   ScrollView,
   StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -55,7 +64,7 @@ export default function CoachCourseScreen() {
 
         const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=createdBy.id_eq_${user?.id}`;
         const res = await get<CoursesResponse>(url);
-
+        console.log('a====',res.data.items);
         if (append) {
           setCourses((prev) => [...prev, ...(res.data.items || [])]);
         } else {
@@ -97,78 +106,6 @@ export default function CoachCourseScreen() {
       fetchPlatformFee();
     }, [fetchCourses])
   );
-
-  const formatPrice = (price: string) => {
-    const numPrice = parseFloat(price);
-    if (isNaN(numPrice)) return price;
-    return new Intl.NumberFormat("vi-VN").format(numPrice) + "đ";
-  };
-
-  const formatSchedule = (schedules: Course["schedules"]) => {
-    if (!schedules || schedules.length === 0) return "Chưa có lịch";
-
-    return schedules
-      .map((schedule) => {
-        const dayIndex = [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-          "Sunday",
-        ].indexOf(schedule.dayOfWeek);
-        const dayName =
-          dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : schedule.dayOfWeek;
-        const startTime = schedule.startTime.substring(0, 5);
-        const endTime = schedule.endTime.substring(0, 5);
-        return `${dayName}: ${startTime}-${endTime}`;
-      })
-      .join(", ");
-  };
-
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      APPROVED: "Đã duyệt",
-      PENDING_APPROVAL: "Chờ duyệt",
-      REJECTED: "Đã từ chối",
-      COMPLETED: "Đã hoàn thành",
-      ON_GOING: "Đang diễn ra",
-      CANCELLED: "Đã hủy",
-      FULL:'Đủ học viên'
-    };
-    return statusMap[status] || status;
-  };
-
-
-
-  const getStatusColor = (status: string) => {
-    const colorMap: Record<string, { bg: string; text: string }> = {
-      APPROVED: { bg: "#D1FAE5", text: "#059669" },
-      PENDING_APPROVAL: { bg: "#FEF3C7", text: "#D97706" },
-      REJECTED: { bg: "#FEE2E2", text: "#DC2626" },
-      COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
-    };
-    return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
-  };
-
-  const getLevelLabel = (level?: string) => {
-    const levelMap: Record<string, string> = {
-      BEGINNER: "Cơ bản",
-      INTERMEDIATE: "Trung cấp",
-      ADVANCED: "Nâng cao",
-    };
-    return levelMap[level ?? ""] ?? level ?? "";
-  };
-
-  const getLevelColor = (level?: string) => {
-    const colorMap: Record<string, { bg: string; text: string }> = {
-      BEGINNER: { bg: "#DBEAFE", text: "#0284C7" },
-      INTERMEDIATE: { bg: "#FCD34D", text: "#92400E" },
-      ADVANCED: { bg: "#DDD6FE", text: "#4F46E5" },
-    };
-    return colorMap[level ?? ""] || { bg: "#F3F4F6", text: "#6B7280" };
-  };
 
   const filteredCourses =
     activeTab === "all"
@@ -616,6 +553,24 @@ export default function CoachCourseScreen() {
                       } as any)
                     }
                   >
+                    {course.publicUrl ? (
+                      <Image
+                        source={{ uri: course.publicUrl }}
+                        style={styles.courseImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.courseImagePlaceholder}>
+                        <Ionicons
+                          name="image-outline"
+                          size={18}
+                          color="#9CA3AF"
+                        />
+                        <Text style={styles.courseImagePlaceholderText}>
+                          Chưa có ảnh khóa học
+                        </Text>
+                      </View>
+                    )}
                     <View style={{ marginBottom: 10 }}>
                       <Text
                         style={{
@@ -900,3 +855,31 @@ export default function CoachCourseScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  courseImage: {
+    width: "100%",
+    height: 170,
+    borderRadius: 10,
+    marginBottom: 10,
+    backgroundColor: "#E5E7EB",
+  },
+  courseImagePlaceholder: {
+    width: "100%",
+    height: 170,
+    borderRadius: 10,
+    marginBottom: 10,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  courseImagePlaceholderText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+});
