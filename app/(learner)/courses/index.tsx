@@ -329,20 +329,14 @@ export default function CoursesScreen() {
       const filters: string[] = ["status_eq_APPROVED"];
       
       // Auto-filter: courses with unpaid enrollments for current user
-      if (currentUserId) {
-        filters.push(`enrollments.status_eq_UNPAID`);
-        filters.push(`enrollments.user_id_eq_${currentUserId}`);
-      }
-      
-      if (selectedProvince) {
-        filters.push(`court.province.id_eq_${selectedProvince.id}`);
-      }
-      if (selectedDistrict) {
-        filters.push(`court.district.id_eq_${selectedDistrict.id}`);
-      }
+      // if (currentUserId) {
+      //   filters.push(`enrollments.status_eq_UNPAID`);
+      //   filters.push(`enrollments.user_id_eq_${currentUserId}`);
+      // }
+
 
       const filterQuery = filters.join(",");
-      const url = `/v1/courses?page=${pageNum}&pageSize=${pageSize}&filter=${filterQuery}`;
+      const url = `/v1/courses/available?page=${pageNum}&size=${pageSize}&${selectedProvince?`province=${selectedProvince.id}&`:``}${selectedDistrict?`district=${selectedDistrict.id}&`:``}`
       const res = await get<CoursesResponse>(url);
 
       const newCourses = res.data.items || [];

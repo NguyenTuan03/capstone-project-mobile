@@ -75,11 +75,7 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
               onPress={onClose}
               activeOpacity={0.6}
             >
-              <MaterialCommunityIcons
-                name="close"
-                size={20}
-                color="#FFFFFF"
-              />
+              <MaterialCommunityIcons name="close" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
@@ -127,9 +123,7 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
                   size={32}
                   color="#EF4444"
                 />
-                <Text style={styles.errorText}>
-                  Không thể tải video
-                </Text>
+                <Text style={styles.errorText}>Không thể tải video</Text>
               </View>
             )}
           </View>
@@ -141,11 +135,7 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons
-                name="check"
-                size={18}
-                color="#FFFFFF"
-              />
+              <MaterialCommunityIcons name="check" size={18} color="#FFFFFF" />
               <Text style={styles.modalFooterButtonText}>Đã hiểu</Text>
             </TouchableOpacity>
           </View>
@@ -322,4 +312,3 @@ const styles = StyleSheet.create({
 });
 
 export default OverlayVideoModal;
-
