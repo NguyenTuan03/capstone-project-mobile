@@ -58,7 +58,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         [quizzes.length, videos.length]
       );
 
-
     const handlePickVideo = async () => {
       try {
         const { status } =
@@ -92,6 +91,16 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         console.error("Lỗi khi chọn video:", err);
         Alert.alert("Lỗi", "Không thể chọn video. Vui lòng thử lại.");
       }
+    };
+
+    const handleVideoCapture = (video: { uri: string; name: string; duration?: number }) => {
+      // Update parent localVideo state with captured video including duration
+      setLocalVideo({
+        uri: video.uri,
+        name: video.name,
+        duration: video.duration,
+        uploaded: false,
+      });
     };
 
     // UPDATED: Load both submitted video and overlayVideoUrl
@@ -179,31 +188,43 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     }, [sessionId]);
 
     const handleUploadVideo = async (coachVideoId: number) => {
+      console.log(
+        "🔍 handleUploadVideo called with coachVideoId:",
+        coachVideoId
+      );
       if (!localVideo) return;
 
-      if (!localVideo.duration) {
-        Alert.alert("Lỗi", "Vui lòng chọn video có thông tin độ dài");
-        return;
-      }
+      console.log("🔍 Local video to upload:", JSON.stringify(localVideo));
 
       setIsUploading(true);
       try {
         const fd = new FormData();
 
+        // Ensure URI has file:// prefix
+        const videoUri = localVideo.uri.startsWith("file://")
+          ? localVideo.uri
+          : `file://${localVideo.uri}`;
+
+        // Ensure filename ends with .mp4
+        const videoName = localVideo.name?.endsWith(".mp4")
+          ? localVideo.name
+          : `${localVideo.name || "video"}.mp4`;
+
         fd.append("video", {
-          uri: localVideo.uri.startsWith("file://")
-            ? localVideo.uri
-            : localVideo.uri,
+          uri: videoUri,
           type: "video/mp4",
-          name: localVideo.name?.endsWith(".mp4")
-            ? localVideo.name
-            : "video.mp4",
+          name: videoName,
         } as any);
 
         fd.append("coachVideoId", String(coachVideoId));
         fd.append("sessionId", String(lessonId));
-        if (localVideo.duration != null)
+
+        // Only append duration if available (captured videos may not have it)
+        if (localVideo.duration != null) {
           fd.append("duration", String(Math.round(localVideo.duration)));
+        }
+
+        // Append tags if available
         if (localVideo.tags && localVideo.tags.length > 0) {
           fd.append("tags", JSON.stringify(localVideo.tags));
         }
@@ -211,6 +232,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         await http.post("/v1/learner-videos", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+
         Alert.alert("Thành công", "Video đã được upload thành công!");
         setLocalVideo((prev) => (prev ? { ...prev, uploaded: true } : null));
         await loadSubmittedVideo();
@@ -425,8 +447,12 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
               onViewOverlay={handleViewOverlay}
               onPickVideo={handlePickVideo}
               onUploadVideo={handleUploadVideo}
+              onVideoCapture={handleVideoCapture}
               isUploading={isUploading}
               coachVideoId={videos.length > 0 ? videos[0].id : undefined}
+              coachVideoDuration={
+                videos.length > 0 ? videos[0].duration : undefined
+              }
             />
           ) : (
             renderQuizzes(quizzes)
