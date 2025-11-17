@@ -4,6 +4,12 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, View } from "react-native";
 
+type CourseImagePayload = {
+  uri: string;
+  fileName?: string;
+  mimeType?: string;
+};
+
 export default function CreateCourseScreen() {
   const [modalVisible, setModalVisible] = useState(true);
 
@@ -16,12 +22,35 @@ export default function CreateCourseScreen() {
     startDate: string;
     court?: number | undefined;
     schedules?: any[];
+    courseImage?: CourseImagePayload;
   }) => {
     try {
-      // Tách subjectId ra khỏi payload vì nó đã có trong URL
-      const { subjectId, ...payload } = data;
+      const { subjectId, courseImage, ...payload } = data;
 
-      await post(`/v1/courses/subjects/${subjectId}`, payload);
+      if (courseImage) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+          if (Array.isArray(value) || typeof value === "object") {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        formData.append("course_image", {
+          uri: courseImage.uri,
+          name:
+            courseImage.fileName ||
+            courseImage.uri.split("/").pop() ||
+            `course_${Date.now()}.jpg`,
+          type: courseImage.mimeType || "image/jpeg",
+        } as any);
+
+        await post(`/v1/courses/subjects/${subjectId}`, formData);
+      } else {
+        await post(`/v1/courses/subjects/${subjectId}`, payload);
+      }
       Alert.alert("Thành công", "Tạo khóa học thành công!", [
         {
           text: "OK",
