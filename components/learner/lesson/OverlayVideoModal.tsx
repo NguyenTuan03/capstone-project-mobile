@@ -1,16 +1,16 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEvent } from "expo";
-import type { PlayerError } from "expo-video";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useEffect } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import LessonVideoPlayer from "./LessonVideoPlayer";
 
@@ -47,8 +47,6 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
     status: overlayVideoPlayer.status,
   });
   const overlayStatus = overlayStatusEvent?.status ?? overlayVideoPlayer.status;
-  const overlayPlayerError: PlayerError | undefined =
-    overlayStatusEvent?.error ?? undefined;
   const isOverlayLoading = overlayStatus === "loading";
 
   return (
@@ -60,17 +58,32 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
+          {/* Modern Header */}
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>📊 Video So Sánh với Coach</Text>
+            <View style={styles.headerTitleRow}>
+              <MaterialCommunityIcons
+                name="compare"
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.modalTitle} numberOfLines={1}>
+                Video So Sánh
+              </Text>
+            </View>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={onClose}
-              activeOpacity={0.7}
+              activeOpacity={0.6}
             >
-              <Text style={styles.modalCloseButtonText}>✕</Text>
+              <MaterialCommunityIcons
+                name="close"
+                size={20}
+                color="#FFFFFF"
+              />
             </TouchableOpacity>
           </View>
 
+          {/* Content */}
           <ScrollView
             style={styles.modalContent}
             contentContainerStyle={styles.modalContentContainer}
@@ -78,18 +91,25 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
             {overlayVideoUrl && (
               <View style={styles.modalVideoWrapper}>
                 <LessonVideoPlayer source={overlayVideoUrl} />
-                <Text style={styles.modalVideoDescription}>
-                  Video này là kết quả so sánh giữa kỹ thuật của bạn và coach.
-                  Video của bạn được hiển thị với độ mờ 50% chồng lên video mẫu
-                  của coach.
-                </Text>
+                <View style={styles.infoBox}>
+                  <MaterialCommunityIcons
+                    name="information-outline"
+                    size={16}
+                    color="#0891B2"
+                  />
+                  <Text style={styles.modalVideoDescription}>
+                    Kỹ thuật của bạn (mờ) so sánh với video mẫu
+                  </Text>
+                </View>
               </View>
             )}
           </ScrollView>
+
+          {/* Video Player */}
           <View style={styles.modalVideoContainer}>
             {isOverlayLoading && (
               <View style={styles.videoLoadingOverlay}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
+                <ActivityIndicator size="large" color="#059669" />
                 <Text style={styles.videoLoadingText}>Đang tải video...</Text>
               </View>
             )}
@@ -102,20 +122,31 @@ const OverlayVideoModal: React.FC<OverlayVideoModalProps> = ({
             />
             {overlayStatus === "error" && (
               <View style={styles.videoErrorOverlay}>
+                <MaterialCommunityIcons
+                  name="alert-circle-outline"
+                  size={32}
+                  color="#EF4444"
+                />
                 <Text style={styles.errorText}>
-                  Không phát được video:{" "}
-                  {String(overlayPlayerError ?? "Unknown")}
+                  Không thể tải video
                 </Text>
               </View>
             )}
           </View>
+
+          {/* Modern Footer */}
           <View style={styles.modalFooter}>
             <TouchableOpacity
               style={styles.modalFooterButton}
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Text style={styles.modalFooterButtonText}>Đóng</Text>
+              <MaterialCommunityIcons
+                name="check"
+                size={18}
+                color="#FFFFFF"
+              />
+              <Text style={styles.modalFooterButtonText}>Đã hiểu</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -135,22 +166,27 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.95,
     maxHeight: SCREEN_HEIGHT * 0.9,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     backgroundColor: "#059669",
-    borderBottomWidth: 1,
-    borderBottomColor: "#047857",
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
   },
   modalTitle: {
     fontSize: 16,
@@ -159,55 +195,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalCloseButtonText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   modalContent: {
     flex: 1,
   },
   modalContentContainer: {
-    padding: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   modalVideoWrapper: {
-    gap: 12,
+    gap: 8,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#ECFDF5",
+    borderLeftWidth: 4,
+    borderLeftColor: "#0891B2",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 6,
   },
   modalVideoDescription: {
-    fontSize: 13,
-    color: "#6B7280",
-    lineHeight: 18,
-    textAlign: "center",
-    paddingHorizontal: 8,
+    fontSize: 12,
+    color: "#0891B2",
+    lineHeight: 16,
+    flex: 1,
+    fontWeight: "500",
   },
   modalVideoContainer: {
-    marginTop: 9,
-    marginHorizontal: 16,
-    marginBottom: 9,
-    gap: 8,
-    padding: 8,
-    borderRadius: 9,
+    marginVertical: 8,
+    marginHorizontal: 12,
+    gap: 6,
+    padding: 6,
+    borderRadius: 8,
     backgroundColor: "#1F2937",
     borderWidth: 1,
     borderColor: "#374151",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
     position: "relative",
   },
   videoPlayer: {
     width: "100%",
     aspectRatio: 16 / 9,
-    borderRadius: 6,
+    borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#000000",
   },
@@ -217,7 +261,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
@@ -227,7 +271,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "500",
-    marginTop: 8,
+    marginTop: 4,
   },
   videoErrorOverlay: {
     position: "absolute",
@@ -239,36 +283,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
-    padding: 16,
+    gap: 8,
   },
   errorText: {
-    fontSize: 12,
-    color: "#DC2626",
+    fontSize: 13,
+    color: "#FFFFFF",
     textAlign: "center",
+    fontWeight: "500",
   },
   modalFooter: {
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
     backgroundColor: "#F9FAFB",
   },
   modalFooterButton: {
     backgroundColor: "#059669",
-    paddingVertical: 14,
+    flexDirection: "row",
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 3,
-    elevation: 3,
+    elevation: 2,
   },
   modalFooterButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 });
 

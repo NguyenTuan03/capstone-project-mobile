@@ -31,8 +31,10 @@ interface VideoListProps {
   onViewOverlay: () => void;
   onPickVideo: () => void;
   onUploadVideo: (coachVideoId: number) => void;
+  onVideoCapture?: (video: { uri: string; name: string; duration?: number }) => void;
   isUploading: boolean;
   coachVideoId?: number;
+  coachVideoDuration?: number;
 }
 
 const VideoList: React.FC<VideoListProps> = ({
@@ -47,8 +49,10 @@ const VideoList: React.FC<VideoListProps> = ({
   onViewOverlay,
   onPickVideo,
   onUploadVideo,
+  onVideoCapture,
   isUploading,
   coachVideoId,
+  coachVideoDuration,
 }) => {
   return (
     <>
@@ -67,14 +71,14 @@ const VideoList: React.FC<VideoListProps> = ({
         isUploading={isUploading}
         hasCoachVideo={videos.length > 0}
         coachVideoId={coachVideoId}
+        coachVideoDuration={coachVideoDuration}
         onPickVideo={onPickVideo}
         onUploadVideo={onUploadVideo}
+        onVideoCapture={onVideoCapture}
       />
 
       {videos.length === 0 && !localVideo && (
-        <Text style={styles.emptyText}>
-          Chưa có video nào cho bài học này.
-        </Text>
+        <Text style={styles.emptyText}>Chưa có video nào cho bài học này.</Text>
       )}
 
       {videos.map((video) => (
@@ -97,4 +101,3 @@ const styles = StyleSheet.create({
 });
 
 export default VideoList;
-
