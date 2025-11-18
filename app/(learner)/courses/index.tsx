@@ -181,15 +181,7 @@ export default function CoursesScreen() {
           setCurrentUserId(userId);
         }
 
-        // Xử lý cả 2 trường hợp: có metadata wrapper hoặc chỉ user object
-        let learner = null;
-        if (userData?.metadata?.user?.learner?.[0]) {
-          learner = userData.metadata.user.learner[0];
-        } else if (userData?.learner?.[0]) {
-          learner = userData.learner[0];
-        }
-
-        if (learner?.province && learner?.district) {
+        if (userData?.province && userData?.district) {
           // Fetch provinces first if not already cached
           let provincesList = provinces;
           if (provincesList.length === 0) {
@@ -198,7 +190,7 @@ export default function CoursesScreen() {
           }
 
           const userProvince = provincesList.find(
-            (p) => p.id === learner.province.id
+            (p) => p.id === userData.province.id
           );
           if (userProvince) {
             setSelectedProvince(userProvince);
@@ -209,7 +201,7 @@ export default function CoursesScreen() {
             const districtsList = districtsRes.data || [];
 
             const userDistrict = districtsList.find(
-              (d) => d.id === learner.district.id
+              (d) => d.id === userData.district.id
             );
             if (userDistrict) {
               setSelectedDistrict(userDistrict);

@@ -1,28 +1,23 @@
-import { LocationSelector } from "@/components/common/LocationSelector";
 import { formStyles } from "@/components/common/formStyles";
 import { PickleballLevel } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
   skillLevel: PickleballLevel | "";
   learningGoal: PickleballLevel | "";
-  province: number | null;
-  district: number | null;
   fieldErrors: Record<string, string>;
   submitting: boolean;
   onSkillLevelChange: (value: PickleballLevel) => void;
   onLearningGoalChange: (value: PickleballLevel) => void;
-  onProvinceChange: (value: number | null) => void;
-  onDistrictChange: (value: number | null) => void;
   onClearError: (field: string) => void;
   onBack: () => void;
   onSubmit: () => void;
@@ -43,14 +38,10 @@ const LEARNING_GOALS = [
 export const RegistrationStep2Learner = ({
   skillLevel,
   learningGoal,
-  province,
-  district,
   fieldErrors,
   submitting,
   onSkillLevelChange,
   onLearningGoalChange,
-  onProvinceChange,
-  onDistrictChange,
   onClearError,
   onBack,
   onSubmit,
@@ -138,17 +129,6 @@ export const RegistrationStep2Learner = ({
           </Text>
         ) : null}
       </View>
-
-      {/* Location */}
-      <LocationSelector
-        provinceId={province?.toString() || ""}
-        districtId={district?.toString() || ""}
-        onProvinceChange={(id) => onProvinceChange(id ? Number(id) : null)}
-        onDistrictChange={(id) => onDistrictChange(id ? Number(id) : null)}
-        provinceError={fieldErrors.province}
-        districtError={fieldErrors.district}
-        onClearError={(field) => onClearError(field)}
-      />
 
       {/* Buttons */}
       <View style={formStyles.buttonRow}>

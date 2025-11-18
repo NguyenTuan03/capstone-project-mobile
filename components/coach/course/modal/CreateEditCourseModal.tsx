@@ -11,8 +11,9 @@ import { Court } from "@/types/court";
 import { Subject } from "@/types/subject";
 import { formatPrice } from "@/utils/priceFormat";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,7 +24,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -145,6 +146,46 @@ export default function CreateEditCourseModal({
   const [selectedStartTime, setSelectedStartTime] = useState<Date>(new Date());
   const [selectedEndTime, setSelectedEndTime] = useState<Date>(new Date());
 
+  const loadUserLocation = useCallback(async () => {
+    try {
+      const userString = await AsyncStorage.getItem("user");
+      if (userString) {
+        const userData = JSON.parse(userString);
+
+        if (userData?.province && userData?.district) {
+          // Fetch provinces first if not already cached
+          let provincesList = provinces;
+          if (provincesList.length === 0) {
+            const res = await get<Province[]>("/v1/provinces");
+            provincesList = res.data || [];
+          }
+
+          const userProvince = provincesList.find(
+            (p) => p.id === userData.province.id
+          );
+          if (userProvince) {
+            setSelectedProvince(userProvince);
+            // Fetch districts for this province
+            const districtsRes = await get<District[]>(
+              `/v1/provinces/${userProvince.id}/districts`
+            );
+            const districtsList = districtsRes.data || [];
+
+            const userDistrict = districtsList.find(
+              (d) => d.id === userData.district.id
+            );
+            if (userDistrict) {
+              setSelectedDistrict(userDistrict);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load user location:", error);
+    }
+     
+  }, [provinces]);
+
   useEffect(() => {
     if (visible) {
       fetchSubjects();
@@ -171,6 +212,8 @@ export default function CreateEditCourseModal({
         setSelectedProvince(null);
         setSelectedDistrict(null);
         setSchedules([]);
+        // Load user location as default for create mode
+        loadUserLocation();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,17 +238,6 @@ export default function CreateEditCourseModal({
       setMaxParticipants("1");
     }
   }, [learningFormat]);
-
-  // Fetch courts when province or district changes
-  useEffect(() => {
-    if (selectedProvince || selectedDistrict) {
-      fetchCourtsByLocation(selectedProvince?.id, selectedDistrict?.id);
-    } else {
-      setCourts([]);
-    }
-    // Clear court when district changes
-    setSelectedCourt(null);
-  }, [selectedProvince, selectedDistrict]);
 
   useEffect(() => {
     fetchCoachAvailableSchedules();
@@ -291,24 +323,33 @@ export default function CreateEditCourseModal({
     }
   };
 
-  const fetchCourtsByLocation = async (
-    provinceId?: number,
-    districtId?: number
-  ) => {
-    try {
-      setLoadingCourts(true);
-      const res = await courtService.getCourtsByLocation(
-        provinceId,
-        districtId
-      );
+  const fetchCourtsByLocation = useCallback(
+    async (
+      provinceId?: number,
+      districtId?: number,
+      autoSelectFirst: boolean = false
+    ) => {
+      try {
+        setLoadingCourts(true);
+        const res = await courtService.getCourtsByLocation(
+          provinceId,
+          districtId
+        );
 
-      setCourts(res || []);
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách sân:", error);
-    } finally {
-      setLoadingCourts(false);
-    }
-  };
+        setCourts(res || []);
+
+        // Auto-select first court if in create mode and no court is already selected
+        if (autoSelectFirst && (res && res.length > 0) && !selectedCourt) {
+          setSelectedCourt(res[0]);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách sân:", error);
+      } finally {
+        setLoadingCourts(false);
+      }
+    },
+    [selectedCourt]
+  );
 
   const fetchCoachAvailableSchedules = async () => {
     setLoadingAvailableSchedules(true);
@@ -326,6 +367,21 @@ export default function CreateEditCourseModal({
       setLoadingAvailableSchedules(false);
     }
   };
+
+  // Fetch courts when province or district changes
+  useEffect(() => {
+    if (selectedProvince || selectedDistrict) {
+      // Auto-select first court only in create mode (when initialData is not provided)
+      const isCreateMode = !initialData;
+      fetchCourtsByLocation(selectedProvince?.id, selectedDistrict?.id, isCreateMode);
+    } else {
+      setCourts([]);
+    }
+    // Clear court when district changes (only in edit mode to preserve existing selection)
+    if (initialData) {
+      setSelectedCourt(null);
+    }
+  }, [selectedProvince, selectedDistrict, fetchCourtsByLocation, initialData]);
 
   const handleAddSchedule = () => {
     setTempSchedule({
@@ -775,6 +831,25 @@ export default function CreateEditCourseModal({
                         <Text style={styles.datePickerTitle}>Chọn ngày</Text>
                         <TouchableOpacity
                           onPress={() => {
+                            // Calculate minimum allowed date
+                            const minAllowedDate = new Date(
+                              new Date().getTime() +
+                                (courseStartDateAfterDaysFromNow || 0) *
+                                  24 *
+                                  60 *
+                                  60 *
+                                  1000
+                            );
+
+                            // Validate selected date
+                            if (selectedDate < minAllowedDate) {
+                              Alert.alert(
+                                "Ngày không hợp lệ",
+                                `Ngày bắt đầu phải cách ít nhất ${courseStartDateAfterDaysFromNow} ngày từ hôm nay.`
+                              );
+                              return;
+                            }
+
                             const formattedDate = selectedDate
                               .toISOString()
                               .split("T")[0];
@@ -797,7 +872,16 @@ export default function CreateEditCourseModal({
                             setSelectedDate(date);
                           }
                         }}
-                        minimumDate={new Date()}
+                        minimumDate={
+                          new Date(
+                            new Date().getTime() +
+                              (courseStartDateAfterDaysFromNow || 0) *
+                                24 *
+                                60 *
+                                60 *
+                                1000
+                          )
+                        }
                         textColor="#111827"
                         accentColor="#059669"
                         themeVariant="light"
@@ -819,7 +903,16 @@ export default function CreateEditCourseModal({
                       setStartDate(formattedDate);
                     }
                   }}
-                  minimumDate={new Date()}
+                  minimumDate={
+                    new Date(
+                      new Date().getTime() +
+                        (courseStartDateAfterDaysFromNow || 0) *
+                          24 *
+                          60 *
+                          60 *
+                          1000
+                    )
+                  }
                 />
               )}
             </View>

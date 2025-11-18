@@ -169,14 +169,14 @@ export default function ProfileScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Tỉnh/Thành</Text>
                   <Text style={styles.detailValue}>
-                    {user.learner[0].province?.name || "N/A"}
+                    {user?.province?.name || "N/A"}
                   </Text>
                 </View>
                 <View style={styles.detailDivider} />
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Quận/Huyện</Text>
                   <Text style={styles.detailValue}>
-                    {user.learner[0].district?.name || "N/A"}
+                    {user?.district?.name || "N/A"}
                   </Text>
                 </View>
               </View>
