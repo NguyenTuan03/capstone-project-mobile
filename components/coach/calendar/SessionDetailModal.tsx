@@ -2,9 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  DevSettings,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,6 +24,7 @@ export enum EnrollmentStatus {
   REFUNDED = "REFUNDED",
   UNPAID = "UNPAID",
   CANCELLED = "CANCELLED",
+  DONE = "DONE",
 }
 
 interface SessionDetailModalProps {
@@ -268,11 +267,6 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
 
   // Extract location information
   const course = sessionData.course as any;
-  const address = course?.address || "Chưa cập nhật";
-  const provinceName = course?.province?.name || "";
-  const districtName = course?.district?.name || "";
-  const fullAddress =
-    [address, districtName, provinceName].filter(Boolean).join(", ") || address;
 
   return (
     <Modal
@@ -375,7 +369,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               <Text style={styles.sectionTitle}>Địa điểm</Text>
             </View>
             <View style={styles.sectionContent}>
-              <Text style={styles.locationText}>{fullAddress}</Text>
+              <Text style={styles.locationText}>{course.court.address}</Text>
             </View>
           </View>
 
@@ -449,6 +443,8 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                                   : enrollment.status ===
                                     EnrollmentStatus.CANCELLED
                                   ? "#EF4444"
+                                  : enrollment.status === EnrollmentStatus.DONE
+                                  ? "#10B981"
                                   : "#6B7280",
                             },
                           ]}
@@ -467,6 +463,8 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                             ? "Đã hoàn tiền"
                             : enrollment.status === EnrollmentStatus.CANCELLED
                             ? "Đã hủy"
+                            : enrollment.status === EnrollmentStatus.DONE
+                            ? "Hoàn thành"
                             : "Không xác định"}
                         </Text>
                       </View>

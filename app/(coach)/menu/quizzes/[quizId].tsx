@@ -1,4 +1,5 @@
 import { get, post } from "@/services/http/httpService";
+import http from "@/services/http/interceptor";
 import { QuizType } from "@/types/quiz";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -38,6 +39,20 @@ export default function QuizDetailScreen() {
     { id: 1, content: "", isCorrect: false },
     { id: 2, content: "", isCorrect: false },
   ]);
+
+  // Quiz editing state
+  const [showEditQuiz, setShowEditQuiz] = useState(false);
+  const [editQuizTitle, setEditQuizTitle] = useState("");
+  const [editQuizDescription, setEditQuizDescription] = useState("");
+
+  // Question editing state
+  const [editingQuestion, setEditingQuestion] = useState<any | null>(null);
+  const [showEditQuestion, setShowEditQuestion] = useState(false);
+  const [editQuestionTitle, setEditQuestionTitle] = useState("");
+  const [editExplanation, setEditExplanation] = useState("");
+  const [editOptions, setEditOptions] = useState<
+    { id: number | string; content: string; isCorrect: boolean }[]
+  >([]);
 
   const fetchDataQuiz = async (lessonId: string, quizId: string) => {
     try {
@@ -155,6 +170,190 @@ export default function QuizDetailScreen() {
     }
   };
 
+  // Quiz editing handlers
+  const handleOpenEditQuiz = () => {
+    if (quiz) {
+      setEditQuizTitle(quiz.title);
+      setEditQuizDescription(quiz.description || "");
+      setShowEditQuiz(true);
+    }
+  };
+
+  const handleSaveQuizEdit = async () => {
+    try {
+      if (!editQuizTitle.trim()) {
+        alert("Vui lòng nhập tên quiz");
+        return;
+      }
+
+      setSubmitting(true);
+
+      const payload = {
+        title: editQuizTitle.trim(),
+        description: editQuizDescription.trim() || null,
+      };
+
+      await http.put(`/v1/quizzes/${quizId}`, payload);
+
+      // Update local state
+      if (quiz) {
+        setQuiz({
+          ...quiz,
+          title: editQuizTitle.trim(),
+          description: editQuizDescription.trim(),
+        });
+      }
+
+      setShowEditQuiz(false);
+      alert("Cập nhật quiz thành công");
+    } catch (error: any) {
+      console.error("Error updating quiz:", error);
+      const errorMessage =
+        error.response?.data?.message || "Không thể cập nhật quiz";
+      alert(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Question editing handlers
+  const handleOpenEditQuestion = (question: any) => {
+    setEditingQuestion(question);
+    setEditQuestionTitle(question.title);
+    setEditExplanation(question.explanation || "");
+    setEditOptions(
+      question.options.map((opt: any) => ({
+        id: opt.id,
+        content: opt.content,
+        isCorrect: opt.isCorrect,
+      }))
+    );
+    setShowEditQuestion(true);
+  };
+
+  const handleUpdateEditOption = (id: number | string, content: string) => {
+    setEditOptions((prev) =>
+      prev.map((opt) => (opt.id === id ? { ...opt, content } : opt))
+    );
+  };
+
+  const handleToggleEditCorrect = (id: number | string) => {
+    setEditOptions((prev) =>
+      prev.map((opt) =>
+        opt.id === id
+          ? { ...opt, isCorrect: !opt.isCorrect }
+          : { ...opt, isCorrect: false }
+      )
+    );
+  };
+
+  const handleAddEditOption = () => {
+    const newOption = {
+      id: Date.now(),
+      content: "",
+      isCorrect: false,
+    };
+    setEditOptions([...editOptions, newOption]);
+  };
+
+  const handleDeleteEditOption = (id: number | string) => {
+    if (editOptions.length > 1) {
+      setEditOptions(editOptions.filter((opt) => opt.id !== id));
+    } else {
+      Alert.alert("Lỗi", "Câu hỏi phải có ít nhất 1 đáp án.");
+    }
+  };
+
+  const handleSaveQuestionEdit = async () => {
+    try {
+      if (!editQuestionTitle.trim()) {
+        alert("Vui lòng nhập câu hỏi");
+        return;
+      }
+
+      const validOptions = editOptions.filter((opt) => opt.content.trim());
+      if (validOptions.length < 2) {
+        alert("Vui lòng nhập ít nhất 2 đáp án");
+        return;
+      }
+
+      const hasCorrectAnswer = validOptions.some((opt) => opt.isCorrect);
+      if (!hasCorrectAnswer) {
+        alert("Vui lòng chọn ít nhất 1 đáp án đúng");
+        return;
+      }
+
+      setSubmitting(true);
+
+      const payload = {
+        title: editQuestionTitle.trim(),
+        explanation: editExplanation.trim() || null,
+        options: validOptions.map((opt) => ({
+          id: opt.id,
+          content: opt.content.trim(),
+          isCorrect: opt.isCorrect,
+        })),
+      };
+
+      await http.put(
+        `/v1/quizzes/${quizId}/questions/${editingQuestion.id}`,
+        payload
+      );
+
+      setShowEditQuestion(false);
+      setEditingQuestion(null);
+      alert("Cập nhật câu hỏi thành công");
+
+      // Refresh quiz data
+      if (lessonId && quizId) {
+        await fetchDataQuiz(lessonId, quizId);
+      }
+    } catch (error: any) {
+      console.error("Error updating question:", error);
+      const errorMessage =
+        error.response?.data?.message || "Không thể cập nhật câu hỏi";
+      alert(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteQuestion = (questionId: number) => {
+    Alert.alert(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa câu hỏi này không?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setSubmitting(true);
+              await http.delete(
+                `/v1/quizzes/questions/${questionId}`
+              );
+
+              alert("Xóa câu hỏi thành công");
+
+              // Refresh quiz data
+              if (lessonId && quizId) {
+                await fetchDataQuiz(lessonId, quizId);
+              }
+            } catch (error: any) {
+              console.error("Error deleting question:", error);
+              const errorMessage =
+                error.response?.data?.message || "Không thể xóa câu hỏi";
+              alert(errorMessage);
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     if (lessonId && quizId) {
       fetchDataQuiz(lessonId, quizId);
@@ -163,8 +362,65 @@ export default function QuizDetailScreen() {
 
   if (loading || !quiz) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#059669" />
+      <View style={[styles.container]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <View style={{ flex: 1, height: 24, backgroundColor: "#E5E7EB", borderRadius: 4, marginHorizontal: 12 }} />
+          <View style={{ width: 32 }} />
+        </View>
+
+        {/* Quiz Info Skeleton */}
+        <View style={styles.quizInfoSection}>
+          <View style={styles.infoCard}>
+            <View style={{ width: 24, height: 24, backgroundColor: "#E5E7EB", borderRadius: 12, marginRight: 12 }} />
+            <View style={{ flex: 1 }}>
+              <View style={{ height: 12, backgroundColor: "#E5E7EB", borderRadius: 4, marginBottom: 6 }} />
+              <View style={{ height: 16, backgroundColor: "#E5E7EB", borderRadius: 4, width: "60%" }} />
+            </View>
+          </View>
+        </View>
+
+        {/* Skeleton Questions */}
+        <ScrollView
+          style={styles.contentContainer}
+          contentContainerStyle={styles.contentPadding}
+          scrollEnabled={false}
+        >
+          {[1, 2, 3].map((index) => (
+            <View key={index} style={styles.questionCard}>
+              {/* Question Header Skeleton */}
+              <View style={styles.questionHeader}>
+                <View style={{ width: 36, height: 36, backgroundColor: "#E5E7EB", borderRadius: 18, marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <View style={{ height: 16, backgroundColor: "#E5E7EB", borderRadius: 4, marginBottom: 8 }} />
+                  <View style={{ height: 14, backgroundColor: "#E5E7EB", borderRadius: 4, width: "80%" }} />
+                </View>
+              </View>
+
+              {/* Options Skeleton */}
+              <View style={styles.optionsContainer}>
+                {[1, 2].map((optIndex) => (
+                  <View key={optIndex} style={styles.optionButton}>
+                    <View style={{ width: 32, height: 32, backgroundColor: "#E5E7EB", borderRadius: 16, marginRight: 12 }} />
+                    <View style={{ flex: 1, height: 14, backgroundColor: "#E5E7EB", borderRadius: 4 }} />
+                  </View>
+                ))}
+              </View>
+
+              {/* Buttons Skeleton */}
+              <View style={styles.questionActions}>
+                <View style={{ flex: 1, height: 36, backgroundColor: "#E5E7EB", borderRadius: 8 }} />
+                <View style={{ flex: 1, height: 36, backgroundColor: "#E5E7EB", borderRadius: 8, marginLeft: 10 }} />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -182,7 +438,12 @@ export default function QuizDetailScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {quiz.title}
         </Text>
-        <View style={{ width: 32 }} />
+        <TouchableOpacity
+          onPress={handleOpenEditQuiz}
+          style={styles.editButton}
+        >
+          <Ionicons name="pencil" size={20} color="#059669" />
+        </TouchableOpacity>
       </View>
 
       {/* Quiz Info */}
@@ -204,7 +465,13 @@ export default function QuizDetailScreen() {
         contentContainerStyle={styles.contentPadding}
         showsVerticalScrollIndicator={false}
       >
-        {quiz.questions.map((question, qIndex) => (
+        {quiz.questions
+          .sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateA - dateB;
+          })
+          .map((question, qIndex) => (
           <View key={question.id} style={styles.questionCard}>
             {/* Question Number and Title */}
             <View style={styles.questionHeader}>
@@ -231,7 +498,13 @@ export default function QuizDetailScreen() {
                   <Text style={styles.emptyOptionsText}>Không có đáp án</Text>
                 </View>
               ) : (
-                question.options.map((option, oIndex) => (
+                question.options
+                  .sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateA - dateB;
+                  })
+                  .map((option, oIndex) => (
                   <View
                     key={option.id}
                     style={[
@@ -262,6 +535,24 @@ export default function QuizDetailScreen() {
                 ))
               )}
             </View>
+
+            {/* Edit/Delete Buttons */}
+            <View style={styles.questionActions}>
+              <TouchableOpacity
+                style={styles.questionActionButton}
+                onPress={() => handleOpenEditQuestion(question)}
+              >
+                <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                <Text style={styles.questionActionButtonText}>Sửa</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.questionActionButton, styles.questionActionButtonDelete]}
+                onPress={() => handleDeleteQuestion(question.id)}
+              >
+                <Ionicons name="trash" size={16} color="#FFFFFF" />
+                <Text style={styles.questionActionButtonText}>Xóa</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -290,7 +581,248 @@ export default function QuizDetailScreen() {
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Create Question Modal */}
+      {/* Edit Quiz Modal */}
+      <Modal
+        visible={showEditQuiz}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditQuiz(false)}
+      >
+        <View style={styles.modalContainer}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setShowEditQuiz(false)}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Sửa Quiz</Text>
+            <View style={{ width: 32 }} />
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={{ paddingBottom: 80 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Quiz Title */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Tên Quiz *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Nhập tên quiz..."
+                placeholderTextColor="#9CA3AF"
+                value={editQuizTitle}
+                onChangeText={setEditQuizTitle}
+              />
+            </View>
+
+            {/* Quiz Description */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Mô tả (tùy chọn)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Nhập mô tả quiz..."
+                placeholderTextColor="#9CA3AF"
+                value={editQuizDescription}
+                onChangeText={setEditQuizDescription}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Submit Button */}
+            <View style={styles.formSection}>
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  (!editQuizTitle.trim() || submitting) &&
+                    styles.submitButtonDisabled,
+                ]}
+                onPress={handleSaveQuizEdit}
+                disabled={!editQuizTitle.trim() || submitting}
+              >
+                {submitting ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.submitButtonText}>Đang lưu...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    <Text style={styles.submitButtonText}>Cập nhật Quiz</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Edit Question Modal */}
+      <Modal
+        visible={showEditQuestion}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setShowEditQuestion(false);
+          setEditingQuestion(null);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowEditQuestion(false);
+                setEditingQuestion(null);
+              }}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Sửa Câu Hỏi</Text>
+            <View style={{ width: 32 }} />
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={{ paddingBottom: 80 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Question Title */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Nội dung câu hỏi *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Nhập câu hỏi..."
+                placeholderTextColor="#9CA3AF"
+                value={editQuestionTitle}
+                onChangeText={setEditQuestionTitle}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Explanation */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Giải thích (tùy chọn)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Nhập lời giải thích..."
+                placeholderTextColor="#9CA3AF"
+                value={editExplanation}
+                onChangeText={setEditExplanation}
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+
+            {/* Options */}
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>Đáp án</Text>
+              {editOptions.map((option, index) => (
+                <View key={option.id} style={styles.optionInputCard}>
+                  <View style={styles.optionLabelBadge}>
+                    <Text style={styles.optionLabelText}>
+                      {String.fromCharCode(65 + index)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.optionInputWrapper}>
+                    <RNTextInput
+                      style={styles.optionTextInputRaw}
+                      placeholder={`Đáp án ${String.fromCharCode(65 + index)}`}
+                      placeholderTextColor="#9CA3AF"
+                      value={option.content}
+                      onChangeText={(text: string) =>
+                        handleUpdateEditOption(option.id, text)
+                      }
+                      multiline
+                    />
+                  </View>
+
+                  <View
+                    style={{
+                      width: 52,
+                      height: 36,
+                      flexShrink: 0,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Switch
+                      value={option.isCorrect}
+                      onValueChange={(val) =>
+                        handleToggleEditCorrect(option.id)
+                      }
+                    />
+                  </View>
+
+                  {editOptions.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteEditOption(option.id)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: 6,
+                        backgroundColor: "#FEE2E2",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Ionicons name="trash" size={20} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+
+              {/* Add Option Button */}
+              <TouchableOpacity
+                onPress={handleAddEditOption}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  backgroundColor: "#E0E7FF",
+                  alignItems: "center",
+                  marginTop: 8,
+                }}
+              >
+                <Text style={{ fontWeight: "600", color: "#4F46E5" }}>
+                  + Thêm đáp án
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Submit Button */}
+            <View style={styles.formSection}>
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  (!editQuestionTitle.trim() || submitting) &&
+                    styles.submitButtonDisabled,
+                ]}
+                onPress={handleSaveQuestionEdit}
+                disabled={!editQuestionTitle.trim() || submitting}
+              >
+                {submitting ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.submitButtonText}>Đang lưu...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    <Text style={styles.submitButtonText}>Cập nhật Câu Hỏi</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
       <Modal
         visible={showCreateQuestion}
         animationType="slide"
@@ -500,6 +1032,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  editButton: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -648,6 +1186,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#9CA3AF",
     fontWeight: "600",
+  },
+  questionActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  questionActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "#059669",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  questionActionButtonDelete: {
+    backgroundColor: "#DC2626",
+  },
+  questionActionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
   },
   // Modal Styles
   modalContainer: {

@@ -113,7 +113,7 @@ export default function ContentScreen() {
         userData.coach.length > 0 &&
         userData.coach[0].id
       ) {
-        loadRating(userData.coach[0].id);
+        loadRating(userData.id);
       }
     } catch (error) {
     }

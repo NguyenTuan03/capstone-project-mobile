@@ -130,6 +130,14 @@ export default function CoursesScreen() {
       const res = await get<Province[]>("/v1/provinces");
       setProvinces(res.data || []);
     } catch (error) {
+      console.error("Failed to fetch provinces:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách tỉnh/thành phố",
+        position: "top",
+        visibilityTime: 3000,
+      });
     } finally {
       setLoadingProvinces(false);
     }
@@ -143,6 +151,14 @@ export default function CoursesScreen() {
       );
       setDistricts(res.data || []);
     } catch (error) {
+      console.error("Failed to fetch districts:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải danh sách quận/huyện",
+        position: "top",
+        visibilityTime: 3000,
+      });
     } finally {
       setLoadingDistricts(false);
     }
@@ -174,11 +190,12 @@ export default function CoursesScreen() {
         }
 
         if (learner?.province && learner?.district) {
-          // Đợi provinces được load xong
-          const provincesList =
-            provinces.length > 0
-              ? provinces
-              : (await get<Province[]>("/v1/provinces")).data || [];
+          // Fetch provinces first if not already cached
+          let provincesList = provinces;
+          if (provincesList.length === 0) {
+            const res = await get<Province[]>("/v1/provinces");
+            provincesList = res.data || [];
+          }
 
           const userProvince = provincesList.find(
             (p) => p.id === learner.province.id
@@ -201,8 +218,10 @@ export default function CoursesScreen() {
         }
       }
     } catch (error) {
+      console.error("Failed to load user location:", error);
     }
-  }, [provinces]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -222,46 +241,41 @@ export default function CoursesScreen() {
     }
   }, [selectedProvince]);
 
-  const fetchCoachRating = async (coachId: number): Promise<number | null> => {
+  const fetchCoachRating = async (coachId: number): Promise<number> => {
     try {
       // API: GET /v1/coaches/:coachId/rating/overall
       const res = await get<{
         statusCode: number;
         message: string;
-        metadata: number;
+        metadata: any;
       }>(`/v1/coaches/${coachId}/rating/overall`);
 
-      // Response structure: { statusCode: 200, message: "Success", metadata: 5 }
+      // Response shapes may vary: metadata can be a number or an object { overall, total }
       const responseData = res?.data;
       if (
         responseData &&
         typeof responseData === "object" &&
         "metadata" in responseData
       ) {
-        const rating = responseData.metadata;
-        if (typeof rating === "number" && rating > 0) {
-          return rating;
+        const metadata = responseData.metadata;
+        if (typeof metadata === "number") {
+          return metadata;
+        }
+        if (metadata && typeof metadata === "object") {
+          // Prefer `overall` field when present
+          if (typeof metadata.overall === "number") {
+            return metadata.overall;
+          }
+          // Fallback: try first numeric value in metadata
+          const numericValues = Object.values(metadata).filter(
+            (v) => typeof v === "number"
+          ) as number[];
+          if (numericValues.length > 0) return numericValues[0];
         }
       }
-      return null;
-    } catch (error) {
-      return null;
-    }
-  };
-
-  const fetchUserCoachId = async (userId: number): Promise<number | null> => {
-    try {
-      const res = await get<{
-        id: number;
-        coach?: { id: number }[] | null;
-      }>(`/v1/users/${userId}`);
-
-      if (res?.data?.coach && res.data.coach.length > 0) {
-        return res.data.coach[0].id;
-      }
-      return null;
+      return 0;
     } catch {
-      return null;
+      return 0;
     }
   };
 
@@ -269,51 +283,26 @@ export default function CoursesScreen() {
     try {
       const uniqueUserIds = [...new Set(userIds)];
 
-      // First, get coach IDs from user IDs
-      // createdBy.id is userId, need to fetch user profile to get coach[0].id
-      const coachIdPromises = uniqueUserIds.map((userId) =>
-        fetchUserCoachId(userId).then((coachId) => ({ userId, coachId }))
-      );
-      const coachIdResults = await Promise.allSettled(coachIdPromises);
-
-      // Map userId -> coachId
-      const userIdToCoachIdMap: Record<number, number> = {};
-      const coachIds: number[] = [];
-
-      coachIdResults.forEach((result) => {
-        if (result.status === "fulfilled" && result.value.coachId !== null) {
-          userIdToCoachIdMap[result.value.userId] = result.value.coachId;
-          coachIds.push(result.value.coachId);
-        }
-      });
-
-      // Then, fetch ratings for all coaches using coach ID
-      // API: GET /v1/coaches/:coachId/rating/overall
-      const ratingPromises = coachIds.map((coachId) =>
-        fetchCoachRating(coachId).then((rating) => ({ coachId, rating }))
+      // Fetch ratings directly using userId (each promise resolves to { userId, rating:number })
+      const ratingPromises = uniqueUserIds.map((userId) =>
+        fetchCoachRating(userId).then((rating) => ({ userId, rating }))
       );
       const ratingResults = await Promise.allSettled(ratingPromises);
 
-      // Map coachId -> rating, then convert to userId -> rating
-      const coachIdToRatingMap: Record<number, number> = {};
-      ratingResults.forEach((result) => {
-        if (result.status === "fulfilled" && result.value.rating !== null) {
-          coachIdToRatingMap[result.value.coachId] = result.value.rating;
-        }
-      });
-
-      // Convert to userId -> rating mapping
+      // Map userId -> rating (number)
       const ratingsMap: Record<number, number> = {};
-      Object.keys(userIdToCoachIdMap).forEach((userIdStr) => {
-        const userId = Number(userIdStr);
-        const coachId = userIdToCoachIdMap[userId];
-        if (coachIdToRatingMap[coachId] !== undefined) {
-          ratingsMap[userId] = coachIdToRatingMap[coachId];
+      ratingResults.forEach((result) => {
+        if (result.status === "fulfilled") {
+          const value = result.value;
+          if (value && typeof value.rating === "number") {
+            ratingsMap[value.userId] = value.rating;
+          }
         }
       });
 
       setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
     } catch (error) {
+      console.error("Failed to fetch coach ratings:", error);
     }
   };
 
@@ -325,18 +314,18 @@ export default function CoursesScreen() {
         setLoading(true);
       }
 
-      // Build filter query
-      const filters: string[] = ["status_eq_APPROVED"];
-      
-      // Auto-filter: courses with unpaid enrollments for current user
-      // if (currentUserId) {
-      //   filters.push(`enrollments.status_eq_UNPAID`);
-      //   filters.push(`enrollments.user_id_eq_${currentUserId}`);
-      // }
+      // Build URL with proper query parameters
+      const params = new URLSearchParams();
+      params.append("page", String(pageNum));
+      params.append("size", String(pageSize));
+      if (selectedProvince) {
+        params.append("province", String(selectedProvince.id));
+      }
+      if (selectedDistrict) {
+        params.append("district", String(selectedDistrict.id));
+      }
 
-
-      const filterQuery = filters.join(",");
-      const url = `/v1/courses/available?page=${pageNum}&size=${pageSize}&${selectedProvince?`province=${selectedProvince.id}&`:``}${selectedDistrict?`district=${selectedDistrict.id}&`:``}`
+      const url = `/v1/courses/available?${params.toString()}`;
       const res = await get<CoursesResponse>(url);
 
       const newCourses = res.data.items || [];
@@ -359,6 +348,7 @@ export default function CoursesScreen() {
         fetchCoachesRatings(userIds);
       }
     } catch (error) {
+      console.error("Failed to fetch courses:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -678,25 +668,14 @@ export default function CoursesScreen() {
                       <Text style={styles.courseCoach} numberOfLines={1}>
                         {c.createdBy?.fullName || "Huấn luyện viên"}
                       </Text>
-                      {c.createdBy?.id &&
-                        coachRatings[c.createdBy.id] !== undefined && (
-                          <>
-                            <Ionicons
-                              name="star"
-                              size={13}
-                              color="#FBBF24"
-                              style={{ marginLeft: 6 }}
-                            />
-                            <Text
-                              style={[
-                                styles.courseCoach,
-                                { marginLeft: 3, fontWeight: "600" },
-                              ]}
-                            >
-                              {coachRatings[c.createdBy.id]?.toFixed(1)}
-                            </Text>
-                          </>
-                        )}
+                      {coachRatings[c.createdBy?.id] !== undefined && (
+                        <View style={styles.ratingBadge}>
+                          <Ionicons name="star" size={12} color="#FFFFFF" />
+                          <Text style={styles.ratingBadgeText}>
+                            {coachRatings[c.createdBy?.id].toFixed(1)}
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     {/* Location */}
@@ -840,12 +819,24 @@ export default function CoursesScreen() {
                         {selectedCourse.createdBy?.id &&
                           coachRatings[selectedCourse.createdBy.id] !==
                             undefined && (
-                            <Ionicons
-                              name="star"
-                              size={14}
-                              color="#FBBF24"
-                              style={{ marginLeft: 6 }}
-                            />
+                            <>
+                              <Ionicons
+                                name="star"
+                                size={14}
+                                color="#FBBF24"
+                                style={{ marginLeft: 6 }}
+                              />
+                              <Text
+                                style={[
+                                  styles.courseDetailCoach,
+                                  { marginLeft: 3, fontWeight: "600" },
+                                ]}
+                              >
+                                {coachRatings[
+                                  selectedCourse.createdBy.id
+                                ]?.toFixed(1)}
+                              </Text>
+                            </>
                           )}
                       </View>
                     </View>
@@ -1017,24 +1008,6 @@ export default function CoursesScreen() {
                       </View>
                     </View>
 
-                    {/* Progress Bar */}
-                    <View style={styles.progressSection}>
-                      <View style={styles.progressHeader}>
-                        <Text style={styles.progressLabel}>Tiến độ</Text>
-                        <Text style={styles.progressValue}>
-                          {Math.round(selectedCourse.progressPct)}%
-                        </Text>
-                      </View>
-                      <View style={styles.progressBar}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            { width: `${selectedCourse.progressPct}%` },
-                          ]}
-                        />
-                      </View>
-                    </View>
-
                     {/* Schedule Section - Compact */}
                     {selectedCourse.schedules &&
                       selectedCourse.schedules.length > 0 && (
@@ -1046,7 +1019,9 @@ export default function CoursesScreen() {
                               .map((schedule, idx) => (
                                 <View key={idx} style={styles.scheduleItem}>
                                   <Text style={styles.scheduleDay}>
-                                    {convertDayOfWeekToVietnamese(schedule.dayOfWeek)}
+                                    {convertDayOfWeekToVietnamese(
+                                      schedule.dayOfWeek
+                                    )}
                                   </Text>
                                   <Text style={styles.scheduleTime}>
                                     {schedule.startTime} - {schedule.endTime}
@@ -1395,6 +1370,20 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontWeight: "500",
     flex: 1,
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FBBF24",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 3,
+  },
+  ratingBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   locationRow: {
     flexDirection: "row",
@@ -1767,6 +1756,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     gap: 4,
+  },
+  ratingDetailCard: {
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FCD34D",
   },
   detailCardLabel: {
     fontSize: 11,

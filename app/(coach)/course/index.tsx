@@ -53,7 +53,7 @@ export default function CoachCourseScreen() {
 
         const user = await storageService.getUser();
 
-        const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=createdBy.id_eq_${user?.id}`;
+        const url = `/v1/courses/coach?page=${pageNum}&pageSize=${pageSize}`;
         const res = await get<CoursesResponse>(url);
 
         if (append) {
@@ -135,12 +135,10 @@ export default function CoachCourseScreen() {
       COMPLETED: "Đã hoàn thành",
       ON_GOING: "Đang diễn ra",
       CANCELLED: "Đã hủy",
-      FULL:'Đủ học viên'
+      FULL: "Đủ học viên",
     };
     return statusMap[status] || status;
   };
-
-
 
   const getStatusColor = (status: string) => {
     const colorMap: Record<string, { bg: string; text: string }> = {
@@ -715,7 +713,7 @@ export default function CoachCourseScreen() {
                             flex: 1,
                           }}
                         >
-                          {course.subject.name}
+                          {course.name}
                         </Text>
                       </View>
                       <View

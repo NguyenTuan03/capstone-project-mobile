@@ -93,7 +93,11 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
-    const handleVideoCapture = (video: { uri: string; name: string; duration?: number }) => {
+    const handleVideoCapture = (video: {
+      uri: string;
+      name: string;
+      duration?: number;
+    }) => {
       // Update parent localVideo state with captured video including duration
       setLocalVideo({
         uri: video.uri,
@@ -128,7 +132,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         const res = await get<LearnerVideo[]>(
           `/v1/learner-videos/user/${user.id}?sessionId=${sessionId}`
         );
-        console.log("📹 API Response:", res);
         const list = Array.isArray(res?.data) ? res.data : [];
         console.log("📹 Loaded learner videos:", list.length);
 

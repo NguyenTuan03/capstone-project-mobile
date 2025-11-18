@@ -2,12 +2,14 @@ export interface QuizOptionType {
   id?: number;
   content: string;
   isCorrect: boolean;
+  createdAt?: string;
 }
 
 export interface QuizQuestionType {
   id: number;
   title: string;
   explanation?: string | null;
+  createdAt?: string;
   options: QuizOptionType[];
 }
 
@@ -46,4 +48,3 @@ export interface QuestionOptionType {
   isCorrect: boolean;
   questionId?: number;
 }
-
