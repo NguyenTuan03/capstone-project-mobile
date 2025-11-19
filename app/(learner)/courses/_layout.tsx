@@ -15,8 +15,6 @@ export default function CoursesStackLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="payments/return" options={{ headerShown: false }} />
-      <Stack.Screen name="payments/cancel" options={{ headerShown: false }} />
     </Stack>
   );
 }
