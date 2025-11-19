@@ -24,7 +24,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -115,6 +115,7 @@ export default function CreateEditCourseModal({
   );
   const [courseStartDateAfterDaysFromNow, setCourseStartDateAfterDaysFromNow] =
     useState<number>(7);
+  const [maxParticipantsLimit, setMaxParticipantsLimit] = useState<number>(12);
 
   const [availableSchedules, setAvailableSchedules] = useState<Schedule[]>([]);
   const [loadingAvailableSchedules, setLoadingAvailableSchedules] =
@@ -183,7 +184,6 @@ export default function CreateEditCourseModal({
     } catch (error) {
       console.error("Failed to load user location:", error);
     }
-     
   }, [provinces]);
 
   useEffect(() => {
@@ -269,12 +269,38 @@ export default function CreateEditCourseModal({
           if (Number.isNaN(days)) days = 7;
         }
         setCourseStartDateAfterDaysFromNow(days);
+
+        // Also load max participants limit
+        const maxPartCfg = await configurationService.getConfiguration(
+          "max_participants_per_course"
+        );
+        const maxRaw: any = maxPartCfg as any;
+        let maxParticipants: number = 12;
+        if (maxRaw == null) {
+          maxParticipants = 12;
+        } else if (typeof maxRaw === "number") {
+          maxParticipants = maxRaw;
+        } else if (typeof maxRaw === "string") {
+          const n = Number(maxRaw);
+          maxParticipants = Number.isNaN(n) ? 12 : n;
+        } else if (typeof maxRaw === "object") {
+          if (maxRaw.value != null) maxParticipants = Number(maxRaw.value);
+          else if (maxRaw.metadata && maxRaw.metadata.value != null)
+            maxParticipants = Number(maxRaw.metadata.value);
+          else if (maxRaw.data && maxRaw.data.value != null)
+            maxParticipants = Number(maxRaw.data.value);
+          else if (maxRaw.valueRaw != null)
+            maxParticipants = Number(maxRaw.valueRaw);
+          if (Number.isNaN(maxParticipants)) maxParticipants = 12;
+        }
+        setMaxParticipantsLimit(maxParticipants);
       } catch (err) {
         console.warn(
           "Failed to load configuration course_start_date_after_days_from_now",
           err
         );
         setCourseStartDateAfterDaysFromNow(7);
+        setMaxParticipantsLimit(12);
       }
     };
 
@@ -339,7 +365,7 @@ export default function CreateEditCourseModal({
         setCourts(res || []);
 
         // Auto-select first court if in create mode and no court is already selected
-        if (autoSelectFirst && (res && res.length > 0) && !selectedCourt) {
+        if (autoSelectFirst && res && res.length > 0 && !selectedCourt) {
           setSelectedCourt(res[0]);
         }
       } catch (error) {
@@ -373,7 +399,11 @@ export default function CreateEditCourseModal({
     if (selectedProvince || selectedDistrict) {
       // Auto-select first court only in create mode (when initialData is not provided)
       const isCreateMode = !initialData;
-      fetchCourtsByLocation(selectedProvince?.id, selectedDistrict?.id, isCreateMode);
+      fetchCourtsByLocation(
+        selectedProvince?.id,
+        selectedDistrict?.id,
+        isCreateMode
+      );
     } else {
       setCourts([]);
     }
@@ -439,7 +469,10 @@ export default function CreateEditCourseModal({
     }
     if (learningFormat === "GROUP") {
       if (!minParticipants || !maxParticipants) {
-        Alert.alert("Lỗi", "Vui lòng nhập số lượng học viên tối thiểu và tối đa");
+        Alert.alert(
+          "Lỗi",
+          "Vui lòng nhập số lượng học viên tối thiểu và tối đa"
+        );
         return;
       }
       const minVal = parseInt(minParticipants);
@@ -586,12 +619,16 @@ export default function CreateEditCourseModal({
                 </Text>
                 <RangeSlider
                   min={1}
-                  max={12}
+                  max={maxParticipantsLimit}
                   step={1}
                   minValue={parseInt(minParticipants) || 2}
                   maxValue={parseInt(maxParticipants) || 6}
-                  onMinChange={(value: number) => setMinParticipants(value.toString())}
-                  onMaxChange={(value: number) => setMaxParticipants(value.toString())}
+                  onMinChange={(value: number) =>
+                    setMinParticipants(value.toString())
+                  }
+                  onMaxChange={(value: number) =>
+                    setMaxParticipants(value.toString())
+                  }
                   minLabel="Tối thiểu"
                   maxLabel="Tối đa"
                 />

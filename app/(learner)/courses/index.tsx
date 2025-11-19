@@ -772,11 +772,13 @@ export default function CoursesScreen() {
                   <View style={styles.imageContainer}>
                     <Image
                       source={{
-                        uri: "https://via.placeholder.com/400x200?text=Course",
+                        uri:
+                          selectedCourse.publicUrl ||
+                          "https://via.placeholder.com/400x200?text=Course",
                       }}
                       style={styles.courseDetailImage}
                     />
-                    {/* Status Badge */}
+                    {/* Status Badges */}
                     <View style={styles.statusBadgeOverlay}>
                       <View style={[styles.badge, styles.badgePrimary]}>
                         <Text style={styles.badgeText}>
@@ -801,6 +803,11 @@ export default function CoursesScreen() {
                         {selectedCourse.name}
                       </Text>
                       <View style={styles.coachRow}>
+                        <Ionicons
+                          name="person-circle"
+                          size={16}
+                          color="#059669"
+                        />
                         <Text
                           style={styles.courseDetailCoach}
                           numberOfLines={1}
@@ -833,19 +840,62 @@ export default function CoursesScreen() {
                       </View>
                     </View>
 
-                    {/* Quick Info Row - Location & Sessions */}
-                    <View style={styles.quickInfoRow}>
-                      <View style={styles.quickInfoItem}>
-                        <Ionicons name="location" size={14} color="#059669" />
-                        <Text style={styles.quickInfoText} numberOfLines={2}>
-                          {selectedCourse.court?.address || "N/A"}
+                    {/* Court/Venue Info - Card Style */}
+                    {selectedCourse.court && (
+                      <View style={styles.venueCard}>
+                        <View style={styles.venueIconContainer}>
+                          <Ionicons name="location" size={18} color="#059669" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.venueLabel}>
+                            Địa điểm tập luyện
+                          </Text>
+                          <Text style={styles.venueName} numberOfLines={2}>
+                            {selectedCourse.court.name || "Sân pickleball"}
+                          </Text>
+                          <Text style={styles.venueAddress} numberOfLines={2}>
+                            {selectedCourse.court.address || "N/A"}
+                          </Text>
+                          {selectedCourse.court.phoneNumber && (
+                            <Text style={styles.venuePhone}>
+                              ☎ {selectedCourse.court.phoneNumber}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Quick Stats Row - Location, Sessions, Date Range */}
+                    <View style={styles.quickStatsRow}>
+                      <View style={styles.statItem}>
+                        <Ionicons name="calendar" size={16} color="#059669" />
+                        <Text style={styles.statLabel}>Buổi học</Text>
+                        <Text style={styles.statValue}>
+                          {selectedCourse.totalSessions}
                         </Text>
                       </View>
-                      <View style={styles.divider} />
-                      <View style={styles.quickInfoItem}>
-                        <Ionicons name="calendar" size={14} color="#059669" />
-                        <Text style={styles.quickInfoText}>
-                          {selectedCourse.totalSessions} buổi
+                      <View style={styles.statDivider} />
+                      <View style={styles.statItem}>
+                        <Ionicons name="time" size={16} color="#059669" />
+                        <Text style={styles.statLabel}>Kéo dài</Text>
+                        <Text style={styles.statValue}>
+                          {selectedCourse.startDate &&
+                            selectedCourse.endDate &&
+                            Math.ceil(
+                              (new Date(selectedCourse.endDate).getTime() -
+                                new Date(selectedCourse.startDate).getTime()) /
+                                (1000 * 60 * 60 * 24 * 7)
+                            )}{" "}
+                          tuần
+                        </Text>
+                      </View>
+                      <View style={styles.statDivider} />
+                      <View style={styles.statItem}>
+                        <Ionicons name="people" size={16} color="#059669" />
+                        <Text style={styles.statLabel}>Học viên</Text>
+                        <Text style={styles.statValue}>
+                          {selectedCourse.currentParticipants}/
+                          {selectedCourse.maxParticipants}
                         </Text>
                       </View>
                     </View>
@@ -856,10 +906,12 @@ export default function CoursesScreen() {
                         <View style={styles.descriptionHeader}>
                           <Ionicons
                             name="document-text"
-                            size={14}
+                            size={16}
                             color="#059669"
                           />
-                          <Text style={styles.descriptionTitle}>Mô tả</Text>
+                          <Text style={styles.descriptionTitle}>
+                            Mô tả khóa học
+                          </Text>
                         </View>
                         <Text style={styles.descriptionText}>
                           {selectedCourse.description}
@@ -867,65 +919,7 @@ export default function CoursesScreen() {
                       </View>
                     )}
 
-                    {/* Participants Info - Prominent (Only for GROUP courses) */}
-                    {selectedCourse.learningFormat === "GROUP" && (
-                      <View style={styles.participantsSection}>
-                        <View style={styles.participantRow}>
-                          <View style={styles.participantColumn}>
-                            <Text style={styles.participantLabel}>
-                              Hiện tại
-                            </Text>
-                            <Text style={styles.participantValue}>
-                              {selectedCourse.currentParticipants}
-                            </Text>
-                          </View>
-                          <View style={styles.participantDivider} />
-                          <View style={styles.participantColumn}>
-                            <Text style={styles.participantLabel}>
-                              Tối thiểu
-                            </Text>
-                            <Text style={styles.participantValue}>
-                              {selectedCourse.minParticipants}
-                            </Text>
-                          </View>
-                          <View style={styles.participantDivider} />
-                          <View style={styles.participantColumn}>
-                            <Text style={styles.participantLabel}>Tối đa</Text>
-                            <Text style={styles.participantValue}>
-                              {selectedCourse.maxParticipants}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    )}
-
-                    {/* Individual Course Info */}
-                    {selectedCourse.learningFormat === "INDIVIDUAL" && (
-                      <View style={styles.individualCourseInfo}>
-                        <Ionicons name="person" size={16} color="#059669" />
-                        <Text style={styles.individualCourseText}>
-                          Khóa học cá nhân
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Current Participants = 0 Warning */}
-                    {selectedCourse.currentParticipants === 0 &&
-                      selectedCourse.learningFormat === "GROUP" && (
-                        <View style={styles.warningSection}>
-                          <Ionicons
-                            name="alert-circle"
-                            size={16}
-                            color="#F59E0B"
-                          />
-                          <Text style={styles.warningText}>
-                            Chưa có học viên đăng ký {"\n"} Hãy là người đầu
-                            tiên!
-                          </Text>
-                        </View>
-                      )}
-
-                    {/* Course Status Badge */}
+                    {/* Course Status */}
                     <View
                       style={[
                         styles.statusBadgeSection,
@@ -960,30 +954,36 @@ export default function CoursesScreen() {
                       </View>
                     </View>
 
-                    {/* Course Details - High Density Grid */}
+                    {/* Course Details Grid - Expanded */}
                     <View style={styles.detailsGrid}>
-                      {/* Subject */}
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Chủ đề</Text>
-                        <Text style={styles.detailCardValue} numberOfLines={2}>
-                          {selectedCourse.subject?.name || "N/A"}
-                        </Text>
-                      </View>
-
-                      {/* Duration */}
                       <View style={styles.detailCard}>
                         <Text style={styles.detailCardLabel}>Bắt đầu</Text>
                         <Text style={styles.detailCardValue}>
                           {new Date(
                             selectedCourse.startDate
                           ).toLocaleDateString("vi-VN", {
-                            month: "short",
-                            day: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            year: "2-digit",
                           })}
                         </Text>
                       </View>
 
-                      {/* Level */}
+                      <View style={styles.detailCard}>
+                        <Text style={styles.detailCardLabel}>Kết thúc</Text>
+                        <Text style={styles.detailCardValue}>
+                          {selectedCourse.endDate &&
+                            new Date(selectedCourse.endDate).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                month: "2-digit",
+                                day: "2-digit",
+                                year: "2-digit",
+                              }
+                            )}
+                        </Text>
+                      </View>
+
                       <View style={styles.detailCard}>
                         <Text style={styles.detailCardLabel}>Trình độ</Text>
                         <Text style={styles.detailCardValue}>
@@ -991,11 +991,12 @@ export default function CoursesScreen() {
                         </Text>
                       </View>
 
-                      {/* Total Sessions */}
                       <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Tổng buổi</Text>
+                        <Text style={styles.detailCardLabel}>Hình thức</Text>
                         <Text style={styles.detailCardValue}>
-                          {selectedCourse.totalSessions}
+                          {selectedCourse.learningFormat === "INDIVIDUAL"
+                            ? "Cá nhân"
+                            : "Nhóm"}
                         </Text>
                       </View>
                     </View>
@@ -1004,30 +1005,97 @@ export default function CoursesScreen() {
                     {selectedCourse.schedules &&
                       selectedCourse.schedules.length > 0 && (
                         <View style={styles.scheduleSection}>
-                          <Text style={styles.sectionTitle}>Lịch học</Text>
+                          <View style={styles.sectionHeaderRow}>
+                            <Ionicons
+                              name="calendar-outline"
+                              size={18}
+                              color="#059669"
+                            />
+                            <Text style={styles.sectionTitle}>Lịch học</Text>
+                          </View>
                           <View style={styles.scheduleList}>
                             {selectedCourse.schedules
-                              .slice(0, 2)
+                              .slice(0, 3)
                               .map((schedule, idx) => (
                                 <View key={idx} style={styles.scheduleItem}>
-                                  <Text style={styles.scheduleDay}>
-                                    {convertDayOfWeekToVietnamese(
-                                      schedule.dayOfWeek
-                                    )}
-                                  </Text>
-                                  <Text style={styles.scheduleTime}>
-                                    {schedule.startTime} - {schedule.endTime}
-                                  </Text>
+                                  <View style={styles.scheduleDay}>
+                                    <Text style={styles.scheduleDayText}>
+                                      {convertDayOfWeekToVietnamese(
+                                        schedule.dayOfWeek
+                                      )}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.scheduleTime}>
+                                    <Ionicons
+                                      name="time-outline"
+                                      size={14}
+                                      color="#6B7280"
+                                    />
+                                    <Text style={styles.scheduleTimeText}>
+                                      {schedule.startTime} - {schedule.endTime}
+                                    </Text>
+                                  </View>
                                 </View>
                               ))}
-                            {selectedCourse.schedules.length > 2 && (
+                            {selectedCourse.schedules.length > 3 && (
                               <Text style={styles.moreSchedules}>
-                                +{selectedCourse.schedules.length - 2} buổi khác
+                                +{selectedCourse.schedules.length - 3} buổi khác
                               </Text>
                             )}
                           </View>
                         </View>
                       )}
+
+                    {/* Key Information Cards */}
+                    <View style={styles.keyInfoSection}>
+                      {/* Participants Info */}
+                      {selectedCourse.learningFormat === "GROUP" && (
+                        <View style={styles.infoCard}>
+                          <View style={styles.infoCardHeader}>
+                            <Ionicons name="people" size={18} color="#059669" />
+                            <Text style={styles.infoCardTitle}>Học viên</Text>
+                          </View>
+                          <View style={styles.participantsGrid}>
+                            <View style={styles.participantCell}>
+                              <Text style={styles.participantCellLabel}>
+                                Hiện tại
+                              </Text>
+                              <Text style={styles.participantCellValue}>
+                                {selectedCourse.currentParticipants}
+                              </Text>
+                            </View>
+                            <View style={styles.participantCell}>
+                              <Text style={styles.participantCellLabel}>
+                                Tối thiểu
+                              </Text>
+                              <Text style={styles.participantCellValue}>
+                                {selectedCourse.minParticipants}
+                              </Text>
+                            </View>
+                            <View style={styles.participantCell}>
+                              <Text style={styles.participantCellLabel}>
+                                Tối đa
+                              </Text>
+                              <Text style={styles.participantCellValue}>
+                                {selectedCourse.maxParticipants}
+                              </Text>
+                            </View>
+                          </View>
+                          {selectedCourse.currentParticipants === 0 && (
+                            <View style={styles.warningBanner}>
+                              <Ionicons
+                                name="alert-circle-outline"
+                                size={14}
+                                color="#F59E0B"
+                              />
+                              <Text style={styles.warningBannerText}>
+                                Chưa có học viên đăng ký
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
 
                     {/* Price Section - Prominent */}
                     <View style={styles.priceSectionLarge}>
@@ -1996,5 +2064,174 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     flexWrap: "wrap",
+  },
+  // New modal styles
+  venueCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
+  },
+  venueIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#E0F2FE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  venueLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 2,
+  },
+  venueName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 18,
+  },
+  venueAddress: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  venuePhone: {
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  quickStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#C6F6D5",
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  scheduleDayText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  scheduleTimeText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  keyInfoSection: {
+    gap: 12,
+  },
+  infoCard: {
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
+  },
+  infoCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  infoCardTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  participantsGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  participantCell: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 8,
+  },
+  participantCellLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#059669",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  participantCellValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  warningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  warningBannerText: {
+    fontSize: 12,
+    color: "#D97706",
+    fontWeight: "600",
+    flex: 1,
+  },
+  courtInfoContent: {
+    gap: 4,
+  },
+  courtPriceLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  courtPriceValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#059669",
   },
 });

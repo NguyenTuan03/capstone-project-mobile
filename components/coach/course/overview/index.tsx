@@ -29,7 +29,7 @@ const StatCard = ({
     <View style={styles.statCard}>
       <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={18} color={iconColor} />
-      </View>rating/overall
+      </View>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
       {footer ? (
@@ -314,14 +314,14 @@ export const OverviewTab: React.FC<Props> = ({
                   </View>
                   <View style={styles.feedbackAuthorContainer}>
                     {feedback.isAnonymous ? (
-                      <>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                         <Ionicons
                           name="eye-off-outline"
                           size={14}
                           color="#6B7280"
                         />
                         <Text style={styles.feedbackAuthor}>Ẩn danh</Text>
-                      </>
+                      </View>
                     ) : (
                       <Text style={styles.feedbackAuthor}>
                         {(feedback as any).createdBy?.fullName ||

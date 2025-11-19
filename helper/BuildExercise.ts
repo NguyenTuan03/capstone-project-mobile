@@ -5,7 +5,8 @@ export const BuildExercise = (session: Session): Exercise[] => {
   const exercises: Exercise[] = [];
 
   // Map VIDEO => Bài tập video
-  (session.lesson?.videos ?? []).forEach((v, idx) => {
+  (session?.videos ?? []).forEach((v, idx) => {
+    console.log("VIDEO EXERCISE", v);
     exercises.push({
       id: `video-${v.id}`,
       type: "video",
@@ -19,7 +20,7 @@ export const BuildExercise = (session: Session): Exercise[] => {
   });
 
   // Map QUIZ => Bài tập quiz
-  (session.lesson?.quizzes ?? []).forEach((q, idx) => {
+  (session?.quizzes ?? []).forEach((q, idx) => {
     exercises.push({
       id: `quiz-${q.id}`,
       type: "quiz",
