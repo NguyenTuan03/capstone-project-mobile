@@ -124,11 +124,13 @@ export default function CoursesScreen() {
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [initializing, setInitializing] = useState(true);
   const fetchProvinces = async () => {
     try {
       setLoadingProvinces(true);
       const res = await get<Province[]>("/v1/provinces");
       setProvinces(res.data || []);
+      return res.data || [];
     } catch (error) {
       console.error("Failed to fetch provinces:", error);
       Toast.show({
@@ -138,6 +140,7 @@ export default function CoursesScreen() {
         position: "top",
         visibilityTime: 3000,
       });
+      return [];
     } finally {
       setLoadingProvinces(false);
     }
@@ -164,74 +167,82 @@ export default function CoursesScreen() {
     }
   };
 
-  const loadUserLocation = useCallback(async () => {
-    try {
-      const userString = await AsyncStorage.getItem("user");
-      if (userString) {
-        const userData = JSON.parse(userString);
+  const loadUserLocation = useCallback(
+    async (currentProvinces?: Province[]) => {
+      try {
+        const userString = await AsyncStorage.getItem("user");
+        if (userString) {
+          const userData = JSON.parse(userString);
 
-        // Get user ID
-        let userId = null;
-        if (userData?.metadata?.user?.id) {
-          userId = userData.metadata.user.id;
-        } else if (userData?.id) {
-          userId = userData.id;
-        }
-        if (userId) {
-          setCurrentUserId(userId);
-        }
-
-        if (userData?.province && userData?.district) {
-          // Fetch provinces first if not already cached
-          let provincesList = provinces;
-          if (provincesList.length === 0) {
-            const res = await get<Province[]>("/v1/provinces");
-            provincesList = res.data || [];
+          // Get user ID
+          let userId = null;
+          if (userData?.metadata?.user?.id) {
+            userId = userData.metadata.user.id;
+          } else if (userData?.id) {
+            userId = userData.id;
+          }
+          if (userId) {
+            setCurrentUserId(userId);
           }
 
-          const userProvince = provincesList.find(
-            (p) => p.id === userData.province.id
-          );
-          if (userProvince) {
-            setSelectedProvince(userProvince);
-            // Fetch districts cho province này
-            const districtsRes = await get<District[]>(
-              `/v1/provinces/${userProvince.id}/districts`
-            );
-            const districtsList = districtsRes.data || [];
+          if (userData?.province && userData?.district) {
+            // Fetch provinces first if not already cached
+            let provincesList = currentProvinces || provinces;
+            if (provincesList.length === 0) {
+              const res = await get<Province[]>("/v1/provinces");
+              provincesList = res.data || [];
+              setProvinces(provincesList);
+            }
 
-            const userDistrict = districtsList.find(
-              (d) => d.id === userData.district.id
+            const userProvince = provincesList.find(
+              (p) => p.id === userData.province.id
             );
-            if (userDistrict) {
-              setSelectedDistrict(userDistrict);
+            if (userProvince) {
+              setSelectedProvince(userProvince);
+              // Fetch districts cho province này
+              const districtsRes = await get<District[]>(
+                `/v1/provinces/${userProvince.id}/districts`
+              );
+              const districtsList = districtsRes.data || [];
+              setDistricts(districtsList);
+
+              const userDistrict = districtsList.find(
+                (d) => d.id === userData.district.id
+              );
+              if (userDistrict) {
+                setSelectedDistrict(userDistrict);
+              }
             }
           }
         }
+      } catch (error) {
+        console.error("Failed to load user location:", error);
       }
-    } catch (error) {
-      console.error("Failed to load user location:", error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    []
+  );
 
   useEffect(() => {
     const initializeData = async () => {
-      await fetchProvinces();
-      await loadUserLocation();
+      setInitializing(true);
+      const fetchedProvinces = await fetchProvinces();
+      await loadUserLocation(fetchedProvinces);
+      setInitializing(false);
     };
     initializeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    if (initializing) return;
     if (selectedProvince) {
       fetchDistricts(selectedProvince.id);
     } else {
       setDistricts([]);
       setSelectedDistrict(null);
     }
-  }, [selectedProvince]);
+  }, [selectedProvince, initializing]);
 
   const fetchCoachRating = async (coachId: number): Promise<number> => {
     try {
@@ -356,9 +367,11 @@ export default function CoursesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchCourses(1, false);
+      if (!initializing) {
+        fetchCourses(1, false);
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedProvince, selectedDistrict, currentUserId])
+    }, [selectedProvince, selectedDistrict, currentUserId, initializing])
   );
 
   const formatPrice = (price: string) => {
@@ -546,176 +559,157 @@ export default function CoursesScreen() {
                   : c.level === "INTERMEDIATE"
                   ? "Trung cấp"
                   : "Nâng cao";
-              const levelColor =
-                c.level === "BEGINNER"
-                  ? { bg: "#DBEAFE", text: "#0284C7" }
-                  : c.level === "INTERMEDIATE"
-                  ? { bg: "#FCD34D", text: "#92400E" }
-                  : { bg: "#DDD6FE", text: "#4F46E5" };
 
               return (
                 <TouchableOpacity
                   key={c.id}
                   style={styles.card}
-                  activeOpacity={0.7}
+                  activeOpacity={0.9}
                   onPress={() => {
                     setSelectedCourse(c);
                     setShowCourseDetailModal(true);
                   }}
                 >
-                  {/* Image Container with Badges */}
+                  {/* Image Section */}
                   <View style={styles.cardImageWrapper}>
                     <Image
                       source={{
-                        uri: "https://via.placeholder.com/400x160?text=Course",
+                        uri:
+                          c.publicUrl ||
+                          "https://via.placeholder.com/400x200?text=Pickleball+Course",
                       }}
                       style={styles.cover}
+                      resizeMode="cover"
                     />
+                    <View style={styles.cardOverlay} />
 
-                    {/* Format Badge - Top Left */}
-                    <View style={styles.formatBadgeContainer}>
+                    {/* Top Badges */}
+                    <View style={styles.cardHeaderBadges}>
                       <View
                         style={[
                           styles.formatBadge,
                           {
                             backgroundColor:
                               c.learningFormat === "INDIVIDUAL"
-                                ? "#E0E7FF"
-                                : "#DBEAFE",
+                                ? "rgba(124, 58, 237, 0.9)"
+                                : "rgba(37, 99, 235, 0.9)",
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.formatBadgeText,
-                            {
-                              color:
-                                c.learningFormat === "INDIVIDUAL"
-                                  ? "#4C1D95"
-                                  : "#0284C7",
-                            },
-                          ]}
-                        >
+                        <Ionicons
+                          name={
+                            c.learningFormat === "INDIVIDUAL"
+                              ? "person"
+                              : "people"
+                          }
+                          size={10}
+                          color="#FFF"
+                        />
+                        <Text style={styles.formatBadgeText}>
                           {c.learningFormat === "INDIVIDUAL"
                             ? "Cá nhân"
                             : "Nhóm"}
                         </Text>
                       </View>
-                    </View>
 
-                    {/* Status Badge - Top Right */}
-                    {(c.status === "FULL" || c.status === "READY_OPENED") && (
-                      <View style={styles.statusBadgeContainer}>
+                      {(c.status === "FULL" || c.status === "READY_OPENED") && (
                         <View
                           style={[
                             styles.statusBadge,
                             {
                               backgroundColor:
-                                c.status === "FULL" ? "#DBEAFE" : "#DCFCE7",
+                                c.status === "FULL"
+                                  ? "rgba(239, 68, 68, 0.9)"
+                                  : "rgba(16, 185, 129, 0.9)",
                             },
                           ]}
                         >
-                          <Ionicons
-                            name={
-                              c.status === "FULL"
-                                ? "alert-circle-outline"
-                                : "checkmark-circle-outline"
-                            }
-                            size={11}
-                            color={c.status === "FULL" ? "#0284C7" : "#16A34A"}
-                            style={{ marginRight: 3 }}
-                          />
-                          <Text
-                            style={[
-                              styles.statusBadgeText,
-                              {
-                                color:
-                                  c.status === "FULL" ? "#0284C7" : "#16A34A",
-                              },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {c.status === "FULL" ? "Đã đủ" : "Sắp khai giảng"}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Content Section */}
-                  <View style={styles.cardContent}>
-                    {/* Title */}
-                    <Text style={styles.courseTitle} numberOfLines={2}>
-                      {c.name}
-                    </Text>
-
-                    {/* Coach Info */}
-                    <View style={styles.coachRow}>
-                      <Ionicons
-                        name="person-circle"
-                        size={16}
-                        color="#059669"
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text style={styles.courseCoach} numberOfLines={1}>
-                        {c.createdBy?.fullName || "Huấn luyện viên"}
-                      </Text>
-                      {coachRatings[c.createdBy?.id] !== undefined && (
-                        <View style={styles.ratingBadge}>
-                          <Ionicons name="star" size={12} color="#FFFFFF" />
-                          <Text style={styles.ratingBadgeText}>
-                            {coachRatings[c.createdBy?.id].toFixed(1)}
+                          <Text style={styles.statusBadgeText}>
+                            {c.status === "FULL" ? "Đã đủ" : "Sắp mở"}
                           </Text>
                         </View>
                       )}
                     </View>
+                  </View>
 
-                    {/* Location */}
-                    <View style={styles.locationRow}>
-                      <Ionicons
-                        name="location-outline"
-                        size={13}
-                        color="#6B7280"
-                        style={{ marginRight: 5 }}
-                      />
-                      <Text style={styles.locationText} numberOfLines={1}>
-                        {c.court?.address || "Chưa xác định"}
+                  {/* Content Section */}
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardTopRow}>
+                      <Text style={styles.courseTitle} numberOfLines={2}>
+                        {c.name}
+                      </Text>
+                      {c.createdBy?.id &&
+                        coachRatings[c.createdBy.id] !== undefined && (
+                          <View style={styles.ratingContainer}>
+                            <Ionicons name="star" size={12} color="#F59E0B" />
+                            <Text style={styles.ratingText}>
+                              {coachRatings[c.createdBy.id].toFixed(1)}
+                            </Text>
+                          </View>
+                        )}
+                    </View>
+
+                    <View style={styles.coachInfoRow}>
+                      <View style={styles.coachAvatarPlaceholder}>
+                        <Text style={styles.coachAvatarText}>
+                          {c.createdBy?.fullName?.[0] || "C"}
+                        </Text>
+                      </View>
+                      <Text style={styles.coachName} numberOfLines={1}>
+                        {c.createdBy?.fullName || "Huấn luyện viên"}
                       </Text>
                     </View>
 
-                    {/* Meta Row - Level, Participants, Price */}
-                    <View style={styles.metaRow}>
-                      <View
-                        style={[
-                          styles.levelBadge,
-                          { backgroundColor: levelColor.bg },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.levelBadgeText,
-                            { color: levelColor.text },
-                          ]}
-                        >
-                          {levelLabel}
-                        </Text>
+                    <View style={styles.cardDivider} />
+
+                    <View style={styles.cardMetaGrid}>
+                      {/* Level */}
+                      <View style={styles.metaItem}>
+                        <Ionicons
+                          name="ribbon-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.metaText}>{levelLabel}</Text>
                       </View>
 
-                      <View style={styles.participantBadge}>
+                      {/* Participants */}
+                      <View style={styles.metaItem}>
                         <Ionicons
                           name="people-outline"
-                          size={12}
+                          size={14}
                           color="#6B7280"
-                          style={{ marginRight: 4 }}
                         />
-                        <Text style={styles.participantBadgeText}>
-                          {c.currentParticipants}/{c.maxParticipants}
+                        <Text style={styles.metaText}>
+                          {c.currentParticipants}/{c.maxParticipants} học viên
                         </Text>
                       </View>
 
-                      <Text style={styles.price}>
+                      {/* Location */}
+                      <View style={[styles.metaItem, { width: "100%" }]}>
+                        <Ionicons
+                          name="location-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.metaText} numberOfLines={1}>
+                          {c.court?.name || c.court?.address || "Chưa xác định"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.priceText}>
                         {formatPrice(c.pricePerParticipant)}
                       </Text>
+                      <View style={styles.viewDetailBtn}>
+                        <Text style={styles.viewDetailText}>Xem chi tiết</Text>
+                        <Ionicons
+                          name="arrow-forward"
+                          size={14}
+                          color="#059669"
+                        />
+                      </View>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -739,7 +733,6 @@ export default function CoursesScreen() {
         )}
       </ScrollView>
 
-      {/* Course Detail Modal */}
       <Modal
         visible={showCourseDetailModal}
         transparent
@@ -747,428 +740,332 @@ export default function CoursesScreen() {
         onRequestClose={() => setShowCourseDetailModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.courseModalContent,
-              { paddingBottom: insets.bottom + 20 },
-            ]}
-          >
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Header with Close Button */}
-              <View style={styles.courseModalHeader}>
-                <Text style={styles.courseModalTitle}>Chi tiết khóa học</Text>
-                <TouchableOpacity
-                  onPress={() => setShowCourseDetailModal(false)}
-                  activeOpacity={0.7}
-                  style={styles.closeBtn}
+          <View style={[styles.courseModalContent, { paddingBottom: 0 }]}>
+            {selectedCourse && (
+              <>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 100 }}
+                  bounces={false}
                 >
-                  <Ionicons name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-
-              {selectedCourse && (
-                <View style={styles.courseDetailContent}>
-                  {/* Course Image with Overlay Badge */}
-                  <View style={styles.imageContainer}>
+                  {/* Full Width Image Header */}
+                  <View style={styles.modalImageContainer}>
                     <Image
                       source={{
                         uri:
                           selectedCourse.publicUrl ||
-                          "https://via.placeholder.com/400x200?text=Course",
+                          "https://via.placeholder.com/400x250?text=Course",
                       }}
-                      style={styles.courseDetailImage}
+                      style={styles.modalCoverImage}
+                      resizeMode="cover"
                     />
-                    {/* Status Badges */}
-                    <View style={styles.statusBadgeOverlay}>
-                      <View style={[styles.badge, styles.badgePrimary]}>
-                        <Text style={styles.badgeText}>
+                    <View style={styles.modalImageOverlay} />
+
+                    {/* Floating Close Button */}
+                    <TouchableOpacity
+                      onPress={() => setShowCourseDetailModal(false)}
+                      activeOpacity={0.8}
+                      style={styles.floatingCloseBtn}
+                    >
+                      <Ionicons name="close" size={20} color="#111827" />
+                    </TouchableOpacity>
+
+                    {/* Badges on Image */}
+                    <View style={styles.modalBadgesContainer}>
+                      <View
+                        style={[
+                          styles.modalBadge,
+                          {
+                            backgroundColor:
+                              selectedCourse.learningFormat === "INDIVIDUAL"
+                                ? "rgba(124, 58, 237, 0.9)"
+                                : "rgba(37, 99, 235, 0.9)",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            selectedCourse.learningFormat === "INDIVIDUAL"
+                              ? "person"
+                              : "people"
+                          }
+                          size={12}
+                          color="#FFF"
+                        />
+                        <Text style={styles.modalBadgeText}>
                           {selectedCourse.learningFormat === "INDIVIDUAL"
                             ? "Cá nhân"
                             : "Nhóm"}
                         </Text>
                       </View>
-                      <View style={styles.levelBadge}>
-                        <Text style={styles.levelBadgeText}>
+
+                      <View
+                        style={[
+                          styles.modalBadge,
+                          { backgroundColor: "rgba(255, 255, 255, 0.9)" },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.modalBadgeText,
+                            { color: "#111827", fontWeight: "700" },
+                          ]}
+                        >
                           {getLevelInVietnamese(selectedCourse.level)}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Course Info */}
-                  <View style={styles.courseInfoSection}>
-                    {/* Title Section */}
-                    <View>
-                      <Text style={styles.courseDetailTitle} numberOfLines={3}>
+                  {/* Content Body */}
+                  <View style={styles.modalBody}>
+                    {/* Title & Coach */}
+                    <View style={styles.modalHeaderSection}>
+                      <Text style={styles.modalCourseTitle}>
                         {selectedCourse.name}
                       </Text>
-                      <View style={styles.coachRow}>
-                        <Ionicons
-                          name="person-circle"
-                          size={16}
-                          color="#059669"
-                        />
-                        <Text
-                          style={styles.courseDetailCoach}
-                          numberOfLines={1}
-                        >
-                          {selectedCourse.createdBy?.fullName ||
-                            "Huấn luyện viên"}
-                        </Text>
-                        {selectedCourse.createdBy?.id &&
-                          coachRatings[selectedCourse.createdBy.id] !==
-                            undefined && (
-                            <>
-                              <Ionicons
-                                name="star"
-                                size={14}
-                                color="#FBBF24"
-                                style={{ marginLeft: 6 }}
-                              />
-                              <Text
-                                style={[
-                                  styles.courseDetailCoach,
-                                  { marginLeft: 3, fontWeight: "600" },
-                                ]}
-                              >
-                                {coachRatings[
-                                  selectedCourse.createdBy.id
-                                ]?.toFixed(1)}
-                              </Text>
-                            </>
-                          )}
+                      <View style={styles.modalCoachRow}>
+                        <View style={styles.coachAvatarLarge}>
+                          <Text style={styles.coachAvatarTextLarge}>
+                            {selectedCourse.createdBy?.fullName?.[0] || "C"}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={styles.coachNameLarge}>
+                            {selectedCourse.createdBy?.fullName ||
+                              "Huấn luyện viên"}
+                          </Text>
+                          {selectedCourse.createdBy?.id &&
+                            coachRatings[selectedCourse.createdBy.id] !==
+                              undefined && (
+                              <View style={styles.ratingRow}>
+                                <Ionicons
+                                  name="star"
+                                  size={12}
+                                  color="#F59E0B"
+                                />
+                                <Text style={styles.ratingValue}>
+                                  {coachRatings[
+                                    selectedCourse.createdBy.id
+                                  ].toFixed(1)}{" "}
+                                  <Text style={styles.ratingLabel}>
+                                    đánh giá
+                                  </Text>
+                                </Text>
+                              </View>
+                            )}
+                        </View>
                       </View>
                     </View>
 
-                    {/* Court/Venue Info - Card Style */}
-                    {selectedCourse.court && (
-                      <View style={styles.venueCard}>
-                        <View style={styles.venueIconContainer}>
-                          <Ionicons name="location" size={18} color="#059669" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.venueLabel}>
-                            Địa điểm tập luyện
-                          </Text>
-                          <Text style={styles.venueName} numberOfLines={2}>
-                            {selectedCourse.court.name || "Sân pickleball"}
-                          </Text>
-                          <Text style={styles.venueAddress} numberOfLines={2}>
-                            {selectedCourse.court.address || "N/A"}
-                          </Text>
-                          {selectedCourse.court.phoneNumber && (
-                            <Text style={styles.venuePhone}>
-                              ☎ {selectedCourse.court.phoneNumber}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    )}
+                    <View style={styles.sectionDivider} />
 
-                    {/* Quick Stats Row - Location, Sessions, Date Range */}
-                    <View style={styles.quickStatsRow}>
-                      <View style={styles.statItem}>
-                        <Ionicons name="calendar" size={16} color="#059669" />
-                        <Text style={styles.statLabel}>Buổi học</Text>
-                        <Text style={styles.statValue}>
-                          {selectedCourse.totalSessions}
-                        </Text>
-                      </View>
-                      <View style={styles.statDivider} />
-                      <View style={styles.statItem}>
-                        <Ionicons name="time" size={16} color="#059669" />
-                        <Text style={styles.statLabel}>Kéo dài</Text>
-                        <Text style={styles.statValue}>
-                          {selectedCourse.startDate &&
-                            selectedCourse.endDate &&
-                            Math.ceil(
-                              (new Date(selectedCourse.endDate).getTime() -
-                                new Date(selectedCourse.startDate).getTime()) /
-                                (1000 * 60 * 60 * 24 * 7)
-                            )}{" "}
-                          tuần
-                        </Text>
-                      </View>
-                      <View style={styles.statDivider} />
-                      <View style={styles.statItem}>
-                        <Ionicons name="people" size={16} color="#059669" />
-                        <Text style={styles.statLabel}>Học viên</Text>
-                        <Text style={styles.statValue}>
-                          {selectedCourse.currentParticipants}/
-                          {selectedCourse.maxParticipants}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Description with Visual Accent */}
-                    {selectedCourse.description && (
-                      <View style={styles.descriptionSection}>
-                        <View style={styles.descriptionHeader}>
+                    {/* Info Grid */}
+                    <View style={styles.infoGrid}>
+                      <View style={styles.infoGridItem}>
+                        <View style={styles.infoIconBox}>
                           <Ionicons
-                            name="document-text"
-                            size={16}
+                            name="calendar-outline"
+                            size={20}
                             color="#059669"
                           />
-                          <Text style={styles.descriptionTitle}>
-                            Mô tả khóa học
+                        </View>
+                        <View>
+                          <Text style={styles.infoLabel}>Ngày bắt đầu</Text>
+                          <Text style={styles.infoValue}>
+                            {new Date(
+                              selectedCourse.startDate
+                            ).toLocaleDateString("vi-VN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
                           </Text>
                         </View>
-                        <Text style={styles.descriptionText}>
+                      </View>
+
+                      <View style={styles.infoGridItem}>
+                        <View style={styles.infoIconBox}>
+                          <Ionicons
+                            name="time-outline"
+                            size={20}
+                            color="#059669"
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.infoLabel}>Thời lượng</Text>
+                          <Text style={styles.infoValue}>
+                            {selectedCourse.totalSessions} buổi
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.infoGridItem}>
+                        <View style={styles.infoIconBox}>
+                          <Ionicons
+                            name="people-outline"
+                            size={20}
+                            color="#059669"
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.infoLabel}>Học viên</Text>
+                          <Text style={styles.infoValue}>
+                            {selectedCourse.currentParticipants}/
+                            {selectedCourse.maxParticipants}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.infoGridItem}>
+                        <View style={styles.infoIconBox}>
+                          <Ionicons
+                            name="ribbon-outline"
+                            size={20}
+                            color="#059669"
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.infoLabel}>Trình độ</Text>
+                          <Text style={styles.infoValue}>
+                            {getLevelInVietnamese(selectedCourse.level)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.sectionDivider} />
+
+                    {/* Description */}
+                    {selectedCourse.description && (
+                      <View style={styles.contentSection}>
+                        <Text style={styles.sectionHeader}>Giới thiệu</Text>
+                        <Text style={styles.descriptionBody}>
                           {selectedCourse.description}
                         </Text>
                       </View>
                     )}
 
-                    {/* Course Status */}
-                    <View
-                      style={[
-                        styles.statusBadgeSection,
-                        {
-                          backgroundColor:
-                            getStatusColor(selectedCourse.status) + "20",
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.statusDot,
-                          {
-                            backgroundColor: getStatusColor(
-                              selectedCourse.status
-                            ),
-                          },
-                        ]}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.statusLabel}>
-                          Trạng thái khóa học
-                        </Text>
-                        <Text
-                          style={[
-                            styles.statusValue,
-                            { color: getStatusColor(selectedCourse.status) },
-                          ]}
-                        >
-                          {getStatusInVietnamese(selectedCourse.status)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Course Details Grid - Expanded */}
-                    <View style={styles.detailsGrid}>
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Bắt đầu</Text>
-                        <Text style={styles.detailCardValue}>
-                          {new Date(
-                            selectedCourse.startDate
-                          ).toLocaleDateString("vi-VN", {
-                            month: "2-digit",
-                            day: "2-digit",
-                            year: "2-digit",
-                          })}
-                        </Text>
-                      </View>
-
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Kết thúc</Text>
-                        <Text style={styles.detailCardValue}>
-                          {selectedCourse.endDate &&
-                            new Date(selectedCourse.endDate).toLocaleDateString(
-                              "vi-VN",
-                              {
-                                month: "2-digit",
-                                day: "2-digit",
-                                year: "2-digit",
-                              }
-                            )}
-                        </Text>
-                      </View>
-
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Trình độ</Text>
-                        <Text style={styles.detailCardValue}>
-                          {getLevelInVietnamese(selectedCourse.level)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.detailCard}>
-                        <Text style={styles.detailCardLabel}>Hình thức</Text>
-                        <Text style={styles.detailCardValue}>
-                          {selectedCourse.learningFormat === "INDIVIDUAL"
-                            ? "Cá nhân"
-                            : "Nhóm"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Schedule Section - Compact */}
+                    {/* Schedule */}
                     {selectedCourse.schedules &&
                       selectedCourse.schedules.length > 0 && (
-                        <View style={styles.scheduleSection}>
-                          <View style={styles.sectionHeaderRow}>
-                            <Ionicons
-                              name="calendar-outline"
-                              size={18}
-                              color="#059669"
-                            />
-                            <Text style={styles.sectionTitle}>Lịch học</Text>
-                          </View>
-                          <View style={styles.scheduleList}>
-                            {selectedCourse.schedules
-                              .slice(0, 3)
-                              .map((schedule, idx) => (
-                                <View key={idx} style={styles.scheduleItem}>
-                                  <View style={styles.scheduleDay}>
-                                    <Text style={styles.scheduleDayText}>
-                                      {convertDayOfWeekToVietnamese(
-                                        schedule.dayOfWeek
-                                      )}
-                                    </Text>
-                                  </View>
-                                  <View style={styles.scheduleTime}>
-                                    <Ionicons
-                                      name="time-outline"
-                                      size={14}
-                                      color="#6B7280"
-                                    />
-                                    <Text style={styles.scheduleTimeText}>
-                                      {schedule.startTime} - {schedule.endTime}
-                                    </Text>
-                                  </View>
+                        <View style={styles.contentSection}>
+                          <Text style={styles.sectionHeader}>Lịch học</Text>
+                          <View style={styles.scheduleContainer}>
+                            {selectedCourse.schedules.map((schedule, idx) => (
+                              <View key={idx} style={styles.scheduleRow}>
+                                <View style={styles.scheduleDayBox}>
+                                  <Text style={styles.scheduleDayTitle}>
+                                    {convertDayOfWeekToVietnamese(
+                                      schedule.dayOfWeek
+                                    )}
+                                  </Text>
                                 </View>
-                              ))}
-                            {selectedCourse.schedules.length > 3 && (
-                              <Text style={styles.moreSchedules}>
-                                +{selectedCourse.schedules.length - 3} buổi khác
-                              </Text>
+                                <View style={styles.scheduleTimeBox}>
+                                  <Text style={styles.scheduleTimeValue}>
+                                    {schedule.startTime} - {schedule.endTime}
+                                  </Text>
+                                </View>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
+                    {/* Location Detail */}
+                    {selectedCourse.court && (
+                      <View style={styles.contentSection}>
+                        <Text style={styles.sectionHeader}>Địa điểm</Text>
+                        <View style={styles.locationCard}>
+                          <View style={styles.locationIcon}>
+                            <Ionicons name="map" size={24} color="#059669" />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.locationName}>
+                              {selectedCourse.court.name}
+                            </Text>
+                            <Text style={styles.locationAddress}>
+                              {selectedCourse.court.address}
+                            </Text>
+                            {selectedCourse.court.phoneNumber && (
+                              <TouchableOpacity
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  marginTop: 8,
+                                  gap: 6,
+                                }}
+                                onPress={() => {
+                                  Linking.openURL(
+                                    `tel:${selectedCourse.court.phoneNumber}`
+                                  );
+                                }}
+                              >
+                                <Ionicons
+                                  name="call"
+                                  size={16}
+                                  color="#059669"
+                                />
+                                <Text
+                                  style={{
+                                    color: "#059669",
+                                    fontWeight: "600",
+                                    fontSize: 14,
+                                  }}
+                                >
+                                  {selectedCourse.court.phoneNumber}
+                                </Text>
+                              </TouchableOpacity>
                             )}
                           </View>
                         </View>
-                      )}
-
-                    {/* Key Information Cards */}
-                    <View style={styles.keyInfoSection}>
-                      {/* Participants Info */}
-                      {selectedCourse.learningFormat === "GROUP" && (
-                        <View style={styles.infoCard}>
-                          <View style={styles.infoCardHeader}>
-                            <Ionicons name="people" size={18} color="#059669" />
-                            <Text style={styles.infoCardTitle}>Học viên</Text>
-                          </View>
-                          <View style={styles.participantsGrid}>
-                            <View style={styles.participantCell}>
-                              <Text style={styles.participantCellLabel}>
-                                Hiện tại
-                              </Text>
-                              <Text style={styles.participantCellValue}>
-                                {selectedCourse.currentParticipants}
-                              </Text>
-                            </View>
-                            <View style={styles.participantCell}>
-                              <Text style={styles.participantCellLabel}>
-                                Tối thiểu
-                              </Text>
-                              <Text style={styles.participantCellValue}>
-                                {selectedCourse.minParticipants}
-                              </Text>
-                            </View>
-                            <View style={styles.participantCell}>
-                              <Text style={styles.participantCellLabel}>
-                                Tối đa
-                              </Text>
-                              <Text style={styles.participantCellValue}>
-                                {selectedCourse.maxParticipants}
-                              </Text>
-                            </View>
-                          </View>
-                          {selectedCourse.currentParticipants === 0 && (
-                            <View style={styles.warningBanner}>
-                              <Ionicons
-                                name="alert-circle-outline"
-                                size={14}
-                                color="#F59E0B"
-                              />
-                              <Text style={styles.warningBannerText}>
-                                Chưa có học viên đăng ký
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Price Section - Prominent */}
-                    <View style={styles.priceSectionLarge}>
-                      <View>
-                        <Text style={styles.priceSectionLabel}>
-                          Giá khóa học
-                        </Text>
-                        <Text style={styles.priceSectionValue}>
-                          {formatPrice(selectedCourse.pricePerParticipant)}
-                        </Text>
                       </View>
-                      <View style={styles.priceInfo}>
-                        <Text style={styles.priceInfoText}>
-                          {selectedCourse.maxParticipants -
-                            selectedCourse.currentParticipants >
-                          0
-                            ? `${
-                                selectedCourse.maxParticipants -
-                                selectedCourse.currentParticipants
-                              } chỗ còn`
-                            : "Đã đủ học viên"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Register Button - Full Width, Touch Friendly */}
-                    <TouchableOpacity
-                      style={[
-                        styles.primaryBtn,
-                        styles.registerBtn,
-                        processingPayment === selectedCourse.id &&
-                          styles.primaryBtnDisabled,
-                        selectedCourse.maxParticipants -
-                          selectedCourse.currentParticipants <=
-                          0 && styles.disabledBtn,
-                      ]}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        handleRegister(selectedCourse.id);
-                        setShowCourseDetailModal(false);
-                      }}
-                      disabled={
-                        processingPayment === selectedCourse.id ||
-                        selectedCourse.maxParticipants -
-                          selectedCourse.currentParticipants <=
-                          0
-                      }
-                    >
-                      {processingPayment === selectedCourse.id ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : selectedCourse.maxParticipants -
-                          selectedCourse.currentParticipants <=
-                        0 ? (
-                        <Text style={styles.primaryBtnText}>
-                          Khóa học đã đủ học viên
-                        </Text>
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={18}
-                            color="#FFFFFF"
-                          />
-                          <Text style={styles.primaryBtnText}>
-                            Đăng ký ngay
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
+                    )}
                   </View>
+                </ScrollView>
+
+                {/* Sticky Footer */}
+                <View
+                  style={[
+                    styles.stickyFooter,
+                    { paddingBottom: insets.bottom + 16 },
+                  ]}
+                >
+                  <View style={styles.footerPrice}>
+                    <Text style={styles.footerPriceLabel}>Tổng cộng</Text>
+                    <Text style={styles.footerPriceValue}>
+                      {formatPrice(selectedCourse.pricePerParticipant)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.footerBtn,
+                      (processingPayment === selectedCourse.id ||
+                        selectedCourse.maxParticipants <=
+                          selectedCourse.currentParticipants) &&
+                        styles.footerBtnDisabled,
+                    ]}
+                    onPress={() => {
+                      handleRegister(selectedCourse.id);
+                      setShowCourseDetailModal(false);
+                    }}
+                    disabled={
+                      processingPayment === selectedCourse.id ||
+                      selectedCourse.maxParticipants <=
+                        selectedCourse.currentParticipants
+                    }
+                  >
+                    {processingPayment === selectedCourse.id ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : selectedCourse.maxParticipants <=
+                      selectedCourse.currentParticipants ? (
+                      <Text style={styles.footerBtnText}>Đã đủ học viên</Text>
+                    ) : (
+                      <Text style={styles.footerBtnText}>Đăng ký ngay</Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
-              )}
-            </ScrollView>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -1355,70 +1252,80 @@ const styles = StyleSheet.create({
   container: { padding: 16, gap: 12, paddingBottom: 20 },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#F0F0F0",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
-    elevation: 2,
+    borderColor: "rgba(0,0,0,0.03)",
   },
   cardImageWrapper: {
+    height: 180,
+    width: "100%",
     position: "relative",
-    overflow: "hidden",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    height: 160,
   },
   cover: {
     width: "100%",
     height: "100%",
     backgroundColor: "#E5E7EB",
   },
-  formatBadgeContainer: {
+  cardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.03)",
+  },
+  cardHeaderBadges: {
     position: "absolute",
-    top: 10,
-    left: 10,
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     zIndex: 10,
   },
   formatBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
-    overflow: "hidden",
+    borderRadius: 20,
   },
   formatBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  statusBadgeContainer: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
   },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
+    borderRadius: 20,
   },
   statusBadgeText: {
+    color: "#FFFFFF",
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   cardContent: {
-    padding: 12,
-    gap: 8,
+    padding: 16,
+    gap: 12,
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
   },
   courseTitle: {
-    fontSize: 15,
+    flex: 1,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 20,
+    lineHeight: 24,
   },
   coachRow: {
     flexDirection: "row",
@@ -1596,6 +1503,13 @@ const styles = StyleSheet.create({
     maxHeight: "80%",
     paddingTop: 20,
   },
+  courseModalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: "90%",
+    overflow: "hidden",
+  },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1634,32 +1548,323 @@ const styles = StyleSheet.create({
     color: "#059669",
     fontWeight: "600",
   },
-  levelBadgeContainer: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-  badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  badgePrimary: { backgroundColor: "#059669" },
-  badgeNeutral: { backgroundColor: "#E5E7EB" },
-  badgeText: { color: "#FFFFFF", fontSize: 12, fontWeight: "600" },
-  priceLabel: {
-    color: "#6B7280",
-    fontSize: 11,
+  modalImageContainer: {
+    height: 220,
+    width: "100%",
+    position: "relative",
+  },
+  modalCoverImage: {
+    width: "100%",
+    height: "100%",
+  },
+  modalImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  floatingCloseBtn: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalBadgesContainer: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    flexDirection: "row",
+    gap: 8,
+  },
+  modalBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  modalBadgeText: {
+    fontSize: 12,
     fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: "#FFFFFF",
+  },
+  modalBody: {
+    padding: 20,
+    gap: 24,
+  },
+  modalHeaderSection: {
+    gap: 12,
+  },
+  modalCourseTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+    lineHeight: 30,
+  },
+  modalCoachRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  coachAvatarLarge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E0F2FE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  coachAvatarTextLarge: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0284C7",
+  },
+  coachNameLarge: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  ratingValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4B5563",
+  },
+  ratingLabel: {
+    fontSize: 13,
+    color: "#9CA3AF",
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+  },
+  infoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  infoGridItem: {
+    width: "47%",
+    flexDirection: "row",
+    gap: 10,
+  },
+  infoIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: "#6B7280",
     marginBottom: 2,
   },
-  price: { color: "#059669", fontWeight: "700", fontSize: 16 },
-  primaryBtn: {
-    backgroundColor: "#059669",
-    borderRadius: 10,
+  infoValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  contentSection: {
+    gap: 12,
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  descriptionBody: {
+    fontSize: 14,
+    color: "#4B5563",
+    lineHeight: 22,
+  },
+  scheduleContainer: {
+    gap: 10,
+  },
+  scheduleRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    minWidth: 90,
+    gap: 12,
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 12,
   },
-  primaryBtnDisabled: {
-    opacity: 0.7,
+  scheduleDayBox: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
-  primaryBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
+  scheduleDayTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  scheduleTimeBox: {
+    flex: 1,
+  },
+  scheduleTimeValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  locationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  locationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  locationName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  locationAddress: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  stickyFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  footerPrice: {
+    gap: 2,
+  },
+  footerPriceLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  footerPriceValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  footerBtn: {
+    backgroundColor: "#059669",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerBtnDisabled: {
+    backgroundColor: "#9CA3AF",
+    opacity: 0.8,
+  },
+  footerBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  coachInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  coachAvatarPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#E0F2FE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  coachAvatarText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0284C7",
+  },
+  coachName: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#4B5563",
+    flex: 1,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+  },
+  cardMetaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  metaText: {
+    fontSize: 12,
+    color: "#4B5563",
+    fontWeight: "500",
+  },
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  priceText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  viewDetailBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  viewDetailText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#059669",
+  },
   loadMoreBtn: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
@@ -1670,568 +1875,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   loadMoreText: { color: "#059669", fontWeight: "700" },
-  detailBtn: {
+  ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: "#059669",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  detailBtnText: {
-    color: "#059669",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  courseModalContent: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "90%",
-    paddingTop: 0,
-  },
-  courseModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  courseModalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  closeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  courseDetailContent: {
-    padding: 0,
-  },
-  imageContainer: {
-    position: "relative",
-    overflow: "hidden",
-  },
-  courseDetailImage: {
-    width: "100%",
-    height: 180,
-    backgroundColor: "#E5E7EB",
-  },
-  statusBadgeOverlay: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    flexDirection: "row",
-    gap: 8,
-    zIndex: 10,
-  },
-  courseInfoSection: {
-    padding: 16,
-    gap: 12,
-  },
-  courseDetailTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 24,
-  },
-  courseDetailCoach: {
-    fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "500",
-    marginTop: 4,
-  },
-  quickInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  quickInfoItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  quickInfoText: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-    flex: 1,
-  },
-  divider: {
-    width: 1,
-    height: 24,
-    backgroundColor: "#E5E7EB",
-  },
-  descriptionSection: {
-    backgroundColor: "#F9FAFB",
-    borderLeftWidth: 3,
-    borderLeftColor: "#059669",
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  descriptionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  descriptionTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  descriptionText: {
-    fontSize: 13,
-    color: "#111827",
-    lineHeight: 18,
-    fontWeight: "500",
-  },
-  detailsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  detailCard: {
-    flex: 1,
-    minWidth: "47%",
-    backgroundColor: "#F9FAFB",
-    padding: 10,
-    borderRadius: 8,
     gap: 4,
-  },
-  ratingDetailCard: {
     backgroundColor: "#FFFBEB",
-    borderWidth: 1,
-    borderColor: "#FCD34D",
-  },
-  detailCardLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  detailCardValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 18,
-  },
-  participantsSection: {
-    backgroundColor: "#F0FDF4",
-    padding: 12,
-    borderRadius: 8,
-    gap: 0,
-  },
-  participantRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-  participantColumn: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  participantLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 4,
-  },
-  participantValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  participantDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "#C6F6D5",
-  },
-  individualCourseInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#F0FDF4",
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#059669",
-  },
-  individualCourseText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#059669",
-  },
-  warningSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#FEF3C7",
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#F59E0B",
-  },
-  warningText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#D97706",
-  },
-  statusBadgeSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#059669",
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  statusLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 2,
-  },
-  statusValue: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  progressSection: {
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  progressLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  progressValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#059669",
-    borderRadius: 3,
-  },
-  scheduleSection: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  scheduleList: {
-    gap: 6,
-  },
-  scheduleItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  scheduleDay: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#111827",
-    minWidth: 50,
-  },
-  scheduleTime: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-    flex: 1,
-  },
-  moreSchedules: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-    fontStyle: "italic",
-    textAlign: "center",
-    paddingVertical: 6,
-  },
-  priceSectionLarge: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#F0FDF4",
-    padding: 14,
-    borderRadius: 10,
-    gap: 10,
-  },
-  priceSectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  priceSectionValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#059669",
-    marginTop: 2,
-  },
-  priceInfo: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  priceInfoText: {
-    fontSize: 11,
-    color: "#059669",
-    fontWeight: "600",
-  },
-  registerBtn: {
-    flexDirection: "row",
-    width: "100%",
-    minWidth: "auto",
-    marginTop: 4,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  disabledBtn: {
-    backgroundColor: "#D1D5DB",
-  },
-  detailCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  detailRowText: {
-    fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "500",
-    flex: 1,
-  },
-  badgesDetailRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  // New modal styles
-  venueCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 10,
-    gap: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: "#059669",
-  },
-  venueIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "#E0F2FE",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  venueLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    marginBottom: 2,
-  },
-  venueName: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 18,
-  },
-  venueAddress: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  venuePhone: {
-    fontSize: 12,
-    color: "#059669",
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  quickStatsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F0FDF4",
-    borderRadius: 10,
     paddingHorizontal: 8,
-    paddingVertical: 10,
-    gap: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "#C6F6D5",
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  scheduleDayText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  scheduleTimeText: {
+  ratingText: {
     fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  keyInfoSection: {
-    gap: 12,
-  },
-  infoCard: {
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 10,
-    gap: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: "#059669",
-  },
-  infoCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoCardTitle: {
-    fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
-  },
-  participantsGrid: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  participantCell: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: 8,
-  },
-  participantCellLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  participantCellValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  warningBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  warningBannerText: {
-    fontSize: 12,
     color: "#D97706",
-    fontWeight: "600",
-    flex: 1,
-  },
-  courtInfoContent: {
-    gap: 4,
-  },
-  courtPriceLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  courtPriceValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#059669",
   },
 });

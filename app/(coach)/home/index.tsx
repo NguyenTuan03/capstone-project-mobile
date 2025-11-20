@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -9,9 +11,71 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import sessionService from "../../../services/sessionService";
+import { CalendarSession } from "../../../types/session";
 
 export default function CoachHomeScreen() {
   const insets = useSafeAreaInsets();
+
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  // Helper function to format date for display
+  const formatDisplayDate = () => {
+    const days = [
+      "Chủ Nhật",
+      "Thứ Hai",
+      "Thứ Ba",
+      "Thứ Tư",
+      "Thứ Năm",
+      "Thứ Sáu",
+      "Thứ Bảy",
+    ];
+    const months = [
+      "tháng 1",
+      "tháng 2",
+      "tháng 3",
+      "tháng 4",
+      "tháng 5",
+      "tháng 6",
+      "tháng 7",
+      "tháng 8",
+      "tháng 9",
+      "tháng 10",
+      "tháng 11",
+      "tháng 12",
+    ];
+    const today = new Date();
+    return `${days[today.getDay()]}, ${today.getDate()} ${
+      months[today.getMonth()]
+    }, ${today.getFullYear()}`;
+  };
+
+  const [sessions, setSessions] = useState<CalendarSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const loadTodaySessions = useCallback(async () => {
+    setLoadingSessions(true);
+    try {
+      const today = getTodayDate();
+      const data = await sessionService.getSessionsForWeeklyCalendar({
+        startDate: today,
+        endDate: today,
+      });
+      setSessions(data);
+    } catch (error) {
+      console.error("❌ Failed to load today's sessions:", error);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, []);
+  useEffect(() => {
+    loadTodaySessions();
+  }, [loadTodaySessions]);
   return (
     <View
       style={[
@@ -33,18 +97,14 @@ export default function CoachHomeScreen() {
               <Text style={styles.ratingText}>4.8</Text>
             </View>
           </View>
-
-          <Text style={styles.welcomeSubtext}>
-            Hôm nay bạn có <Text style={styles.highlightText}>2 buổi học</Text>{" "}
-            đang chờ
-          </Text>
-
+          Hôm nay bạn có{" "}
+          <Text style={styles.highlightText}>{sessions.length} buổi học</Text>{" "}
           <View style={styles.statusRow}>
             <View style={styles.statusBadge}>
               <View style={styles.statusDot} />
               <Text style={styles.statusText}>Đang hoạt động</Text>
             </View>
-            <Text style={styles.dateText}>Thứ Năm, 23 tháng 10, 2025</Text>
+            <Text style={styles.dateText}>{formatDisplayDate()}</Text>
           </View>
         </View>
 
@@ -111,72 +171,74 @@ export default function CoachHomeScreen() {
             <View style={styles.sectionTitleContainer}>
               <Ionicons name="calendar" size={20} color="#059669" />
               <Text style={styles.sectionTitle}>Lịch dạy hôm nay</Text>
-              <Text style={styles.sectionCount}>2 buổi học</Text>
+              <Text style={styles.sectionCount}>
+                {sessions.length} buổi học
+              </Text>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(coach)/calendar")}>
               <Text style={styles.viewAllText}>Xem tất cả →</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Class Card 1 */}
-          <View style={styles.classCard}>
-            <View style={styles.classHeader}>
-              <View style={styles.classAvatar}>
-                <Text style={styles.classAvatarText}>NVA</Text>
-              </View>
-              <View style={styles.classInfo}>
-                <Text style={styles.className}>Pickleball cơ bản</Text>
-                <View style={styles.classDetails}>
-                  <Ionicons name="time-outline" size={14} color="#6B7280" />
-                  <Text style={styles.classTime}>14:00 - 15:00</Text>
-                  <Ionicons
-                    name="people-outline"
-                    size={14}
-                    color="#6B7280"
-                    style={{ marginLeft: 8 }}
-                  />
-                  <Text style={styles.classTime}>4 người</Text>
+          {loadingSessions ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#059669" />
+              <Text style={styles.loadingText}>Đang tải lịch học...</Text>
+            </View>
+          ) : sessions.length > 0 ? (
+            sessions.map((session) => (
+              <View key={session.id} style={styles.classCard}>
+                <View style={styles.classHeader}>
+                  <View style={styles.classAvatar}>
+                    <Text style={styles.classAvatarText}>
+                      {session.courseName?.substring(0, 3).toUpperCase() ||
+                        "---"}
+                    </Text>
+                  </View>
+                  <View style={styles.classInfo}>
+                    <Text style={styles.className}>{session.courseName}</Text>
+                    <View style={styles.classDetails}>
+                      <Ionicons name="time-outline" size={14} color="#6B7280" />
+                      <Text style={styles.classTime}>
+                        {session.startTime} - {session.endTime}
+                      </Text>
+                      {session.course?.currentParticipants != null && (
+                        <>
+                          <Ionicons
+                            name="people-outline"
+                            size={14}
+                            color="#6B7280"
+                            style={{ marginLeft: 8 }}
+                          />
+                          <Text style={styles.classTime}>
+                            {session.course.currentParticipants} người
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.classActions}>
+                  <TouchableOpacity
+                    style={styles.detailButton}
+                    onPress={() => router.push(`/(coach)/calendar` as any)}
+                  >
+                    <Text style={styles.detailButtonText}>Chi tiết</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+              <Text style={styles.emptyStateText}>
+                Không có buổi học hôm nay
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                Hãy nghỉ ngơi và chuẩn bị cho ngày mai!
+              </Text>
             </View>
-            <View style={styles.classActions}>
-              <TouchableOpacity style={styles.joinButton}>
-                <Ionicons name="videocam" size={16} color="#FFFFFF" />
-                <Text style={styles.joinButtonText}>Vào lớp</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.detailButton}>
-                <Text style={styles.detailButtonText}>Chi tiết</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Class Card 2 */}
-          <View style={styles.classCard}>
-            <View style={styles.classHeader}>
-              <View style={styles.classAvatar}>
-                <Text style={styles.classAvatarText}>TTB</Text>
-              </View>
-              <View style={styles.classInfo}>
-                <Text style={styles.className}>Kỹ thuật nâng cao</Text>
-                <View style={styles.classDetails}>
-                  <Ionicons name="time-outline" size={14} color="#6B7280" />
-                  <Text style={styles.classTime}>16:00 - 17:00</Text>
-                  <Ionicons
-                    name="people-outline"
-                    size={14}
-                    color="#6B7280"
-                    style={{ marginLeft: 8 }}
-                  />
-                  <Text style={styles.classTime}>2 người</Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.classActions}>
-              <TouchableOpacity style={styles.detailButton}>
-                <Text style={styles.detailButtonText}>Chi tiết</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Quick Stats */}
@@ -549,5 +611,36 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 8,
+    textAlign: "center",
   },
 });

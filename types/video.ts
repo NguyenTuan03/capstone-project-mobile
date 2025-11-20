@@ -5,7 +5,6 @@ export interface VideoType {
   id: number;
   title: string;
   description?: string;
-  tags?: string[] | string | null;
   duration: number;
   drillName: string;
   drillDescription?: string;
@@ -27,7 +26,6 @@ export enum CoachVideoStatus {
 
 export type LearnerVideo = {
   id: number;
-  tags: string | string[] | null;
   duration: number | null;
   publicUrl: string | null;
   thumbnailUrl: string | null;
