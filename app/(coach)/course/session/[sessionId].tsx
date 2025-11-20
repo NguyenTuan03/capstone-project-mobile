@@ -1,5 +1,6 @@
 import { BuildExercise } from "@/helper/BuildExercise";
 import { get } from "@/services/http/httpService";
+import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
+import { QuizDetailModal } from "./components/QuizDetailModal";
 
 const formatTime = (time?: string | null) => {
   if (!time) return "—";
@@ -77,6 +80,9 @@ const SessionDetailScreen: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [learnerVideos, setLearnerVideos] = useState<LearnerVideo[]>([]);
+  const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
+  const [quizModalVisible, setQuizModalVisible] = useState(false);
+
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -134,6 +140,37 @@ const SessionDetailScreen: React.FC = () => {
     fetchLearnerVideos();
   }, [sessionId]);
 
+  const deleteQuiz = async (quizId: number, quizTitle: string) => {
+    try {
+      await http.delete(`/v1/quizzes/${quizId}`);
+
+      // Remove quiz from session state
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              quizzes: prev.quizzes?.filter((q) => q.id !== quizId) || [],
+            }
+          : null
+      );
+
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: `Xóa quiz "${quizTitle}" thành công`,
+        position: "top",
+        visibilityTime: 3000,
+      });
+    } catch (error) {
+      console.error("Lỗi khi xóa quiz:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể xóa quiz. Vui lòng thử lại.",
+        position: "top",
+        visibilityTime: 3000,
+      });
+    }
   const handleOpenCoachVideo = (url: string) => {
     Linking.openURL(url).catch(() =>
       Alert.alert("Lỗi", "Không thể mở video. Vui lòng thử lại sau.")
@@ -159,7 +196,7 @@ const SessionDetailScreen: React.FC = () => {
           <Ionicons name="chevron-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {session?.lesson?.name || session?.name || "Chi tiết buổi học"}
+          {session?.name || "Chi tiết buổi học"}
         </Text>
         <View style={{ width: 32 }} />
       </View>
@@ -180,12 +217,8 @@ const SessionDetailScreen: React.FC = () => {
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Thông tin buổi học</Text>
-            <InfoRow label="Tên bài học" value={session.lesson?.name} />
-            <InfoRow
-              label="Mô tả"
-              value={session.lesson?.description || session.description}
-              multiline
-            />
+            <InfoRow label="Tên bài học" value={session.name} />
+            <InfoRow label="Mô tả" value={session.description} multiline />
             <InfoRow label="Buổi số" value={String(session.sessionNumber)} />
             <InfoRow label="Ngày" value={formatDate(session.scheduleDate)} />
             <InfoRow
@@ -203,8 +236,7 @@ const SessionDetailScreen: React.FC = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Bài tập{" "}
-              {videoExercises.length ? `(${videoExercises.length})` : ""}
+              Video {videoExercises.length ? `(${videoExercises.length})` : ""}
             </Text>
 
             {videoExercises.length ? (
@@ -320,6 +352,78 @@ const SessionDetailScreen: React.FC = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
+              Quiz{" "}
+              {session.quizzes && session.quizzes.length
+                ? `(${session.quizzes.length})`
+                : ""}
+            </Text>
+            {session.quizzes && session.quizzes.length > 0 ? (
+              session.quizzes.map((quiz, index) => (
+                <TouchableOpacity
+                  key={quiz.id}
+                  style={styles.quizCard}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedQuiz(quiz);
+                    setQuizModalVisible(true);
+                  }}
+                >
+                  {/* Quiz Header */}
+                  <View style={styles.quizCardHeader}>
+                    <View style={styles.quizCardTitle}>
+                      <Text style={styles.quizStepLabel}>Quiz {index + 1}</Text>
+                      <Text style={styles.quizCardTitleText} numberOfLines={2}>
+                        {quiz.title}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.quizStatusBadge,
+                        {
+                          backgroundColor: "#EFF6FF",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: "#2563EB",
+                          fontSize: 11,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Sẵn sàng
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Quiz Description */}
+                  {quiz.description && (
+                    <View style={styles.quizDescriptionSection}>
+                      <Text style={styles.quizDescText}>
+                        {quiz.description}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Quick Metadata Row */}
+                  <View style={styles.quickMetadataRow}>
+                    <View style={styles.quickMetadataItem}>
+                      <Ionicons name="help-circle" size={14} color="#2563EB" />
+                      <Text style={styles.quickMetadataTextBlue}>
+                        {(quiz as any).questions?.length || 0} câu hỏi
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={36}
+                  color="#9CA3AF"
+                />
+                <Text style={styles.emptyText}>Chưa có quiz cho buổi này</Text>
               Video mẫu của Coach {coachVideos.length ? `(${coachVideos.length})` : ""}
             </Text>
             {coachVideos.length ? (
@@ -363,6 +467,32 @@ const SessionDetailScreen: React.FC = () => {
           </View>
         </ScrollView>
       )}
+
+      {/* Quiz Details Modal */}
+      <QuizDetailModal
+        visible={quizModalVisible}
+        quiz={selectedQuiz}
+        sessionId={sessionId}
+        onClose={() => {
+          setQuizModalVisible(false);
+          setTimeout(() => setSelectedQuiz(null), 300);
+        }}
+        onDelete={deleteQuiz}
+        onQuizUpdated={() => {
+          // Refresh session data after quiz update
+          if (sessionId) {
+            const fetchSession = async () => {
+              try {
+                const res = await get<Session>(`/v1/sessions/${sessionId}`);
+                setSession(res.data);
+              } catch (error) {
+                console.error("Error refreshing session:", error);
+              }
+            };
+            fetchSession();
+          }
+        }}
+      />
     </View>
   );
 };
@@ -787,6 +917,113 @@ const styles = StyleSheet.create({
     backgroundColor: "#7C3AED",
   },
   btnText: { fontSize: 13, fontWeight: "700" },
+  // Quiz Card Styles
+  quizCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quizCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10,
+    gap: 8,
+  },
+  quizCardTitle: {
+    flex: 1,
+  },
+  quizStepLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginBottom: 3,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  quizCardTitleText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 17,
+  },
+  quizStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+    minWidth: 75,
+    alignItems: "center",
+    fontWeight: "600",
+  },
+  quizDescriptionSection: {
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginBottom: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: "#2563EB",
+  },
+  quizDescText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "400",
+    lineHeight: 15,
+  },
+  quickMetadataRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  quickMetadataItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EFF6FF",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    flex: 1,
+  },
+  quickMetadataTextBlue: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+  quizActionsRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 8,
+  },
+  quizActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 4,
+    shadowColor: "#2563EB",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quizActionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
 });
 
 export default SessionDetailScreen;

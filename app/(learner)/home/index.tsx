@@ -1,8 +1,85 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import sessionService from "../../../services/sessionService";
+import { CalendarSession } from "../../../types/session";
+
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to format date for display
+const formatDisplayDate = () => {
+  const days = [
+    "Chủ Nhật",
+    "Thứ Hai",
+    "Thứ Ba",
+    "Thứ Tư",
+    "Thứ Năm",
+    "Thứ Sáu",
+    "Thứ Bảy",
+  ];
+  const months = [
+    "tháng 1",
+    "tháng 2",
+    "tháng 3",
+    "tháng 4",
+    "tháng 5",
+    "tháng 6",
+    "tháng 7",
+    "tháng 8",
+    "tháng 9",
+    "tháng 10",
+    "tháng 11",
+    "tháng 12",
+  ];
+  const today = new Date();
+  return `${days[today.getDay()]}, ${today.getDate()} ${
+    months[today.getMonth()]
+  }, ${today.getFullYear()}`;
+};
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+
+  const [sessions, setSessions] = useState<CalendarSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+
+  const loadTodaySessions = useCallback(async () => {
+    setLoadingSessions(true);
+    try {
+      const today = getTodayDate();
+      const data = await sessionService.getSessionsForWeeklyCalendar({
+        startDate: today,
+        endDate: today,
+      });
+      setSessions(data);
+    } catch (error) {
+      console.error("❌ Failed to load today's sessions:", error);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTodaySessions();
+  }, [loadTodaySessions]);
+
   return (
     <SafeAreaView
       style={[
@@ -54,22 +131,71 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Upcoming Sessions */}
+        {/* Today's Sessions */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Buổi học sắp tới</Text>
-          <View style={styles.sessionItem}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sessionTitle}>
-                Cơ bản Pickleball - Buổi 3
-              </Text>
-              <Text style={styles.sessionCoach}>HLV Nguyễn Văn A</Text>
-              <View style={styles.sessionMetaRow}>
-                <Text style={styles.sessionMeta}>Hôm nay, 19:00</Text>
-                <Text style={styles.sessionMeta}>• Sân Pickleball Quận 3</Text>
-              </View>
-            </View>
-            <View style={styles.chev} />
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Buổi học hôm nay</Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(learner)/my-courses")}
+            >
+              <Text style={styles.viewAllText}>Xem tất cả →</Text>
+            </TouchableOpacity>
           </View>
+
+          {loadingSessions ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#10B981" />
+              <Text style={styles.loadingText}>Đang tải buổi học...</Text>
+            </View>
+          ) : sessions.length > 0 ? (
+            sessions.map((session) => (
+              <TouchableOpacity
+                key={session.id}
+                style={styles.sessionItem}
+                onPress={() =>
+                  router.push(
+                    `/(learner)/my-courses/${session.courseId}` as any
+                  )
+                }
+                activeOpacity={0.7}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sessionTitle}>{session.courseName}</Text>
+                  <Text style={styles.sessionCoach}>Buổi {session.name}</Text>
+                  <View style={styles.sessionMetaRow}>
+                    <Ionicons name="time-outline" size={14} color="#6B7280" />
+                    <Text style={styles.sessionMeta}>
+                      {session.startTime} - {session.endTime}
+                    </Text>
+                    {session.course?.court?.name && (
+                      <>
+                        <Text style={styles.sessionMeta}>•</Text>
+                        <Ionicons
+                          name="location-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.sessionMeta}>
+                          {session.course.court.name}
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+              <Text style={styles.emptyStateText}>
+                Không có buổi học hôm nay
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                Hãy nghỉ ngơi và chuẩn bị cho các buổi học sắp tới!
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -136,7 +262,53 @@ const styles = StyleSheet.create({
   },
   sessionTitle: { color: "#111827", fontWeight: "600" },
   sessionCoach: { color: "#6B7280", fontSize: 12, marginTop: 2 },
-  sessionMetaRow: { flexDirection: "row", gap: 8, marginTop: 6 },
+  sessionMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+  },
   sessionMeta: { color: "#6B7280", fontSize: 12 },
   chev: { width: 16, height: 16, borderRadius: 8, backgroundColor: "#D1D5DB" },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  viewAllText: {
+    color: "#10B981",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  loadingContainer: {
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+  },
+  emptyStateText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  emptyStateSubtext: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 6,
+    textAlign: "center",
+  },
 });

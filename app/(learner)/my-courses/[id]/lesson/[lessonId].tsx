@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
@@ -40,20 +41,20 @@ const LessonResourcesScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleGoBack}
+            activeOpacity={0.7}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+
           <View style={styles.headerInfo}>
             <Text style={styles.lessonTitle}>{heading}</Text>
             <Text style={styles.lessonSubtitle}>
               Xem video luyện tập và bài quiz của bài học này.
             </Text>
           </View>
-
-          <TouchableOpacity
-            onPress={handleGoBack}
-            activeOpacity={0.8}
-            style={styles.backButton}
-          >
-            <Text style={styles.backButtonText}>Quay lại</Text>
-          </TouchableOpacity>
         </View>
 
         {lessonId ? (
@@ -79,91 +80,62 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: 12,
-    gap: 12,
+    padding: 16,
+    gap: 16,
     paddingBottom: 24,
   },
   header: {
-    gap: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     backgroundColor: "#FFFFFF",
-    padding: 12,
-    borderRadius: 10,
-    shadowColor: "#059669",
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
-    marginBottom: 4,
   },
   headerInfo: {
-    gap: 6,
+    flex: 1,
+    gap: 4,
   },
   lessonTitle: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: "700",
     color: "#111827",
-    letterSpacing: 0.3,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   lessonSubtitle: {
     fontSize: 13,
     color: "#6B7280",
-    letterSpacing: 0.2,
     lineHeight: 18,
     fontWeight: "400",
   },
   backButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#059669",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginTop: 2,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 0,
-  },
-  backButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 13,
-    letterSpacing: 0.2,
-  },
-  infoButton: {
-    marginTop: 16,
+    width: 40,
+    height: 40,
     alignItems: "center",
-    paddingVertical: 10,
-    borderWidth: 1.5,
-    borderColor: "#059669",
-    borderRadius: 8,
-    backgroundColor: "#F0FDF4",
-  },
-  infoButtonText: {
-    color: "#059669",
-    fontWeight: "600",
-    fontSize: 13,
-    letterSpacing: 0.2,
+    justifyContent: "center",
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
   },
   fallback: {
-    padding: 12,
-    borderRadius: 9,
-    backgroundColor: "#FEE2E2",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#FEF2F2",
     borderWidth: 1,
     borderColor: "#FECACA",
     marginTop: 8,
+    alignItems: "center",
   },
   fallbackText: {
     textAlign: "center",
     color: "#B91C1C",
     fontWeight: "600",
-    fontSize: 13,
-    letterSpacing: 0.2,
-    lineHeight: 18,
+    fontSize: 14,
   },
 });
 
 export default LessonResourcesScreen;
-

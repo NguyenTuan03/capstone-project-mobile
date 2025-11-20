@@ -38,6 +38,7 @@ export type Course = {
   startDate: string;
   endDate: string | null;
   progressPct: number;
+  publicUrl?: string;
   address: string;
   subject: {
     id: number;

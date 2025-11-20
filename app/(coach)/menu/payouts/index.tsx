@@ -1,13 +1,15 @@
 import { get, put } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -17,12 +19,13 @@ import {
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
+type TabType = "all" | "income" | "withdrawals";
+
 export default function CoachPayoutsScreen() {
-  const [expenseType, setExpenseType] = useState<"Income" | "Expense">(
-    "Income"
-  );
+  const [activeTab, setActiveTab] = useState<TabType>("all");
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [bankId, setBankId] = useState<string | null>(null);
@@ -70,7 +73,6 @@ export default function CoachPayoutsScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWallet(res.data);
-      console.log("data vi", res.data);
     } catch (err: any) {
       console.error(
         "❌ Lỗi khi lấy dữ liệu ví:",
@@ -78,6 +80,7 @@ export default function CoachPayoutsScreen() {
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -87,10 +90,15 @@ export default function CoachPayoutsScreen() {
 
   useEffect(() => {
     if (wallet) {
-      setBankId(wallet.bank);
-      setAccountNumber(wallet.bankAccountNumber);
+      setBankId(wallet.bank?.id || null);
+      setAccountNumber(wallet.bankAccountNumber || "");
     }
   }, [wallet]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchWalletData();
+  };
 
   const handleSave = async () => {
     if (!wallet?.id || !bankId) {
@@ -107,13 +115,9 @@ export default function CoachPayoutsScreen() {
       const res = await put(`${API_URL}/v1/wallets/${wallet.id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("✅ Cập nhật thành công:", res.data);
       setWallet(res.data);
       setIsEditing(false);
-      
-      // Reload wallet data after successful update
       await fetchWalletData();
-      
       Alert.alert("Thành công", "Cập nhật thông tin ngân hàng thành công!");
     } catch (err: any) {
       console.error("❌ Lỗi cập nhật ví:", err.response?.data || err.message);
@@ -131,56 +135,116 @@ export default function CoachPayoutsScreen() {
     }).format(num);
   };
 
-  const renderIncomeItem = ({ item }: any) => (
-    <View style={styles.transactionCard}>
-      <View style={styles.transactionHeader}>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>
-            {item.studentName || "Học viên"}
-          </Text>
-          <Text style={styles.transactionSubtitle}>
-            {item.lesson || "Buổi học"}
-          </Text>
-        </View>
-        <Text style={styles.incomeAmount}>+{formatCurrency(item.amount)}</Text>
-      </View>
-      <Text style={styles.transactionDate}>{item.date}</Text>
-    </View>
-  );
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  const renderTransactionItem = ({ item }: any) => (
-    <View style={styles.transactionCard}>
-      <View style={styles.transactionHeader}>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>Rút tiền</Text>
-          <Text style={styles.transactionSubtitle}>{item.bankAccount}</Text>
-        </View>
-        <View style={styles.transactionAmountContainer}>
-          <Text style={styles.expenseAmount}>
-            -{formatCurrency(item.amount)}
-          </Text>
-          <View
-            style={[
-              styles.statusBadge,
-              item.status === "completed"
-                ? styles.statusCompleted
-                : styles.statusPending,
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                item.status === "completed"
-                  ? styles.statusCompletedText
-                  : styles.statusPendingText,
-              ]}
-            >
-              {item.status === "completed" ? "Hoàn thành" : "Đang xử lý"}
+  const renderTransactionItem = ({ item, type }: any) => {
+    // CREDIT = money IN (income), DEBIT = money OUT (withdrawal)
+    const isCredit = type === "CREDIT";
+    const isCompleted = item.status === "completed";
+
+    return (
+      <View
+        style={[
+          styles.transactionCard,
+          isCredit ? styles.incomeCard : styles.expenseCard,
+        ]}
+      >
+        <View style={styles.transactionHeader}>
+          <View style={styles.transactionIconContainer}>
+            <MaterialCommunityIcons
+              name={isCredit ? "trending-up" : "bank-transfer"}
+              size={22}
+              color={isCredit ? "#059669" : "#EF4444"}
+            />
+          </View>
+          <View style={styles.transactionInfo}>
+            <Text style={styles.transactionTitle}>
+              {isCredit
+                ? item.studentName || "Thu nhập từ buổi học"
+                : "Rút tiền"}
             </Text>
+            <Text style={styles.transactionSubtitle}>
+              {isCredit
+                ? item.lesson || item.description || "Buổi học"
+                : item.bankAccount || item.description}
+            </Text>
+            <Text style={styles.transactionDate}>
+              {formatDate(item.date || item.createdAt)}
+            </Text>
+          </View>
+          <View style={styles.transactionAmountContainer}>
+            <Text style={isCredit ? styles.incomeAmount : styles.expenseAmount}>
+              {isCredit ? "+" : "-"}
+              {formatCurrency(item.amount)}
+            </Text>
+            {!isCredit && item.status && (
+              <View
+                style={[
+                  styles.statusBadge,
+                  isCompleted ? styles.statusCompleted : styles.statusPending,
+                ]}
+              >
+                <Ionicons
+                  name={isCompleted ? "checkmark-circle" : "time-outline"}
+                  size={12}
+                  color={isCompleted ? "#059669" : "#D97706"}
+                  style={{ marginRight: 4 }}
+                />
+                <Text
+                  style={[
+                    styles.statusText,
+                    isCompleted
+                      ? styles.statusCompletedText
+                      : styles.statusPendingText,
+                  ]}
+                >
+                  {isCompleted ? "Hoàn thành" : "Đang xử lý"}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
-      <Text style={styles.transactionDate}>{item.date}</Text>
+    );
+  };
+
+  const getAllTransactions = () => {
+    // All transactions are in wallet.transactions, each with type: CREDIT or DEBIT
+    const transactions = wallet?.transactions || [];
+    return transactions.sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  };
+
+  const getFilteredTransactions = () => {
+    const transactions = wallet?.transactions || [];
+    if (activeTab === "all") return getAllTransactions();
+    if (activeTab === "income")
+      return transactions.filter((item: any) => item.type === "CREDIT");
+    return transactions.filter((item: any) => item.type === "DEBIT");
+  };
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="receipt-outline" size={64} color="#D1D5DB" />
+      <Text style={styles.emptyTitle}>Chưa có giao dịch</Text>
+      <Text style={styles.emptySubtitle}>
+        {activeTab === "income"
+          ? "Thu nhập từ các buổi học sẽ hiển thị ở đây"
+          : activeTab === "withdrawals"
+          ? "Lịch sử rút tiền sẽ hiển thị ở đây"
+          : "Các giao dịch của bạn sẽ hiển thị ở đây"}
+      </Text>
     </View>
   );
 
@@ -190,11 +254,11 @@ export default function CoachPayoutsScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(coach)/content")}
         >
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ví của bạn</Text>
+        <Text style={styles.headerTitle}>Ví của tôi</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -205,147 +269,193 @@ export default function CoachPayoutsScreen() {
         </View>
       ) : (
         <FlatList
-          data={[{ type: "content" }]}
+          data={[{ key: "content" }]}
           renderItem={() => (
             <View style={styles.content}>
-              {/* Toggle Income / Expense */}
-              <View style={styles.toggleContainer}>
+              {/* Balance Hero Card */}
+              <LinearGradient
+                colors={["#059669", "#10B981"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.balanceHeroCard}
+              >
+                <View style={styles.balanceDecoration}>
+                  <View style={[styles.decorCircle, styles.decorCircle1]} />
+                  <View style={[styles.decorCircle, styles.decorCircle2]} />
+                  <View style={[styles.decorCircle, styles.decorCircle3]} />
+                </View>
+                <Ionicons
+                  name="wallet"
+                  size={40}
+                  color="rgba(255,255,255,0.3)"
+                  style={styles.balanceIcon}
+                />
+                <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
+                <Text style={styles.balanceAmount}>
+                  {formatCurrency(Number(wallet?.currentBalance || 0))}
+                </Text>
+                <View style={styles.totalIncomeRow}>
+                  <MaterialCommunityIcons
+                    name="trending-up"
+                    size={16}
+                    color="rgba(255,255,255,0.9)"
+                  />
+                  <Text style={styles.totalIncomeText}>
+                    Tổng thu nhập:{" "}
+                    {formatCurrency(Number(wallet?.totalIncome || 0))}
+                  </Text>
+                </View>
+                <View style={styles.balanceActions}>
+                  <TouchableOpacity style={styles.primaryActionButton}>
+                    <Ionicons name="cash-outline" size={20} color="#FFF" />
+                    <Text style={styles.primaryActionText}>Rút tiền</Text>
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+
+              {/* Bank Credit Card */}
+              <LinearGradient
+                colors={["#1F2937", "#374151"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.bankCreditCard}
+              >
                 <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    expenseType === "Income" && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => setExpenseType("Income")}
+                  onPress={() =>
+                    isEditing ? handleSave() : setIsEditing(true)
+                  }
+                  style={styles.editButtonCard}
+                >
+                  <Feather
+                    name={isEditing ? "check" : "edit-2"}
+                    size={18}
+                    color="#F59E0B"
+                  />
+                </TouchableOpacity>
+
+                <View style={styles.cardChip} />
+
+                {isEditing ? (
+                  <View style={styles.editSection}>
+                    <Text style={styles.cardLabel}>Ngân hàng</Text>
+                    <View style={styles.pickerContainerCard}>
+                      <Picker
+                        selectedValue={bankId}
+                        onValueChange={(itemValue) => setBankId(itemValue)}
+                        style={styles.bankPickerCard}
+                      >
+                        <Picker.Item
+                          label="-- Chọn ngân hàng --"
+                          value={null}
+                        />
+                        {bankList.map((b) => (
+                          <Picker.Item key={b.id} label={b.name} value={b.id} />
+                        ))}
+                      </Picker>
+                    </View>
+                    <Text style={styles.cardLabel}>Số tài khoản</Text>
+                    <TextInput
+                      value={accountNumber}
+                      onChangeText={setAccountNumber}
+                      style={styles.accountNumberInputCard}
+                      keyboardType="number-pad"
+                      placeholder="Nhập số tài khoản"
+                      placeholderTextColor="#6B7280"
+                    />
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.bankNameCard}>
+                      {wallet?.bank?.name || "Chưa liên kết ngân hàng"}
+                    </Text>
+                    <Text style={styles.accountNumberCard}>
+                      {accountNumber
+                        ? `**** **** **** ${accountNumber.slice(-4)}`
+                        : "---- ---- ---- ----"}
+                    </Text>
+                    <Text style={styles.accountHolderCard}>
+                      {userName.toUpperCase()}
+                    </Text>
+                  </>
+                )}
+              </LinearGradient>
+
+              {/* Tabs */}
+              <View style={styles.tabContainer}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "all" && styles.activeTab]}
+                  onPress={() => setActiveTab("all")}
                 >
                   <Text
                     style={[
-                      styles.toggleText,
-                      expenseType === "Income" && styles.toggleTextActive,
+                      styles.tabText,
+                      activeTab === "all" && styles.activeTabText,
+                    ]}
+                  >
+                    Tất cả
+                  </Text>
+                  {activeTab === "all" && <View style={styles.tabIndicator} />}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tab,
+                    activeTab === "income" && styles.activeTab,
+                  ]}
+                  onPress={() => setActiveTab("income")}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === "income" && styles.activeTabText,
                     ]}
                   >
                     Thu nhập
                   </Text>
+                  {activeTab === "income" && (
+                    <View style={styles.tabIndicator} />
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
-                    styles.toggleButton,
-                    expenseType === "Expense" && styles.toggleButtonActive,
+                    styles.tab,
+                    activeTab === "withdrawals" && styles.activeTab,
                   ]}
-                  onPress={() => setExpenseType("Expense")}
+                  onPress={() => setActiveTab("withdrawals")}
                 >
                   <Text
                     style={[
-                      styles.toggleText,
-                      expenseType === "Expense" && styles.toggleTextActive,
+                      styles.tabText,
+                      activeTab === "withdrawals" && styles.activeTabText,
                     ]}
                   >
-                    Giao dịch
+                    Rút tiền
                   </Text>
+                  {activeTab === "withdrawals" && (
+                    <View style={styles.tabIndicator} />
+                  )}
                 </TouchableOpacity>
               </View>
 
-              {/* Balance Card */}
-              <View style={styles.balanceCard}>
-                <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
-                <Text style={styles.balanceAmount}>
-                  {formatCurrency(Number(wallet?.currentBalance))}
-                </Text>
-                {expenseType === "Expense" && (
-                  <TouchableOpacity style={styles.withdrawButton}>
-                    <Ionicons name="cash" size={18} color="#FFFFFF" />
-                    <Text style={styles.withdrawButtonText}>Rút tiền</Text>
-                  </TouchableOpacity>
-                )}
+              {/* Transaction List */}
+              <View style={styles.transactionSection}>
+                <Text style={styles.sectionTitle}>Lịch sử giao dịch</Text>
+                {getFilteredTransactions().length > 0
+                  ? getFilteredTransactions().map(
+                      (item: any, index: number) => (
+                        <View key={index}>
+                          {renderTransactionItem({ item, type: item.type })}
+                        </View>
+                      )
+                    )
+                  : renderEmptyState()}
               </View>
-
-              {/* Bank Card */}
-              <View style={styles.bankCard}>
-                <View style={styles.bankCardContent}>
-                  <View>
-                    <Text style={styles.bankLabel}>Ngân hàng</Text>
-                    {isEditing ? (
-                      <View style={styles.pickerContainer}>
-                        <Picker
-                          selectedValue={bankId}
-                          onValueChange={(itemValue) => setBankId(itemValue)}
-                          style={styles.bankPicker}
-                        >
-                          <Picker.Item label="-- Chọn ngân hàng --" value={null} />
-                          {bankList.map((b) => (
-                            <Picker.Item key={b.id} label={b.name} value={b.id} />
-                          ))}
-                        </Picker>
-                      </View>
-                    ) : (
-                      <Text style={styles.bankName}>
-                        {wallet.bank ? wallet.bank.name || "" : ""}
-                      </Text>
-                    )}
-                    <Text style={styles.accountNumberLabel}>Số tài khoản</Text>
-                    {isEditing ? (
-                      <TextInput
-                        value={accountNumber}
-                        onChangeText={setAccountNumber}
-                        style={styles.accountNumberInput}
-                        keyboardType="number-pad"
-                        placeholder="Nhập số tài khoản"
-                        placeholderTextColor="#9CA3AF"
-                      />
-                    ) : (
-                      <Text style={styles.accountNumber}>{accountNumber}</Text>
-                    )}
-                    <Text style={styles.accountHolder}>
-                      {userName.toUpperCase()}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() =>
-                      isEditing ? handleSave() : setIsEditing(true)
-                    }
-                    style={styles.editButton}
-                  >
-                    <Feather
-                      name={isEditing ? "check" : "edit"}
-                      size={20}
-                      color="#059669"
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Transactions List */}
-              {expenseType === "Income" ? (
-                <View style={styles.transactionSection}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Tổng thu nhập</Text>
-                    <Text style={styles.sectionAmount}>
-                      {formatCurrency(Number(wallet.totalIncome))}
-                    </Text>
-                  </View>
-                  <Text style={styles.historyTitle}>Lịch sử thu nhập</Text>
-                  <FlatList
-                    data={wallet?.incomes || []}
-                    renderItem={renderIncomeItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    scrollEnabled={false}
-                  />
-                </View>
-              ) : (
-                <View style={styles.transactionSection}>
-                  <Text style={styles.historyTitle}>Lịch sử giao dịch</Text>
-                  <FlatList
-                    data={wallet?.transactions || []}
-                    renderItem={renderTransactionItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    scrollEnabled={false}
-                  />
-                </View>
-              )}
             </View>
           )}
-          keyExtractor={(item) => item.type}
+          keyExtractor={(item) => item.key}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       )}
     </View>
@@ -363,7 +473,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
@@ -377,9 +487,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#111827",
-    flex: 1,
-    textAlign: "center",
-    marginHorizontal: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -393,188 +500,239 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   content: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    padding: 16,
   },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    padding: 6,
-    marginBottom: 20,
-    gap: 6,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    backgroundColor: "transparent",
-  },
-  toggleButtonActive: {
-    backgroundColor: "#059669",
-  },
-  toggleText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-  toggleTextActive: {
-    color: "#FFFFFF",
-  },
-  balanceCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+  // Balance Hero Card
+  balanceHeroCard: {
+    borderRadius: 20,
+    padding: 24,
     marginBottom: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    position: "relative",
+    overflow: "hidden",
+    shadowColor: "#059669",
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  balanceDecoration: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    left: 0,
+    bottom: 0,
+  },
+  decorCircle: {
+    position: "absolute",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 9999,
+  },
+  decorCircle1: {
+    width: 140,
+    height: 140,
+    top: -50,
+    right: -40,
+  },
+  decorCircle2: {
+    width: 100,
+    height: 100,
+    bottom: -30,
+    left: -30,
+  },
+  decorCircle3: {
+    width: 60,
+    height: 60,
+    top: 60,
+    right: 40,
+  },
+  balanceIcon: {
+    position: "absolute",
+    top: 20,
+    left: 20,
   },
   balanceLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#6B7280",
+    color: "rgba(255, 255, 255, 0.95)",
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   balanceAmount: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#059669",
-    marginBottom: 16,
+    fontSize: 40,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 12,
+    letterSpacing: 1,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  withdrawButton: {
+  totalIncomeRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#059669",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    gap: 8,
-    shadowColor: "#059669",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 6,
+    marginBottom: 16,
   },
-  withdrawButtonText: {
-    color: "#FFFFFF",
+  totalIncomeText: {
     fontSize: 14,
     fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.9)",
   },
-  bankCard: {
+  balanceActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  primaryActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+  },
+  primaryActionText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  // Bank Credit Card
+  bankCreditCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    minHeight: 180,
+    position: "relative",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  editButtonCard: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(245, 158, 11, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  cardChip: {
+    width: 50,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#F59E0B",
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  cardLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#9CA3AF",
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  pickerContainerCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 8,
+    marginBottom: 8,
+    overflow: "hidden",
+  },
+  bankPickerCard: {
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+  accountNumberInputCard: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
+  editSection: {
+    flex: 1,
+  },
+  bankNameCard: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  accountNumberCard: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#E5E7EB",
+    letterSpacing: 3,
+    marginBottom: 16,
+    fontFamily: "monospace",
+  },
+  accountHolderCard: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#F59E0B",
+    letterSpacing: 1.5,
+  },
+  // Tabs
+  tabContainer: {
+    flexDirection: "row",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    padding: 4,
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
   },
-  bankCardContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  bankLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  bankName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#059669",
-    marginBottom: 12,
-  },
-  bankPicker: {
-    color: "#111827",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  pickerContainer: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
     borderRadius: 8,
-    marginBottom: 12,
-    overflow: "hidden",
+    position: "relative",
   },
-  accountNumberLabel: {
-    fontSize: 12,
+  activeTab: {
+    backgroundColor: "#F0FDF4",
+  },
+  tabText: {
+    fontSize: 14,
     fontWeight: "600",
     color: "#6B7280",
-    marginBottom: 4,
+  },
+  activeTabText: {
+    color: "#059669",
+    fontWeight: "700",
+  },
+  tabIndicator: {
+    position: "absolute",
+    bottom: 0,
+    left: "25%",
+    right: "25%",
+    height: 3,
+    backgroundColor: "#059669",
+    borderRadius: 2,
+  },
+  // Transaction Section
+  transactionSection: {
     marginTop: 8,
   },
-  accountNumber: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
-  accountNumberInput: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  accountHolder: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#059669",
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#F0FDF4",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  transactionSection: {
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  sectionAmount: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  historyTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
     marginBottom: 12,
@@ -582,33 +740,52 @@ const styles = StyleSheet.create({
   transactionCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    padding: 14,
     marginBottom: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  incomeCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#059669",
+  },
+  expenseCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#EF4444",
   },
   transactionHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+  },
+  transactionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
   transactionInfo: {
     flex: 1,
   },
   transactionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   transactionSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#6B7280",
+    marginBottom: 4,
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: "#9CA3AF",
     fontWeight: "500",
   },
   transactionAmountContainer: {
@@ -616,19 +793,21 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   incomeAmount: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
     color: "#059669",
   },
   expenseAmount: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
     color: "#EF4444",
   },
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   statusCompleted: {
     backgroundColor: "#D1FAE5",
@@ -646,9 +825,22 @@ const styles = StyleSheet.create({
   statusPendingText: {
     color: "#D97706",
   },
-  transactionDate: {
-    fontSize: 11,
-    color: "#9CA3AF",
-    fontWeight: "500",
+  // Empty State
+  emptyState: {
+    paddingVertical: 60,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 8,
+    textAlign: "center",
+    paddingHorizontal: 40,
   },
 });

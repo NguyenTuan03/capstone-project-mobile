@@ -4,7 +4,6 @@ import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
 import { Feedback } from "@/types/feecbacks";
 import type { Session } from "@/types/session";
-import { convertDayOfWeekToVietnamese } from "@/utils/scheduleFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -273,7 +272,9 @@ export default function CourseDetailScreen() {
     course.enrollments?.find(
       (item: Enrollment) => item.user?.id === currentUserId
     ) ?? course.enrollments?.[0];
-  const sessions = course.sessions ?? [];
+  const sessions = (course.sessions ?? []).sort(
+    (a, b) => (a.sessionNumber || 0) - (b.sessionNumber || 0)
+  );
   const schedules = course.schedules ?? [];
 
   // Kiểm tra xem user hiện tại đã viết feedback chưa
@@ -285,7 +286,7 @@ export default function CourseDetailScreen() {
 
   return (
     <View style={styles.safe}>
-      {/* Header */}
+      {/* Header - Premium */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -294,7 +295,9 @@ export default function CourseDetailScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết khóa học</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          Chi tiết khóa học
+        </Text>
         <TouchableOpacity
           onPress={() => {
             if (learnerEnrollment) {
@@ -312,7 +315,7 @@ export default function CourseDetailScreen() {
           <Ionicons
             name="information-circle-outline"
             size={24}
-            color="#111827"
+            color="#059669"
           />
         </TouchableOpacity>
       </View>
@@ -321,306 +324,347 @@ export default function CourseDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
-        <View style={{ gap: 12 }}>
-          <View style={styles.detailSection}>
-            <Text style={styles.detailSectionTitle}>Thông tin khóa học</Text>
-            <View style={{ gap: 8 }}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.courseName}>{course.name}</Text>
-                {course.status ? (
-                  <View style={styles.statusPill}>
-                    <Text style={styles.statusPillText}>
-                      {getCourseStatusLabel(course.status)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-              {course.description ? (
-                <Text style={styles.courseDescription}>
-                  {course.description}
-                </Text>
-              ) : null}
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Trình độ</Text>
-                <Text style={styles.infoValue}>
-                  {getLevelLabel(course.level)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Hình thức</Text>
-                <Text style={styles.infoValue}>
-                  {translateLearningFormat(course.learningFormat)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Số buổi</Text>
-                <Text style={styles.infoValue}>
-                  {course.totalSessions ?? 0}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Học phí</Text>
-                <Text style={styles.infoValue}>
-                  {formatPrice(course.pricePerParticipant)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Ngày bắt đầu</Text>
-                <Text style={styles.infoValue}>
-                  {formatDate(course.startDate)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Ngày kết thúc</Text>
-                <Text style={styles.infoValue}>
-                  {formatDate(course.endDate)}
-                </Text>
-              </View>
-              {course.subject?.name ? (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Môn học</Text>
-                  <Text style={styles.infoValue}>{course.subject.name}</Text>
-                </View>
-              ) : null}
-              {course.createdBy?.fullName ? (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Huấn luyện viên</Text>
-                  <Text style={styles.infoValue}>
-                    {course.createdBy.fullName}
+        <View style={{ gap: 16 }}>
+          {/* Course Info Card - Premium */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.courseName}>{course.name}</Text>
+              {course.status && (
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>
+                    {getCourseStatusLabel(course.status)}
                   </Text>
                 </View>
-              ) : null}
-              {course.court ? (
-                <View style={{ gap: 4 }}>
-                  <Text style={styles.infoLabel}>Địa điểm</Text>
-                  <View style={styles.courtCard}>
-                    <Text style={styles.infoValue}>{course?.court?.name}</Text>
-                    {course.court.address ? (
-                      <Text style={styles.courtAddress}>
-                        {course.court.address}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.courtMeta}>
-                      {[
-                        course.court.district?.name,
-                        course.court.province?.name,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
+              )}
+            </View>
+
+            {course.description && (
+              <Text style={styles.courseDescription}>{course.description}</Text>
+            )}
+
+            <View style={styles.divider} />
+
+            <View style={styles.gridInfo}>
+              <View style={styles.gridItem}>
+                <Ionicons name="school-outline" size={18} color="#059669" />
+                <View>
+                  <Text style={styles.gridLabel}>Trình độ</Text>
+                  <Text style={styles.gridValue}>
+                    {getLevelLabel(course.level)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.gridItem}>
+                <Ionicons name="people-outline" size={18} color="#059669" />
+                <View>
+                  <Text style={styles.gridLabel}>Hình thức</Text>
+                  <Text style={styles.gridValue}>
+                    {translateLearningFormat(course.learningFormat)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.gridItem}>
+                <Ionicons name="time-outline" size={18} color="#059669" />
+                <View>
+                  <Text style={styles.gridLabel}>Thời lượng</Text>
+                  <Text style={styles.gridValue}>
+                    {course.totalSessions ?? 0} buổi
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.gridItem}>
+                <Ionicons name="cash-outline" size={18} color="#059669" />
+                <View>
+                  <Text style={styles.gridLabel}>Học phí</Text>
+                  <Text style={styles.gridValue}>
+                    {formatPrice(course.pricePerParticipant)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Coach & Location */}
+            <View style={styles.metaSection}>
+              {course.createdBy?.fullName && (
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="person-circle-outline"
+                    size={20}
+                    color="#6B7280"
+                  />
+                  <Text style={styles.metaText}>
+                    HLV{" "}
+                    <Text style={styles.metaHighlight}>
+                      {course.createdBy.fullName}
                     </Text>
-                    {course.court.phoneNumber ? (
-                      <Text style={styles.courtMeta}>
-                        Liên hệ: {course.court.phoneNumber}
-                      </Text>
-                    ) : null}
-                  </View>
+                  </Text>
                 </View>
-              ) : null}
-              {schedules.length > 0 ? (
-                <View style={{ gap: 4 }}>
-                  <Text style={styles.infoLabel}>Lịch học</Text>
-                  <View style={{ gap: 3 }}>
-                    {schedules.map((schedule) => (
-                      <View key={schedule.id} style={styles.scheduleRow}>
-                        <Ionicons
-                          name="calendar-clear-outline"
-                          size={16}
-                          color="#10B981"
-                        />
-                        <Text style={styles.scheduleText}>
-                          {convertDayOfWeekToVietnamese(schedule.dayOfWeek)} •{" "}
-                          {schedule.startTime} - {schedule.endTime}
-                        </Text>
-                      </View>
-                    ))}
+              )}
+
+              {course.court && (
+                <View style={styles.locationBox}>
+                  <View style={styles.metaRow}>
+                    <Ionicons
+                      name="location-outline"
+                      size={20}
+                      color="#6B7280"
+                    />
+                    <Text style={styles.metaText}>{course.court.name}</Text>
                   </View>
+                  <Text style={styles.addressText}>
+                    {course.court.address}, {course.court.district?.name},{" "}
+                    {course.court.province?.name}
+                  </Text>
                 </View>
-              ) : null}
+              )}
             </View>
           </View>
 
-          {learnerEnrollment ? (
-            <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>Thông tin đăng ký</Text>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Trạng thái</Text>
-                <Text
-                  style={[
-                    styles.infoValue,
-                    styles.infoValueBold,
-                    enrollmentStatusStyle(learnerEnrollment.status),
-                  ]}
-                >
-                  {getEnrollmentStatusLabel(learnerEnrollment.status)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Ngày đăng ký</Text>
-                <Text style={styles.infoValue}>
-                  {formatDateTime(learnerEnrollment.enrolledAt)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Học phí đã đóng</Text>
-                <Text style={styles.infoValue}>
-                  {formatPrice(learnerEnrollment.paymentAmount)}
-                </Text>
+          {/* Enrollment Info - Premium */}
+          {learnerEnrollment && (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Thông tin đăng ký</Text>
+              <View style={styles.enrollmentList}>
+                <View style={styles.enrollmentRow}>
+                  <Text style={styles.enrollmentLabel}>Trạng thái</Text>
+                  <Text
+                    style={[
+                      styles.enrollmentValue,
+                      enrollmentStatusStyle(learnerEnrollment.status),
+                      { fontWeight: "700" },
+                    ]}
+                  >
+                    {getEnrollmentStatusLabel(learnerEnrollment.status)}
+                  </Text>
+                </View>
+                <View style={styles.dividerLight} />
+                <View style={styles.enrollmentRow}>
+                  <Text style={styles.enrollmentLabel}>Ngày đăng ký</Text>
+                  <Text style={styles.enrollmentValue}>
+                    {formatDateTime(learnerEnrollment.enrolledAt)}
+                  </Text>
+                </View>
+                <View style={styles.dividerLight} />
+                <View style={styles.enrollmentRow}>
+                  <Text style={styles.enrollmentLabel}>Đã đóng</Text>
+                  <Text style={styles.enrollmentValue}>
+                    {formatPrice(learnerEnrollment.paymentAmount)}
+                  </Text>
+                </View>
               </View>
             </View>
-          ) : null}
+          )}
 
-          {/* Sessions Info */}
-          <View style={styles.detailSection}>
-            <Text style={styles.detailSectionTitle}>
-              Buổi học ({sessions.length})
+          {/* Sessions List - Premium */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionHeader}>
+              Lịch trình học tập{" "}
+              <Text style={styles.countBadge}>({sessions.length})</Text>
             </Text>
-            {sessions.length === 0 ? (
-              <Text style={{ color: "#6B7280", fontSize: 14 }}>
-                Chưa có buổi học nào
-              </Text>
-            ) : (
-              <View style={{ gap: 10 }}>
-                {sessions.map((session) => (
-                  <View key={session.id} style={styles.sessionItem}>
-                    <View style={styles.sessionHeader}>
-                      <View style={styles.sessionNumberBadge}>
-                        <Text style={styles.sessionNumberText}>
-                          {session.sessionNumber}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.sessionName}>
-                          {session.name || `Buổi học ${session.sessionNumber}`}
-                        </Text>
-                        <Text style={styles.sessionStatus}>
-                          {getSessionStatusLabel(session.status)}
-                        </Text>
-                      </View>
-                    </View>
-                    {session.description && (
-                      <Text style={styles.sessionDescription}>
-                        {session.description}
-                      </Text>
-                    )}
-                    <View style={styles.sessionInfo}>
-                      <View style={styles.sessionInfoRow}>
-                        <Ionicons
-                          name="calendar-outline"
-                          size={16}
-                          color="#6B7280"
-                        />
-                        <Text style={styles.sessionInfoText}>
-                          {formatDate(session.scheduleDate)}
-                        </Text>
-                      </View>
-                      <View style={styles.sessionInfoRow}>
-                        <Ionicons
-                          name="time-outline"
-                          size={16}
-                          color="#6B7280"
-                        />
-                        <Text style={styles.sessionInfoText}>
-                          {session.startTime && session.endTime
-                            ? `${session.startTime} - ${session.endTime}`
-                            : session.startTime || session.endTime || "N/A"}
-                        </Text>
-                      </View>
-                    </View>
-                    {session &&
-                      (() => {
-                        const lesson = session;
-                        const lessonLabel =
-                          lesson.name ||
-                          (lesson.sessionNumber != null
-                            ? `Bài học ${lesson.sessionNumber}`
-                            : "Bài học");
 
-                        return (
-                          <View style={styles.lessonInfo}>
-                            <Text style={styles.lessonTitle}>
-                              Bài học: {lessonLabel}
-                            </Text>
-                            {lesson.videos && lesson.videos.length > 0 && (
-                              <Text style={styles.lessonMeta}>
-                                {lesson.videos.length} video
+            {sessions.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="calendar-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.emptyText}>Chưa có lịch học</Text>
+              </View>
+            ) : (
+              <View style={{ gap: 12 }}>
+                {sessions.map((session, index) => (
+                  <View key={session.id} style={styles.sessionCard}>
+                    <View style={styles.sessionLeft}>
+                      <View style={styles.sessionIndex}>
+                        <Text style={styles.sessionIndexText}>
+                          {session.sessionNumber || index + 1}
+                        </Text>
+                      </View>
+                      <View style={styles.connectorLine} />
+                    </View>
+
+                    <View style={styles.sessionRight}>
+                      <View style={styles.sessionHeader}>
+                        <Text style={styles.sessionTitle}>
+                          {session.name || `Buổi ${session.sessionNumber}`}
+                        </Text>
+                        <View
+                          style={[
+                            styles.sessionStatusBadge,
+                            session.status === "COMPLETED" && {
+                              backgroundColor: "#DCFCE7",
+                            },
+                            session.status === "IN_PROGRESS" && {
+                              backgroundColor: "#DBEAFE",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.sessionStatusText,
+                              session.status === "COMPLETED" && {
+                                color: "#059669",
+                              },
+                              session.status === "IN_PROGRESS" && {
+                                color: "#2563EB",
+                              },
+                            ]}
+                          >
+                            {getSessionStatusLabel(session.status)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.sessionMetaRow}>
+                        <View style={styles.metaItem}>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={14}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.metaValue}>
+                            {formatDate(session.scheduleDate)}
+                          </Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                          <Ionicons
+                            name="time-outline"
+                            size={14}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.metaValue}>
+                            {session.startTime} - {session.endTime}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Lesson Content */}
+                      <View style={styles.lessonContainer}>
+                        <View style={styles.lessonHeader}>
+                          <Ionicons
+                            name="book-outline"
+                            size={16}
+                            color="#059669"
+                          />
+                          <Text style={styles.lessonLabel}>
+                            Nội dung bài học
+                          </Text>
+                        </View>
+
+                        <View style={styles.lessonStats}>
+                          {session.videos && session.videos.length > 0 && (
+                            <View style={styles.statTag}>
+                              <Ionicons
+                                name="play-circle-outline"
+                                size={12}
+                                color="#4B5563"
+                              />
+                              <Text style={styles.statText}>
+                                {session.videos.length} Video
                               </Text>
-                            )}
-                            {lesson.quizzes && lesson.quizzes.length > 0 && (
-                              <Text style={styles.lessonMeta}>
-                                {lesson.quizzes.length} quiz
+                            </View>
+                          )}
+                          {session.quizzes && session.quizzes.length > 0 && (
+                            <View style={styles.statTag}>
+                              <Ionicons
+                                name="help-circle-outline"
+                                size={12}
+                                color="#4B5563"
+                              />
+                              <Text style={styles.statText}>
+                                {session.quizzes.length} Quiz
                               </Text>
-                            )}
-                            {lesson.id ? (
-                              <TouchableOpacity
-                                style={styles.lessonResourcesButton}
-                                activeOpacity={0.85}
-                                onPress={() =>
-                                  router.push({
-                                    pathname:
-                                      "/(learner)/my-courses/[id]/lesson/[lessonId]",
-                                    params: {
-                                      id: courseId?.toString() ?? "",
-                                      lessonId: lesson.id.toString(),
-                                      lessonName: lessonLabel,
-                                      sessionId: session.id.toString(),
-                                    },
-                                  })
-                                }
-                              >
-                                <Text style={styles.lessonResourcesButtonText}>
-                                  Xem video & quiz
-                                </Text>
-                              </TouchableOpacity>
-                            ) : null}
-                          </View>
-                        );
-                      })()}
+                            </View>
+                          )}
+                        </View>
+
+                        <TouchableOpacity
+                          style={styles.accessButton}
+                          activeOpacity={0.8}
+                          onPress={() =>
+                            router.push({
+                              pathname:
+                                "/(learner)/my-courses/[id]/lesson/[lessonId]",
+                              params: {
+                                id: courseId?.toString() ?? "",
+                                lessonId: session.id.toString(),
+                                lessonName:
+                                  session.name ||
+                                  `Buổi ${session.sessionNumber}`,
+                                sessionId: session.id.toString(),
+                              },
+                            })
+                          }
+                        >
+                          <Text style={styles.accessButtonText}>
+                            Vào học ngay
+                          </Text>
+                          <Ionicons
+                            name="arrow-forward"
+                            size={16}
+                            color="#FFFFFF"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
                 ))}
               </View>
             )}
           </View>
 
-          {/* Feedbacks Info */}
+          {/* Feedbacks Section - Premium */}
           {course.status === CourseStatus.COMPLETED && (
-            <View style={styles.detailSection}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 4,
-                }}
-              >
-                <Text style={styles.detailSectionTitle}>
-                  Đánh giá ({feedbacks.length})
+            <View style={styles.sectionContainer}>
+              <View style={styles.feedbackHeaderRow}>
+                <Text style={styles.sectionHeader}>
+                  Đánh giá{" "}
+                  <Text style={styles.countBadge}>({feedbacks.length})</Text>
                 </Text>
                 {!hasUserFeedback && (
                   <TouchableOpacity
-                    style={styles.writeFeedbackButton}
+                    style={styles.writeFeedbackBtn}
                     onPress={() => setShowFeedbackModal(true)}
-                    activeOpacity={0.8}
                   >
                     <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.writeFeedbackButtonText}>
-                      Viết đánh giá
-                    </Text>
+                    <Text style={styles.writeFeedbackText}>Viết đánh giá</Text>
                   </TouchableOpacity>
                 )}
               </View>
+
               {feedbacks.length === 0 ? (
-                <Text style={{ color: "#6B7280", fontSize: 14 }}>
-                  Chưa có đánh giá nào
-                </Text>
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
+                </View>
               ) : (
-                <View style={{ gap: 10 }}>
+                <View style={{ gap: 12 }}>
                   {feedbacks.map((feedback, index) => (
                     <View
                       key={feedback.id || index}
-                      style={styles.feedbackItem}
+                      style={styles.feedbackCard}
                     >
-                      <View style={styles.feedbackHeader}>
-                        <View style={styles.ratingContainer}>
+                      <View style={styles.feedbackTop}>
+                        <View style={styles.userInfo}>
+                          <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarText}>
+                              {feedback.isAnonymous
+                                ? "A"
+                                : (feedback as any).createdBy?.fullName?.[0] ||
+                                  "U"}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={styles.userName}>
+                              {feedback.isAnonymous
+                                ? "Ẩn danh"
+                                : (feedback as any).createdBy?.fullName ||
+                                  "Người dùng"}
+                            </Text>
+                            <Text style={styles.feedbackTime}>
+                              {formatDateTime(feedback.createdAt)}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.starsRow}>
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Ionicons
                               key={star}
@@ -629,40 +673,17 @@ export default function CourseDetailScreen() {
                                   ? "star"
                                   : "star-outline"
                               }
-                              size={16}
+                              size={14}
                               color={
-                                star <= feedback.rating ? "#FBBF24" : "#D1D5DB"
+                                star <= feedback.rating ? "#F59E0B" : "#E5E7EB"
                               }
                             />
                           ))}
                         </View>
-                        <View style={styles.feedbackAuthorContainer}>
-                          {feedback.isAnonymous ? (
-                            <>
-                              <Ionicons
-                                name="eye-off-outline"
-                                size={14}
-                                color="#6B7280"
-                              />
-                              <Text style={styles.feedbackAuthor}>Ẩn danh</Text>
-                            </>
-                          ) : (
-                            <Text style={styles.feedbackAuthor}>
-                              {(feedback as any).createdBy?.fullName ||
-                                feedback.created_by?.fullName ||
-                                "Người dùng"}
-                            </Text>
-                          )}
-                        </View>
                       </View>
                       {feedback.comment && (
-                        <Text style={styles.feedbackComment}>
+                        <Text style={styles.commentText}>
                           {feedback.comment}
-                        </Text>
-                      )}
-                      {feedback.createdAt && (
-                        <Text style={styles.feedbackDate}>
-                          {formatDateTime(feedback.createdAt)}
                         </Text>
                       )}
                     </View>
@@ -674,7 +695,7 @@ export default function CourseDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Feedback Modal */}
+      {/* Feedback Modal - Premium */}
       <Modal
         visible={showFeedbackModal}
         animationType="slide"
@@ -682,25 +703,21 @@ export default function CourseDetailScreen() {
         onRequestClose={() => setShowFeedbackModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Viết đánh giá</Text>
+              <Text style={styles.modalTitle}>Đánh giá khóa học</Text>
               <TouchableOpacity
                 onPress={() => setShowFeedbackModal(false)}
-                style={styles.modalCloseButton}
+                style={styles.closeBtn}
               >
                 <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              style={styles.modalBody}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Rating Selection */}
-              <View style={styles.ratingSection}>
-                <Text style={styles.ratingLabel}>Đánh giá của bạn</Text>
-                <View style={styles.starContainer}>
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.ratingWrapper}>
+                <Text style={styles.ratingTitle}>Bạn cảm thấy thế nào?</Text>
+                <View style={styles.starSelectRow}>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <TouchableOpacity
                       key={star}
@@ -713,9 +730,9 @@ export default function CourseDetailScreen() {
                         name={
                           star <= feedbackForm.rating ? "star" : "star-outline"
                         }
-                        size={40}
+                        size={42}
                         color={
-                          star <= feedbackForm.rating ? "#FBBF24" : "#D1D5DB"
+                          star <= feedbackForm.rating ? "#F59E0B" : "#E5E7EB"
                         }
                       />
                     </TouchableOpacity>
@@ -723,58 +740,56 @@ export default function CourseDetailScreen() {
                 </View>
               </View>
 
-              {/* Comment Input */}
-              <View style={styles.commentSection}>
-                <Text style={styles.commentLabel}>Nhận xét</Text>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>
+                  Chia sẻ trải nghiệm của bạn
+                </Text>
                 <TextInput
-                  style={styles.commentInput}
-                  placeholder="Chia sẻ trải nghiệm của bạn về khóa học này..."
+                  style={styles.textInput}
+                  placeholder="Nội dung bài học, giảng viên, cơ sở vật chất..."
                   placeholderTextColor="#9CA3AF"
                   value={feedbackForm.comment}
                   onChangeText={(text) =>
                     setFeedbackForm({ ...feedbackForm, comment: text })
                   }
                   multiline
-                  numberOfLines={6}
+                  numberOfLines={5}
                   textAlignVertical="top"
                 />
               </View>
 
-              {/* Anonymous Option */}
               <TouchableOpacity
-                style={styles.anonymousOption}
+                style={styles.checkboxRow}
                 onPress={() =>
                   setFeedbackForm({
                     ...feedbackForm,
                     isAnonymous: !feedbackForm.isAnonymous,
                   })
                 }
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 <Ionicons
                   name={
-                    feedbackForm.isAnonymous ? "checkbox" : "checkbox-outline"
+                    feedbackForm.isAnonymous ? "checkbox" : "square-outline"
                   }
-                  size={24}
+                  size={22}
                   color={feedbackForm.isAnonymous ? "#059669" : "#9CA3AF"}
                 />
-                <Text style={styles.anonymousLabel}>Đánh giá ẩn danh</Text>
+                <Text style={styles.checkboxLabel}>Gửi đánh giá ẩn danh</Text>
               </TouchableOpacity>
             </ScrollView>
 
-            {/* Modal Footer */}
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={styles.modalCancelButton}
+                style={styles.cancelBtn}
                 onPress={() => setShowFeedbackModal(false)}
-                disabled={submittingFeedback}
               >
-                <Text style={styles.modalCancelButtonText}>Hủy</Text>
+                <Text style={styles.cancelText}>Hủy bỏ</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.modalSubmitButton,
-                  submittingFeedback && styles.modalSubmitButtonDisabled,
+                  styles.submitBtn,
+                  submittingFeedback && styles.disabledBtn,
                 ]}
                 onPress={handleSubmitFeedback}
                 disabled={submittingFeedback}
@@ -782,7 +797,7 @@ export default function CourseDetailScreen() {
                 {submittingFeedback ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.modalSubmitButtonText}>Gửi đánh giá</Text>
+                  <Text style={styles.submitText}>Gửi đánh giá</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -794,408 +809,496 @@ export default function CourseDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F9FAFB" },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  safe: { flex: 1, backgroundColor: "#F3F4F6" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+  /* Header */
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 10,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  backButton: { padding: 4 },
+  infoButton: { padding: 4 },
   headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    flex: 1,
+    textAlign: "center",
+  },
+  container: { padding: 16, paddingBottom: 40 },
+
+  /* Card Styles */
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 8,
+  },
+  courseName: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111827",
+    flex: 1,
+    lineHeight: 28,
+  },
+  statusBadge: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusText: {
+    color: "#059669",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  courseDescription: {
+    fontSize: 14,
+    color: "#4B5563",
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginVertical: 16,
+  },
+
+  /* Grid Info */
+  gridInfo: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  gridItem: {
+    width: "47%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  gridLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "500",
+    textTransform: "uppercase",
+  },
+  gridValue: {
+    fontSize: 13,
+    color: "#111827",
+    fontWeight: "600",
+  },
+
+  /* Meta Section */
+  metaSection: { gap: 12 },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  metaText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  metaHighlight: {
+    fontWeight: "700",
+    color: "#111827",
+  },
+  locationBox: {
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 12,
+    gap: 4,
+  },
+  addressText: {
+    fontSize: 12,
+    color: "#6B7280",
+    paddingLeft: 28,
+  },
+
+  /* Enrollment Info */
+  sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
+    marginBottom: 12,
   },
-  container: { padding: 12, gap: 12, paddingBottom: 20 },
-
-  /* Detail Section - Compact */
-  detailSection: {
+  enrollmentList: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
     padding: 12,
+    gap: 12,
+  },
+  enrollmentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+  },
+  dividerLight: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  enrollmentLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  enrollmentValue: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "right",
+  },
+
+  /* Sessions List */
+  sectionContainer: { gap: 12 },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  countBadge: {
+    color: "#6B7280",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: 32,
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    gap: 8,
+    borderRadius: 16,
+    gap: 12,
+  },
+  emptyText: {
+    color: "#9CA3AF",
+    fontSize: 14,
+  },
+
+  /* Session Card */
+  sessionCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
     elevation: 1,
   },
-  detailSectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 2,
-  },
-  infoHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  courseName: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 18,
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "#DCFCE7",
-    alignSelf: "flex-start",
-  },
-  statusPillText: {
-    color: "#047857",
-    fontWeight: "600",
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  courseDescription: {
-    fontSize: 12,
-    color: "#6B7280",
-    lineHeight: 16,
-  },
-  infoRow: {
-    flexDirection: "row",
+  sessionLeft: {
+    width: 50,
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    paddingVertical: 6,
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: "#059669",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    width: "40%",
-  },
-  infoValue: {
-    fontSize: 13,
-    color: "#111827",
-    fontWeight: "500",
-    textAlign: "left",
-    flex: 1,
-  },
-  infoValueBold: {
-    fontWeight: "700",
-  },
-  courtCard: {
-    gap: 4,
-    padding: 10,
-    borderRadius: 8,
+    paddingTop: 16,
     backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderRightWidth: 1,
+    borderRightColor: "#F3F4F6",
   },
-  courtAddress: {
-    fontSize: 12,
-    color: "#111827",
-    fontWeight: "500",
-  },
-  courtMeta: {
-    fontSize: 11,
-    color: "#6B7280",
-  },
-  scheduleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 4,
-  },
-  scheduleText: {
-    fontSize: 11,
-    color: "#1F2937",
-    fontWeight: "500",
-  },
-
-  /* Session Item - Compact */
-  sessionItem: {
-    padding: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    gap: 6,
-  },
-  sessionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sessionNumberBadge: {
+  sessionIndex: {
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: "#059669",
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
+    zIndex: 2,
   },
-  sessionNumberText: {
-    color: "#fff",
+  sessionIndexText: {
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
   },
-  sessionName: {
+  connectorLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: "#E5E7EB",
+    marginTop: -4,
+    marginBottom: 16,
+  },
+  sessionRight: {
+    flex: 1,
+    padding: 16,
+    gap: 12,
+  },
+  sessionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  sessionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    flex: 1,
+  },
+  sessionStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+  },
+  sessionStatusText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  sessionMetaRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  metaValue: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  /* Lesson Content */
+  lessonContainer: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
+  },
+  lessonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  lessonLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  lessonStats: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  statTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  statText: {
+    fontSize: 11,
+    color: "#4B5563",
+    fontWeight: "500",
+  },
+  accessButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#059669",
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  accessButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  /* Feedback Section */
+  feedbackHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  writeFeedbackBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#059669",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  writeFeedbackText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  feedbackCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 16,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  feedbackTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  userInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#6B7280",
+  },
+  userName: {
     fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    flex: 1,
   },
-  sessionStatus: {
-    fontSize: 10,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  sessionDescription: {
+  feedbackTime: {
     fontSize: 11,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  sessionInfo: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 6,
-  },
-  sessionInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-  },
-  sessionInfoText: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  lessonInfo: {
-    marginTop: 6,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    gap: 3,
-  },
-  lessonTitle: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#059669",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  lessonMeta: {
-    fontSize: 10,
-    color: "#6B7280",
-  },
-  lessonResourcesButton: {
-    marginTop: 8,
-    backgroundColor: "#059669",
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  lessonResourcesButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-
-  /* Feedback Item - Compact */
-  feedbackItem: {
-    padding: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    gap: 6,
-  },
-  feedbackHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    gap: 1,
-  },
-  feedbackAuthorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-  },
-  feedbackAuthor: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  feedbackComment: {
-    fontSize: 12,
-    color: "#111827",
-    lineHeight: 16,
-  },
-  feedbackDate: {
-    fontSize: 10,
     color: "#9CA3AF",
   },
-  writeFeedbackButton: {
+  starsRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#059669",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
+    gap: 2,
   },
-  writeFeedbackButtonText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "600",
+  commentText: {
+    fontSize: 13,
+    color: "#4B5563",
+    lineHeight: 20,
   },
 
-  /* Modal Styles - Compact */
+  /* Modal Styles */
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "flex-end",
   },
-  modalContent: {
+  modalContainer: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: "90%",
-    paddingBottom: 16,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
     color: "#111827",
   },
-  modalCloseButton: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalBody: {
-    padding: 12,
-    maxHeight: 450,
-  },
-  ratingSection: {
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  ratingLabel: {
-    fontSize: 13,
+  closeBtn: { padding: 4 },
+  modalContent: { padding: 20 },
+  ratingWrapper: { alignItems: "center", marginBottom: 24 },
+  ratingTitle: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  starContainer: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  commentSection: {
-    marginBottom: 16,
-  },
-  commentLabel: {
-    fontSize: 13,
+  starSelectRow: { flexDirection: "row", gap: 12 },
+  inputWrapper: { gap: 8, marginBottom: 20 },
+  inputLabel: {
+    fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
-    marginBottom: 6,
+    color: "#374151",
   },
-  commentInput: {
+  textInput: {
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 13,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
     color: "#111827",
-    minHeight: 100,
-    textAlignVertical: "top",
+    minHeight: 120,
   },
-  anonymousOption: {
+  checkboxRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
+    gap: 10,
+    marginBottom: 10,
   },
-  anonymousLabel: {
-    fontSize: 13,
-    color: "#374151",
-    fontWeight: "500",
+  checkboxLabel: {
+    fontSize: 14,
+    color: "#4B5563",
   },
   modalFooter: {
     flexDirection: "row",
-    gap: 10,
-    padding: 12,
+    gap: 12,
+    padding: 20,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#F3F4F6",
   },
-  modalCancelButton: {
+  cancelBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     alignItems: "center",
-    justifyContent: "center",
   },
-  modalCancelButtonText: {
-    color: "#6B7280",
-    fontSize: 13,
+  cancelText: {
     fontWeight: "600",
+    color: "#6B7280",
   },
-  modalSubmitButton: {
+  submitBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     backgroundColor: "#059669",
     alignItems: "center",
-    justifyContent: "center",
   },
-  modalSubmitButtonDisabled: {
-    backgroundColor: "#9CA3AF",
-  },
-  modalSubmitButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
+  disabledBtn: { backgroundColor: "#9CA3AF" },
+  submitText: {
     fontWeight: "700",
+    color: "#FFFFFF",
   },
 });
