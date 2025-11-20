@@ -45,8 +45,15 @@ export default function CoachCourseScreen() {
         }
 
         const user = await storageService.getUser();
+        if (!user?.id) {
+          console.error("User ID không tồn tại");
+          return;
+        }
 
-        const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=createdBy.id_eq_${user?.id}`;
+        // Encode URL đúng cách để tránh parsing error
+        const filterParam = encodeURIComponent(`createdBy.id_eq_${user.id}`);
+        const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=${filterParam}`;
+        
         const res = await get<CoursesResponse>(url);
         console.log("a====", res.data.items);
         if (append) {
@@ -59,8 +66,15 @@ export default function CoachCourseScreen() {
         setPage(res.data.page || 1);
       } catch (error) {
         console.error("Lỗi khi tải danh sách khóa học:", error);
+        if (append) {
+          setLoadingMore(false);
+        } else {
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
+        if (!append) {
+          setLoading(false);
+        }
         setLoadingMore(false);
       }
     },
@@ -78,11 +92,11 @@ export default function CoachCourseScreen() {
     }
   };
 
-  const loadMore = () => {
-    if (!loadingMore && courses.length < total) {
+  const loadMore = useCallback(() => {
+    if (!loadingMore && !loading && courses.length < total && page > 0) {
       fetchCourses(page + 1, true);
     }
-  };
+  }, [loadingMore, loading, courses.length, total, page, fetchCourses]);
 
   useFocusEffect(
     useCallback(() => {
@@ -124,7 +138,7 @@ export default function CoachCourseScreen() {
             layoutMeasurement.height + contentOffset.y >=
             contentSize.height - paddingToBottom
           ) {
-            if (hasMore && !loadingMore) {
+            if (hasMore && !loadingMore && !loading) {
               loadMore();
             }
           }

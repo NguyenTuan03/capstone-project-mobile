@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { useFocusEffect } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -49,12 +49,15 @@ export default function CoursesScreen() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
+  const hasInitialized = useRef(false);
 
   const fetchProvinces = useCallback(async () => {
     try {
       setLoadingProvinces(true);
       const res = await get<Province[]>("/v1/provinces");
-      setProvinces(res.data || []);
+      const provincesData = res.data || [];
+      setProvinces(provincesData);
+      return provincesData;
     } finally {
       setLoadingProvinces(false);
     }
@@ -72,7 +75,7 @@ export default function CoursesScreen() {
     }
   }, []);
 
-  const loadUserLocation = useCallback(async () => {
+  const loadUserLocation = useCallback(async (provincesList: Province[]) => {
     try {
       const userString = await AsyncStorage.getItem("user");
       if (!userString) return;
@@ -86,11 +89,6 @@ export default function CoursesScreen() {
       }
 
       if (learner?.province && learner?.district) {
-        const provincesList =
-          provinces.length > 0
-            ? provinces
-            : (await get<Province[]>("/v1/provinces")).data || [];
-
         const userProvince = provincesList.find(
           (p) => p.id === learner.province.id
         );
@@ -112,15 +110,22 @@ export default function CoursesScreen() {
     } catch {
       // ignore
     }
-  }, [provinces]);
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
     const initializeData = async () => {
-      await fetchProvinces();
-      await loadUserLocation();
+      const provincesRes = await fetchProvinces();
+      if (mounted && provincesRes) {
+        await loadUserLocation(provincesRes);
+      }
     };
     initializeData();
-  }, [fetchProvinces, loadUserLocation]);
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (selectedProvince) {
@@ -260,10 +265,23 @@ export default function CoursesScreen() {
     [fetchCoachesRatings, pageSize, selectedDistrict, selectedProvince]
   );
 
+  // Fetch courses khi location thay đổi
+  useEffect(() => {
+    if (hasInitialized.current) {
+      fetchCourses(1, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvince?.id, selectedDistrict?.id]);
+
+  // Fetch lần đầu khi mount hoặc khi quay lại màn hình
   useFocusEffect(
     useCallback(() => {
-      fetchCourses(1, false);
-    }, [fetchCourses])
+      if (!hasInitialized.current) {
+        hasInitialized.current = true;
+        fetchCourses(1, false);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
 
   const loadMore = useCallback(() => {
