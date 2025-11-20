@@ -137,7 +137,7 @@ const CourseCardComponent: FC<CourseCardProps> = ({
       </View>
 
       <View>
-        <DetailRow icon="book-outline" text={course.subject.name} />
+        <DetailRow icon="book-outline" text={course?.subject?.name} />
         <DetailRow
           icon="time-outline"
           text={formatSchedule(course.schedules)}
