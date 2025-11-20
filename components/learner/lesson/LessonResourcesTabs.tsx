@@ -109,19 +109,15 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
     // UPDATED: Load both submitted video and overlayVideoUrl
     const loadSubmittedVideo = useCallback(async () => {
-      console.log("🔍 loadSubmittedVideo called, sessionId:", sessionId);
 
       if (!sessionId) {
-        console.log("⚠️ No sessionId, skipping loadSubmittedVideo");
         setSubmittedVideo(null);
         setOverlayVideoUrl(null);
         return;
       }
 
       try {
-        console.log("✅ Starting to load submitted video...");
         const user = await storageService.getUser();
-        console.log("👤 User from storage:", user);
         if (!user?.id) {
           console.warn("❌ User not found, cannot load learner video");
           setSubmittedVideo(null);
@@ -133,10 +129,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
           `/v1/learner-videos/user/${user.id}?sessionId=${sessionId}`
         );
         const list = Array.isArray(res?.data) ? res.data : [];
-        console.log("📹 Loaded learner videos:", list.length);
 
         if (list.length === 0) {
-          console.log("📹 No learner videos found");
           setSubmittedVideo(null);
           setOverlayVideoUrl(null);
           return;
@@ -152,8 +146,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                 new Date(a?.createdAt ?? 0).getTime()
             )[0] ?? list[0];
 
-        console.log("📹 Picked video:", picked);
-
         if (picked?.publicUrl && picked.publicUrl.trim().length > 0) {
           setSubmittedVideo({
             publicUrl: picked.publicUrl,
@@ -162,7 +154,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             createdAt: picked.createdAt,
             id: picked.id,
           });
-          console.log("✅ Set submitted video successfully");
 
           // IMPORTANT: Check and set overlayVideoUrl if it exists
           if (
@@ -170,16 +161,10 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             picked.overlayVideoUrl.trim().length > 0
           ) {
             setOverlayVideoUrl(picked.overlayVideoUrl);
-            console.log(
-              "✅ Found existing overlay video URL:",
-              picked.overlayVideoUrl
-            );
           } else {
             setOverlayVideoUrl(null);
-            console.log("⚠️ No overlay video URL found");
           }
         } else {
-          console.log("⚠️ Video found but no valid publicUrl");
           setSubmittedVideo(null);
           setOverlayVideoUrl(null);
         }
@@ -191,13 +176,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     }, [sessionId]);
 
     const handleUploadVideo = async (coachVideoId: number) => {
-      console.log(
-        "🔍 handleUploadVideo called with coachVideoId:",
-        coachVideoId
-      );
       if (!localVideo) return;
-
-      console.log("🔍 Local video to upload:", JSON.stringify(localVideo));
 
       setIsUploading(true);
       try {
@@ -266,14 +245,9 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       try {
         setGeneratingOverlay(true);
 
-        console.log("🔍 Learner video ID:", submittedVideo.id);
-        console.log("🔍 Coach video ID:", coachVideo.id);
-
         const response = await post(
           `/v1/learner-videos/${submittedVideo.id}/overlay-video/${coachVideo.id}`
         );
-
-        console.log("✅ Generate overlay response:", response);
 
         if (response.data && typeof response.data === "string") {
           if (response.data.startsWith("http")) {

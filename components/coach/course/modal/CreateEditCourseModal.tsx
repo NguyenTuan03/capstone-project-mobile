@@ -14,9 +14,12 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useCallback, useEffect, useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   Platform,
   ScrollView,
@@ -50,6 +53,13 @@ type CourseFormData = {
   district: District | null;
   schedules: Schedule[];
   court: Court | null;
+  publicUrl?: string | null;
+};
+
+type SelectedCourseImage = {
+  uri: string;
+  fileName?: string;
+  mimeType?: string;
 };
 
 type CreateEditCourseModalProps = {
@@ -64,6 +74,7 @@ type CreateEditCourseModalProps = {
     startDate: string;
     court?: number | undefined;
     schedules?: Schedule[];
+    courseImage?: SelectedCourseImage;
   }) => Promise<void>;
   mode?: "create" | "edit";
   initialData?: Partial<CourseFormData>;
@@ -124,6 +135,9 @@ export default function CreateEditCourseModal({
   const [courts, setCourts] = useState<Court[]>([]);
   const [loadingCourts, setLoadingCourts] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const [selectedCourseImage, setSelectedCourseImage] =
+    useState<SelectedCourseImage | null>(null);
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
 
   // UI states
   const [showSubjectModal, setShowSubjectModal] = useState(false);
@@ -513,6 +527,7 @@ export default function CreateEditCourseModal({
         startDate: new Date(startDate).toISOString(),
         court: selectedCourt ? selectedCourt.id : undefined,
         schedules: schedules.length > 0 ? schedules : undefined,
+        courseImage: selectedCourseImage || undefined,
       };
 
       console.log("Payload gửi từ modal:", payload);
@@ -528,6 +543,45 @@ export default function CreateEditCourseModal({
   };
 
   const selectedSubject = subjects.find((s) => s.id === selectedSubjectId);
+
+  const handlePickCourseImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Quyền truy cập",
+          "Ứng dụng cần quyền truy cập thư viện để chọn ảnh."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.length) {
+        const asset = result.assets[0];
+        setSelectedCourseImage({
+          uri: asset.uri,
+          fileName: asset.fileName || asset.uri.split("/").pop() || undefined,
+          mimeType: asset.mimeType || undefined,
+        });
+        setExistingImageUrl(null);
+      }
+    } catch (error) {
+      console.error("Không thể chọn ảnh khóa học:", error);
+      Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
+    }
+  };
+
+  const handleRemoveCourseImage = () => {
+    setSelectedCourseImage(null);
+    setExistingImageUrl(null);
+  };
 
   return (
     <Modal
@@ -578,6 +632,63 @@ export default function CreateEditCourseModal({
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </TouchableOpacity>
+            </View>
+
+            {/* Course Image */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Ảnh khóa học (tùy chọn)</Text>
+              {selectedCourseImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image
+                    source={{ uri: selectedCourseImage.uri }}
+                    style={styles.imagePreview}
+                  />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={handleRemoveCourseImage}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#EF4444" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.changeImageButton}
+                    onPress={handlePickCourseImage}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="camera" size={18} color="#059669" />
+                    <Text style={styles.changeImageText}>Đổi ảnh</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : existingImageUrl ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image
+                    source={{ uri: existingImageUrl }}
+                    style={styles.imagePreview}
+                  />
+                  <TouchableOpacity
+                    style={styles.changeImageButton}
+                    onPress={handlePickCourseImage}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="camera" size={18} color="#059669" />
+                    <Text style={styles.changeImageText}>Đổi ảnh</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.imagePickerButton}
+                  onPress={handlePickCourseImage}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="image-outline" size={32} color="#059669" />
+                  <Text style={styles.imagePickerText}>
+                    Chọn ảnh đại diện cho khóa học
+                  </Text>
+                  <Text style={styles.imagePickerHint}>
+                    Gợi ý tỉ lệ 16:9, dung lượng &lt; 5MB
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Learning Format */}
@@ -1600,6 +1711,66 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: "#9CA3AF",
+  },
+  imagePickerButton: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#059669",
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0FDF4",
+    gap: 8,
+  },
+  imagePickerText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#059669",
+  },
+  imagePickerHint: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  imagePreviewContainer: {
+    position: "relative",
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  imagePreview: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#F3F4F6",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 16,
+    padding: 4,
+  },
+  changeImageButton: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#059669",
+  },
+  changeImageText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#059669",
   },
   radioGroup: {
     flexDirection: "row",

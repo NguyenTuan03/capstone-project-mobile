@@ -1,12 +1,16 @@
 import { Exercise, Session } from "@/types/session";
+import type { VideoType } from "@/types/video";
 
 export const BuildExercise = (session: Session): Exercise[] => {
   const due = session.scheduleDate; // tạm dùng ngày buổi học làm hạn nộp
   const exercises: Exercise[] = [];
 
+  const getCoachVideos = (): VideoType[] => {
+    return Array.isArray(session.videos) ? session.videos : [];
+  };
+
   // Map VIDEO => Bài tập video
-  (session?.videos ?? []).forEach((v, idx) => {
-    console.log("VIDEO EXERCISE", v);
+  getCoachVideos().forEach((v, idx) => {
     exercises.push({
       id: `video-${v.id}`,
       type: "video",

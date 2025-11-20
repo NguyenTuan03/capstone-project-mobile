@@ -1,22 +1,15 @@
-import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import CourseList from "@/components/coach/course/courseManage/CourseList";
+import CourseSearchBar from "@/components/coach/course/courseManage/CourseSearchBar";
+import CourseTabs from "@/components/coach/course/courseManage/CourseTabs";
+import type { CourseTabKey } from "@/components/coach/course/courseManage/types";
 import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Animated,
-  Easing,
-  ScrollView,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { ScrollView, StatusBar, TouchableOpacity, View } from "react-native";
 
 type CoursesResponse = {
   items: Course[];
@@ -26,7 +19,7 @@ type CoursesResponse = {
 };
 
 export default function CoachCourseScreen() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState<CourseTabKey>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
   const [platformFee, setPlatformFee] = useState(0);
@@ -52,10 +45,14 @@ export default function CoachCourseScreen() {
         }
 
         const user = await storageService.getUser();
+        if (!user?.id) {
+          console.error("User ID không tồn tại");
+          return;
+        }
 
         const url = `/v1/courses/coach?page=${pageNum}&pageSize=${pageSize}`;
         const res = await get<CoursesResponse>(url);
-
+        console.log("a====", res.data.items);
         if (append) {
           setCourses((prev) => [...prev, ...(res.data.items || [])]);
         } else {
@@ -66,8 +63,15 @@ export default function CoachCourseScreen() {
         setPage(res.data.page || 1);
       } catch (error) {
         console.error("Lỗi khi tải danh sách khóa học:", error);
+        if (append) {
+          setLoadingMore(false);
+        } else {
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
+        if (!append) {
+          setLoading(false);
+        }
         setLoadingMore(false);
       }
     },
@@ -85,11 +89,11 @@ export default function CoachCourseScreen() {
     }
   };
 
-  const loadMore = () => {
-    if (!loadingMore && courses.length < total) {
+  const loadMore = useCallback(() => {
+    if (!loadingMore && !loading && courses.length < total && page > 0) {
       fetchCourses(page + 1, true);
     }
-  };
+  }, [loadingMore, loading, courses.length, total, page, fetchCourses]);
 
   useFocusEffect(
     useCallback(() => {
@@ -177,160 +181,6 @@ export default function CoachCourseScreen() {
 
   const hasMore = courses.length < total;
 
-  const RevenueTooltip = ({ course }: { course: Course }) => {
-    const [visible, setVisible] = useState(false);
-    const pulseAnim = useRef(new Animated.Value(1)).current;
-    const tooltipAnim = useRef(new Animated.Value(0)).current;
-    const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-
-    const startPulse = () => {
-      pulseLoopRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.06,
-            duration: 700,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 700,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulseLoopRef.current.start();
-    };
-
-    const stopPulse = () => {
-      if (pulseLoopRef.current) {
-        pulseLoopRef.current.stop();
-        pulseLoopRef.current = null;
-      }
-      // ensure scale returns to 1
-      Animated.timing(pulseAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    useEffect(() => {
-      // start pulse initially
-      startPulse();
-      return () => {
-        stopPulse();
-      };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-      if (visible) {
-        // stop pulse and show tooltip with fade+slide
-        stopPulse();
-        Animated.timing(tooltipAnim, {
-          toValue: 1,
-          duration: 180,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }).start();
-      } else {
-        // hide tooltip and resume pulse
-        Animated.timing(tooltipAnim, {
-          toValue: 0,
-          duration: 120,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }).start(({ finished }) => {
-          if (finished) startPulse();
-        });
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visible]);
-
-    const AnimatedTouchable =
-      Animated.createAnimatedComponent(TouchableOpacity);
-
-    const tooltipTranslateY = tooltipAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [8, 0],
-    });
-
-    return (
-      <>
-        <AnimatedTouchable
-          activeOpacity={0.8}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            transform: [{ scale: pulseAnim }],
-          }}
-          onPress={() => setVisible((v: boolean) => !v)}
-        >
-          <Ionicons name="trending-up" size={18} color="#059669" />
-          <Text style={{ fontSize: 12, color: "#6B7280", marginLeft: 6 }}>
-            Doanh thu
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "bold",
-              color: "#059669",
-              marginLeft: 8,
-            }}
-          >
-            {formatPrice(course.totalEarnings)}
-          </Text>
-        </AnimatedTouchable>
-
-        <Animated.View
-          pointerEvents={visible ? "auto" : "none"}
-          style={{
-            position: "absolute",
-            bottom: 44,
-            right: 0,
-            backgroundColor: "#111827",
-            padding: 10,
-            borderRadius: 8,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 6,
-            elevation: 6,
-            maxWidth: 220,
-            opacity: tooltipAnim,
-            transform: [{ translateY: tooltipTranslateY }],
-          }}
-        >
-          <Text style={{ color: "#F9FAFB", fontSize: 12 }}>
-            Đã trừ phí nền tảng
-          </Text>
-          <Text
-            style={{
-              color: "#cf2d2dff",
-              fontSize: 13,
-              fontWeight: "700",
-              marginTop: 4,
-            }}
-          >
-            {`- ${platformFee}%`}
-          </Text>
-          <TouchableOpacity
-            onPress={() => setVisible(false)}
-            style={{ marginTop: 6 }}
-          >
-            <Text
-              style={{ color: "#9CA3AF", fontSize: 11, textAlign: "right" }}
-            >
-              Đóng
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </>
-    );
-  };
-
   return (
     <View
       style={{
@@ -352,199 +202,20 @@ export default function CoachCourseScreen() {
             layoutMeasurement.height + contentOffset.y >=
             contentSize.height - paddingToBottom
           ) {
-            if (hasMore && !loadingMore) {
+            if (hasMore && !loadingMore && !loading) {
               loadMore();
             }
           }
         }}
         scrollEventThrottle={400}
       >
-        {/* Tabs */}
-        <View
-          style={{
-            backgroundColor: "#FFFFFF",
-            paddingHorizontal: 12,
-            paddingTop: 12,
-            paddingBottom: 6,
-          }}
-        >
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-              marginBottom: 6,
-              backgroundColor: activeTab === "all" ? "#EFF6FF" : "#F9FAFB",
-            }}
-            onPress={() => setActiveTab("all")}
-          >
-            <Ionicons
-              name="book"
-              size={18}
-              color={activeTab === "all" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={{
-                fontSize: 13,
-                color: activeTab === "all" ? "#059669" : "#6B7280",
-                marginLeft: 8,
-                flex: 1,
-                fontWeight: activeTab === "all" ? "600" : "400",
-              }}
-            >
-              Tất cả khóa học
-            </Text>
-            <View
-              style={{
-                backgroundColor: activeTab === "all" ? "#DBEAFE" : "#E5E7EB",
-                paddingHorizontal: 7,
-                paddingVertical: 2,
-                borderRadius: 8,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: activeTab === "all" ? "#059669" : "#374151",
-                  fontWeight: "600",
-                }}
-              >
-                {coursesData.all}
-              </Text>
-            </View>
-          </TouchableOpacity>
+        <CourseTabs
+          activeTab={activeTab}
+          counts={coursesData}
+          onChange={setActiveTab}
+        />
 
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-              marginBottom: 6,
-              backgroundColor: activeTab === "ongoing" ? "#EFF6FF" : "#F9FAFB",
-            }}
-            onPress={() => setActiveTab("ongoing")}
-          >
-            <Ionicons
-              name="time"
-              size={18}
-              color={activeTab === "ongoing" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={{
-                fontSize: 13,
-                color: activeTab === "ongoing" ? "#059669" : "#6B7280",
-                marginLeft: 8,
-                flex: 1,
-                fontWeight: activeTab === "ongoing" ? "600" : "400",
-              }}
-            >
-              Đang diễn ra
-            </Text>
-            <View
-              style={{
-                backgroundColor:
-                  activeTab === "ongoing" ? "#DBEAFE" : "#E5E7EB",
-                paddingHorizontal: 7,
-                paddingVertical: 2,
-                borderRadius: 8,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: activeTab === "ongoing" ? "#059669" : "#374151",
-                  fontWeight: "600",
-                }}
-              >
-                {coursesData.ongoing}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-              marginBottom: 6,
-              backgroundColor:
-                activeTab === "completed" ? "#EFF6FF" : "#F9FAFB",
-            }}
-            onPress={() => setActiveTab("completed")}
-          >
-            <Ionicons
-              name="checkmark-circle"
-              size={18}
-              color={activeTab === "completed" ? "#059669" : "#6B7280"}
-            />
-            <Text
-              style={{
-                fontSize: 13,
-                color: activeTab === "completed" ? "#059669" : "#6B7280",
-                marginLeft: 8,
-                flex: 1,
-                fontWeight: activeTab === "completed" ? "600" : "400",
-              }}
-            >
-              Đã hoàn thành
-            </Text>
-            <View
-              style={{
-                backgroundColor:
-                  activeTab === "completed" ? "#DBEAFE" : "#E5E7EB",
-                paddingHorizontal: 7,
-                paddingVertical: 2,
-                borderRadius: 8,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: activeTab === "completed" ? "#059669" : "#374151",
-                  fontWeight: "600",
-                }}
-              >
-                {coursesData.completed}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: "#FFFFFF",
-            marginHorizontal: 12,
-            marginTop: 12,
-            marginBottom: 10,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: "#E5E7EB",
-          }}
-        >
-          <Ionicons name="search" size={18} color="#9CA3AF" />
-          <TextInput
-            style={{
-              flex: 1,
-              marginLeft: 8,
-              fontSize: 13,
-              color: "#111827",
-            }}
-            placeholder="Tìm kiếm khóa học..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+        <CourseSearchBar value={searchQuery} onChange={setSearchQuery} />
 
         {/* Courses List */}
         <View style={{ paddingHorizontal: 12, paddingBottom: 20 }}>
@@ -898,3 +569,4 @@ export default function CoachCourseScreen() {
     </View>
   );
 }
+

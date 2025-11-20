@@ -1,102 +1,28 @@
+import CourseDetailModal from "@/components/learner/courses/CourseDetailModal";
+import CourseList from "@/components/learner/courses/CourseList";
+import CoursesHeader from "@/components/learner/courses/CoursesHeader";
+import LocationFilter from "@/components/learner/courses/LocationFilter";
+import LocationSelectionModal from "@/components/learner/courses/LocationSelectionModal";
+import SearchBarWithFilter from "@/components/learner/courses/SearchBarWithFilter";
+import styles from "@/components/learner/courses/styles";
+import type { CoursesResponse, District, PaymentLinkResponse, Province } from "@/components/learner/courses/types";
 import { get, post } from "@/services/http/httpService";
 import { Course } from "@/types/course";
-import { convertDayOfWeekToVietnamese } from "@/utils/scheduleFormat";
-import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { useFocusEffect } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-type CoursesResponse = {
-  items: Course[];
-  page: number;
-  pageSize: number;
-  total: number;
-};
-
-type Province = {
-  id: number;
-  name: string;
-};
-
-type District = {
-  id: number;
-  name: string;
-};
-
-type PaymentLinkResponse = {
-  statusCode: number;
-  message: string;
-  metadata: {
-    amount: number;
-    description: string;
-    orderCode: number;
-    paymentLinkId: string;
-    checkoutUrl: string;
-    qrCode: string;
-    status: string;
-    id: number;
-    createdAt: string;
-  };
-};
-
-// Map course level to Vietnamese
-const getLevelInVietnamese = (level: string): string => {
-  const levelMap: Record<string, string> = {
-    BEGINNER: "Cơ bản",
-    INTERMEDIATE: "Trung bình",
-    ADVANCED: "Nâng cao",
-    PROFESSIONAL: "Chuyên nghiệp",
-  };
-  return levelMap[level] || level;
-};
-
-// Map course status to Vietnamese
-const getStatusInVietnamese = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    PENDING_APPROVAL: "Chờ duyệt",
-    APPROVED: "Đang mở",
-    REJECTED: "Từ chối",
-    CANCELLED: "Đã hủy",
-    COMPLETED: "Hoàn thành",
-    FULL: "Đã đủ người",
-    READY_OPENED: "Đang mở",
-    ON_GOING: "Đang diễn ra",
-  };
-  return statusMap[status] || status;
-};
-
-// Get status badge color
-const getStatusColor = (status: string): string => {
-  const colorMap: Record<string, string> = {
-    PENDING_APPROVAL: "#F59E0B",
-    APPROVED: "#10B981",
-    REJECTED: "#EF4444",
-    CANCELLED: "#6B7280",
-    COMPLETED: "#3B82F6",
-    FULL: "#8B5CF6",
-    READY_OPENED: "#10B981",
-    ON_GOING: "#10B981",
-  };
-  return colorMap[status] || "#6B7280";
-};
+const getParams = (url: string) =>
+  Object.fromEntries(new URL(url).searchParams.entries());
 
 export default function CoursesScreen() {
   const insets = useSafeAreaInsets();
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -104,7 +30,6 @@ export default function CoursesScreen() {
   const [total, setTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Province & District states
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(
@@ -117,6 +42,7 @@ export default function CoursesScreen() {
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [showProvinceModal, setShowProvinceModal] = useState(false);
   const [showDistrictModal, setShowDistrictModal] = useState(false);
+
   const [processingPayment, setProcessingPayment] = useState<number | null>(
     null
   );
@@ -144,9 +70,9 @@ export default function CoursesScreen() {
     } finally {
       setLoadingProvinces(false);
     }
-  };
+  }, []);
 
-  const fetchDistricts = async (provinceId: number) => {
+  const fetchDistricts = useCallback(async (provinceId: number) => {
     try {
       setLoadingDistricts(true);
       const res = await get<District[]>(
@@ -165,7 +91,7 @@ export default function CoursesScreen() {
     } finally {
       setLoadingDistricts(false);
     }
-  };
+  }, []);
 
   const loadUserLocation = useCallback(
     async (currentProvinces?: Province[]) => {
@@ -224,6 +150,7 @@ export default function CoursesScreen() {
   );
 
   useEffect(() => {
+    let mounted = true;
     const initializeData = async () => {
       setInitializing(true);
       const fetchedProvinces = await fetchProvinces();
@@ -231,6 +158,9 @@ export default function CoursesScreen() {
       setInitializing(false);
     };
     initializeData();
+    return () => {
+      mounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -246,7 +176,6 @@ export default function CoursesScreen() {
 
   const fetchCoachRating = async (coachId: number): Promise<number> => {
     try {
-      // API: GET /v1/coaches/:coachId/rating/overall
       const res = await get<{
         statusCode: number;
         message: string;
@@ -280,11 +209,27 @@ export default function CoursesScreen() {
     } catch {
       return 0;
     }
-  };
+  }, []);
 
-  const fetchCoachesRatings = async (userIds: number[]) => {
-    try {
-      const uniqueUserIds = [...new Set(userIds)];
+  const fetchCoachesRatings = useCallback(
+    async (userIds: number[]) => {
+      try {
+        const uniqueUserIds = [...new Set(userIds)];
+        const coachIdResults = await Promise.allSettled(
+          uniqueUserIds.map((userId) =>
+            fetchUserCoachId(userId).then((coachId) => ({ userId, coachId }))
+          )
+        );
+
+        const userIdToCoachIdMap: Record<number, number> = {};
+        const coachIds: number[] = [];
+
+        coachIdResults.forEach((result) => {
+          if (result.status === "fulfilled" && result.value.coachId !== null) {
+            userIdToCoachIdMap[result.value.userId] = result.value.coachId;
+            coachIds.push(result.value.coachId);
+          }
+        });
 
       // Fetch ratings directly using userId (each promise resolves to { userId, rating:number })
       const ratingPromises = uniqueUserIds.map((userId) =>
@@ -301,7 +246,6 @@ export default function CoursesScreen() {
             ratingsMap[value.userId] = value.rating;
           }
         }
-      });
 
       setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
     } catch (error) {
@@ -338,6 +282,9 @@ export default function CoursesScreen() {
       } else {
         setCourses(newCourses);
       }
+    },
+    [fetchCoachesRatings, pageSize, selectedDistrict, selectedProvince]
+  );
 
       setTotal(res.data.total || 0);
       setPage(res.data.page || 1);
@@ -363,8 +310,10 @@ export default function CoursesScreen() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvince?.id, selectedDistrict?.id]);
 
+  // Fetch lần đầu khi mount hoặc khi quay lại màn hình
   useFocusEffect(
     useCallback(() => {
       if (!initializing) {
@@ -374,96 +323,89 @@ export default function CoursesScreen() {
     }, [selectedProvince, selectedDistrict, currentUserId, initializing])
   );
 
-  const formatPrice = (price: string) => {
-    const numPrice = parseFloat(price);
-    if (isNaN(numPrice)) return price;
-    return new Intl.NumberFormat("vi-VN").format(numPrice) + " VNĐ";
-  };
-
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loadingMore && courses.length < total) {
       fetchCourses(page + 1, true);
     }
-  };
+  }, [courses.length, fetchCourses, loadingMore, page, total]);
 
-  const getParams = (url: string) =>
-    Object.fromEntries(new URL(url).searchParams.entries());
+  const handleRegister = useCallback(
+    async (courseId: number) => {
+      setProcessingPayment(courseId);
+      try {
+        const res = await post<PaymentLinkResponse>(
+          `/v1/payments/courses/${courseId}/link`,
+          {}
+        );
+        const checkoutUrl = res?.data?.metadata?.checkoutUrl;
+        if (!checkoutUrl) throw new Error("Không có checkoutUrl");
 
-  const handleRegister = async (courseId: number) => {
-    setProcessingPayment(courseId);
-    try {
-      const res = await post<PaymentLinkResponse>(
-        `/v1/payments/courses/${courseId}/link`,
-        {}
-      );
-      const checkoutUrl = res?.data?.metadata?.checkoutUrl;
-      if (!checkoutUrl) throw new Error("Không có checkoutUrl");
+        const returnUri = Linking.createURL("courses/payments/return");
 
-      const returnUri = Linking.createURL("courses/payments/return");
-
-      const waitDeepLink = new Promise<string>((resolve) => {
-        const sub = Linking.addEventListener("url", ({ url }) => {
-          sub.remove();
-          resolve(url);
+        const waitDeepLink = new Promise<string>((resolve) => {
+          const sub = Linking.addEventListener("url", ({ url }) => {
+            sub.remove();
+            resolve(url);
+          });
         });
-      });
 
-      const auth = WebBrowser.openAuthSessionAsync(checkoutUrl, returnUri);
-      const winner = (await Promise.race([auth, waitDeepLink])) as
-        | { type: "success" | "cancel"; url?: string }
-        | string;
+        const auth = WebBrowser.openAuthSessionAsync(checkoutUrl, returnUri);
+        const winner = (await Promise.race([auth, waitDeepLink])) as
+          | { type: "success" | "cancel"; url?: string }
+          | string;
 
-      let callbackUrl = typeof winner === "string" ? winner : winner.url;
-      if (!callbackUrl) {
-        return;
-      }
+        const callbackUrl = typeof winner === "string" ? winner : winner.url;
+        if (!callbackUrl) {
+          return;
+        }
 
-      const { status = "", cancel = "", orderCode } = getParams(callbackUrl);
-      const paid =
-        status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
+        const { status = "", cancel = "", orderCode } = getParams(callbackUrl);
+        const paid =
+          status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
 
-      if (paid) {
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: `Mã đơn: ${orderCode || "N/A"}`,
-          position: "top",
-          visibilityTime: 4000,
-        });
-      } else {
+        if (paid) {
+          Toast.show({
+            type: "success",
+            text1: "Thành công",
+            text2: `Mã đơn: ${orderCode || "N/A"}`,
+            position: "top",
+            visibilityTime: 4000,
+          });
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Đã hủy",
+            text2: "Thanh toán không thành công.",
+            position: "top",
+            visibilityTime: 4000,
+          });
+        }
+      } catch (e: any) {
         Toast.show({
           type: "error",
-          text1: "Đã hủy",
-          text2: "Thanh toán không thành công.",
+          text1: "Lỗi",
+          text2: e?.Message ?? "Có lỗi khi thanh toán.",
           position: "top",
           visibilityTime: 4000,
         });
+      } finally {
+        setProcessingPayment(null);
       }
-    } catch (e: any) {
-      console.log("e", e);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: e?.Message ?? "Có lỗi khi thanh toán.",
-        position: "top",
-        visibilityTime: 4000,
-      });
-    } finally {
-      setProcessingPayment(null);
-    }
-  };
+    },
+    []
+  );
+
+  const handleCourseRegister = useCallback(
+    (courseId: number) => {
+      handleRegister(courseId);
+      setShowCourseDetailModal(false);
+    },
+    [handleRegister]
+  );
 
   return (
-    <View style={[styles.safe]}>
-      {/* Header */}
-      <View style={styles.headerSection}>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Khám Phá Khóa Học</Text>
-          <Text style={styles.headerSubtitle}>
-            Tìm khóa học pickleball tốt nhất cho bạn
-          </Text>
-        </View>
-      </View>
+    <View style={styles.safe}>
+      <CoursesHeader />
 
       <ScrollView contentContainerStyle={styles.container}>
         {/* Search & Filter */}
@@ -1073,158 +1015,30 @@ export default function CoursesScreen() {
       {/* Province Modal */}
       <Modal
         visible={showProvinceModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowProvinceModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn tỉnh/thành phố</Text>
-              <TouchableOpacity
-                onPress={() => setShowProvinceModal(false)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={24} color="#111827" />
-              </TouchableOpacity>
-            </View>
-            {loadingProvinces ? (
-              <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color="#10B981" />
-              </View>
-            ) : (
-              <ScrollView>
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    !selectedProvince && styles.modalItemActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedProvince(null);
-                    setShowProvinceModal(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.modalItemText,
-                      !selectedProvince && styles.modalItemTextActive,
-                    ]}
-                  >
-                    Tất cả
-                  </Text>
-                </TouchableOpacity>
-                {provinces.map((province) => (
-                  <TouchableOpacity
-                    key={province.id}
-                    style={[
-                      styles.modalItem,
-                      selectedProvince?.id === province.id &&
-                        styles.modalItemActive,
-                    ]}
-                    onPress={() => {
-                      setSelectedProvince(province);
-                      setShowProvinceModal(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.modalItemText,
-                        selectedProvince?.id === province.id &&
-                          styles.modalItemTextActive,
-                      ]}
-                    >
-                      {province.name}
-                    </Text>
-                    {selectedProvince?.id === province.id && (
-                      <Ionicons name="checkmark" size={20} color="#10B981" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
+        loading={loadingProvinces}
+        selectedItem={selectedProvince}
+        onSelect={(province) => {
+          setSelectedProvince(province);
+          setSelectedDistrict(null);
+          setShowProvinceModal(false);
+        }}
+        onClose={() => setShowProvinceModal(false)}
+        bottomInset={insets.bottom}
+      />
 
-      {/* District Modal */}
-      <Modal
+      <LocationSelectionModal
+        title="Chọn quận/huyện"
+        items={districts}
         visible={showDistrictModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowDistrictModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn quận/huyện</Text>
-              <TouchableOpacity
-                onPress={() => setShowDistrictModal(false)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={24} color="#111827" />
-              </TouchableOpacity>
-            </View>
-            {loadingDistricts ? (
-              <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color="#10B981" />
-              </View>
-            ) : (
-              <ScrollView>
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    !selectedDistrict && styles.modalItemActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedDistrict(null);
-                    setShowDistrictModal(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.modalItemText,
-                      !selectedDistrict && styles.modalItemTextActive,
-                    ]}
-                  >
-                    Tất cả
-                  </Text>
-                </TouchableOpacity>
-                {districts.map((district) => (
-                  <TouchableOpacity
-                    key={district.id}
-                    style={[
-                      styles.modalItem,
-                      selectedDistrict?.id === district.id &&
-                        styles.modalItemActive,
-                    ]}
-                    onPress={() => {
-                      setSelectedDistrict(district);
-                      setShowDistrictModal(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.modalItemText,
-                        selectedDistrict?.id === district.id &&
-                          styles.modalItemTextActive,
-                      ]}
-                    >
-                      {district.name}
-                    </Text>
-                    {selectedDistrict?.id === district.id && (
-                      <Ionicons name="checkmark" size={20} color="#10B981" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
+        loading={loadingDistricts}
+        selectedItem={selectedDistrict}
+        onSelect={(district) => {
+          setSelectedDistrict(district);
+          setShowDistrictModal(false);
+        }}
+        onClose={() => setShowDistrictModal(false)}
+        bottomInset={insets.bottom}
+      />
     </View>
   );
 }

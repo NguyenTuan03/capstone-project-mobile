@@ -1,6 +1,12 @@
+import {
+  getVerificationBadgeStyle,
+  getVerificationColor,
+  getVerificationIcon,
+  getVerificationLabel,
+} from "@/helper/content.helper";
 import { get } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
-import { CoachVerificationStatus, User } from "@/types/user";
+import { User } from "@/types/user";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -16,71 +22,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// Helper functions for verification status
-const getVerificationIcon = (status: CoachVerificationStatus) => {
-  switch (status) {
-    case CoachVerificationStatus.VERIFIED:
-      return "checkmark-circle";
-    case CoachVerificationStatus.PENDING:
-      return "hourglass";
-    case CoachVerificationStatus.REJECTED:
-      return "close-circle";
-    default:
-      return "help-circle";
-  }
-};
-
-const getVerificationColor = (status: CoachVerificationStatus) => {
-  switch (status) {
-    case CoachVerificationStatus.VERIFIED:
-      return "#10B981";
-    case CoachVerificationStatus.PENDING:
-      return "#F59E0B";
-    case CoachVerificationStatus.REJECTED:
-      return "#EF4444";
-    default:
-      return "#9CA3AF";
-  }
-};
-
-const getVerificationLabel = (status: CoachVerificationStatus) => {
-  switch (status) {
-    case CoachVerificationStatus.VERIFIED:
-      return "Xác minh";
-    case CoachVerificationStatus.PENDING:
-      return "Đang xét duyệt";
-    case CoachVerificationStatus.REJECTED:
-      return "Từ chối";
-    default:
-      return "Chưa xác minh";
-  }
-};
-
-const getVerificationBadgeStyle = (status: CoachVerificationStatus) => {
-  switch (status) {
-    case CoachVerificationStatus.VERIFIED:
-      return {
-        backgroundColor: "#D1FAE5",
-        borderWidth: 0,
-      };
-    case CoachVerificationStatus.PENDING:
-      return {
-        backgroundColor: "#FEF3C7",
-        borderWidth: 0,
-      };
-    case CoachVerificationStatus.REJECTED:
-      return {
-        backgroundColor: "#FEE2E2",
-        borderWidth: 0,
-      };
-    default:
-      return {
-        backgroundColor: "#E5E7EB",
-        borderWidth: 0,
-      };
-  }
-};
 
 export default function ContentScreen() {
   const [loading, setLoading] = useState(false);
@@ -115,8 +56,7 @@ export default function ContentScreen() {
       ) {
         loadRating(userData.id);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [loadRating]);
 
   useFocusEffect(

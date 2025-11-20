@@ -47,6 +47,7 @@ export type Course = {
   };
   schedules: Schedule[];
   court: Court;
+  publicUrl?: string | null;
   createdBy: {
     id: number;
     fullName: string;
@@ -81,6 +82,7 @@ export type CourseResponse = {
     startTime: string;
     endTime: string;
   }[];
+  publicUrl?: string | null;
   province: {
     id: number;
     name: string;

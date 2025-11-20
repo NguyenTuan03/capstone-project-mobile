@@ -50,10 +50,8 @@ export default function CredentialsScreen() {
     useCallback(() => {
       const loadCredentials = async () => {
         try {
-          console.log("📋 Fetching credentials from API...");
           
           const response = await credentialService.getCredentials();
-          console.log("✅ Credentials from API:", response);
           
           setCredentials(response);
         } catch (error) {
@@ -98,11 +96,6 @@ export default function CredentialsScreen() {
   };
 
   const handleAddCredential = async () => {
-    // Debug log
-    console.log("Form data when submitting:", formData);
-    console.log("Form data name:", formData.name);
-    console.log("Form data type:", formData.type);
-
     // Validate required fields
     if (!formData.name || !formData.name.trim()) {
       Alert.alert("Lỗi", "Vui lòng nhập tên chứng chỉ");
@@ -136,10 +129,6 @@ export default function CredentialsScreen() {
         issuedAt: dateToISOString(formData.issuedAt),
         expiresAt: dateToISOString(formData.expiresAt),
       };
-
-      console.log("Credential data being sent:", credentialData);
-      console.log("Selected image:", selectedImage);
-      console.log("Image exists:", !!selectedImage);
 
       // Save to backend - pass the ImagePickerAsset directly (not in credentialData)
       const createdCredential = await credentialService.createCredential(

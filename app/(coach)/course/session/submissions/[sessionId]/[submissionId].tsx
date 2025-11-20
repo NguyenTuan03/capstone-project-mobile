@@ -1,15 +1,14 @@
 import { formatAnalysisResult } from "@/helper/FormatAnalysisResult";
 import * as geminiService from "@/services/ai/geminiService";
 import { get, post } from "@/services/http/httpService";
-import type { AiVideoCompareResult, VideoComparisonResult } from "@/types/ai";
+import type { AiVideoCompareResult, PoseLandmark, VideoComparisonResult } from "@/types/ai";
+import type { Session } from "@/types/session";
 import type { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
 import * as FileSystem from "expo-file-system";
-import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
-import * as VideoThumbnails from "expo-video-thumbnails";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -63,7 +62,6 @@ const SubmissionReviewScreen: React.FC = () => {
       const baseDir = cacheDir || docDir;
 
       if (!baseDir) {
-        console.log("📱 No cache directory available, using direct URL");
         return url; // ✅ Sử dụng URL trực tiếp
       }
 
@@ -72,7 +70,6 @@ const SubmissionReviewScreen: React.FC = () => {
       // Check if file exists
       const info = await FileSystem.getInfoAsync(filePath);
       if (info.exists) {
-        console.log(`✅ Using cached file: ${filePath}`);
         return filePath;
       }
 
@@ -107,7 +104,28 @@ const SubmissionReviewScreen: React.FC = () => {
         if (!found) {
           Alert.alert("Không tìm thấy", "Bài nộp này có thể đã bị xóa.");
         }
-        setSubmission(found ?? null);
+        let enhancedSubmission = found ?? null;
+        if (found && sessionId) {
+          try {
+            const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
+            if (sessionRes?.data) {
+              const sessionData = sessionRes.data;
+              enhancedSubmission = {
+                ...found,
+                session: {
+                  ...sessionData,
+                  lesson: sessionData.lesson ?? found.session?.lesson,
+                },
+              } as LearnerVideo;
+            }
+          } catch (err) {
+            console.warn(
+              "Không thể tải session chi tiết cho coach video:",
+              err
+            );
+          }
+        }
+        setSubmission(enhancedSubmission);
       } catch (err) {
         console.error(err);
         Alert.alert("Lỗi", "Không thể tải bài nộp.");
@@ -164,7 +182,10 @@ const SubmissionReviewScreen: React.FC = () => {
         return;
       }
       const learnerUrl = submission.publicUrl ?? "";
-      const coachUrl = submission.session?.lesson?.videos?.[0]?.publicUrl ?? "";
+      const coachUrl =
+        submission.session?.videos?.[0]?.publicUrl ??
+        submission.session?.lesson?.videos?.[0]?.publicUrl ??
+        "";
 
       console.log("📹 Coach URL:", coachUrl);
       console.log("📹 Learner URL:", learnerUrl);
@@ -198,12 +219,12 @@ const SubmissionReviewScreen: React.FC = () => {
   }, [submission?.publicUrl]);
 
   const coachSource = useMemo(() => {
-    const coachUrl = submission?.session?.lesson?.videos?.[0]?.publicUrl;
+    const coachUrl = submission?.session?.videos?.[0]?.publicUrl;
     if (coachUrl) {
       return { uri: coachUrl, contentType: "auto" as const };
     }
     return null;
-  }, [submission?.session?.lesson?.videos]);
+  }, [submission?.session?.videos]);
 
   const learnerPlayer = useVideoPlayer(learnerSource, (player) => {
     if (player) player.loop = false;
@@ -253,155 +274,71 @@ const SubmissionReviewScreen: React.FC = () => {
     submission?.user?.fullName ??
     (submission?.user?.id ? `Learner #${submission.user.id}` : "Học viên");
 
-  const buildTimestamps = (duration?: number | null) => {
-    if (duration && duration > 0) {
-      return [0.25, 0.5, 0.75].map((ratio) =>
-        Number((duration * ratio).toFixed(2))
-      );
-    }
-    return [1, 2, 3];
-  };
-
-  const extractFrames = useCallback(
-    async (uri: string, timestamps: number[]) => {
-      const frames: string[] = [];
-      const used: number[] = [];
-
-      console.log(`🎬 Extracting frames from: ${uri}`);
-      console.log(`⏱️  Timestamps: ${timestamps.join(", ")}`);
-
-      for (const seconds of timestamps) {
-        try {
-          console.log(`📸 Capturing frame at ${seconds}s...`);
-          const result = await VideoThumbnails.getThumbnailAsync(uri, {
-            time: Math.max(seconds * 1000, 0),
-            quality: 0.8,
-          });
-
-          console.log(`✅ Thumbnail URI: ${result.uri}`);
-
-          // ✅ Dùng legacy API để read base64
-          const base64 = await readAsStringAsync(result.uri, {
-            encoding: EncodingType.Base64,
-          });
-
-          console.log(`✅ Base64 length: ${base64.length}`);
-
-          frames.push(base64);
-          used.push(Number(seconds.toFixed(2)));
-        } catch (err) {
-          console.error(`❌ Failed to capture frame at ${seconds}s:`, err);
-        }
-      }
-
-      if (!frames.length) {
-        throw new Error("Không trích xuất được frame từ video.");
-      }
-
-      console.log(`✅ Extracted ${frames.length} frames successfully`);
-      return { frames, timestamps: used };
-    },
-    []
-  );
-
-  const extractKeyFrames = useCallback(
-    async (uri: string, duration?: number | null) => {
-      try {
-        const primary = await extractFrames(uri, buildTimestamps(duration));
-        if (primary.frames.length >= 3) return primary;
-      } catch (err) {
-        console.warn("Primary frame extraction failed, trying fallback", err);
-      }
-
-      try {
-        return await extractFrames(uri, [1, 1.5, 2]);
-      } catch (err) {
-        console.warn(
-          "Fallback frame extraction failed, trying early timestamps",
-          err
-        );
-        return await extractFrames(uri, [0.5, 1, 1.5]);
-      }
-    },
-    [extractFrames]
-  );
-
   const handleAnalyzeTechnique = useCallback(async () => {
     if (!coachLocalPath || !learnerLocalPath) {
       Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
       return;
     }
-
+  
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
-
+  
     try {
-      console.log("🔍 Starting analysis...");
+      console.log("🔍 Starting pose extraction and analysis...");
       console.log("👨‍🏫 Coach video:", coachLocalPath);
       console.log("👨‍🎓 Learner video:", learnerLocalPath);
-
-      const [coachData, learnerData] = await Promise.all([
-        extractKeyFrames(
-          coachLocalPath,
-          submission?.session?.lesson?.videos?.[0]?.duration
-        ),
-        extractKeyFrames(learnerLocalPath, submission?.duration),
-      ]);
-
-      console.log("🤖 Calling Gemini API...");
-      console.log(
-        `📦 Coach frames: ${
-          coachData.frames.length
-        }, timestamps: ${coachData.timestamps.join(", ")}`
+  
+      // ✅ BƯỚC 1: Extract pose data từ video (sử dụng MediaPipe hoặc TensorFlow)
+      // Bạn cần implement hàm extractPoseDataForTimestamps
+      const coachDuration = submission?.session?.lesson?.videos?.[0]?.duration ?? 0;
+      const learnerDuration = submission?.duration ?? 0;
+  
+      const coachTimestamps = [
+        coachDuration * 0.25,
+        coachDuration * 0.5,
+        coachDuration * 0.75
+      ].map(t => parseFloat(t.toFixed(2)));
+  
+      const learnerTimestamps = [
+        learnerDuration * 0.25,
+        learnerDuration * 0.5,
+        learnerDuration * 0.75
+      ].map(t => parseFloat(t.toFixed(2)));
+  
+      console.log("📊 Extracting pose data...");
+      
+      // TODO: Implement extractPoseDataForTimestamps function
+      // const [coachPoses, learnerPoses] = await Promise.all([
+      //   extractPoseDataForTimestamps(coachLocalPath, coachTimestamps),
+      //   extractPoseDataForTimestamps(learnerLocalPath, learnerTimestamps)
+      // ]);
+  
+      // TEMPORARY: Mock data for testing
+      const coachPoses: PoseLandmark[][] = [[], [], []]; // Replace with actual extraction
+      const learnerPoses: PoseLandmark[][] = [[], [], []]; // Replace with actual extraction
+  
+      console.log("🤖 Calling Gemini API with pose data...");
+  
+      // ✅ BƯỚC 2: Gọi API với pose data thay vì frames
+      const analysisResult = await geminiService.comparePoseData(
+        coachPoses,
+        coachTimestamps,
+        learnerPoses,
+        learnerTimestamps
       );
-      console.log(
-        `📦 Learner frames: ${
-          learnerData.frames.length
-        }, timestamps: ${learnerData.timestamps.join(", ")}`
-      );
-
-      const result = await geminiService.compareVideos(
-        coachData.frames,
-        coachData.timestamps,
-        learnerData.frames,
-        learnerData.timestamps
-      );
-
-      // Log đầy đủ kết quả với JSON.stringify để xem tất cả các object
+  
+      // ✅ BƯỚC 3: Merge API response với pose data
+      const fullResult: VideoComparisonResult = {
+        ...analysisResult,
+        coachPoses,
+        learnerPoses
+      };
+  
       console.log("📊 Full Analysis Result:");
-      console.log(JSON.stringify(result, null, 2));
-
-      // Log từng phần riêng để dễ đọc hơn
-      if (result.summary) {
-        console.log("📝 Summary:", result.summary);
-      }
-      if (result.overallScoreForPlayer2 !== undefined) {
-        console.log("⭐ Overall Score:", result.overallScoreForPlayer2);
-      }
-      if (result.keyDifferences && Array.isArray(result.keyDifferences)) {
-        console.log(
-          "🔍 Key Differences:",
-          JSON.stringify(result.keyDifferences, null, 2)
-        );
-      }
-      if (
-        result.recommendationsForPlayer2 &&
-        Array.isArray(result.recommendationsForPlayer2)
-      ) {
-        console.log(
-          "💡 Recommendations:",
-          JSON.stringify(result.recommendationsForPlayer2, null, 2)
-        );
-      }
-      if (result.comparison) {
-        console.log(
-          "⚖️ Comparison:",
-          JSON.stringify(result.comparison, null, 2)
-        );
-      }
-
-      setAnalysisResult(result);
+      console.log(JSON.stringify(fullResult, null, 2));
+  
+      setAnalysisResult(fullResult);
     } catch (err) {
       console.error("Analysis failed:", err);
       if (err instanceof Error) {
@@ -426,11 +363,44 @@ const SubmissionReviewScreen: React.FC = () => {
   }, [
     coachLocalPath,
     learnerLocalPath,
-    extractKeyFrames,
     submission?.duration,
     submission?.session?.lesson?.videos,
   ]);
+  
+  const derivedCompareResult = useMemo<AiVideoCompareResult | null>(() => {
+    if (!analysisResult) return null;
 
+    const keyDifferents =
+      analysisResult.keyDifferences?.map((diff) => ({
+        aspect: diff.aspect,
+        coachTechnique: diff.player1_technique,
+        learnerTechnique: diff.player2_technique,
+        impact: diff.impact,
+      })) ?? [];
+
+    const recommendationDrills =
+      analysisResult.recommendationsForPlayer2?.map((item) => ({
+        name: item.drill?.title ?? item.recommendation,
+        description: item.drill?.description ?? item.recommendation,
+        practiceSets: item.drill?.practice_sets ?? "—",
+      })) ?? [];
+
+    return {
+      id: -1,
+      summary: analysisResult.summary,
+      learnerScore: analysisResult.overallScoreForPlayer2,
+      keyDifferents,
+      details: null,
+      recommendationDrills,
+      coachNote: null,
+      createdAt: new Date().toISOString(),
+      video: null,
+      learnerVideo: submission,
+    };
+  }, [analysisResult, submission]);
+
+  const displayResult = derivedCompareResult ?? compareResult;
+  
   const canAnalyze = Boolean(
     coachLocalPath &&
       learnerLocalPath &&
@@ -615,7 +585,9 @@ const SubmissionReviewScreen: React.FC = () => {
                 {(coachStatus === "loading" || !coachVideoReady) && (
                   <View style={styles.videoLoadingOverlay}>
                     <ActivityIndicator size="large" color="#FFFFFF" />
-                    <Text style={styles.videoLoadingText}>Đang tải video...</Text>
+                    <Text style={styles.videoLoadingText}>
+                      Đang tải video...
+                    </Text>
                   </View>
                 )}
                 <VideoView
@@ -642,7 +614,9 @@ const SubmissionReviewScreen: React.FC = () => {
                 {(learnerStatus === "loading" || !learnerVideoReady) && (
                   <View style={styles.videoLoadingOverlay}>
                     <ActivityIndicator size="large" color="#FFFFFF" />
-                    <Text style={styles.videoLoadingText}>Đang tải video...</Text>
+                    <Text style={styles.videoLoadingText}>
+                      Đang tải video...
+                    </Text>
                   </View>
                 )}
                 <VideoView
@@ -662,184 +636,185 @@ const SubmissionReviewScreen: React.FC = () => {
             )}
           </View>
 
-          {/* Hiển thị kết quả nếu đã có response */}
-          {compareResult ? (
-            <View style={styles.actionCard}>
-              {loadingCompareResult ? (
-                <View style={styles.loadingCard}>
-                  <ActivityIndicator size="small" color="#059669" />
-                  <Text style={styles.loadingText}>
-                    Đang tải kết quả so sánh...
-                  </Text>
+        {/* Hiển thị kết quả nếu đã có response */}
+        {displayResult ? (
+          <View style={styles.actionCard}>
+            {loadingCompareResult ? (
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="small" color="#059669" />
+                <Text style={styles.loadingText}>
+                  Đang tải kết quả so sánh...
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.compareResultCard}>
+                <View style={styles.compareResultHeader}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color="#059669"
+                  />
+                  <Text style={styles.cardTitle}>Kết quả so sánh AI</Text>
                 </View>
-              ) : (
-                <View style={styles.compareResultCard}>
-                  <View style={styles.compareResultHeader}>
-                    <Ionicons name="checkmark-circle" size={18} color="#059669" />
-                    <Text style={styles.cardTitle}>Kết quả so sánh AI</Text>
-                  </View>
-                  {compareResult.summary ? (
-                    <View style={styles.compareResultSection}>
-                      <Text style={styles.compareResultLabel}>Tóm tắt:</Text>
-                      <Text style={styles.compareResultText}>
-                        {compareResult.summary}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {compareResult.learnerScore !== null &&
-                  compareResult.learnerScore !== undefined ? (
-                    <View style={styles.compareResultSection}>
-                      <Text style={styles.compareResultLabel}>Điểm số:</Text>
-                      <Text style={styles.compareResultScore}>
-                        {compareResult.learnerScore}/100
-                      </Text>
-                    </View>
-                  ) : null}
-                  {compareResult.keyDifferents &&
-                  compareResult.keyDifferents.length > 0 ? (
-                    <View style={styles.compareResultSection}>
-                      <Text style={styles.compareResultLabel}>
-                        Điểm khác biệt chính:
-                      </Text>
-                      {compareResult.keyDifferents.map((diff, index) => (
-                        <View key={index} style={styles.keyDifferenceItem}>
-                          <Text style={styles.keyDifferenceAspect}>
-                            {diff.aspect}
-                          </Text>
-                          <Text style={styles.keyDifferenceText}>
-                            <Text style={styles.boldText}>Coach: </Text>
-                            {diff.coachTechnique}
-                          </Text>
-                          <Text style={styles.keyDifferenceText}>
-                            <Text style={styles.boldText}>Học viên: </Text>
-                            {diff.learnerTechnique}
-                          </Text>
-                          <Text style={styles.keyDifferenceImpact}>
-                            Tác động: {diff.impact}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
-                  {compareResult.recommendationDrills &&
-                  compareResult.recommendationDrills.length > 0 ? (
-                    <View style={styles.compareResultSection}>
-                      <Text style={styles.compareResultLabel}>
-                        Bài tập đề xuất:
-                      </Text>
-                      {compareResult.recommendationDrills.map((drill, index) => (
-                        <View key={index} style={styles.drillItem}>
-                          <Text style={styles.drillName}>{drill.name}</Text>
-                          <Text style={styles.drillDescription}>
-                            {drill.description}
-                          </Text>
-                          <Text style={styles.drillPracticeSets}>
-                            Số lần tập: {drill.practiceSets}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
-                  {compareResult.coachNote ? (
-                    <View style={styles.compareResultSection}>
-                      <Text style={styles.compareResultLabel}>
-                        Ghi chú của coach:
-                      </Text>
-                      <Text style={styles.compareResultText}>
-                        {compareResult.coachNote}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {compareResult.createdAt ? (
-                    <Text style={styles.compareResultDate}>
-                      Tạo lúc: {formatDateTime(compareResult.createdAt)}
+                {displayResult.summary ? (
+                  <View style={styles.compareResultSection}>
+                    <Text style={styles.compareResultLabel}>Tóm tắt:</Text>
+                    <Text style={styles.compareResultText}>
+                      {displayResult.summary}
                     </Text>
-                  ) : null}
-                </View>
+                  </View>
+                ) : null}
+                {displayResult.learnerScore !== null &&
+                displayResult.learnerScore !== undefined ? (
+                  <View style={styles.compareResultSection}>
+                    <Text style={styles.compareResultLabel}>Điểm số:</Text>
+                    <Text style={styles.compareResultScore}>
+                      {displayResult.learnerScore}/100
+                    </Text>
+                  </View>
+                ) : null}
+                {displayResult.keyDifferents &&
+                displayResult.keyDifferents.length > 0 ? (
+                  <View style={styles.compareResultSection}>
+                    <Text style={styles.compareResultLabel}>
+                      Điểm khác biệt chính:
+                    </Text>
+                    {displayResult.keyDifferents.map((diff, index) => (
+                      <View key={index} style={styles.keyDifferenceItem}>
+                        <Text style={styles.keyDifferenceAspect}>
+                          {diff.aspect}
+                        </Text>
+                        <Text style={styles.keyDifferenceText}>
+                          <Text style={styles.boldText}>Coach: </Text>
+                          {diff.coachTechnique}
+                        </Text>
+                        <Text style={styles.keyDifferenceText}>
+                          <Text style={styles.boldText}>Học viên: </Text>
+                          {diff.learnerTechnique}
+                        </Text>
+                        <Text style={styles.keyDifferenceImpact}>
+                          Tác động: {diff.impact}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                {displayResult.recommendationDrills &&
+                displayResult.recommendationDrills.length > 0 ? (
+                  <View style={styles.compareResultSection}>
+                    <Text style={styles.compareResultLabel}>
+                      Bài tập đề xuất:
+                    </Text>
+                    {displayResult.recommendationDrills.map((drill, index) => (
+                      <View key={index} style={styles.drillItem}>
+                        <Text style={styles.drillName}>{drill.name}</Text>
+                        <Text style={styles.drillDescription}>
+                          {drill.description}
+                        </Text>
+                        <Text style={styles.drillPracticeSets}>
+                          Số lần tập: {drill.practiceSets}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                {displayResult.coachNote ? (
+                  <View style={styles.compareResultSection}>
+                    <Text style={styles.compareResultLabel}>
+                      Ghi chú của coach:
+                    </Text>
+                    <Text style={styles.compareResultText}>
+                      {displayResult.coachNote}
+                    </Text>
+                  </View>
+                ) : null}
+                {displayResult.createdAt ? (
+                  <Text style={styles.compareResultDate}>
+                    Tạo lúc: {formatDateTime(displayResult.createdAt)}
+                  </Text>
+                ) : null}
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.actionCard}>
+            <TouchableOpacity
+              style={[
+                styles.analyzeButton,
+                !canRetry && styles.analyzeButtonDisabled,
+              ]}
+              onPress={handleAnalyzeTechnique}
+              disabled={!canRetry}
+            >
+              {isAnalyzing ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : error ? (
+                <>
+                  <Ionicons name="refresh" size={16} color="#FFFFFF" />
+                  <Text style={styles.analyzeText}>Thử lại</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                  <Text style={styles.analyzeText}>Chấm bài bằng AI</Text>
+                </>
               )}
-            </View>
-          ) : (
-            /* Hiển thị form nếu chưa có response */
-            <View style={styles.actionCard}>
+            </TouchableOpacity>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {loadingCompareResult ? (
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="small" color="#059669" />
+                <Text style={styles.loadingText}>
+                  Đang tải kết quả so sánh...
+                </Text>
+              </View>
+            ) : null}
+            {analysisResult ? (
+              <View style={styles.analysisCard}>
+                <Text style={styles.cardTitle}>Kết quả phân tích</Text>
+                <ScrollView
+                  style={{ maxHeight: 400 }}
+                  showsVerticalScrollIndicator={true}
+                >
+                  <Text style={styles.analysisText}>
+                    {formatAnalysisResult(analysisResult)}
+                  </Text>
+                </ScrollView>
+              </View>
+            ) : null}
+            <View style={styles.feedbackSection}>
+              <Text style={styles.feedbackLabel}>Feedback</Text>
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Nhập feedback cho học viên..."
+                placeholderTextColor="#9CA3AF"
+                value={feedback}
+                onChangeText={setFeedback}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
               <TouchableOpacity
                 style={[
-                  styles.analyzeButton,
-                  !canRetry && styles.analyzeButtonDisabled,
+                  styles.submitButton,
+                  (!canSubmitFeedback || isSubmitting) &&
+                    styles.submitButtonDisabled,
                 ]}
-                onPress={handleAnalyzeTechnique}
-                disabled={!canRetry}
+                onPress={handleSubmitFeedback}
+                disabled={!canSubmitFeedback || isSubmitting}
               >
-                {isAnalyzing ? (
+                {isSubmitting ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : error ? (
-                  <>
-                    <Ionicons name="refresh" size={16} color="#FFFFFF" />
-                    <Text style={styles.analyzeText}>Thử lại</Text>
-                  </>
                 ) : (
                   <>
-                    <Ionicons name="sparkles" size={16} color="#FFFFFF" />
-                    <Text style={styles.analyzeText}>Chấm bài bằng AI</Text>
+                    <Ionicons name="send" size={16} color="#FFFFFF" />
+                    <Text style={styles.submitText}>Trả kết quả</Text>
                   </>
                 )}
               </TouchableOpacity>
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-              {loadingCompareResult ? (
-                <View style={styles.loadingCard}>
-                  <ActivityIndicator size="small" color="#059669" />
-                  <Text style={styles.loadingText}>
-                    Đang tải kết quả so sánh...
-                  </Text>
-                </View>
-              ) : null}
-              {analysisResult ? (
-                <>
-                  <View style={styles.analysisCard}>
-                    <Text style={styles.cardTitle}>Kết quả phân tích</Text>
-                    <ScrollView
-                      style={{ maxHeight: 400 }}
-                      showsVerticalScrollIndicator={true}
-                    >
-                      <Text style={styles.analysisText}>
-                        {formatAnalysisResult(analysisResult)}
-                      </Text>
-                    </ScrollView>
-                  </View>
-                </>
-              ) : null}
-              <View style={styles.feedbackSection}>
-                <Text style={styles.feedbackLabel}>Feedback</Text>
-                <TextInput
-                  style={styles.feedbackInput}
-                  placeholder="Nhập feedback cho học viên..."
-                  placeholderTextColor="#9CA3AF"
-                  value={feedback}
-                  onChangeText={setFeedback}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    (!canSubmitFeedback || isSubmitting) &&
-                      styles.submitButtonDisabled,
-                  ]}
-                  onPress={handleSubmitFeedback}
-                  disabled={!canSubmitFeedback || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <>
-                      <Ionicons name="send" size={16} color="#FFFFFF" />
-                      <Text style={styles.submitText}>Trả kết quả</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
             </View>
-          )}
+          </View>
+        )}
         </ScrollView>
       )}
     </View>
