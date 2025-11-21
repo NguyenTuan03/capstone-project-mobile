@@ -24,33 +24,77 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [notificationQueue, setNotificationQueue] = useState<Notification[]>(
+    []
+  );
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const { isAuthenticated } = useJWTAuth();
+
+  // Process notification queue
+  useEffect(() => {
+    if (notificationQueue.length === 0 || isProcessingQueue) return;
+
+    const processNextNotification = async () => {
+      setIsProcessingQueue(true);
+      const notification = notificationQueue[0];
+
+      Toast.show({
+        type: notification.type.toLowerCase(),
+        text1: notification.title,
+        text2: notification.body,
+        onPress: () => {
+          if (notification.navigateTo) {
+            socket?.emit("notification.read", notification.id);
+            router.push(notification.navigateTo as Href);
+          }
+        },
+        visibilityTime: 3000,
+      });
+
+      // Wait for toast to be visible before processing next
+      await new Promise((resolve) => setTimeout(resolve, 3500));
+
+      setNotificationQueue((prev) => prev.slice(1));
+      setIsProcessingQueue(false);
+    };
+
+    processNextNotification();
+  }, [notificationQueue, isProcessingQueue, socket]);
 
   useEffect(() => {
     let newSocket: Socket | null = null;
 
-    if (!isAuthenticated) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
-      return;
-    }
-
     const initSocket = async () => {
+      if (!isAuthenticated) {
+        if (socket) {
+          socket.disconnect();
+          setSocket(null);
+          setIsConnected(false);
+        }
+        return;
+      }
+
+      const user = await storageService.getUser();
       const token = await storageService.getToken();
-      if (!token) return;
 
-      const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+      if (!user || !token) {
+        return;
+      }
+      console.log("SOCKET TEST - User and token found, initializing socket");
 
-      // Connect to the /ws namespace as defined in the backend
-      newSocket = io(`${API_URL}/ws`, {
+      const API_URL = process.env.EXPO_PUBLIC_SOCKET_URL;
+      console.log("Connecting to:", API_URL);
+
+      // Try connecting to root namespace first
+      newSocket = io(API_URL!, {
         query: {
           accessToken: token,
         },
         transports: ["websocket"],
         autoConnect: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
       });
 
       newSocket.on("connect", () => {
@@ -69,17 +113,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
       newSocket.on("notification.send", (notification: Notification) => {
         console.log("Received notification:", notification);
-        Toast.show({
-          type: notification.type.toLowerCase(),
-          text1: notification.title,
-          text2: notification.body,
-          onPress: () => {
-            if (notification.navigateTo) {
-              newSocket?.emit("notification.read", notification.id);
-              router.push(notification.navigateTo as Href);
-            }
-          },
-        });
+        // Add to queue instead of showing immediately
+        setNotificationQueue((prev) => [...prev, notification]);
       });
 
       setSocket(newSocket);

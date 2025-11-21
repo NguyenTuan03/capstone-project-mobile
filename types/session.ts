@@ -58,7 +58,7 @@ export interface CalendarSession {
   courseName: string;
   courseId: number;
   scheduleDate: string;
-  course?: Course; // Full course object with address, enrollments, etc.
+  course: Course; // Full course object with address, enrollments, etc.
   quizzes: QuizType[];
   videos: VideoType[];
   attendances?: AttendanceType[];
