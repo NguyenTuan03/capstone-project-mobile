@@ -89,6 +89,14 @@ export default function ContentScreen() {
 
       {/* Header with Green Background */}
       <View style={styles.headerSection}>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity
+            onPress={() => router.push("/(coach)/menu/notifications" as any)}
+            style={styles.notificationButton}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.profileCard}>
           <View style={styles.profileImageContainer}>
             {user?.profilePicture ? (
@@ -311,6 +319,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 24,
     paddingBottom: 32,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 10,
+  },
+  notificationButton: {
+    padding: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 20,
   },
   profileCard: {
     alignItems: "center",
