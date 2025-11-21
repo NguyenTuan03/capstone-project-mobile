@@ -1,15 +1,23 @@
-import CourseList from "@/components/coach/course/courseManage/CourseList";
 import CourseSearchBar from "@/components/coach/course/courseManage/CourseSearchBar";
 import CourseTabs from "@/components/coach/course/courseManage/CourseTabs";
+import RevenueTooltip from "@/components/coach/course/courseManage/RevenueTooltip";
 import type { CourseTabKey } from "@/components/coach/course/courseManage/types";
+import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
 import configurationService from "@/services/configurationService";
 import { get } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { ScrollView, StatusBar, TouchableOpacity, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type CoursesResponse = {
   items: Course[];
@@ -500,7 +508,10 @@ export default function CoachCourseScreen() {
                             position: "relative",
                           }}
                         >
-                          <RevenueTooltip course={course} />
+                          <RevenueTooltip
+                            course={course}
+                            platformFee={platformFee}
+                          />
                         </View>
                       </View>
                     </View>
@@ -569,4 +580,3 @@ export default function CoachCourseScreen() {
     </View>
   );
 }
-

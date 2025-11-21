@@ -27,7 +27,7 @@ interface JWTAuthActionsProps {
   ) => Promise<boolean>;
 }
 
-interface JWTAuthContextProps {
+export interface JWTAuthContextProps {
   user: User | null | undefined;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -203,7 +203,13 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
   return (
     <JWTAuthContext.Provider value={{ ...jwtAuthData }}>
       <JWTAuthActionsContext.Provider
-        value={{ signInUser, logout, refreshUser, requestPasswordReset, resetPassword }}
+        value={{
+          signInUser,
+          logout,
+          refreshUser,
+          requestPasswordReset,
+          resetPassword,
+        }}
       >
         {children}
       </JWTAuthActionsContext.Provider>

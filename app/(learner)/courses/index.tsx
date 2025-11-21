@@ -1,24 +1,75 @@
-import CourseDetailModal from "@/components/learner/courses/CourseDetailModal";
-import CourseList from "@/components/learner/courses/CourseList";
+import { useState } from "react";
+
 import CoursesHeader from "@/components/learner/courses/CoursesHeader";
-import LocationFilter from "@/components/learner/courses/LocationFilter";
 import LocationSelectionModal from "@/components/learner/courses/LocationSelectionModal";
-import SearchBarWithFilter from "@/components/learner/courses/SearchBarWithFilter";
-import styles from "@/components/learner/courses/styles";
-import type { CoursesResponse, District, PaymentLinkResponse, Province } from "@/components/learner/courses/types";
+import type {
+  CoursesResponse,
+  District,
+  PaymentLinkResponse,
+  Province,
+} from "@/components/learner/courses/types";
 import { get, post } from "@/services/http/httpService";
 import { Course } from "@/types/course";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { useFocusEffect } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { useCallback, useEffect } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+// Helper function to get query params from URL
 const getParams = (url: string) =>
   Object.fromEntries(new URL(url).searchParams.entries());
+
+// Helper function to format price
+const formatPrice = (price: string | number) => {
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price;
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(numericPrice);
+};
+
+// Helper function to get level in Vietnamese
+const getLevelInVietnamese = (level: string) => {
+  switch (level) {
+    case "BEGINNER":
+      return "Cơ bản";
+    case "INTERMEDIATE":
+      return "Trung cấp";
+    case "ADVANCED":
+      return "Nâng cao";
+    default:
+      return level;
+  }
+};
+
+// Helper function to convert day of week to Vietnamese
+const convertDayOfWeekToVietnamese = (day: string) => {
+  const dayMap: Record<string, string> = {
+    MONDAY: "Thứ 2",
+    TUESDAY: "Thứ 3",
+    WEDNESDAY: "Thứ 4",
+    THURSDAY: "Thứ 5",
+    FRIDAY: "Thứ 6",
+    SATURDAY: "Thứ 7",
+    SUNDAY: "Chủ nhật",
+  };
+  return dayMap[day] || day;
+};
 
 export default function CoursesScreen() {
   const insets = useSafeAreaInsets();
@@ -51,7 +102,7 @@ export default function CoursesScreen() {
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [initializing, setInitializing] = useState(true);
-  const fetchProvinces = async () => {
+  const fetchProvinces = useCallback(async () => {
     try {
       setLoadingProvinces(true);
       const res = await get<Province[]>("/v1/provinces");
@@ -174,144 +225,134 @@ export default function CoursesScreen() {
     }
   }, [selectedProvince, initializing]);
 
-  const fetchCoachRating = async (coachId: number): Promise<number> => {
-    try {
-      const res = await get<{
-        statusCode: number;
-        message: string;
-        metadata: any;
-      }>(`/v1/coaches/${coachId}/rating/overall`);
+  const fetchCoachRating = useCallback(
+    async (coachId: number): Promise<number> => {
+      try {
+        const res = await get<{
+          statusCode: number;
+          message: string;
+          metadata: any;
+        }>(`/v1/coaches/${coachId}/rating/overall`);
 
-      // Response shapes may vary: metadata can be a number or an object { overall, total }
-      const responseData = res?.data;
-      if (
-        responseData &&
-        typeof responseData === "object" &&
-        "metadata" in responseData
-      ) {
-        const metadata = responseData.metadata;
-        if (typeof metadata === "number") {
-          return metadata;
-        }
-        if (metadata && typeof metadata === "object") {
-          // Prefer `overall` field when present
-          if (typeof metadata.overall === "number") {
-            return metadata.overall;
+        // Response shapes may vary: metadata can be a number or an object { overall, total }
+        const responseData = res?.data;
+        if (
+          responseData &&
+          typeof responseData === "object" &&
+          "metadata" in responseData
+        ) {
+          const metadata = responseData.metadata;
+          if (typeof metadata === "number") {
+            return metadata;
           }
-          // Fallback: try first numeric value in metadata
-          const numericValues = Object.values(metadata).filter(
-            (v) => typeof v === "number"
-          ) as number[];
-          if (numericValues.length > 0) return numericValues[0];
+          if (metadata && typeof metadata === "object") {
+            // Prefer `overall` field when present
+            if (typeof metadata.overall === "number") {
+              return metadata.overall;
+            }
+            // Fallback: try first numeric value in metadata
+            const numericValues = Object.values(metadata).filter(
+              (v) => typeof v === "number"
+            ) as number[];
+            if (numericValues.length > 0) return numericValues[0];
+          }
         }
+        return 0;
+      } catch {
+        return 0;
       }
-      return 0;
-    } catch {
-      return 0;
-    }
-  }, []);
+    },
+    []
+  );
 
   const fetchCoachesRatings = useCallback(
     async (userIds: number[]) => {
       try {
         const uniqueUserIds = [...new Set(userIds)];
-        const coachIdResults = await Promise.allSettled(
-          uniqueUserIds.map((userId) =>
-            fetchUserCoachId(userId).then((coachId) => ({ userId, coachId }))
-          )
+
+        // Fetch ratings directly using userId (each promise resolves to { userId, rating:number })
+        const ratingPromises = uniqueUserIds.map((userId) =>
+          fetchCoachRating(userId).then((rating) => ({ userId, rating }))
         );
+        const ratingResults = await Promise.allSettled(ratingPromises);
 
-        const userIdToCoachIdMap: Record<number, number> = {};
-        const coachIds: number[] = [];
-
-        coachIdResults.forEach((result) => {
-          if (result.status === "fulfilled" && result.value.coachId !== null) {
-            userIdToCoachIdMap[result.value.userId] = result.value.coachId;
-            coachIds.push(result.value.coachId);
+        // Map userId -> rating (number)
+        const ratingsMap: Record<number, number> = {};
+        ratingResults.forEach((result) => {
+          if (result.status === "fulfilled") {
+            const value = result.value;
+            if (value && typeof value.rating === "number") {
+              ratingsMap[value.userId] = value.rating;
+            }
           }
         });
 
-      // Fetch ratings directly using userId (each promise resolves to { userId, rating:number })
-      const ratingPromises = uniqueUserIds.map((userId) =>
-        fetchCoachRating(userId).then((rating) => ({ userId, rating }))
-      );
-      const ratingResults = await Promise.allSettled(ratingPromises);
+        setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
+      } catch (error) {
+        console.error("Failed to fetch coach ratings:", error);
+      }
+    },
+    [fetchCoachRating]
+  );
 
-      // Map userId -> rating (number)
-      const ratingsMap: Record<number, number> = {};
-      ratingResults.forEach((result) => {
-        if (result.status === "fulfilled") {
-          const value = result.value;
-          if (value && typeof value.rating === "number") {
-            ratingsMap[value.userId] = value.rating;
-          }
+  const fetchCourses = useCallback(
+    async (pageNum: number = 1, append: boolean = false) => {
+      try {
+        if (append) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
         }
 
-      setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
-    } catch (error) {
-      console.error("Failed to fetch coach ratings:", error);
-    }
-  };
+        // Build URL with proper query parameters
+        const params = new URLSearchParams();
+        params.append("page", String(pageNum));
+        params.append("size", String(pageSize));
+        if (selectedProvince) {
+          params.append("province", String(selectedProvince.id));
+        }
+        if (selectedDistrict) {
+          params.append("district", String(selectedDistrict.id));
+        }
 
-  const fetchCourses = async (pageNum: number = 1, append: boolean = false) => {
-    try {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+        const url = `/v1/courses/available?${params.toString()}`;
+        const res = await get<CoursesResponse>(url);
 
-      // Build URL with proper query parameters
-      const params = new URLSearchParams();
-      params.append("page", String(pageNum));
-      params.append("size", String(pageSize));
-      if (selectedProvince) {
-        params.append("province", String(selectedProvince.id));
-      }
-      if (selectedDistrict) {
-        params.append("district", String(selectedDistrict.id));
-      }
+        const newCourses = res.data.items || [];
 
-      const url = `/v1/courses/available?${params.toString()}`;
-      const res = await get<CoursesResponse>(url);
+        if (append) {
+          setCourses((prev) => [...prev, ...newCourses]);
+        } else {
+          setCourses(newCourses);
+        }
 
-      const newCourses = res.data.items || [];
+        setTotal(res.data.total || 0);
+        setPage(res.data.page || 1);
 
-      if (append) {
-        setCourses((prev) => [...prev, ...newCourses]);
-      } else {
-        setCourses(newCourses);
+        // Fetch coach ratings for all courses
+        // Get user IDs from createdBy (these are user IDs, not coach IDs)
+        const userIds = newCourses
+          .map((c) => c.createdBy?.id)
+          .filter((id): id is number => id !== undefined);
+        if (userIds.length > 0) {
+          fetchCoachesRatings(userIds);
+        }
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không thể tải danh sách khóa học",
+          position: "top",
+          visibilityTime: 4000,
+        });
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
     },
     [fetchCoachesRatings, pageSize, selectedDistrict, selectedProvince]
   );
-
-      setTotal(res.data.total || 0);
-      setPage(res.data.page || 1);
-
-      // Fetch coach ratings for all courses
-      // Get user IDs from createdBy (these are user IDs, not coach IDs)
-      const userIds = newCourses
-        .map((c) => c.createdBy?.id)
-        .filter((id): id is number => id !== undefined);
-      if (userIds.length > 0) {
-        fetchCoachesRatings(userIds);
-      }
-    } catch (error) {
-      console.error("Failed to fetch courses:", error);
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Không thể tải danh sách khóa học",
-        position: "top",
-        visibilityTime: 4000,
-      });
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvince?.id, selectedDistrict?.id]);
 
   // Fetch lần đầu khi mount hoặc khi quay lại màn hình
   useFocusEffect(
@@ -329,71 +370,68 @@ export default function CoursesScreen() {
     }
   }, [courses.length, fetchCourses, loadingMore, page, total]);
 
-  const handleRegister = useCallback(
-    async (courseId: number) => {
-      setProcessingPayment(courseId);
-      try {
-        const res = await post<PaymentLinkResponse>(
-          `/v1/payments/courses/${courseId}/link`,
-          {}
-        );
-        const checkoutUrl = res?.data?.metadata?.checkoutUrl;
-        if (!checkoutUrl) throw new Error("Không có checkoutUrl");
+  const handleRegister = useCallback(async (courseId: number) => {
+    setProcessingPayment(courseId);
+    try {
+      const res = await post<PaymentLinkResponse>(
+        `/v1/payments/courses/${courseId}/link`,
+        {}
+      );
+      const checkoutUrl = res?.data?.metadata?.checkoutUrl;
+      if (!checkoutUrl) throw new Error("Không có checkoutUrl");
 
-        const returnUri = Linking.createURL("courses/payments/return");
+      const returnUri = Linking.createURL("courses/payments/return");
 
-        const waitDeepLink = new Promise<string>((resolve) => {
-          const sub = Linking.addEventListener("url", ({ url }) => {
-            sub.remove();
-            resolve(url);
-          });
+      const waitDeepLink = new Promise<string>((resolve) => {
+        const sub = Linking.addEventListener("url", ({ url }) => {
+          sub.remove();
+          resolve(url);
         });
+      });
 
-        const auth = WebBrowser.openAuthSessionAsync(checkoutUrl, returnUri);
-        const winner = (await Promise.race([auth, waitDeepLink])) as
-          | { type: "success" | "cancel"; url?: string }
-          | string;
+      const auth = WebBrowser.openAuthSessionAsync(checkoutUrl, returnUri);
+      const winner = (await Promise.race([auth, waitDeepLink])) as
+        | { type: "success" | "cancel"; url?: string }
+        | string;
 
-        const callbackUrl = typeof winner === "string" ? winner : winner.url;
-        if (!callbackUrl) {
-          return;
-        }
+      const callbackUrl = typeof winner === "string" ? winner : winner.url;
+      if (!callbackUrl) {
+        return;
+      }
 
-        const { status = "", cancel = "", orderCode } = getParams(callbackUrl);
-        const paid =
-          status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
+      const { status = "", cancel = "", orderCode } = getParams(callbackUrl);
+      const paid =
+        status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
 
-        if (paid) {
-          Toast.show({
-            type: "success",
-            text1: "Thành công",
-            text2: `Mã đơn: ${orderCode || "N/A"}`,
-            position: "top",
-            visibilityTime: 4000,
-          });
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Đã hủy",
-            text2: "Thanh toán không thành công.",
-            position: "top",
-            visibilityTime: 4000,
-          });
-        }
-      } catch (e: any) {
+      if (paid) {
         Toast.show({
-          type: "error",
-          text1: "Lỗi",
-          text2: e?.Message ?? "Có lỗi khi thanh toán.",
+          type: "success",
+          text1: "Thành công",
+          text2: `Mã đơn: ${orderCode || "N/A"}`,
           position: "top",
           visibilityTime: 4000,
         });
-      } finally {
-        setProcessingPayment(null);
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Đã hủy",
+          text2: "Thanh toán không thành công.",
+          position: "top",
+          visibilityTime: 4000,
+        });
       }
-    },
-    []
-  );
+    } catch (e: any) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: e?.Message ?? "Có lỗi khi thanh toán.",
+        position: "top",
+        visibilityTime: 4000,
+      });
+    } finally {
+      setProcessingPayment(null);
+    }
+  }, []);
 
   const handleCourseRegister = useCallback(
     (courseId: number) => {
@@ -1013,7 +1051,9 @@ export default function CoursesScreen() {
       </Modal>
 
       {/* Province Modal */}
-      <Modal
+      <LocationSelectionModal
+        title="Chọn tỉnh/thành phố"
+        items={provinces}
         visible={showProvinceModal}
         loading={loadingProvinces}
         selectedItem={selectedProvince}
