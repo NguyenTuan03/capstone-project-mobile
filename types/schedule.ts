@@ -13,7 +13,7 @@ export interface Schedule {
   dayOfWeek: ScheduleDayOfWeek;
   startTime: string;
   endTime: string;
-  courseId: number;
+  totalSessions: number;
 }
 
 export interface ScheduleDto {

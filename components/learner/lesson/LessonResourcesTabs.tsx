@@ -109,7 +109,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
     // UPDATED: Load both submitted video and overlayVideoUrl
     const loadSubmittedVideo = useCallback(async () => {
-
       if (!sessionId) {
         setSubmittedVideo(null);
         setOverlayVideoUrl(null);
@@ -354,7 +353,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
         return (
           <View key={quiz.id} style={styles.resourceCard}>
-            <QuizAttemptCard quiz={transformedQuiz} />
+            <QuizAttemptCard quiz={transformedQuiz} onRefresh={refresh} />
           </View>
         );
       });
