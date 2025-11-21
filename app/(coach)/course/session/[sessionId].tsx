@@ -71,7 +71,9 @@ const getCoachVideos = (session?: Session | null): VideoType[] => {
 const formatFullDateTime = (value?: string | null) => {
   if (!value) return "—";
   const date = new Date(value);
-  return `${date.toLocaleDateString("vi-VN")} ${date.toLocaleTimeString("vi-VN")}`;
+  return `${date.toLocaleDateString("vi-VN")} ${date.toLocaleTimeString(
+    "vi-VN"
+  )}`;
 };
 
 const SessionDetailScreen: React.FC = () => {
@@ -82,7 +84,6 @@ const SessionDetailScreen: React.FC = () => {
   const [learnerVideos, setLearnerVideos] = useState<LearnerVideo[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
-
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -98,12 +99,11 @@ const SessionDetailScreen: React.FC = () => {
         const fallbackVideos = extractVideosFromPayload(res.data);
         setSession({
           ...normalized,
-          videos:
-            normalized.videos?.length
-              ? normalized.videos
-              : fallbackVideos.length
-              ? fallbackVideos
-              : normalized.videos,
+          videos: normalized.videos?.length
+            ? normalized.videos
+            : fallbackVideos.length
+            ? fallbackVideos
+            : normalized.videos,
         });
       } catch {
         Alert.alert("Lỗi", "Không thể tải thông tin buổi học");
@@ -171,6 +171,7 @@ const SessionDetailScreen: React.FC = () => {
         visibilityTime: 3000,
       });
     }
+  };
   const handleOpenCoachVideo = (url: string) => {
     Linking.openURL(url).catch(() =>
       Alert.alert("Lỗi", "Không thể mở video. Vui lòng thử lại sau.")
@@ -180,8 +181,12 @@ const SessionDetailScreen: React.FC = () => {
   const handleOpenLearnerSubmission = (submissionId: number) => {
     if (!sessionId) return;
     router.push({
-      pathname: "/(coach)/course/session/submissions/[sessionId]/[submissionId]",
-      params: { sessionId: String(sessionId), submissionId: String(submissionId) },
+      pathname:
+        "/(coach)/course/session/submissions/[sessionId]/[submissionId]",
+      params: {
+        sessionId: String(sessionId),
+        submissionId: String(submissionId),
+      },
     });
   };
 
@@ -424,7 +429,14 @@ const SessionDetailScreen: React.FC = () => {
                   color="#9CA3AF"
                 />
                 <Text style={styles.emptyText}>Chưa có quiz cho buổi này</Text>
-              Video mẫu của Coach {coachVideos.length ? `(${coachVideos.length})` : ""}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Video mẫu của Coach{" "}
+              {coachVideos.length ? `(${coachVideos.length})` : ""}
             </Text>
             {coachVideos.length ? (
               coachVideos.map((video) => (
@@ -444,7 +456,8 @@ const SessionDetailScreen: React.FC = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Video của học viên {learnerVideos.length ? `(${learnerVideos.length})` : ""}
+              Video của học viên{" "}
+              {learnerVideos.length ? `(${learnerVideos.length})` : ""}
             </Text>
             {learnerVideos.length ? (
               learnerVideos.map((video) => (
@@ -558,7 +571,10 @@ const CoachVideoCard: React.FC<{
         <Text
           style={[
             styles.statusBadge,
-            { backgroundColor: badgeStyle.backgroundColor, color: badgeStyle.color },
+            {
+              backgroundColor: badgeStyle.backgroundColor,
+              color: badgeStyle.color,
+            },
           ]}
         >
           {video.status || "—"}
@@ -576,14 +592,6 @@ const CoachVideoCard: React.FC<{
           <View style={styles.coachMetaItem}>
             <Ionicons name="tennisball-outline" size={12} color="#6B7280" />
             <Text style={styles.meta}>{video.drillName}</Text>
-          </View>
-        ) : null}
-        {video.tags ? (
-          <View style={styles.coachMetaItem}>
-            <Ionicons name="pricetags-outline" size={12} color="#6B7280" />
-            <Text style={styles.meta}>
-              {Array.isArray(video.tags) ? video.tags.join(", ") : video.tags}
-            </Text>
           </View>
         ) : null}
       </View>
@@ -629,7 +637,10 @@ const LearnerVideoCard: React.FC<{
         <Text
           style={[
             styles.statusBadge,
-            { backgroundColor: badgeStyle.backgroundColor, color: badgeStyle.color },
+            {
+              backgroundColor: badgeStyle.backgroundColor,
+              color: badgeStyle.color,
+            },
           ]}
         >
           {video.status}
