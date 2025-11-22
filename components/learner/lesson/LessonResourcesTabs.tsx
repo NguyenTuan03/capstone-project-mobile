@@ -1,4 +1,4 @@
-import { get, post } from "@/services/http/httpService";
+import { get } from "@/services/http/httpService";
 import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,7 +16,6 @@ import storageService from "../../../services/storageService";
 import { QuizType } from "../../../types/quiz";
 import { LearnerVideo } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
-import OverlayVideoModal from "./OverlayVideoModal";
 import VideoList from "./VideoList";
 
 type LessonResourcesTab = "videos" | "quizzes";
@@ -46,7 +45,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       useState<AiVideoCompareResult | null>(null);
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
     const [overlayVideoUrl, setOverlayVideoUrl] = useState<string | null>(null);
-    const [generatingOverlay, setGeneratingOverlay] = useState(false);
     const [showOverlayModal, setShowOverlayModal] = useState(false);
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
@@ -229,54 +227,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
-    const handleGenerateOverlay = async () => {
-      if (!submittedVideo?.id) {
-        Alert.alert("Lỗi", "Không tìm thấy video để so sánh");
-        return;
-      }
-
-      const coachVideo = video;
-      if (!coachVideo?.id) {
-        Alert.alert("Lỗi", "Không tìm thấy video của coach để so sánh");
-        return;
-      }
-
-      try {
-        setGeneratingOverlay(true);
-
-        const response = await post(
-          `/v1/learner-videos/${submittedVideo.id}/overlay-video/${coachVideo.id}`
-        );
-
-        if (response.data && typeof response.data === "string") {
-          if (response.data.startsWith("http")) {
-            // Reload submitted video to get updated overlayVideoUrl from database
-            await loadSubmittedVideo();
-            setShowOverlayModal(true);
-            Alert.alert("Thành công", "Video overlay đã được tạo!");
-          } else {
-            Alert.alert(
-              "Thông báo",
-              "Đang tạo video lồng nhau, vui lòng đợi và thử lại sau"
-            );
-          }
-        } else {
-          Alert.alert(
-            "Thông báo",
-            "Đang tạo video lồng nhau, vui lòng đợi và thử lại sau"
-          );
-        }
-      } catch (err: any) {
-        console.error("❌ Error generating overlay video:", err);
-        Alert.alert(
-          "Lỗi",
-          err?.response?.data?.message || "Không thể tạo video overlay"
-        );
-      } finally {
-        setGeneratingOverlay(false);
-      }
-    };
-
     const handleViewOverlay = () => {
       setShowOverlayModal(true);
     };
@@ -414,10 +364,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
               submittedVideo={submittedVideo}
               localVideo={localVideo}
               overlayVideoUrl={overlayVideoUrl}
-              generatingOverlay={generatingOverlay}
               loadingAnalysis={loadingAnalysis}
               aiAnalysisResult={aiAnalysisResult}
-              onGenerateOverlay={handleGenerateOverlay}
               onViewOverlay={handleViewOverlay}
               onPickVideo={handlePickVideo}
               onUploadVideo={handleUploadVideo}
@@ -430,12 +378,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             renderQuizzes(quiz)
           )}
         </View>
-
-        <OverlayVideoModal
-          visible={showOverlayModal}
-          overlayVideoUrl={overlayVideoUrl}
-          onClose={() => setShowOverlayModal(false)}
-        />
       </View>
     );
   }

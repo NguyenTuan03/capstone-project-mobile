@@ -7,6 +7,7 @@ import AIAnalysisResult from "./AIAnalysisResult";
 import CoachVideoCard from "./CoachVideoCard";
 import SubmittedVideoCard from "./SubmittedVideoCard";
 import VideoDetailsModal from "./VideoDetailsModal";
+import VideoOverlayPlayer from "./VideoOverlayPlayer";
 import VideoUploadSection from "./VideoUploadSection";
 
 interface VideoListProps {
@@ -26,10 +27,8 @@ interface VideoListProps {
     uploaded?: boolean;
   } | null;
   overlayVideoUrl: string | null;
-  generatingOverlay: boolean;
   loadingAnalysis: boolean;
   aiAnalysisResult: AiVideoCompareResult | null;
-  onGenerateOverlay: () => void;
   onViewOverlay: () => void;
   onPickVideo: () => void;
   onUploadVideo: (coachVideoId: number) => void;
@@ -48,10 +47,8 @@ const VideoList: React.FC<VideoListProps> = ({
   submittedVideo,
   localVideo,
   overlayVideoUrl,
-  generatingOverlay,
   loadingAnalysis,
   aiAnalysisResult,
-  onGenerateOverlay,
   onViewOverlay,
   onPickVideo,
   onUploadVideo,
@@ -62,6 +59,9 @@ const VideoList: React.FC<VideoListProps> = ({
 }) => {
   const [showAllVideos, setShowAllVideos] = useState(false);
   const [showCoachVideosModal, setShowCoachVideosModal] = useState(false);
+  const [showOverlayPlayer, setShowOverlayPlayer] = useState(false);
+
+  console.log(video?.duration, submittedVideo?.status);
 
   return (
     <>
@@ -69,9 +69,7 @@ const VideoList: React.FC<VideoListProps> = ({
         <SubmittedVideoCard
           submittedVideo={submittedVideo}
           overlayVideoUrl={overlayVideoUrl}
-          generatingOverlay={generatingOverlay}
-          onGenerateOverlay={onGenerateOverlay}
-          onViewOverlay={onViewOverlay}
+          onViewOverlay={() => setShowOverlayPlayer(true)}
         />
       )}
 
@@ -123,6 +121,16 @@ const VideoList: React.FC<VideoListProps> = ({
         onClose={() => setShowCoachVideosModal(false)}
         title="Video từ Coach"
       />
+
+      {/* Custom Overlay Player */}
+      {video && video.publicUrl && submittedVideo && (
+        <VideoOverlayPlayer
+          visible={showOverlayPlayer}
+          onClose={() => setShowOverlayPlayer(false)}
+          coachVideoUrl={video.publicUrl}
+          learnerVideoUrl={submittedVideo.publicUrl}
+        />
+      )}
     </>
   );
 };

@@ -1,7 +1,11 @@
 import { formatAnalysisResult } from "@/helper/FormatAnalysisResult";
 import * as geminiService from "@/services/ai/geminiService";
 import { get, post } from "@/services/http/httpService";
-import type { AiVideoCompareResult, PoseLandmark, VideoComparisonResult } from "@/types/ai";
+import type {
+  AiVideoCompareResult,
+  PoseLandmark,
+  VideoComparisonResult,
+} from "@/types/ai";
 import type { Session } from "@/types/session";
 import type { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
@@ -183,8 +187,8 @@ const SubmissionReviewScreen: React.FC = () => {
       }
       const learnerUrl = submission.publicUrl ?? "";
       const coachUrl =
-        submission.session?.videos?.[0]?.publicUrl ??
-        submission.session?.lesson?.videos?.[0]?.publicUrl ??
+        submission.session?.video?.publicUrl ??
+        submission.session?.lesson?.video?.publicUrl ??
         "";
 
       console.log("📹 Coach URL:", coachUrl);
@@ -219,12 +223,12 @@ const SubmissionReviewScreen: React.FC = () => {
   }, [submission?.publicUrl]);
 
   const coachSource = useMemo(() => {
-    const coachUrl = submission?.session?.videos?.[0]?.publicUrl;
+    const coachUrl = submission?.session?.video?.publicUrl;
     if (coachUrl) {
       return { uri: coachUrl, contentType: "auto" as const };
     }
     return null;
-  }, [submission?.session?.videos]);
+  }, [submission?.session?.video?.publicUrl]);
 
   const learnerPlayer = useVideoPlayer(learnerSource, (player) => {
     if (player) player.loop = false;
@@ -279,47 +283,47 @@ const SubmissionReviewScreen: React.FC = () => {
       Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
       return;
     }
-  
+
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
-  
+
     try {
       console.log("🔍 Starting pose extraction and analysis...");
       console.log("👨‍🏫 Coach video:", coachLocalPath);
       console.log("👨‍🎓 Learner video:", learnerLocalPath);
-  
+
       // ✅ BƯỚC 1: Extract pose data từ video (sử dụng MediaPipe hoặc TensorFlow)
       // Bạn cần implement hàm extractPoseDataForTimestamps
-      const coachDuration = submission?.session?.lesson?.videos?.[0]?.duration ?? 0;
+      const coachDuration = submission?.session?.lesson?.video?.duration ?? 0;
       const learnerDuration = submission?.duration ?? 0;
-  
+
       const coachTimestamps = [
         coachDuration * 0.25,
         coachDuration * 0.5,
-        coachDuration * 0.75
-      ].map(t => parseFloat(t.toFixed(2)));
-  
+        coachDuration * 0.75,
+      ].map((t) => parseFloat(t.toFixed(2)));
+
       const learnerTimestamps = [
         learnerDuration * 0.25,
         learnerDuration * 0.5,
-        learnerDuration * 0.75
-      ].map(t => parseFloat(t.toFixed(2)));
-  
+        learnerDuration * 0.75,
+      ].map((t) => parseFloat(t.toFixed(2)));
+
       console.log("📊 Extracting pose data...");
-      
+
       // TODO: Implement extractPoseDataForTimestamps function
       // const [coachPoses, learnerPoses] = await Promise.all([
       //   extractPoseDataForTimestamps(coachLocalPath, coachTimestamps),
       //   extractPoseDataForTimestamps(learnerLocalPath, learnerTimestamps)
       // ]);
-  
+
       // TEMPORARY: Mock data for testing
       const coachPoses: PoseLandmark[][] = [[], [], []]; // Replace with actual extraction
       const learnerPoses: PoseLandmark[][] = [[], [], []]; // Replace with actual extraction
-  
+
       console.log("🤖 Calling Gemini API with pose data...");
-  
+
       // ✅ BƯỚC 2: Gọi API với pose data thay vì frames
       const analysisResult = await geminiService.comparePoseData(
         coachPoses,
@@ -327,17 +331,17 @@ const SubmissionReviewScreen: React.FC = () => {
         learnerPoses,
         learnerTimestamps
       );
-  
+
       // ✅ BƯỚC 3: Merge API response với pose data
       const fullResult: VideoComparisonResult = {
         ...analysisResult,
         coachPoses,
-        learnerPoses
+        learnerPoses,
       };
-  
+
       console.log("📊 Full Analysis Result:");
       console.log(JSON.stringify(fullResult, null, 2));
-  
+
       setAnalysisResult(fullResult);
     } catch (err) {
       console.error("Analysis failed:", err);
@@ -364,9 +368,9 @@ const SubmissionReviewScreen: React.FC = () => {
     coachLocalPath,
     learnerLocalPath,
     submission?.duration,
-    submission?.session?.lesson?.videos,
+    submission?.session?.lesson?.video,
   ]);
-  
+
   const derivedCompareResult = useMemo<AiVideoCompareResult | null>(() => {
     if (!analysisResult) return null;
 
@@ -400,7 +404,7 @@ const SubmissionReviewScreen: React.FC = () => {
   }, [analysisResult, submission]);
 
   const displayResult = derivedCompareResult ?? compareResult;
-  
+
   const canAnalyze = Boolean(
     coachLocalPath &&
       learnerLocalPath &&
@@ -636,185 +640,187 @@ const SubmissionReviewScreen: React.FC = () => {
             )}
           </View>
 
-        {/* Hiển thị kết quả nếu đã có response */}
-        {displayResult ? (
-          <View style={styles.actionCard}>
-            {loadingCompareResult ? (
-              <View style={styles.loadingCard}>
-                <ActivityIndicator size="small" color="#059669" />
-                <Text style={styles.loadingText}>
-                  Đang tải kết quả so sánh...
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.compareResultCard}>
-                <View style={styles.compareResultHeader}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color="#059669"
-                  />
-                  <Text style={styles.cardTitle}>Kết quả so sánh AI</Text>
+          {/* Hiển thị kết quả nếu đã có response */}
+          {displayResult ? (
+            <View style={styles.actionCard}>
+              {loadingCompareResult ? (
+                <View style={styles.loadingCard}>
+                  <ActivityIndicator size="small" color="#059669" />
+                  <Text style={styles.loadingText}>
+                    Đang tải kết quả so sánh...
+                  </Text>
                 </View>
-                {displayResult.summary ? (
-                  <View style={styles.compareResultSection}>
-                    <Text style={styles.compareResultLabel}>Tóm tắt:</Text>
-                    <Text style={styles.compareResultText}>
-                      {displayResult.summary}
-                    </Text>
-                  </View>
-                ) : null}
-                {displayResult.learnerScore !== null &&
-                displayResult.learnerScore !== undefined ? (
-                  <View style={styles.compareResultSection}>
-                    <Text style={styles.compareResultLabel}>Điểm số:</Text>
-                    <Text style={styles.compareResultScore}>
-                      {displayResult.learnerScore}/100
-                    </Text>
-                  </View>
-                ) : null}
-                {displayResult.keyDifferents &&
-                displayResult.keyDifferents.length > 0 ? (
-                  <View style={styles.compareResultSection}>
-                    <Text style={styles.compareResultLabel}>
-                      Điểm khác biệt chính:
-                    </Text>
-                    {displayResult.keyDifferents.map((diff, index) => (
-                      <View key={index} style={styles.keyDifferenceItem}>
-                        <Text style={styles.keyDifferenceAspect}>
-                          {diff.aspect}
-                        </Text>
-                        <Text style={styles.keyDifferenceText}>
-                          <Text style={styles.boldText}>Coach: </Text>
-                          {diff.coachTechnique}
-                        </Text>
-                        <Text style={styles.keyDifferenceText}>
-                          <Text style={styles.boldText}>Học viên: </Text>
-                          {diff.learnerTechnique}
-                        </Text>
-                        <Text style={styles.keyDifferenceImpact}>
-                          Tác động: {diff.impact}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-                {displayResult.recommendationDrills &&
-                displayResult.recommendationDrills.length > 0 ? (
-                  <View style={styles.compareResultSection}>
-                    <Text style={styles.compareResultLabel}>
-                      Bài tập đề xuất:
-                    </Text>
-                    {displayResult.recommendationDrills.map((drill, index) => (
-                      <View key={index} style={styles.drillItem}>
-                        <Text style={styles.drillName}>{drill.name}</Text>
-                        <Text style={styles.drillDescription}>
-                          {drill.description}
-                        </Text>
-                        <Text style={styles.drillPracticeSets}>
-                          Số lần tập: {drill.practiceSets}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-                {displayResult.coachNote ? (
-                  <View style={styles.compareResultSection}>
-                    <Text style={styles.compareResultLabel}>
-                      Ghi chú của coach:
-                    </Text>
-                    <Text style={styles.compareResultText}>
-                      {displayResult.coachNote}
-                    </Text>
-                  </View>
-                ) : null}
-                {displayResult.createdAt ? (
-                  <Text style={styles.compareResultDate}>
-                    Tạo lúc: {formatDateTime(displayResult.createdAt)}
-                  </Text>
-                ) : null}
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.actionCard}>
-            <TouchableOpacity
-              style={[
-                styles.analyzeButton,
-                !canRetry && styles.analyzeButtonDisabled,
-              ]}
-              onPress={handleAnalyzeTechnique}
-              disabled={!canRetry}
-            >
-              {isAnalyzing ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : error ? (
-                <>
-                  <Ionicons name="refresh" size={16} color="#FFFFFF" />
-                  <Text style={styles.analyzeText}>Thử lại</Text>
-                </>
               ) : (
-                <>
-                  <Ionicons name="sparkles" size={16} color="#FFFFFF" />
-                  <Text style={styles.analyzeText}>Chấm bài bằng AI</Text>
-                </>
+                <View style={styles.compareResultCard}>
+                  <View style={styles.compareResultHeader}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#059669"
+                    />
+                    <Text style={styles.cardTitle}>Kết quả so sánh AI</Text>
+                  </View>
+                  {displayResult.summary ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>Tóm tắt:</Text>
+                      <Text style={styles.compareResultText}>
+                        {displayResult.summary}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {displayResult.learnerScore !== null &&
+                  displayResult.learnerScore !== undefined ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>Điểm số:</Text>
+                      <Text style={styles.compareResultScore}>
+                        {displayResult.learnerScore}/100
+                      </Text>
+                    </View>
+                  ) : null}
+                  {displayResult.keyDifferents &&
+                  displayResult.keyDifferents.length > 0 ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>
+                        Điểm khác biệt chính:
+                      </Text>
+                      {displayResult.keyDifferents.map((diff, index) => (
+                        <View key={index} style={styles.keyDifferenceItem}>
+                          <Text style={styles.keyDifferenceAspect}>
+                            {diff.aspect}
+                          </Text>
+                          <Text style={styles.keyDifferenceText}>
+                            <Text style={styles.boldText}>Coach: </Text>
+                            {diff.coachTechnique}
+                          </Text>
+                          <Text style={styles.keyDifferenceText}>
+                            <Text style={styles.boldText}>Học viên: </Text>
+                            {diff.learnerTechnique}
+                          </Text>
+                          <Text style={styles.keyDifferenceImpact}>
+                            Tác động: {diff.impact}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  {displayResult.recommendationDrills &&
+                  displayResult.recommendationDrills.length > 0 ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>
+                        Bài tập đề xuất:
+                      </Text>
+                      {displayResult.recommendationDrills.map(
+                        (drill, index) => (
+                          <View key={index} style={styles.drillItem}>
+                            <Text style={styles.drillName}>{drill.name}</Text>
+                            <Text style={styles.drillDescription}>
+                              {drill.description}
+                            </Text>
+                            <Text style={styles.drillPracticeSets}>
+                              Số lần tập: {drill.practiceSets}
+                            </Text>
+                          </View>
+                        )
+                      )}
+                    </View>
+                  ) : null}
+                  {displayResult.coachNote ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>
+                        Ghi chú của coach:
+                      </Text>
+                      <Text style={styles.compareResultText}>
+                        {displayResult.coachNote}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {displayResult.createdAt ? (
+                    <Text style={styles.compareResultDate}>
+                      Tạo lúc: {formatDateTime(displayResult.createdAt)}
+                    </Text>
+                  ) : null}
+                </View>
               )}
-            </TouchableOpacity>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            {loadingCompareResult ? (
-              <View style={styles.loadingCard}>
-                <ActivityIndicator size="small" color="#059669" />
-                <Text style={styles.loadingText}>
-                  Đang tải kết quả so sánh...
-                </Text>
-              </View>
-            ) : null}
-            {analysisResult ? (
-              <View style={styles.analysisCard}>
-                <Text style={styles.cardTitle}>Kết quả phân tích</Text>
-                <ScrollView
-                  style={{ maxHeight: 400 }}
-                  showsVerticalScrollIndicator={true}
-                >
-                  <Text style={styles.analysisText}>
-                    {formatAnalysisResult(analysisResult)}
-                  </Text>
-                </ScrollView>
-              </View>
-            ) : null}
-            <View style={styles.feedbackSection}>
-              <Text style={styles.feedbackLabel}>Feedback</Text>
-              <TextInput
-                style={styles.feedbackInput}
-                placeholder="Nhập feedback cho học viên..."
-                placeholderTextColor="#9CA3AF"
-                value={feedback}
-                onChangeText={setFeedback}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
+            </View>
+          ) : (
+            <View style={styles.actionCard}>
               <TouchableOpacity
                 style={[
-                  styles.submitButton,
-                  (!canSubmitFeedback || isSubmitting) &&
-                    styles.submitButtonDisabled,
+                  styles.analyzeButton,
+                  !canRetry && styles.analyzeButtonDisabled,
                 ]}
-                onPress={handleSubmitFeedback}
-                disabled={!canSubmitFeedback || isSubmitting}
+                onPress={handleAnalyzeTechnique}
+                disabled={!canRetry}
               >
-                {isSubmitting ? (
+                {isAnalyzing ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : error ? (
+                  <>
+                    <Ionicons name="refresh" size={16} color="#FFFFFF" />
+                    <Text style={styles.analyzeText}>Thử lại</Text>
+                  </>
                 ) : (
                   <>
-                    <Ionicons name="send" size={16} color="#FFFFFF" />
-                    <Text style={styles.submitText}>Trả kết quả</Text>
+                    <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                    <Text style={styles.analyzeText}>Chấm bài bằng AI</Text>
                   </>
                 )}
               </TouchableOpacity>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              {loadingCompareResult ? (
+                <View style={styles.loadingCard}>
+                  <ActivityIndicator size="small" color="#059669" />
+                  <Text style={styles.loadingText}>
+                    Đang tải kết quả so sánh...
+                  </Text>
+                </View>
+              ) : null}
+              {analysisResult ? (
+                <View style={styles.analysisCard}>
+                  <Text style={styles.cardTitle}>Kết quả phân tích</Text>
+                  <ScrollView
+                    style={{ maxHeight: 400 }}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <Text style={styles.analysisText}>
+                      {formatAnalysisResult(analysisResult)}
+                    </Text>
+                  </ScrollView>
+                </View>
+              ) : null}
+              <View style={styles.feedbackSection}>
+                <Text style={styles.feedbackLabel}>Feedback</Text>
+                <TextInput
+                  style={styles.feedbackInput}
+                  placeholder="Nhập feedback cho học viên..."
+                  placeholderTextColor="#9CA3AF"
+                  value={feedback}
+                  onChangeText={setFeedback}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    (!canSubmitFeedback || isSubmitting) &&
+                      styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmitFeedback}
+                  disabled={!canSubmitFeedback || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={16} color="#FFFFFF" />
+                      <Text style={styles.submitText}>Trả kết quả</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
+          )}
         </ScrollView>
       )}
     </View>

@@ -1,13 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import LessonVideoPlayer from "./LessonVideoPlayer";
 
 interface SubmittedVideoCardProps {
@@ -19,16 +13,12 @@ interface SubmittedVideoCardProps {
     id?: number;
   };
   overlayVideoUrl: string | null;
-  generatingOverlay: boolean;
-  onGenerateOverlay: () => void;
   onViewOverlay: () => void;
 }
 
 const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
   submittedVideo,
   overlayVideoUrl,
-  generatingOverlay,
-  onGenerateOverlay,
   onViewOverlay,
 }) => {
   return (
@@ -101,44 +91,32 @@ const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
             colors={["#3B82F6", "#2563EB"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.actionButtonGradient}
+            style={styles.viewOverlayButton}
           >
             <Ionicons name="eye" size={20} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Xem so sánh với Coach</Text>
+            <Text style={styles.viewOverlayButtonText}>
+              Xem so sánh với Coach
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity
-          onPress={onGenerateOverlay}
-          disabled={generatingOverlay}
-          activeOpacity={0.8}
-          style={styles.actionButtonContainer}
-        >
-          <LinearGradient
-            colors={
-              generatingOverlay
-                ? ["#9CA3AF", "#6B7280"]
-                : ["#8B5CF6", "#7C3AED"]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.actionButtonGradient}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={styles.customCompareButton}
+            onPress={onViewOverlay}
+            activeOpacity={0.8}
           >
-            {generatingOverlay ? (
-              <>
-                <ActivityIndicator size="small" color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>
-                  Đang tạo video overlay...
-                </Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="scan-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>So sánh với Coach</Text>
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={["#10B981", "#059669"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.compareButtonGradient}
+            >
+              <Ionicons name="layers" size={20} color="#FFFFFF" />
+              <Text style={styles.compareButtonText}>So sánh thủ công</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -246,6 +224,60 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  viewOverlayButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  viewOverlayButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  compareButton: {
+    flex: 1,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  compareButtonDisabled: {
+    opacity: 0.7,
+  },
+  compareButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  compareButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  customCompareButton: {
+    flex: 1,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
 });
 
