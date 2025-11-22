@@ -13,14 +13,14 @@ import CoachVideoCard from "./CoachVideoCard";
 
 interface VideoDetailsModalProps {
   visible: boolean;
-  videos: VideoType[];
+  video: VideoType | undefined;
   onClose: () => void;
   title?: string;
 }
 
 const VideoDetailsModal: React.FC<VideoDetailsModalProps> = ({
   visible,
-  videos,
+  video,
   onClose,
   title = "Video từ Coach",
 }) => {
@@ -38,9 +38,6 @@ const VideoDetailsModal: React.FC<VideoDetailsModalProps> = ({
             <View style={styles.modalTitleRow}>
               <Ionicons name="videocam" size={24} color="#059669" />
               <Text style={styles.modalTitle}>{title}</Text>
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>{videos.length}</Text>
-              </View>
             </View>
             <TouchableOpacity
               onPress={onClose}
@@ -57,15 +54,13 @@ const VideoDetailsModal: React.FC<VideoDetailsModalProps> = ({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {videos.length === 0 ? (
+            {video ? (
+              <CoachVideoCard video={video} />
+            ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="film-outline" size={48} color="#9CA3AF" />
                 <Text style={styles.emptyText}>Chưa có video nào</Text>
               </View>
-            ) : (
-              videos.map((video) => (
-                <CoachVideoCard key={video.id} video={video} />
-              ))
             )}
           </ScrollView>
         </View>

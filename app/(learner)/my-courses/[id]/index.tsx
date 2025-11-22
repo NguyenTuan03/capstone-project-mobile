@@ -551,28 +551,24 @@ export default function CourseDetailScreen() {
                         </View>
 
                         <View style={styles.lessonStats}>
-                          {session.videos && session.videos.length > 0 && (
+                          {session.video && (
                             <View style={styles.statTag}>
                               <Ionicons
                                 name="play-circle-outline"
                                 size={12}
                                 color="#4B5563"
                               />
-                              <Text style={styles.statText}>
-                                {session.videos.length} Video
-                              </Text>
+                              <Text style={styles.statText}>Video</Text>
                             </View>
                           )}
-                          {session.quizzes && session.quizzes.length > 0 && (
+                          {session.quiz && (
                             <View style={styles.statTag}>
                               <Ionicons
                                 name="help-circle-outline"
                                 size={12}
                                 color="#4B5563"
                               />
-                              <Text style={styles.statText}>
-                                {session.quizzes.length} Quiz
-                              </Text>
+                              <Text style={styles.statText}>Quiz</Text>
                             </View>
                           )}
                         </View>

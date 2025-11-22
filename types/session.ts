@@ -19,8 +19,8 @@ export interface Session {
   completedAt?: string | null;
   course: Course;
   lesson?: Lesson | null;
-  videos?: VideoType[];
-  quizzes?: QuizType[];
+  video?: VideoType;
+  quiz?: QuizType;
 }
 
 export interface Lesson {
@@ -32,8 +32,8 @@ export interface Lesson {
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
-  videos?: VideoType[];
-  quizzes?: QuizType[];
+  video?: VideoType;
+  quiz?: QuizType;
 }
 
 export enum SessionStatus {
@@ -59,8 +59,8 @@ export interface CalendarSession {
   courseId: number;
   scheduleDate: string;
   course: Course; // Full course object with address, enrollments, etc.
-  quizzes: QuizType[];
-  videos: VideoType[];
+  quiz: QuizType;
+  video: VideoType;
   attendances?: AttendanceType[];
 }
 

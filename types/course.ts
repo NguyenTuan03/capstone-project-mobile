@@ -1,5 +1,6 @@
 import { Court } from "./court";
 import { Enrollment } from "./enrollments";
+import { Session } from "./session";
 
 export type LearningFormat = "GROUP" | "INDIVIDUAL";
 
@@ -52,6 +53,7 @@ export type Course = {
     email: string;
   };
   enrollments: Enrollment[];
+  sessions?: Session[];
 };
 
 export type CourseResponse = {

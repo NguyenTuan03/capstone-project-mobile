@@ -25,9 +25,9 @@ export default function AuthScreen() {
 
       const user = await storageService.getUser();
 
-      if (user?.role.name === "COACH") {
+      if (user?.role?.name === "COACH") {
         router.push("/(coach)/home" as Href);
-      } else if (user?.role.name === "LEARNER") {
+      } else if (user?.role?.name === "LEARNER") {
         router.push("/(learner)/home" as Href);
       }
     } catch (err: any) {

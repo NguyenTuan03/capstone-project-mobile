@@ -23,7 +23,7 @@ type LessonResourcesTab = "videos" | "quizzes";
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, sessionId, style }) => {
-    const { quizzes, videos, loading, error, refresh } =
+    const { quiz, video, loading, error, refresh } =
       useLessonResources(lessonId);
     const [activeTab, setActiveTab] = useState<LessonResourcesTab>("videos");
     const [tabLoading, setTabLoading] = useState(false);
@@ -52,10 +52,10 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
         () => [
-          { key: "videos", label: "Video", count: videos.length },
-          { key: "quizzes", label: "Quiz", count: quizzes.length },
+          { key: "videos", label: "Video", count: video ? 1 : 0 },
+          { key: "quizzes", label: "Quiz", count: quiz ? 1 : 0 },
         ],
-        [quizzes.length, videos.length]
+        [quiz, video]
       );
 
     const handlePickVideo = async () => {
@@ -235,7 +235,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         return;
       }
 
-      const coachVideo = videos.length > 0 ? videos[0] : null;
+      const coachVideo = video;
       if (!coachVideo?.id) {
         Alert.alert("Lỗi", "Không tìm thấy video của coach để so sánh");
         return;
@@ -322,8 +322,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       void loadAiAnalysisResult();
     }, [loadAiAnalysisResult]);
 
-    const renderQuizzes = (items: QuizType[]) => {
-      if (items.length === 0) {
+    const renderQuizzes = (item: QuizType | undefined) => {
+      if (!item) {
         return (
           <Text style={styles.emptyText}>
             Chưa có quiz nào cho bài học này.
@@ -331,32 +331,30 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         );
       }
 
-      return items.map((quiz) => {
-        const transformedQuiz = {
-          id: quiz.id,
-          title: quiz.title,
-          description: quiz.description,
-          totalQuestions: quiz.totalQuestions,
-          questions: quiz.questions.map((q) => ({
-            id: q.id,
-            title: q.title,
-            explanation: q.explanation,
-            options: q.options
-              .filter((opt) => opt.id !== undefined)
-              .map((opt) => ({
-                id: opt.id!,
-                content: opt.content,
-                isCorrect: opt.isCorrect,
-              })),
-          })),
-        };
+      const transformedQuiz = {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        totalQuestions: item.totalQuestions,
+        questions: item.questions.map((q) => ({
+          id: q.id,
+          title: q.title,
+          explanation: q.explanation,
+          options: q.options
+            .filter((opt) => opt.id !== undefined)
+            .map((opt) => ({
+              id: opt.id!,
+              content: opt.content,
+              isCorrect: opt.isCorrect,
+            })),
+        })),
+      };
 
-        return (
-          <View key={quiz.id} style={styles.resourceCard}>
-            <QuizAttemptCard quiz={transformedQuiz} onRefresh={refresh} />
-          </View>
-        );
-      });
+      return (
+        <View key={item.id} style={styles.resourceCard}>
+          <QuizAttemptCard quiz={transformedQuiz} onRefresh={refresh} />
+        </View>
+      );
     };
 
     if (!lessonId) {
@@ -412,7 +410,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             <Text style={styles.errorText}>{error}</Text>
           ) : activeTab === "videos" ? (
             <VideoList
-              videos={videos}
+              video={video}
               submittedVideo={submittedVideo}
               localVideo={localVideo}
               overlayVideoUrl={overlayVideoUrl}
@@ -425,13 +423,11 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
               onUploadVideo={handleUploadVideo}
               onVideoCapture={handleVideoCapture}
               isUploading={isUploading}
-              coachVideoId={videos.length > 0 ? videos[0].id : undefined}
-              coachVideoDuration={
-                videos.length > 0 ? videos[0].duration : undefined
-              }
+              coachVideoId={video?.id}
+              coachVideoDuration={video?.duration}
             />
           ) : (
-            renderQuizzes(quizzes)
+            renderQuizzes(quiz)
           )}
         </View>
 
@@ -447,7 +443,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
 LessonResourcesTabs.displayName = "LessonResourcesTabs";
 
-// Styles remain the same... (copy from previous file)
 const styles = StyleSheet.create({
   container: {
     marginTop: 10,

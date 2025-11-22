@@ -3,13 +3,18 @@ import { Href, Redirect, Stack } from "expo-router";
 
 export default function AuthLayout() {
   const { isAuthenticated, user } = useJWTAuth();
+  console.log("AuthLayout user:", JSON.stringify(user, null, 2));
 
   if (isAuthenticated && user) {
-    if (user.role.name === "COACH") {
+    if (user.role?.name === "COACH") {
       return <Redirect href={"/(coach)/home" as Href} />;
     }
-    if (user.role.name === "LEARNER") {
+    if (user.role?.name === "LEARNER") {
       return <Redirect href={"/(learner)/home" as Href} />;
+    }
+
+    if (!user.role) {
+      console.warn("User authenticated but has no role:", user);
     }
   }
 

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { default as React, useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -14,8 +14,6 @@ import configurationService from "../../../services/configurationService";
 import sessionService from "../../../services/sessionService";
 import { AttendanceStatus } from "../../../types/attendance";
 import { CalendarSession, SessionStatus } from "../../../types/session";
-import SessionDetailQuiz from "./SessionDetailQuiz";
-import SessionDetailVideo from "./SessionDetailVideo";
 
 export enum EnrollmentStatus {
   PENDING_GROUP = "PENDING_GROUP",
@@ -509,20 +507,6 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               </View>
             </View>
           )}
-
-          {/* Quizzes (moved to a separate component) */}
-          <SessionDetailQuiz
-            session={sessionData}
-            course={course}
-            styles={styles}
-          />
-
-          {/* Videos (moved to a separate component) */}
-          <SessionDetailVideo
-            session={sessionData}
-            course={course}
-            styles={styles}
-          />
         </ScrollView>
 
         {/* Footer */}

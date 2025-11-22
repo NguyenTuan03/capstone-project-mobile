@@ -4,26 +4,18 @@ import { get } from "@/services/http/httpService";
 import { QuizType } from "@/types/quiz";
 import { VideoType } from "@/types/video";
 
-type ApiCollection<T> =
-  | T[]
-  | {
-      items?: T[];
-      data?: T[];
-      metadata?: T[];
-    };
+type ApiCollection<T> = T;
 
-const extractCollection = <T,>(payload: ApiCollection<T> | undefined): T[] => {
-  if (!payload) return [];
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload.items)) return payload.items;
-  if (Array.isArray(payload.data)) return payload.data;
-  if (Array.isArray(payload.metadata)) return payload.metadata;
-  return [];
+const extractCollection = <T>(
+  payload: ApiCollection<T> | undefined
+): T | undefined => {
+  if (!payload) return undefined;
+  return payload;
 };
 
 export interface LessonResourcesState {
-  quizzes: QuizType[];
-  videos: VideoType[];
+  quiz: QuizType | undefined;
+  video: VideoType | undefined;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -32,17 +24,20 @@ export interface LessonResourcesState {
 export const useLessonResources = (
   lessonId?: number | null
 ): LessonResourcesState => {
-  const [quizzes, setQuizzes] = useState<QuizType[]>([]);
-  const [videos, setVideos] = useState<VideoType[]>([]);
+  const [quiz, setQuiz] = useState<QuizType | undefined>(undefined);
+  const [video, setVideo] = useState<VideoType | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canFetch = useMemo(() => typeof lessonId === "number" && lessonId > 0, [lessonId]);
+  const canFetch = useMemo(
+    () => typeof lessonId === "number" && lessonId > 0,
+    [lessonId]
+  );
 
   const fetchResources = useCallback(async () => {
     if (!canFetch) {
-      setQuizzes([]);
-      setVideos([]);
+      setQuiz(undefined);
+      setVideo(undefined);
       setLoading(false);
       setError(null);
       return;
@@ -52,33 +47,35 @@ export const useLessonResources = (
       setLoading(true);
       setError(null);
 
-      const [videosRes, quizzesRes] = await Promise.allSettled([
+      const [videoRes, quizRes] = await Promise.allSettled([
         get<ApiCollection<VideoType>>(`/v1/videos/sessions/${lessonId}`),
         get<ApiCollection<QuizType>>(`/v1/quizzes/sessions/${lessonId}`),
       ]);
 
-      if (videosRes.status === "fulfilled") {
-        setVideos(extractCollection(videosRes.value.data));
+      if (videoRes.status === "fulfilled") {
+        setVideo(extractCollection(videoRes.value.data));
       } else {
-        console.error("Failed to fetch lesson videos:", videosRes.reason);
-        setVideos([]);
+        console.error("Failed to fetch lesson videos:", videoRes.reason);
+        setVideo(undefined);
         setError("Không thể tải video cho bài học này.");
       }
 
-      if (quizzesRes.status === "fulfilled") {
-        setQuizzes(extractCollection(quizzesRes.value.data));
+      if (quizRes.status === "fulfilled") {
+        setQuiz(extractCollection(quizRes.value.data));
       } else {
-        console.error("Failed to fetch lesson quizzes:", quizzesRes.reason);
-        setQuizzes([]);
+        console.error("Failed to fetch lesson quizzes:", quizRes.reason);
+        setQuiz(undefined);
         setError((prev) =>
-          prev ? `${prev}\nKhông thể tải quiz cho bài học này.` : "Không thể tải quiz cho bài học này."
+          prev
+            ? `${prev}\nKhông thể tải quiz cho bài học này.`
+            : "Không thể tải quiz cho bài học này."
         );
       }
     } catch (err) {
       console.error("Unexpected error while fetching lesson resources:", err);
       setError("Đã xảy ra lỗi khi tải tài nguyên của bài học.");
-      setVideos([]);
-      setQuizzes([]);
+      setVideo(undefined);
+      setQuiz(undefined);
     } finally {
       setLoading(false);
     }
@@ -89,8 +86,8 @@ export const useLessonResources = (
   }, [fetchResources]);
 
   return {
-    quizzes,
-    videos,
+    quiz,
+    video,
     loading,
     error,
     refresh: fetchResources,
@@ -98,4 +95,3 @@ export const useLessonResources = (
 };
 
 export default useLessonResources;
-

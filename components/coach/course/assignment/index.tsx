@@ -92,16 +92,8 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
                 </View>
 
                 <View style={styles.metaRow}>
-                  {s.videos?.length ? (
-                    <Text style={styles.meta}>
-                      Video: {s.videos?.length || 0}
-                    </Text>
-                  ) : null}
-                  {s.quizzes?.length ? (
-                    <Text style={styles.meta}>
-                      Quiz: {s.quizzes?.length || 0}
-                    </Text>
-                  ) : null}
+                  {s.video ? <Text style={styles.meta}>Video</Text> : null}
+                  {s.quiz ? <Text style={styles.meta}>Quiz</Text> : null}
                 </View>
               </TouchableOpacity>
             );

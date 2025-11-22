@@ -34,6 +34,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (notificationQueue.length === 0 || isProcessingQueue) return;
 
+    // Don't process notifications if user is not authenticated
+    if (!isAuthenticated) {
+      setNotificationQueue([]);
+      return;
+    }
+
     const processNextNotification = async () => {
       setIsProcessingQueue(true);
       const notification = notificationQueue[0];
@@ -59,13 +65,17 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     processNextNotification();
-  }, [notificationQueue, isProcessingQueue, socket]);
+  }, [notificationQueue, isProcessingQueue, socket, isAuthenticated]);
 
   useEffect(() => {
     let newSocket: Socket | null = null;
 
     const initSocket = async () => {
       if (!isAuthenticated) {
+        // Clear notification queue when user logs out
+        setNotificationQueue([]);
+        setIsProcessingQueue(false);
+
         if (socket) {
           socket.disconnect();
           setSocket(null);

@@ -10,7 +10,7 @@ import VideoDetailsModal from "./VideoDetailsModal";
 import VideoUploadSection from "./VideoUploadSection";
 
 interface VideoListProps {
-  videos: VideoType[];
+  video: VideoType | undefined;
   submittedVideo: {
     publicUrl: string;
     thumbnailUrl?: string | null;
@@ -44,7 +44,7 @@ interface VideoListProps {
 }
 
 const VideoList: React.FC<VideoListProps> = ({
-  videos,
+  video,
   submittedVideo,
   localVideo,
   overlayVideoUrl,
@@ -78,7 +78,7 @@ const VideoList: React.FC<VideoListProps> = ({
       <VideoUploadSection
         localVideo={localVideo}
         isUploading={isUploading}
-        hasCoachVideo={videos.length > 0}
+        hasCoachVideo={video ? true : false}
         coachVideoId={coachVideoId}
         coachVideoDuration={coachVideoDuration}
         onPickVideo={onPickVideo}
@@ -86,20 +86,17 @@ const VideoList: React.FC<VideoListProps> = ({
         onVideoCapture={onVideoCapture}
       />
 
-      {videos.length === 0 && !localVideo && (
+      {video === null && !localVideo && (
         <Text style={styles.emptyText}>Chưa có video nào cho bài học này.</Text>
       )}
 
       {/* Coach Videos Section */}
-      {videos.length > 0 && (
+      {video && (
         <View style={styles.coachVideosSection}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Ionicons name="videocam" size={20} color="#059669" />
               <Text style={styles.sectionTitle}>Video từ Coach</Text>
-              <View style={styles.videoBadge}>
-                <Text style={styles.videoBadgeText}>{videos.length}</Text>
-              </View>
             </View>
             <TouchableOpacity
               onPress={() => setShowCoachVideosModal(true)}
@@ -113,22 +110,7 @@ const VideoList: React.FC<VideoListProps> = ({
 
           {/* Show preview (first video only) */}
           <View style={styles.previewContainer}>
-            <CoachVideoCard video={videos[0]} />
-            {videos.length > 1 && (
-              <TouchableOpacity
-                style={styles.moreVideosCard}
-                onPress={() => setShowCoachVideosModal(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="albums-outline" size={32} color="#059669" />
-                <Text style={styles.moreVideosText}>
-                  +{videos.length - 1} video khác
-                </Text>
-                <Text style={styles.moreVideosSubtext}>
-                  Nhấn để xem tất cả video
-                </Text>
-              </TouchableOpacity>
-            )}
+            <CoachVideoCard video={video} />
           </View>
         </View>
       )}
@@ -138,7 +120,7 @@ const VideoList: React.FC<VideoListProps> = ({
       {/* Coach Videos Modal */}
       <VideoDetailsModal
         visible={showCoachVideosModal}
-        videos={videos}
+        video={video}
         onClose={() => setShowCoachVideosModal(false)}
         title="Video từ Coach"
       />

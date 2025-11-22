@@ -45,27 +45,8 @@ const extractSessionPayload = (payload: any): Session | null => {
   return null;
 };
 
-const extractVideosFromPayload = (payload: any): VideoType[] => {
-  if (!payload || typeof payload !== "object") return [];
-  if (Array.isArray((payload as any).videos)) {
-    return (payload as any).videos as VideoType[];
-  }
-  if ("data" in payload) {
-    const nested = extractVideosFromPayload((payload as any).data);
-    if (nested.length) return nested;
-  }
-  if ("metadata" in payload) {
-    const nested = extractVideosFromPayload((payload as any).metadata);
-    if (nested.length) return nested;
-  }
-  return [];
-};
-
-const getCoachVideos = (session?: Session | null): VideoType[] => {
-  if (!session || !Array.isArray(session.videos)) {
-    return [];
-  }
-  return session.videos;
+const getCoachVideos = (session?: Session | null): VideoType | undefined => {
+  return session?.video;
 };
 
 const formatFullDateTime = (value?: string | null) => {
@@ -96,15 +77,7 @@ const SessionDetailScreen: React.FC = () => {
           setSession(null);
           return;
         }
-        const fallbackVideos = extractVideosFromPayload(res.data);
-        setSession({
-          ...normalized,
-          videos: normalized.videos?.length
-            ? normalized.videos
-            : fallbackVideos.length
-            ? fallbackVideos
-            : normalized.videos,
-        });
+        setSession(normalized);
       } catch {
         Alert.alert("Lỗi", "Không thể tải thông tin buổi học");
       } finally {
@@ -143,17 +116,6 @@ const SessionDetailScreen: React.FC = () => {
   const deleteQuiz = async (quizId: number, quizTitle: string) => {
     try {
       await http.delete(`/v1/quizzes/${quizId}`);
-
-      // Remove quiz from session state
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              quizzes: prev.quizzes?.filter((q) => q.id !== quizId) || [],
-            }
-          : null
-      );
-
       Toast.show({
         type: "success",
         text1: "Thành công",
@@ -356,71 +318,63 @@ const SessionDetailScreen: React.FC = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Quiz{" "}
-              {session.quizzes && session.quizzes.length
-                ? `(${session.quizzes.length})`
-                : ""}
-            </Text>
-            {session.quizzes && session.quizzes.length > 0 ? (
-              session.quizzes.map((quiz, index) => (
-                <TouchableOpacity
-                  key={quiz.id}
-                  style={styles.quizCard}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setSelectedQuiz(quiz);
-                    setQuizModalVisible(true);
-                  }}
-                >
-                  {/* Quiz Header */}
-                  <View style={styles.quizCardHeader}>
-                    <View style={styles.quizCardTitle}>
-                      <Text style={styles.quizStepLabel}>Quiz {index + 1}</Text>
-                      <Text style={styles.quizCardTitleText} numberOfLines={2}>
-                        {quiz.title}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.quizStatusBadge,
-                        {
-                          backgroundColor: "#EFF6FF",
-                        },
-                      ]}
+            <Text style={styles.sectionTitle}>Quiz </Text>
+            {session.quiz ? (
+              <TouchableOpacity
+                style={styles.quizCard}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSelectedQuiz(session.quiz);
+                  setQuizModalVisible(true);
+                }}
+              >
+                {/* Quiz Header */}
+                <View style={styles.quizCardHeader}>
+                  <View style={styles.quizCardTitle}>
+                    <Text style={styles.quizStepLabel}>Quiz</Text>
+                    <Text style={styles.quizCardTitleText} numberOfLines={2}>
+                      {session.quiz.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.quizStatusBadge,
+                      {
+                        backgroundColor: "#EFF6FF",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: "#2563EB",
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}
                     >
-                      <Text
-                        style={{
-                          color: "#2563EB",
-                          fontSize: 11,
-                          fontWeight: "600",
-                        }}
-                      >
-                        Sẵn sàng
-                      </Text>
-                    </View>
+                      Sẵn sàng
+                    </Text>
                   </View>
+                </View>
 
-                  {/* Quiz Description */}
-                  {quiz.description && (
-                    <View style={styles.quizDescriptionSection}>
-                      <Text style={styles.quizDescText}>
-                        {quiz.description}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Quick Metadata Row */}
-                  <View style={styles.quickMetadataRow}>
-                    <View style={styles.quickMetadataItem}>
-                      <Ionicons name="help-circle" size={14} color="#2563EB" />
-                      <Text style={styles.quickMetadataTextBlue}>
-                        {(quiz as any).questions?.length || 0} câu hỏi
-                      </Text>
-                    </View>
+                {/* Quiz Description */}
+                {session.quiz.description && (
+                  <View style={styles.quizDescriptionSection}>
+                    <Text style={styles.quizDescText}>
+                      {session.quiz.description}
+                    </Text>
                   </View>
-                </TouchableOpacity>
-              ))
+                )}
+
+                {/* Quick Metadata Row */}
+                <View style={styles.quickMetadataRow}>
+                  <View style={styles.quickMetadataItem}>
+                    <Ionicons name="help-circle" size={14} color="#2563EB" />
+                    <Text style={styles.quickMetadataTextBlue}>
+                      {session.quiz.questions?.length || 0} câu hỏi
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             ) : (
               <View style={styles.emptyCard}>
                 <Ionicons
@@ -434,18 +388,12 @@ const SessionDetailScreen: React.FC = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Video mẫu của Coach{" "}
-              {coachVideos.length ? `(${coachVideos.length})` : ""}
-            </Text>
-            {coachVideos.length ? (
-              coachVideos.map((video) => (
-                <CoachVideoCard
-                  key={video.id}
-                  video={video}
-                  onOpen={handleOpenCoachVideo}
-                />
-              ))
+            <Text style={styles.sectionTitle}>Video mẫu của Coach </Text>
+            {coachVideos ? (
+              <CoachVideoCard
+                video={coachVideos}
+                onOpen={handleOpenCoachVideo}
+              />
             ) : (
               <View style={styles.emptyCard}>
                 <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
@@ -510,7 +458,7 @@ const SessionDetailScreen: React.FC = () => {
   );
 };
 
-const InfoRow = ({
+function InfoRow({
   label,
   value,
   multiline,
@@ -520,19 +468,21 @@ const InfoRow = ({
   value?: string | null;
   multiline?: boolean;
   valueStyle?: any;
-}) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text
-      style={[styles.infoValue, valueStyle]}
-      numberOfLines={multiline ? undefined : 2}
-    >
-      {value || "—"}
-    </Text>
-  </View>
-);
+}) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text
+        style={[styles.infoValue, valueStyle]}
+        numberOfLines={multiline ? undefined : 2}
+      >
+        {value || "—"}
+      </Text>
+    </View>
+  );
+}
 
-const getStatusBadgeColors = (status?: string | null) => {
+function getStatusBadgeColors(status?: string | null) {
   switch (status) {
     case "READY":
       return { backgroundColor: "#ECFDF5", color: "#059669" };
@@ -549,12 +499,15 @@ const getStatusBadgeColors = (status?: string | null) => {
     default:
       return { backgroundColor: "#F3F4F6", color: "#4B5563" };
   }
-};
+}
 
-const CoachVideoCard: React.FC<{
+function CoachVideoCard({
+  video,
+  onOpen,
+}: {
   video: VideoType;
   onOpen: (url: string) => void;
-}> = ({ video, onOpen }) => {
+}) {
   const badgeStyle = getStatusBadgeColors(video.status);
   return (
     <View style={styles.coachCard}>
@@ -616,12 +569,15 @@ const CoachVideoCard: React.FC<{
       )}
     </View>
   );
-};
+}
 
-const LearnerVideoCard: React.FC<{
+function LearnerVideoCard({
+  video,
+  onOpenSubmission,
+}: {
   video: LearnerVideo;
   onOpenSubmission: (id: number) => void;
-}> = ({ video, onOpenSubmission }) => {
+}) {
   const badgeStyle = getStatusBadgeColors(video.status);
   return (
     <View style={styles.learnerCard}>
@@ -670,7 +626,7 @@ const LearnerVideoCard: React.FC<{
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
