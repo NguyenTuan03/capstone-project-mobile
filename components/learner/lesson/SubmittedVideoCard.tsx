@@ -1,5 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import LessonVideoPlayer from "./LessonVideoPlayer";
 
 interface SubmittedVideoCardProps {
@@ -26,65 +34,110 @@ const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
   return (
     <View style={styles.submittedVideoCard}>
       <View style={styles.submittedVideoHeader}>
-        <View>
-          <Text style={styles.submittedVideoTitle}>📹 Video bạn đã nộp</Text>
-          {submittedVideo.status && (
-            <View style={styles.statusBadgeContainer}>
-              <View
+        <View style={styles.headerLeft}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="videocam" size={20} color="#059669" />
+          </View>
+          <View>
+            <Text style={styles.submittedVideoTitle}>Video bạn đã nộp</Text>
+            {submittedVideo.createdAt && (
+              <Text style={styles.submittedVideoMeta}>
+                {new Date(submittedVideo.createdAt).toLocaleString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {submittedVideo.status && (
+          <View style={styles.statusBadgeContainer}>
+            <View
+              style={[
+                styles.statusBadge,
+                submittedVideo.status === "PROCESSING" &&
+                  styles.statusProcessing,
+                submittedVideo.status === "COMPLETED" && styles.statusCompleted,
+                submittedVideo.status === "FAILED" && styles.statusFailed,
+              ]}
+            >
+              <Text
                 style={[
-                  styles.statusBadge,
+                  styles.statusBadgeText,
                   submittedVideo.status === "PROCESSING" &&
-                    styles.statusProcessing,
+                    styles.statusProcessingText,
                   submittedVideo.status === "COMPLETED" &&
-                    styles.statusCompleted,
-                  submittedVideo.status === "FAILED" && styles.statusFailed,
+                    styles.statusCompletedText,
+                  submittedVideo.status === "FAILED" && styles.statusFailedText,
                 ]}
               >
-                <Text style={styles.statusBadgeText}>
-                  {submittedVideo.status}
-                </Text>
-              </View>
+                {submittedVideo.status === "PROCESSING" && "Đang xử lý"}
+                {submittedVideo.status === "COMPLETED" && "Hoàn thành"}
+                {submittedVideo.status === "FAILED" && "Thất bại"}
+                {!["PROCESSING", "COMPLETED", "FAILED"].includes(
+                  submittedVideo.status
+                ) && submittedVideo.status}
+              </Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </View>
-      {submittedVideo.createdAt && (
-        <Text style={styles.submittedVideoMeta}>
-          Nộp lúc: {new Date(submittedVideo.createdAt).toLocaleString()}
-        </Text>
-      )}
-      <LessonVideoPlayer source={submittedVideo.publicUrl} />
+
+      <View style={styles.videoContainer}>
+        <LessonVideoPlayer source={submittedVideo.publicUrl} />
+      </View>
 
       {overlayVideoUrl ? (
         <TouchableOpacity
-          style={styles.viewOverlayButton}
           onPress={onViewOverlay}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
+          style={styles.actionButtonContainer}
         >
-          <Text style={styles.viewOverlayButtonText}>
-            👁️ Xem so sánh với Coach
-          </Text>
+          <LinearGradient
+            colors={["#3B82F6", "#2563EB"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.actionButtonGradient}
+          >
+            <Ionicons name="eye" size={20} color="#FFFFFF" />
+            <Text style={styles.actionButtonText}>Xem so sánh với Coach</Text>
+          </LinearGradient>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={[
-            styles.compareButton,
-            generatingOverlay && styles.compareButtonDisabled,
-          ]}
           onPress={onGenerateOverlay}
           disabled={generatingOverlay}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
+          style={styles.actionButtonContainer}
         >
-          {generatingOverlay ? (
-            <View style={styles.compareButtonContent}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={styles.compareButtonText}>
-                Đang tạo video overlay...
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.compareButtonText}>🔄 So sánh với Coach</Text>
-          )}
+          <LinearGradient
+            colors={
+              generatingOverlay
+                ? ["#9CA3AF", "#6B7280"]
+                : ["#8B5CF6", "#7C3AED"]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.actionButtonGradient}
+          >
+            {generatingOverlay ? (
+              <>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>
+                  Đang tạo video overlay...
+                </Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="scan-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>So sánh với Coach</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       )}
     </View>
@@ -93,113 +146,107 @@ const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
 
 const styles = StyleSheet.create({
   submittedVideoCard: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#BBEF63",
-    gap: 8,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 16,
   },
   submittedVideoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   submittedVideoTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#047857",
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 2,
   },
   submittedVideoMeta: {
-    fontSize: 10,
-    color: "#059669",
-    fontStyle: "italic",
+    fontSize: 12,
+    color: "#6B7280",
   },
   statusBadgeContainer: {
     flexDirection: "row",
-    gap: 5,
   },
   statusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "#FEF08A",
-    borderWidth: 0.5,
-    borderColor: "#EAB308",
+    borderRadius: 20,
+    borderWidth: 1,
   },
   statusProcessing: {
-    backgroundColor: "#FEF08A",
-    borderColor: "#EAB308",
+    backgroundColor: "#FEF3C7",
+    borderColor: "#F59E0B",
   },
   statusCompleted: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#34D399",
+    backgroundColor: "#D1FAE5",
+    borderColor: "#10B981",
   },
   statusFailed: {
     backgroundColor: "#FEE2E2",
-    borderColor: "#F87171",
+    borderColor: "#EF4444",
   },
   statusBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#854D0E",
   },
-  compareButton: {
-    backgroundColor: "#7C3AED",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 12,
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 3.5,
-    elevation: 3,
+  statusProcessingText: {
+    color: "#B45309",
   },
-  compareButtonDisabled: {
-    backgroundColor: "#9CA3AF",
-    opacity: 0.8,
+  statusCompletedText: {
+    color: "#047857",
   },
-  compareButtonContent: {
+  statusFailedText: {
+    color: "#B91C1C",
+  },
+  videoContainer: {
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#F3F4F6",
+  },
+  actionButtonContainer: {
+    marginTop: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  actionButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     gap: 8,
   },
-  compareButtonText: {
+  actionButtonText: {
     color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  viewOverlayButton: {
-    backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 12,
-    shadowColor: "#3B82F6",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 3.5,
-    elevation: 3,
-  },
-  viewOverlayButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });
 
 export default SubmittedVideoCard;
-

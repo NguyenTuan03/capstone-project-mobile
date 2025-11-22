@@ -1,6 +1,6 @@
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
 import storageService from "@/services/storageService";
-import { Href, router } from "expo-router";
+import { Href, router, useSegments } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 import { io, Socket } from "socket.io-client";
@@ -29,14 +29,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   );
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const { isAuthenticated } = useJWTAuth();
+  const segments = useSegments();
 
   // Process notification queue
   useEffect(() => {
     if (notificationQueue.length === 0 || isProcessingQueue) return;
 
-    // Don't process notifications if user is not authenticated
-    if (!isAuthenticated) {
-      setNotificationQueue([]);
+    // Don't process notifications if user is not authenticated or on auth screens
+    const inAuthGroup = segments[0] === "(auth)";
+    if (!isAuthenticated || inAuthGroup) {
+      if (inAuthGroup && notificationQueue.length > 0) {
+        // Optionally clear queue or just wait?
+        // If we clear, they miss notifications. If we wait, they see them on login.
+        // Let's clear for now to be safe and avoid spam on login.
+        setNotificationQueue([]);
+      }
       return;
     }
 

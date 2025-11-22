@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { AiVideoCompareResult } from "../../../types/ai";
 import { VideoType } from "../../../types/video";
 import AIAnalysisResult from "./AIAnalysisResult";
@@ -87,7 +87,12 @@ const VideoList: React.FC<VideoListProps> = ({
       />
 
       {video === null && !localVideo && (
-        <Text style={styles.emptyText}>Chưa có video nào cho bài học này.</Text>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="videocam-off-outline" size={32} color="#9CA3AF" />
+          <Text style={styles.emptyText}>
+            Chưa có video nào cho bài học này.
+          </Text>
+        </View>
       )}
 
       {/* Coach Videos Section */}
@@ -95,17 +100,11 @@ const VideoList: React.FC<VideoListProps> = ({
         <View style={styles.coachVideosSection}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="videocam" size={20} color="#059669" />
+              <View style={styles.iconContainer}>
+                <Ionicons name="videocam" size={20} color="#059669" />
+              </View>
               <Text style={styles.sectionTitle}>Video từ Coach</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => setShowCoachVideosModal(true)}
-              style={styles.viewAllButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-              <Ionicons name="arrow-forward" size={16} color="#059669" />
-            </TouchableOpacity>
           </View>
 
           {/* Show preview (first video only) */}
@@ -129,20 +128,29 @@ const VideoList: React.FC<VideoListProps> = ({
 };
 
 const styles = StyleSheet.create({
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 30,
+    gap: 8,
+  },
   emptyText: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#9CA3AF",
     textAlign: "center",
-    paddingVertical: 20,
     fontStyle: "italic",
   },
   coachVideosSection: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    gap: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -152,12 +160,20 @@ const styles = StyleSheet.create({
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
     flex: 1,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "bold",
     color: "#111827",
   },
   videoBadge: {
@@ -178,12 +194,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: "#ECFDF5",
+    backgroundColor: "#F3F4F6",
   },
   viewAllText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#059669",
+    color: "#374151",
   },
   previewContainer: {
     gap: 12,
