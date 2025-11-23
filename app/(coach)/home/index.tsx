@@ -1,3 +1,7 @@
+import coachService from "@/services/coach.service";
+import storageService from "@/services/storageService";
+import { User } from "@/types/user";
+import { formatPrice } from "@/utils/priceFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -23,6 +27,8 @@ const { width } = Dimensions.get("window");
 export default function CoachHomeScreen() {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const [revenue, setRevenue] = useState<number>(0);
+  const [revenueGrowth, setRevenueGrowth] = useState<number | null>(null);
 
   // Helper function to get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -63,20 +69,38 @@ export default function CoachHomeScreen() {
     }, ${today.getFullYear()}`;
   };
 
+  const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
 
-  const loadTodaySessions = useCallback(async () => {
+  const loadData = useCallback(async () => {
+    const user = await storageService.getUser();
+    setUser(user);
     setLoadingSessions(true);
     try {
-      const today = getTodayDate();
-      const data = await sessionService.getSessionsForWeeklyCalendar({
-        startDate: today,
-        endDate: today,
-      });
-      setSessions(data);
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
+      const dateStr = getTodayDate();
+
+      const [sessionsData, revenueData] = await Promise.all([
+        sessionService.getSessionsForWeeklyCalendar({
+          startDate: dateStr,
+          endDate: dateStr,
+        }),
+        user?.id
+          ? coachService.getMonthlyRevenue(user.id, month, year)
+          : Promise.resolve(null),
+      ]);
+
+      setSessions(sessionsData);
+
+      if (revenueData && revenueData.data.length > 0) {
+        setRevenue(revenueData.data[0].data);
+        setRevenueGrowth(revenueData.data[0].increaseFromLastMonth ?? null);
+      }
     } catch (error) {
-      console.error("❌ Failed to load today's sessions:", error);
+      console.error("❌ Failed to load data:", error);
     } finally {
       setLoadingSessions(false);
     }
@@ -84,13 +108,13 @@ export default function CoachHomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadTodaySessions();
+    await loadData();
     setRefreshing(false);
-  }, [loadTodaySessions]);
+  }, [loadData]);
 
   useEffect(() => {
-    loadTodaySessions();
-  }, [loadTodaySessions]);
+    loadData();
+  }, [loadData]);
 
   return (
     <View style={styles.container}>
@@ -110,12 +134,12 @@ export default function CoachHomeScreen() {
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.welcomeLabel}>Chào mừng trở lại,</Text>
-            <Text style={styles.welcomeName}>Lại Đức Hùng! 👋</Text>
+            <Text style={styles.welcomeName}>{user?.fullName} 👋</Text>
           </View>
           <View style={styles.profileImageContainer}>
             {/* Placeholder for profile image or avatar */}
             <View style={styles.profileAvatar}>
-              <Text style={styles.profileInitials}>LH</Text>
+              <Text style={styles.profileInitials}>{user?.fullName}</Text>
             </View>
             <View style={styles.onlineBadge} />
           </View>
@@ -150,11 +174,27 @@ export default function CoachHomeScreen() {
                   <Ionicons name="cash-outline" size={24} color="#3B82F6" />
                 </View>
                 <Text style={styles.statCardLabel}>Thu nhập</Text>
-                <Text style={styles.statCardValue}>15.5M</Text>
-                <View style={styles.trendBadge}>
-                  <Ionicons name="trending-up" size={12} color="#059669" />
-                  <Text style={styles.trendText}>+12%</Text>
-                </View>
+                <Text style={styles.statCardValue}>{formatPrice(revenue)}</Text>
+                {revenueGrowth !== null && (
+                  <View style={styles.trendBadge}>
+                    <Ionicons
+                      name={
+                        revenueGrowth >= 0 ? "trending-up" : "trending-down"
+                      }
+                      size={12}
+                      color={revenueGrowth >= 0 ? "#059669" : "#EF4444"}
+                    />
+                    <Text
+                      style={[
+                        styles.trendText,
+                        { color: revenueGrowth >= 0 ? "#059669" : "#EF4444" },
+                      ]}
+                    >
+                      {revenueGrowth > 0 ? "+" : ""}
+                      {revenueGrowth}%
+                    </Text>
+                  </View>
+                )}
               </View>
               <View style={styles.statCard}>
                 <View

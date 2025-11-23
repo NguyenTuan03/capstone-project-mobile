@@ -1,10 +1,12 @@
 import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import configurationService from "@/services/configurationService";
 import { Course, Schedule } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   Modal,
   Platform,
@@ -26,6 +28,57 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
   const [endTime, setEndTime] = useState(new Date());
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
+  const [changeScheduleBeforeHours, setChangeScheduleBeforeHours] = useState(0);
+
+  const getNextOccurrence = (dayOfWeek: string, timeStr: string): Date => {
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const targetDayIndex = days.indexOf(dayOfWeek);
+    const [hours, minutes] = timeStr.split(":").map(Number);
+
+    const now = new Date();
+    const currentDayIndex = now.getDay();
+
+    let daysUntilTarget = targetDayIndex - currentDayIndex;
+
+    // If it's the same day, check if the time has already passed
+    if (daysUntilTarget === 0) {
+      const nowHours = now.getHours();
+      const nowMinutes = now.getMinutes();
+      if (nowHours > hours || (nowHours === hours && nowMinutes >= minutes)) {
+        daysUntilTarget = 7;
+      }
+    } else if (daysUntilTarget < 0) {
+      daysUntilTarget += 7;
+    }
+
+    const nextDate = new Date(now);
+    nextDate.setDate(now.getDate() + daysUntilTarget);
+    nextDate.setHours(hours, minutes, 0, 0);
+
+    return nextDate;
+  };
+
+  useEffect(() => {
+    const fetchChangeScheduleBeforeHours = async () => {
+      const res = await configurationService.getConfiguration(
+        "change_schedule_before_hours"
+      );
+      if (res) {
+        setChangeScheduleBeforeHours(Number(res.value));
+      }
+    };
+
+    fetchChangeScheduleBeforeHours();
+  }, []);
 
   const handleEditPress = (schedule: Schedule) => {
     setEditingSchedule(schedule);
@@ -49,7 +102,25 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
     setEditingSchedule(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!editingSchedule) return;
+
+    const nextSessionDate = getNextOccurrence(
+      editingSchedule.dayOfWeek,
+      editingSchedule.startTime
+    );
+    const now = new Date();
+    const diffInHours =
+      (nextSessionDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < changeScheduleBeforeHours) {
+      Alert.alert(
+        "Không thể thay đổi lịch",
+        `Bạn chỉ có thể thay đổi lịch học trước ${changeScheduleBeforeHours} giờ trước khi buổi học bắt đầu.`
+      );
+      return;
+    }
+
     // Placeholder for API call
     console.log("Saving schedule:", {
       id: editingSchedule?.id,
@@ -161,6 +232,24 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
             </View>
 
             <View style={styles.modalBody}>
+              <View style={styles.infoContainer}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color="#3B82F6"
+                />
+                <Text style={styles.infoText}>
+                  Thông tin: Lịch học sẽ được cập nhật cho các buổi tiếp theo.
+                </Text>
+              </View>
+
+              <View style={styles.warningContainer}>
+                <Ionicons name="warning-outline" size={20} color="#F59E0B" />
+                <Text style={styles.warningText}>
+                  Chỉ có thể thay đổi lịch học trước {changeScheduleBeforeHours}{" "}
+                  giờ trước khi buổi học bắt đầu.
+                </Text>
+              </View>
               {/* Day of Week - Simplified as Text for now since changing day might be complex logic */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Thứ</Text>
@@ -447,6 +536,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  infoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#1D4ED8",
+  },
+  warningContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFBEB",
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#B45309",
   },
 });
 
