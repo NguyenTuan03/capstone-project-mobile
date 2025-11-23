@@ -50,12 +50,9 @@ export default function CoachCourseScreen() {
           return;
         }
 
-        // Encode URL đúng cách để tránh parsing error
-        const filterParam = encodeURIComponent(`createdBy.id_eq_${user.id}`);
-        const url = `/v1/courses?page=${pageNum}&size=${pageSize}&filter=${filterParam}`;
-        
+        const url = `/v1/courses/coach?page=${pageNum}&pageSize=${pageSize}`;
         const res = await get<CoursesResponse>(url);
-        console.log("a====", res.data.items);
+
         if (append) {
           setCourses((prev) => [...prev, ...(res.data.items || [])]);
         } else {
@@ -196,4 +193,3 @@ export default function CoachCourseScreen() {
     </View>
   );
 }
-

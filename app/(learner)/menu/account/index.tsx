@@ -4,11 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function AccountInfoScreen() {
@@ -19,6 +19,7 @@ export default function AccountInfoScreen() {
     try {
       const userData = await storageService.getUser();
       if (userData) {
+        console.log("Loaded user data:", userData);
         setUser(userData);
       }
     } catch (err) {
@@ -162,7 +163,7 @@ export default function AccountInfoScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Tỉnh/Thành phố</Text>
                 <Text style={styles.infoValue}>
-                  {user.learner[0].province?.name || "N/A"}
+                  {user?.province?.name || "N/A"}
                 </Text>
               </View>
             </View>
@@ -176,7 +177,7 @@ export default function AccountInfoScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Quận/Huyện</Text>
                 <Text style={styles.infoValue}>
-                  {user.learner[0].district?.name || "N/A"}
+                  {user?.district?.name || "N/A"}
                 </Text>
               </View>
             </View>

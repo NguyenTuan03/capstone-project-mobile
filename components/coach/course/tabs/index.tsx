@@ -1,7 +1,13 @@
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type TabKey = "overview" | "assignment" | "students" | "schedule" | "edit";
 
@@ -154,7 +160,10 @@ const CourseTabs: React.FC<Props> = ({ course, activeTab, onChangeTab }) => {
           <TouchableOpacity
             onPress={() => {
               const maxX = Math.max(0, contentWidth - scrollWidth);
-              const next = Math.min(maxX, scrollX + Math.round(scrollWidth * 0.6));
+              const next = Math.min(
+                maxX,
+                scrollX + Math.round(scrollWidth * 0.6)
+              );
               (scrollRef as any).current?.scrollTo({ x: next, animated: true });
             }}
             style={styles.rightArrow}
@@ -234,5 +243,3 @@ const styles = StyleSheet.create({
 });
 
 export default CourseTabs;
-
-

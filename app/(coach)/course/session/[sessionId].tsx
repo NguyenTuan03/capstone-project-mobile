@@ -1,5 +1,6 @@
 import { BuildExercise } from "@/helper/BuildExercise";
 import { get } from "@/services/http/httpService";
+import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,49 +16,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const formatTime = (time?: string | null) => {
-  if (!time) return "—";
-  return time.substring(0, 5);
-};
-
-const formatDate = (date?: string | null) => {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("vi-VN");
-};
-
-const extractSessionPayload = (payload: any): Session | null => {
-  if (!payload || typeof payload !== "object") return null;
-  if ("id" in payload && "sessionNumber" in payload) {
-    return payload as Session;
-  }
-  if ("data" in payload) {
-    const nested = extractSessionPayload((payload as any).data);
-    if (nested) return nested;
-  }
-  if ("metadata" in payload) {
-    const nested = extractSessionPayload((payload as any).metadata);
-    if (nested) return nested;
-  }
-  return null;
-};
-
-const extractVideosFromPayload = (payload: any): VideoType[] => {
-  if (!payload || typeof payload !== "object") return [];
-  if (Array.isArray((payload as any).videos)) {
-    return (payload as any).videos as VideoType[];
-  }
-  if ("data" in payload) {
-    const nested = extractVideosFromPayload((payload as any).data);
-    if (nested.length) return nested;
-  }
-  if ("metadata" in payload) {
-    const nested = extractVideosFromPayload((payload as any).metadata);
-    if (nested.length) return nested;
-  }
-  return [];
-};
-
+import Toast from "react-native-toast-message";
+import QuizDetailModal from "../../../../components/coach/course/session/QuizDetailModal";
+import { extractSessionPayload, extractVideosFromPayload, extractQuizzesFromPayload, formatDate, formatTime, getStatusBadgeColors } from "@/utils/SessionFormat";
 const getCoachVideos = (session?: Session | null): VideoType[] => {
   if (!session || !Array.isArray(session.videos)) {
     return [];
@@ -65,39 +26,75 @@ const getCoachVideos = (session?: Session | null): VideoType[] => {
   return session.videos;
 };
 
-const formatFullDateTime = (value?: string | null) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return `${date.toLocaleDateString("vi-VN")} ${date.toLocaleTimeString("vi-VN")}`;
-};
-
 const SessionDetailScreen: React.FC = () => {
   const router = useRouter();
-  const { sessionId } = useLocalSearchParams();
+  const { sessionId, sessionData } = useLocalSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [learnerVideos, setLearnerVideos] = useState<LearnerVideo[]>([]);
+  const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
+  const [quizModalVisible, setQuizModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
       if (!sessionId) return;
       try {
         setLoading(true);
+
+        // If session data is passed via params (from assignment tab), use it directly
+        if (sessionData && typeof sessionData === "string") {
+          try {
+            const parsedSession = JSON.parse(sessionData);
+            const normalized = extractSessionPayload(parsedSession);
+            if (normalized) {
+              const fallbackVideos = extractVideosFromPayload(parsedSession);
+              const fallbackQuizzes = extractQuizzesFromPayload(parsedSession);
+
+              setSession({
+                ...normalized,
+                videos: normalized.videos?.length
+                  ? normalized.videos
+                  : fallbackVideos.length
+                  ? fallbackVideos
+                  : normalized.videos,
+                quizzes: normalized.quizzes?.length
+                  ? normalized.quizzes
+                  : fallbackQuizzes.length
+                  ? fallbackQuizzes
+                  : normalized.quizzes,
+              });
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed to parse session data from params:", e);
+          }
+        }
+
+        // Otherwise, fetch from API
         const res = await get<Session>(`/v1/sessions/${sessionId}`);
         const normalized = extractSessionPayload(res.data);
         if (!normalized) {
           setSession(null);
           return;
         }
+        // Extract videos - handle both array and single object
         const fallbackVideos = extractVideosFromPayload(res.data);
+        // Extract quizzes - handle both array and single object
+        const fallbackQuizzes = extractQuizzesFromPayload(res.data);
+
         setSession({
           ...normalized,
-          videos:
-            normalized.videos?.length
-              ? normalized.videos
-              : fallbackVideos.length
-              ? fallbackVideos
-              : normalized.videos,
+          videos: normalized.videos?.length
+            ? normalized.videos
+            : fallbackVideos.length
+            ? fallbackVideos
+            : normalized.videos,
+          quizzes: normalized.quizzes?.length
+            ? normalized.quizzes
+            : fallbackQuizzes.length
+            ? fallbackQuizzes
+            : normalized.quizzes,
         });
       } catch {
         Alert.alert("Lỗi", "Không thể tải thông tin buổi học");
@@ -107,7 +104,7 @@ const SessionDetailScreen: React.FC = () => {
     };
 
     fetchSession();
-  }, [sessionId]);
+  }, [sessionId, sessionData]);
 
   const exercises = useMemo(
     () => (session ? BuildExercise(session) : []),
@@ -134,18 +131,40 @@ const SessionDetailScreen: React.FC = () => {
     fetchLearnerVideos();
   }, [sessionId]);
 
+  const deleteQuiz = async (quizId: number, quizTitle: string) => {
+    try {
+      await http.delete(`/v1/quizzes/${quizId}`);
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              quizzes: prev.quizzes?.filter((q) => q.id !== quizId) || [],
+            }
+          : null
+      );
+
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: `Xóa quiz "${quizTitle}" thành công`,
+        position: "top",
+        visibilityTime: 3000,
+      });
+    } catch (error) {
+      console.error("Lỗi khi xóa quiz:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể xóa quiz. Vui lòng thử lại.",
+        position: "top",
+        visibilityTime: 3000,
+      });
+    }
+  };
   const handleOpenCoachVideo = (url: string) => {
     Linking.openURL(url).catch(() =>
       Alert.alert("Lỗi", "Không thể mở video. Vui lòng thử lại sau.")
     );
-  };
-
-  const handleOpenLearnerSubmission = (submissionId: number) => {
-    if (!sessionId) return;
-    router.push({
-      pathname: "/(coach)/course/session/submissions/[sessionId]/[submissionId]",
-      params: { sessionId: String(sessionId), submissionId: String(submissionId) },
-    });
   };
 
   return (
@@ -159,7 +178,7 @@ const SessionDetailScreen: React.FC = () => {
           <Ionicons name="chevron-back" size={22} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {session?.lesson?.name || session?.name || "Chi tiết buổi học"}
+          {session?.name || "Chi tiết buổi học"}
         </Text>
         <View style={{ width: 32 }} />
       </View>
@@ -180,12 +199,8 @@ const SessionDetailScreen: React.FC = () => {
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Thông tin buổi học</Text>
-            <InfoRow label="Tên bài học" value={session.lesson?.name} />
-            <InfoRow
-              label="Mô tả"
-              value={session.lesson?.description || session.description}
-              multiline
-            />
+            <InfoRow label="Tên bài học" value={session.name} />
+            <InfoRow label="Mô tả" value={session.description} multiline />
             <InfoRow label="Buổi số" value={String(session.sessionNumber)} />
             <InfoRow label="Ngày" value={formatDate(session.scheduleDate)} />
             <InfoRow
@@ -203,8 +218,106 @@ const SessionDetailScreen: React.FC = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Bài tập{" "}
-              {videoExercises.length ? `(${videoExercises.length})` : ""}
+              Quiz{" "}
+              {session.quizzes && session.quizzes.length
+                ? `(${session.quizzes.length})`
+                : ""}
+            </Text>
+            {session.quizzes && session.quizzes.length > 0 ? (
+              session.quizzes.map((quiz, index) => (
+                <TouchableOpacity
+                  key={quiz.id}
+                  style={styles.quizCard}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedQuiz(quiz);
+                    setQuizModalVisible(true);
+                  }}
+                >
+                  {/* Quiz Header */}
+                  <View style={styles.quizCardHeader}>
+                    <View style={styles.quizCardTitle}>
+                      <Text style={styles.quizStepLabel}>Quiz {index + 1}</Text>
+                      <Text style={styles.quizCardTitleText} numberOfLines={2}>
+                        {quiz.title}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.quizStatusBadge,
+                        {
+                          backgroundColor: "#EFF6FF",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: "#2563EB",
+                          fontSize: 11,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Sẵn sàng
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Quiz Description */}
+                  {quiz.description && (
+                    <View style={styles.quizDescriptionSection}>
+                      <Text style={styles.quizDescText}>
+                        {quiz.description}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Quick Metadata Row */}
+                  <View style={styles.quickMetadataRow}>
+                    <View style={styles.quickMetadataItem}>
+                      <Ionicons name="help-circle" size={14} color="#2563EB" />
+                      <Text style={styles.quickMetadataTextBlue}>
+                        {(quiz as any).questions?.length || 0} câu hỏi
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={36}
+                  color="#9CA3AF"
+                />
+                <Text style={styles.emptyText}>Chưa có quiz cho buổi này</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Video mẫu của Coach{" "}
+              {coachVideos.length ? `(${coachVideos.length})` : ""}
+            </Text>
+            {coachVideos.length ? (
+              coachVideos.map((video) => (
+                <CoachVideoCard
+                  key={video.id}
+                  video={video}
+                  onOpen={handleOpenCoachVideo}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
+                <Text style={styles.emptyText}>Chưa có video mẫu</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Video của học viên {videoExercises.length ? `(${videoExercises.length})` : ""}
             </Text>
 
             {videoExercises.length ? (
@@ -317,52 +430,34 @@ const SessionDetailScreen: React.FC = () => {
               </View>
             )}
           </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Video mẫu của Coach {coachVideos.length ? `(${coachVideos.length})` : ""}
-            </Text>
-            {coachVideos.length ? (
-              coachVideos.map((video) => (
-                <CoachVideoCard
-                  key={video.id}
-                  video={video}
-                  onOpen={handleOpenCoachVideo}
-                />
-              ))
-            ) : (
-              <View style={styles.emptyCard}>
-                <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
-                <Text style={styles.emptyText}>Chưa có video mẫu</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Video của học viên {learnerVideos.length ? `(${learnerVideos.length})` : ""}
-            </Text>
-            {learnerVideos.length ? (
-              learnerVideos.map((video) => (
-                <LearnerVideoCard
-                  key={video.id}
-                  video={video}
-                  onOpenSubmission={handleOpenLearnerSubmission}
-                />
-              ))
-            ) : (
-              <View style={styles.emptyCard}>
-                <Ionicons
-                  name="document-text-outline"
-                  size={36}
-                  color="#9CA3AF"
-                />
-                <Text style={styles.emptyText}>Chưa có video học viên</Text>
-              </View>
-            )}
-          </View>
         </ScrollView>
       )}
+
+      {/* Quiz Details Modal */}
+      <QuizDetailModal
+        visible={quizModalVisible}
+        quiz={selectedQuiz}
+        sessionId={sessionId}
+        onClose={() => {
+          setQuizModalVisible(false);
+          setTimeout(() => setSelectedQuiz(null), 300);
+        }}
+        onDelete={deleteQuiz}
+        onQuizUpdated={() => {
+          // Refresh session data after quiz update
+          if (sessionId) {
+            const fetchSession = async () => {
+              try {
+                const res = await get<Session>(`/v1/sessions/${sessionId}`);
+                setSession(res.data);
+              } catch (error) {
+                console.error("Error refreshing session:", error);
+              }
+            };
+            fetchSession();
+          }
+        }}
+      />
     </View>
   );
 };
@@ -388,26 +483,6 @@ const InfoRow = ({
     </Text>
   </View>
 );
-
-const getStatusBadgeColors = (status?: string | null) => {
-  switch (status) {
-    case "READY":
-      return { backgroundColor: "#ECFDF5", color: "#059669" };
-    case "UPLOADING":
-      return { backgroundColor: "#FEF3C7", color: "#B45309" };
-    case "ERROR":
-      return { backgroundColor: "#FEE2E2", color: "#B91C1C" };
-    case "ANALYZING":
-      return { backgroundColor: "#DBEAFE", color: "#1D4ED8" };
-    case "PENDING":
-      return { backgroundColor: "#E0E7FF", color: "#4338CA" };
-    case "PAID":
-      return { backgroundColor: "#DCFCE7", color: "#15803D" };
-    default:
-      return { backgroundColor: "#F3F4F6", color: "#4B5563" };
-  }
-};
-
 const CoachVideoCard: React.FC<{
   video: VideoType;
   onOpen: (url: string) => void;
@@ -428,7 +503,10 @@ const CoachVideoCard: React.FC<{
         <Text
           style={[
             styles.statusBadge,
-            { backgroundColor: badgeStyle.backgroundColor, color: badgeStyle.color },
+            {
+              backgroundColor: badgeStyle.backgroundColor,
+              color: badgeStyle.color,
+            },
           ]}
         >
           {video.status || "—"}
@@ -446,14 +524,6 @@ const CoachVideoCard: React.FC<{
           <View style={styles.coachMetaItem}>
             <Ionicons name="tennisball-outline" size={12} color="#6B7280" />
             <Text style={styles.meta}>{video.drillName}</Text>
-          </View>
-        ) : null}
-        {video.tags ? (
-          <View style={styles.coachMetaItem}>
-            <Ionicons name="pricetags-outline" size={12} color="#6B7280" />
-            <Text style={styles.meta}>
-              {Array.isArray(video.tags) ? video.tags.join(", ") : video.tags}
-            </Text>
           </View>
         ) : null}
       </View>
@@ -476,57 +546,6 @@ const CoachVideoCard: React.FC<{
       ) : (
         <Text style={styles.meta}>Video đang được xử lý</Text>
       )}
-    </View>
-  );
-};
-
-const LearnerVideoCard: React.FC<{
-  video: LearnerVideo;
-  onOpenSubmission: (id: number) => void;
-}> = ({ video, onOpenSubmission }) => {
-  const badgeStyle = getStatusBadgeColors(video.status);
-  return (
-    <View style={styles.learnerCard}>
-      <View style={styles.learnerHeader}>
-        <View>
-          <Text style={styles.learnerName}>
-            {video.user?.fullName || `Học viên #${video.user?.id ?? "N/A"}`}
-          </Text>
-          <Text style={styles.learnerMeta}>
-            Nộp lúc: {formatFullDateTime(video.createdAt)}
-          </Text>
-        </View>
-        <Text
-          style={[
-            styles.statusBadge,
-            { backgroundColor: badgeStyle.backgroundColor, color: badgeStyle.color },
-          ]}
-        >
-          {video.status}
-        </Text>
-      </View>
-
-      {video.duration != null ? (
-        <Text style={styles.meta}>⏱ {video.duration} giây</Text>
-      ) : null}
-
-      {video.overlayVideoUrl ? (
-        <Text style={styles.meta}>Có video overlay đã xử lý</Text>
-      ) : null}
-
-      <View style={styles.learnerActions}>
-        {video.publicUrl ? (
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => onOpenSubmission(video.id)}
-          >
-            <Ionicons name="sparkles" size={14} color="#7C3AED" />
-            <Text style={styles.linkText}>Xem & chấm</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={styles.meta}>Video đang xử lý</Text>
-        )}
-      </View>
     </View>
   );
 };
@@ -787,6 +806,113 @@ const styles = StyleSheet.create({
     backgroundColor: "#7C3AED",
   },
   btnText: { fontSize: 13, fontWeight: "700" },
+  // Quiz Card Styles
+  quizCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quizCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10,
+    gap: 8,
+  },
+  quizCardTitle: {
+    flex: 1,
+  },
+  quizStepLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginBottom: 3,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  quizCardTitleText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 17,
+  },
+  quizStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+    minWidth: 75,
+    alignItems: "center",
+    fontWeight: "600",
+  },
+  quizDescriptionSection: {
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginBottom: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: "#2563EB",
+  },
+  quizDescText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "400",
+    lineHeight: 15,
+  },
+  quickMetadataRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  quickMetadataItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EFF6FF",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    flex: 1,
+  },
+  quickMetadataTextBlue: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+  quizActionsRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 8,
+  },
+  quizActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 4,
+    shadowColor: "#2563EB",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quizActionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
 });
 
 export default SessionDetailScreen;

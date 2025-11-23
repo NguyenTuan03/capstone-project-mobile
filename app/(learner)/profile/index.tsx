@@ -1,9 +1,11 @@
+import { useJWTAuthActions } from "@/services/jwt-auth/JWTAuthProvider";
 import storageService from "@/services/storageService";
 import { PickleballLevel, User } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { logout } = useJWTAuthActions();
   const [user, setUser] = useState<User | null>(null);
 
   const loadUserData = useCallback(async () => {
@@ -31,6 +34,20 @@ export default function ProfileScreen() {
       loadUserData();
     }, [loadUserData])
   );
+
+  const handleLogout = () => {
+    Alert.alert("Xác nhận đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/(auth)");
+        },
+      },
+    ]);
+  };
 
   const getLevelInVietnamese = (level: PickleballLevel | undefined): string => {
     if (!level) return "Chưa xác định";
@@ -57,6 +74,12 @@ export default function ProfileScreen() {
       icon: "person",
       label: "Thông tin cá nhân",
       to: "/(learner)/menu/account",
+    },
+    {
+      key: "notifications",
+      icon: "notifications",
+      label: "Thông báo",
+      to: "/(learner)/menu/notifications",
     },
     {
       key: "enrolled",
@@ -169,14 +192,14 @@ export default function ProfileScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Tỉnh/Thành</Text>
                   <Text style={styles.detailValue}>
-                    {user.learner[0].province?.name || "N/A"}
+                    {user?.province?.name || "N/A"}
                   </Text>
                 </View>
                 <View style={styles.detailDivider} />
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Quận/Huyện</Text>
                   <Text style={styles.detailValue}>
-                    {user.learner[0].district?.name || "N/A"}
+                    {user?.district?.name || "N/A"}
                   </Text>
                 </View>
               </View>
@@ -260,7 +283,11 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          activeOpacity={0.85}
+          onPress={handleLogout}
+        >
           <Ionicons name="log-out" size={18} color="#EF4444" />
           <Text style={styles.logoutBtnText}>Đăng xuất</Text>
         </TouchableOpacity>

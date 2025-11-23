@@ -192,7 +192,8 @@ export default function MyCoursesScreen() {
                   <Text
                     style={[
                       styles.filterTabText,
-                      filterStatus === "COMPLETED" && styles.filterTabTextActive,
+                      filterStatus === "COMPLETED" &&
+                        styles.filterTabTextActive,
                     ]}
                   >
                     Hoàn thành
@@ -219,85 +220,126 @@ export default function MyCoursesScreen() {
             </View>
 
             {/* Course Cards - Compact */}
+            {/* Course Cards - Premium */}
             {filteredCourses.map((course) => {
               const progress = course.progressPct || 0;
 
               return (
                 <TouchableOpacity
                   key={course.id}
-                  style={styles.compactCard}
-                  activeOpacity={0.85}
+                  style={styles.card}
+                  activeOpacity={0.9}
                   onPress={() =>
                     router.push(`/(learner)/my-courses/${course.id}`)
                   }
                 >
-                  {/* Thumbnail */}
-                  <View style={styles.compactThumbnail}>
-                    <Image
-                      source={{
-                        uri: "https://via.placeholder.com/120x90?text=Course",
-                      }}
-                      style={styles.compactImage}
-                    />
-                    <View
-                      style={[
-                        styles.compactStatusBadge,
-                        {
-                          backgroundColor: getStatusColor(course.status),
-                        },
-                      ]}
-                    >
-                      <Text style={styles.compactStatusText}>
-                        {getStatusInVietnamese(course.status)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Content */}
-                  <View style={styles.compactContent}>
-                    {/* Title & Coach */}
-                    <Text style={styles.compactTitle} numberOfLines={1}>
-                      {course.name}
-                    </Text>
-                    <Text style={styles.compactCoach} numberOfLines={1}>
-                      {course.createdBy?.fullName || "Huấn luyện viên"}
-                    </Text>
-
-                    {/* Progress Bar */}
-                    <View style={styles.compactProgressTrack}>
+                  <View style={styles.cardInner}>
+                    {/* Left: Image & Status */}
+                    <View style={styles.cardImageContainer}>
+                      <Image
+                        source={{
+                          uri: course.publicUrl,
+                        }}
+                        style={styles.cardImage}
+                      />
                       <View
                         style={[
-                          styles.compactProgressFill,
-                          { width: `${progress}%` },
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(course.status) },
                         ]}
-                      />
+                      >
+                        <Text style={styles.statusText}>
+                          {getStatusInVietnamese(course.status)}
+                        </Text>
+                      </View>
                     </View>
 
-                    {/* Info Row - Compact */}
-                    <View style={styles.compactInfoRow}>
-                      <Text style={styles.compactInfo}>
-                        {getLevelInVietnamese(course.level)}
-                      </Text>
-                      <Text style={styles.compactInfo}>
-                        {course.totalSessions} buổi
-                      </Text>
-                      <Text style={styles.compactInfo}>
-                        {Math.round(progress)}%
-                      </Text>
-                    </View>
+                    {/* Right: Content */}
+                    <View style={styles.cardContent}>
+                      {/* Header: Level & Type */}
+                      <View style={styles.cardHeader}>
+                        <View style={styles.tagContainer}>
+                          <Ionicons
+                            name="school-outline"
+                            size={12}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.tagText}>
+                            {getLevelInVietnamese(course.level)}
+                          </Text>
+                        </View>
+                        <View style={styles.tagContainer}>
+                          <Ionicons
+                            name="people-outline"
+                            size={12}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.tagText}>
+                            {getLearningFormatInVietnamese(
+                              course.learningFormat
+                            )}
+                          </Text>
+                        </View>
+                      </View>
 
-                    {/* Dates Row - Compact */}
-                    <View style={styles.compactDatesRow}>
-                      <Text style={styles.compactDate} numberOfLines={1}>
-                        <Text style={styles.compactDateLabel}>Từ: </Text>
-                        {formatDate(course.startDate)}
-                        {course.endDate && (
-                          <>
-                            <Text style={styles.compactDateLabel}> - Đến: </Text>
-                            {formatDate(course.endDate)}
-                          </>
-                        )}
+                      {/* Title */}
+                      <Text style={styles.cardTitle} numberOfLines={2}>
+                        {course.name}
                       </Text>
+
+                      {/* Coach */}
+                      <View style={styles.coachRow}>
+                        <Ionicons
+                          name="person-circle-outline"
+                          size={14}
+                          color="#9CA3AF"
+                        />
+                        <Text style={styles.coachName} numberOfLines={1}>
+                          HLV {course.createdBy?.fullName || "N/A"}
+                        </Text>
+                      </View>
+
+                      {/* Progress */}
+                      <View style={styles.progressSection}>
+                        <View style={styles.progressRow}>
+                          <Text style={styles.progressLabel}>Tiến độ</Text>
+                          <Text style={styles.progressValue}>
+                            {Math.round(progress)}%
+                          </Text>
+                        </View>
+                        <View style={styles.progressBarBg}>
+                          <View
+                            style={[
+                              styles.progressBarFill,
+                              { width: `${progress}%` },
+                            ]}
+                          />
+                        </View>
+                      </View>
+
+                      {/* Footer: Date & Sessions */}
+                      <View style={styles.cardFooter}>
+                        <View style={styles.footerItem}>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={12}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.footerText}>
+                            {formatDate(course.startDate)}
+                          </Text>
+                        </View>
+                        <View style={styles.footerItem}>
+                          <Ionicons
+                            name="time-outline"
+                            size={12}
+                            color="#6B7280"
+                          />
+                          <Text style={styles.footerText}>
+                            {course.totalSessions} buổi
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -311,224 +353,246 @@ export default function MyCoursesScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F9FAFB" },
+  safe: { flex: 1, backgroundColor: "#F3F4F6" },
   headerSection: {
     backgroundColor: "#059669",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 4,
   },
   headerContent: {
-    gap: 4,
+    gap: 6,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: "#FFFFFF",
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
     fontWeight: "500",
   },
-  container: { padding: 12, gap: 10, paddingBottom: 20 },
+  container: { padding: 16, gap: 16, paddingBottom: 30 },
 
   /* Empty State */
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 60,
-    gap: 12,
+    paddingVertical: 80,
+    gap: 16,
   },
   emptyStateTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
     color: "#111827",
   },
   emptyStateSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#6B7280",
     textAlign: "center",
-    maxWidth: 280,
-    lineHeight: 18,
+    maxWidth: 260,
+    lineHeight: 20,
   },
   exploreCourseBtn: {
     flexDirection: "row",
     backgroundColor: "#059669",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     alignItems: "center",
-    gap: 6,
-    marginTop: 8,
+    gap: 8,
+    marginTop: 12,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   exploreCourseText: {
     color: "#FFFFFF",
     fontWeight: "700",
-    fontSize: 13,
-  },
-
-  /* Summary Card - Compact */
-  summaryCard: {
-    backgroundColor: "#F0FDF4",
-    borderRadius: 10,
-    padding: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  summaryItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  summaryIconContainer: {
-    width: 36,
-    height: 36,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 6,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  summaryValue: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  summaryLabel: {
-    fontSize: 10,
-    color: "#6B7280",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  summaryDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: "#C6F6D5",
   },
 
   /* Filter Container */
   filterContainer: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
   filterScroll: {
-    paddingHorizontal: 0,
-    gap: 6,
+    paddingRight: 16,
+    gap: 8,
   },
   filterTab: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filterTabActive: {
     backgroundColor: "#059669",
     borderColor: "#059669",
   },
   filterTabText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#6B7280",
+    color: "#4B5563",
   },
   filterTabTextActive: {
     color: "#FFFFFF",
   },
 
-  /* Compact Card */
-  compactCard: {
-    flexDirection: "row",
+  /* Premium Card */
+  card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderRadius: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 1,
-    gap: 10,
-    padding: 10,
-  },
-  compactThumbnail: {
-    position: "relative",
-    width: 100,
-    height: 80,
-    borderRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(229, 231, 235, 0.5)",
     overflow: "hidden",
-    flexShrink: 0,
   },
-  compactImage: {
+  cardInner: {
+    flexDirection: "row",
+    padding: 12,
+    gap: 14,
+  },
+  cardImageContainer: {
+    position: "relative",
+    width: 110,
+    height: 130,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  cardImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#F3F4F6",
   },
-  compactStatusBadge: {
+  statusBadge: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backdropFilter: "blur(4px)",
   },
-  compactStatusText: {
+  statusText: {
     color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "700",
   },
-  compactContent: {
+  cardContent: {
     flex: 1,
     justifyContent: "space-between",
-    gap: 4,
+    paddingVertical: 2,
   },
-  compactTitle: {
-    fontSize: 13,
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  tagContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  tagText: {
+    fontSize: 10,
+    color: "#4B5563",
+    fontWeight: "600",
+  },
+  cardTitle: {
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
+    lineHeight: 22,
+    marginBottom: 4,
   },
-  compactCoach: {
+  coachRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 10,
+  },
+  coachName: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  progressSection: {
+    gap: 6,
+    marginBottom: 10,
+  },
+  progressRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  progressLabel: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  progressValue: {
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "700",
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#059669",
+    borderRadius: 3,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingTop: 8,
+  },
+  footerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  footerText: {
     fontSize: 11,
     color: "#6B7280",
     fontWeight: "500",
-  },
-  compactProgressTrack: {
-    height: 5,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 2,
-    overflow: "hidden",
-    marginVertical: 4,
-  },
-  compactProgressFill: {
-    height: 5,
-    backgroundColor: "#059669",
-    borderRadius: 2,
-  },
-  compactInfoRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 2,
-  },
-  compactInfo: {
-    fontSize: 10,
-    color: "#059669",
-    fontWeight: "600",
-  },
-
-  /* Compact Dates Row */
-  compactDatesRow: {
-    marginTop: 2,
-  },
-  compactDate: {
-    fontSize: 9,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  compactDateLabel: {
-    fontWeight: "600",
-    color: "#374151",
   },
 });

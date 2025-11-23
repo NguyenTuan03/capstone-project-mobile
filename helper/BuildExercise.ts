@@ -24,7 +24,7 @@ export const BuildExercise = (session: Session): Exercise[] => {
   });
 
   // Map QUIZ => Bài tập quiz
-  (session.lesson?.quizzes ?? []).forEach((q, idx) => {
+  (session?.quizzes ?? []).forEach((q, idx) => {
     exercises.push({
       id: `quiz-${q.id}`,
       type: "quiz",

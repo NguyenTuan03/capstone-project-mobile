@@ -9,5 +9,5 @@ export type Feedback = {
     fullName: string;
     email: string;
   };
-  createdAt?: string;
+  createdAt: string;
 };

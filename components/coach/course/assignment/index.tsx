@@ -26,6 +26,7 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
     const fetchSessions = async () => {
       try {
         setLoading(true);
+        console.log("fetchSessions", courseId);
         const res = await get<Session[]>(`/v1/sessions/courses/${courseId}`);
         // Extract sessions from response - API returns array of sessions
         const sessionsData = Array.isArray(res.data) ? res.data : [];
@@ -58,8 +59,7 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
           </View>
         ) : (
           sessions.map((s) => {
-            const label =
-              s.lesson?.name || s.name || `Bài học #${s.sessionNumber}`;
+            const label = s?.name || `Bài học #${s.sessionNumber}`;
             const dateText = s.scheduleDate
               ? new Date(s.scheduleDate).toLocaleDateString("vi-VN")
               : "—";
@@ -73,17 +73,18 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
                 onPress={() =>
                   router.push({
                     pathname: "/(coach)/course/session/[sessionId]",
-                    params: { sessionId: String(s.id) },
-                  })
+                    params: {
+                      sessionId: String(s.id),
+                      sessionData: JSON.stringify(s),
+                    },
+                  } as any)
                 }
               >
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemTitle}>{label}</Text>
                   <Text style={styles.badge}>{s.status}</Text>
                 </View>
-                {s.lesson?.description ? (
-                  <Text style={styles.itemDesc}>{s.lesson.description}</Text>
-                ) : s.description ? (
+                {s.description ? (
                   <Text style={styles.itemDesc}>{s.description}</Text>
                 ) : null}
                 <View style={styles.metaRow}>
@@ -93,25 +94,19 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
                     Giờ: {start} - {end}
                   </Text>
                 </View>
-                {s.videos?.length ||
-                s.quizzes?.length ||
-                s.lesson?.videos?.length ||
-                s.lesson?.quizzes?.length ? (
-                  <View style={styles.metaRow}>
-                    {s.videos?.length || s.lesson?.videos?.length ? (
-                      <Text style={styles.meta}>
-                        Video:{" "}
-                        {s.videos?.length || s.lesson?.videos?.length || 0}
-                      </Text>
-                    ) : null}
-                    {s.quizzes?.length || s.lesson?.quizzes?.length ? (
-                      <Text style={styles.meta}>
-                        Quiz:{" "}
-                        {s.quizzes?.length || s.lesson?.quizzes?.length || 0}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
+
+                <View style={styles.metaRow}>
+                  {s.videos?.length ? (
+                    <Text style={styles.meta}>
+                      Video: {s.videos?.length || 0}
+                    </Text>
+                  ) : null}
+                  {s.quizzes?.length ? (
+                    <Text style={styles.meta}>
+                      Quiz: {s.quizzes?.length || 0}
+                    </Text>
+                  ) : null}
+                </View>
               </TouchableOpacity>
             );
           })

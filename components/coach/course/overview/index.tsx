@@ -1,7 +1,9 @@
+import { get } from "@/services/http/httpService";
 import { Course } from "@/types/course";
+import { Feedback } from "@/types/feecbacks";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 type Props = {
   course: Course;
   progress: number; // 0..100
@@ -154,6 +156,8 @@ export const OverviewTab: React.FC<Props> = ({
   formatPrice,
   formatSchedule,
 }) => {
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [descExpanded] = useState(false);
 
   const dateRange = useMemo(() => {
@@ -165,6 +169,24 @@ export const OverviewTab: React.FC<Props> = ({
       : "";
     return end ? `${start} – ${end}` : start;
   }, [course?.startDate, course?.endDate]);
+
+  const fetchFeedbacks = useCallback(async () => {
+    try {
+      setFeedbackLoading(true);
+      const res = await get(`/v1/feedbacks/courses/${course.id}`);
+      console.log("Fetched feedbacks:", res.data);
+      setFeedbacks((res as any).data || []);
+    } catch (error) {
+      console.error("Failed to fetch feedbacks:", error);
+      setFeedbacks([]);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }, [course.id]);
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [fetchFeedbacks]);
 
   return (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
@@ -220,11 +242,7 @@ export const OverviewTab: React.FC<Props> = ({
         <InfoRow
           label="Địa điểm"
           icon="location-outline"
-          value={[
-            course?.court?.name
-          ]
-            .filter(Boolean)
-            .join("\n")}
+          value={[course?.court?.name].filter(Boolean).join("\n")}
           multiline
         />
         <InfoRow
@@ -258,6 +276,81 @@ export const OverviewTab: React.FC<Props> = ({
             {course?.description || "—"}
           </Text>
         </View>
+      </Section>
+
+      {/* === Feedbacks === */}
+      <Section title={`Đánh giá (${feedbacks.length})`}>
+        {feedbackLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#059669" />
+          </View>
+        ) : feedbacks.length === 0 ? (
+          <Text style={{ color: "#6B7280", fontSize: 14 }}>
+            Chưa có đánh giá nào
+          </Text>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {feedbacks.map((feedback, index) => (
+              <View
+                key={feedback.id || index}
+                style={styles.feedbackItem}
+              >
+                <View style={styles.feedbackHeader}>
+                  <View style={styles.ratingContainer}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Ionicons
+                        key={star}
+                        name={
+                          star <= feedback.rating
+                            ? "star"
+                            : "star-outline"
+                        }
+                        size={16}
+                        color={
+                          star <= feedback.rating ? "#FBBF24" : "#D1D5DB"
+                        }
+                      />
+                    ))}
+                  </View>
+                  <View style={styles.feedbackAuthorContainer}>
+                    {feedback.isAnonymous ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Ionicons
+                          name="eye-off-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.feedbackAuthor}>Ẩn danh</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.feedbackAuthor}>
+                        {(feedback as any).createdBy?.fullName ||
+                          feedback.created_by?.fullName ||
+                          "Người dùng"}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                {feedback.comment && (
+                  <Text style={styles.feedbackComment}>
+                    {feedback.comment}
+                  </Text>
+                )}
+                {feedback.createdAt && (
+                  <Text style={styles.feedbackDate}>
+                    {new Date(feedback.createdAt).toLocaleString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
       </Section>
 
       <View style={{ height: 16 }} />
@@ -400,5 +493,50 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 8,
     fontWeight: "600",
+  },
+
+  /* Feedback */
+  feedbackItem: {
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  feedbackHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+    gap: 8,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    gap: 3,
+  },
+  feedbackAuthorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+  },
+  feedbackAuthor: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  feedbackComment: {
+    fontSize: 13,
+    color: "#374151",
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  feedbackDate: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "500",
+  },
+  loadingContainer: {
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

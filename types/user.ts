@@ -39,8 +39,6 @@ export type Learner = {
   id: number;
   skillLevel: PickleballLevel;
   learningGoal: PickleballLevel;
-  province: Province;
-  district: District;
 };
 
 export type Credential = {
@@ -75,4 +73,6 @@ export type User = {
   refreshToken?: string | null;
   resetPasswordToken?: string | null;
   wallet?: Record<string, unknown> | null;
+  province: Province;
+  district: District;
 };

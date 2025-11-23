@@ -35,6 +35,8 @@ const Register = () => {
   const [role, setRole] = useState<"COACH" | "LEARNER">("LEARNER");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [province, setProvince] = useState<number | null>(null);
+  const [district, setDistrict] = useState<number | null>(null);
 
   // Step 2: Coach Info
   const [coachBio, setCoachBio] = useState("");
@@ -49,8 +51,6 @@ const Register = () => {
   const [learningGoal, setLearningGoal] = useState<PickleballLevel>(
     PickleballLevel.INTERMEDIATE
   );
-  const [province, setProvince] = useState<number | null>(null);
-  const [district, setDistrict] = useState<number | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -88,6 +88,14 @@ const Register = () => {
       errors.confirmPassword = "Mật khẩu không khớp";
     }
 
+    if (!province) {
+      errors.province = "Tỉnh/Thành phố không được để trống";
+    }
+
+    if (!district) {
+      errors.district = "Quận/Huyện không được để trống";
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -114,11 +122,11 @@ const Register = () => {
         errors.teachingMethods = "Phương pháp giảng dạy không được để trống";
       }
     } else if (role === "LEARNER") {
-      if (!province) {
-        errors.province = "Tỉnh/Thành phố không được để trống";
+      if (!skillLevel) {
+        errors.skillLevel = "Trình độ hiện tại không được để trống";
       }
-      if (!district) {
-        errors.district = "Quận/Huyện không được để trống";
+      if (!learningGoal) {
+        errors.learningGoal = "Mục tiêu học tập không được để trống";
       }
     }
 
@@ -153,6 +161,8 @@ const Register = () => {
           fullName: fullName.trim(),
           phoneNumber: formattedPhone,
           password: password,
+          province: Number(province),
+          district: Number(district),
           coach: {
             bio: coachBio.trim(),
             yearOfExperience: Number(yearsOfExperience),
@@ -173,11 +183,11 @@ const Register = () => {
           fullName: fullName.trim(),
           phoneNumber: formattedPhone,
           password: password,
+          province: Number(province),
+          district: Number(district),
           learner: {
             skillLevel: skillLevel,
             learningGoal: learningGoal,
-            province: Number(province),
-            district: Number(district),
           },
         };
 
@@ -267,6 +277,8 @@ const Register = () => {
               role={role}
               showPassword={showPassword}
               showConfirmPassword={showConfirmPassword}
+              province={province}
+              district={district}
               fieldErrors={fieldErrors}
               onFullNameChange={setFullName}
               onPhoneNumberChange={setPhoneNumber}
@@ -277,6 +289,8 @@ const Register = () => {
               onShowConfirmPasswordToggle={() =>
                 setShowConfirmPassword(!showConfirmPassword)
               }
+              onProvinceChange={setProvince}
+              onDistrictChange={setDistrict}
               onClearError={clearFieldError}
               onNext={handleNext}
             />
@@ -306,14 +320,10 @@ const Register = () => {
             <RegistrationStep2Learner
               skillLevel={skillLevel}
               learningGoal={learningGoal}
-              province={province}
-              district={district}
               fieldErrors={fieldErrors}
               submitting={submitting}
               onSkillLevelChange={setSkillLevel}
               onLearningGoalChange={setLearningGoal}
-              onProvinceChange={setProvince}
-              onDistrictChange={setDistrict}
               onClearError={clearFieldError}
               onBack={handleBack}
               onSubmit={handleRegister}

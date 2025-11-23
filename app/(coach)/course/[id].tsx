@@ -19,7 +19,6 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -274,10 +273,16 @@ type CourseImagePayload = {
           startDate: course.startDate,
           court: course?.court,
           province: course.court?.province.id
-            ? { id: course.court?.province.id, name: course.court?.province.name }
+            ? {
+                id: course.court?.province.id,
+                name: course.court?.province.name,
+              }
             : null,
           district: course.court?.district.id
-            ? { id: course.court?.district.id, name: course.court?.district.name }
+            ? {
+                id: course.court?.district.id,
+                name: course.court?.district.name,
+              }
             : null,
           schedules: course.schedules,
           publicUrl: course.publicUrl || null,
@@ -291,7 +296,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F3F4F6",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
+    // paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
   },
   loadingContainer: {
     flex: 1,

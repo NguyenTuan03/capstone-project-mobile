@@ -1,4 +1,5 @@
 import { formStyles } from "@/components/common/formStyles";
+import { LocationSelector } from "@/components/common/LocationSelector";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -18,6 +19,8 @@ type Props = {
   role: "COACH" | "LEARNER";
   showPassword: boolean;
   showConfirmPassword: boolean;
+  province: number | null;
+  district: number | null;
   fieldErrors: Record<string, string>;
   onFullNameChange: (value: string) => void;
   onPhoneNumberChange: (value: string) => void;
@@ -26,6 +29,8 @@ type Props = {
   onRoleChange: (role: "COACH" | "LEARNER") => void;
   onShowPasswordToggle: () => void;
   onShowConfirmPasswordToggle: () => void;
+  onProvinceChange: (value: number | null) => void;
+  onDistrictChange: (value: number | null) => void;
   onClearError: (field: string) => void;
   onNext: () => void;
 };
@@ -38,6 +43,8 @@ export const RegistrationStep1 = ({
   role,
   showPassword,
   showConfirmPassword,
+  province,
+  district,
   fieldErrors,
   onFullNameChange,
   onPhoneNumberChange,
@@ -46,6 +53,8 @@ export const RegistrationStep1 = ({
   onRoleChange,
   onShowPasswordToggle,
   onShowConfirmPasswordToggle,
+  onProvinceChange,
+  onDistrictChange,
   onClearError,
   onNext,
 }: Props) => {
@@ -240,6 +249,17 @@ export const RegistrationStep1 = ({
           </Text>
         ) : null}
       </View>
+
+      {/* Location */}
+      <LocationSelector
+        provinceId={province?.toString() || ""}
+        districtId={district?.toString() || ""}
+        onProvinceChange={(id) => onProvinceChange(id ? Number(id) : null)}
+        onDistrictChange={(id) => onDistrictChange(id ? Number(id) : null)}
+        provinceError={fieldErrors.province}
+        districtError={fieldErrors.district}
+        onClearError={(field) => onClearError(field)}
+      />
 
       {/* Next Button */}
       <Pressable onPress={onNext} style={styles.nextButtonWrapper}>

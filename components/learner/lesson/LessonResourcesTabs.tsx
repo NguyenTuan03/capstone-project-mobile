@@ -93,7 +93,11 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
-    const handleVideoCapture = (video: { uri: string; name: string; duration?: number }) => {
+    const handleVideoCapture = (video: {
+      uri: string;
+      name: string;
+      duration?: number;
+    }) => {
       // Update parent localVideo state with captured video including duration
       setLocalVideo({
         uri: video.uri,

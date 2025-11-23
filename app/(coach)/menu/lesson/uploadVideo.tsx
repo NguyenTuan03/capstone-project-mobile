@@ -6,27 +6,34 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function UploadVideoScreen() {
-  const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const { lessonId, videoId, videoTitle, videoDescription, drillName: paramDrillName, drillDescription: paramDrillDescription, drillPracticeSets: paramDrillPracticeSets } = useLocalSearchParams<{ 
+    lessonId: string;
+    videoId?: string;
+    videoTitle?: string;
+    videoDescription?: string;
+    drillName?: string;
+    drillDescription?: string;
+    drillPracticeSets?: string;
+  }>();
+  
+  const [title, setTitle] = useState(videoTitle || "");
+  const [description, setDescription] = useState(videoDescription || "");
   const [duration, setDuration] = useState(0);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagText, setTagText] = useState("");
-  const [drillName, setDrillName] = useState("");
-  const [drillDescription, setDrillDescription] = useState("");
-  const [drillPracticeSets, setDrillPracticeSets] = useState("");
+  const [drillName, setDrillName] = useState(paramDrillName || "");
+  const [drillDescription, setDrillDescription] = useState(paramDrillDescription || "");
+  const [drillPracticeSets, setDrillPracticeSets] = useState(paramDrillPracticeSets || "");
   const [video, setVideo] = useState<
     ImagePicker.ImagePickerAsset | undefined
   >();
@@ -58,14 +65,11 @@ export default function UploadVideoScreen() {
       Alert.alert("Lỗi", "Vui lòng nhập tiêu đề video.");
       return;
     }
-    if (!video) {
+    
+    // For new videos, video selection is required
+    // For updates, video is optional (can keep existing video)
+    if (!videoId && !video) {
       Alert.alert("Lỗi", "Vui lòng chọn một video.");
-      return;
-    }
-
-    const durNum = Number(duration);
-    if (Number.isNaN(durNum) || durNum <= 0) {
-      Alert.alert("Lỗi", "Thời lượng video không hợp lệ.");
       return;
     }
 
@@ -73,43 +77,77 @@ export default function UploadVideoScreen() {
     const formData = new FormData();
     formData.append("title", title.trim());
     formData.append("description", description?.trim() || "");
-    formData.append("duration", String(duration));
-    if (tags && tags.length > 0) {
-      tags.forEach((tag) => formData.append("tags[]", tag.trim()));
+    
+    // Only validate and append duration if we have a new video
+    if (video) {
+      const durNum = Number(duration);
+      if (Number.isNaN(durNum) || durNum <= 0) {
+        Alert.alert("Lỗi", "Thời lượng video không hợp lệ.");
+        return;
+      }
+      formData.append("duration", String(duration));
+      formData.append("video", {
+        uri: video.uri,
+        type: video.type,
+        name: video.fileName,
+      } as any);
     }
+    
     formData.append("drillName", drillName.trim() || "");
     formData.append("drillDescription", drillDescription?.trim() || "");
     formData.append("drillPracticeSets", drillPracticeSets?.trim() || "");
-    formData.append("video", {
-      uri: video.uri,
-      type: video.type,
-      name: video.fileName,
-    } as any);
 
     try {
       setSaving(true);
       setUploadProgress(0);
       console.log("📦 Payload FormData gửi lên:", formData);
 
-      const response = await axios.post(
-        `${API_URL}/v1/videos/lessons/${lessonId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (progressEvent) => {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-            );
-            setUploadProgress(progress);
-            console.log(`Đang tải lên: ${progress}%`);
-          },
-        }
-      );
+      let response;
+      if (videoId) {
+        // UPDATE mode
+        response = await axios.put(
+          `${API_URL}/v1/videos/${videoId}`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+            onUploadProgress: (progressEvent) => {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+              );
+              setUploadProgress(progress);
+              console.log(`Đang cập nhật: ${progress}%`);
+            },
+          }
+        );
+      } else {
+        // CREATE mode
+        response = await axios.post(
+          `${API_URL}/v1/videos/lessons/${lessonId}`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+            onUploadProgress: (progressEvent) => {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+              );
+              setUploadProgress(progress);
+              console.log(`Đang tải lên: ${progress}%`);
+            },
+          }
+        );
+      }
+      
       if (response.status === 200 || response.status === 201) {
-        Alert.alert("Thành công", "Video đã được tải lên!", [
+        const successMessage = videoId 
+          ? "Video đã được cập nhật thành công!" 
+          : "Video đã được tải lên!";
+        Alert.alert("Thành công", successMessage, [
           { text: "OK", onPress: () => router.back() },
         ]);
       } else {
@@ -117,27 +155,15 @@ export default function UploadVideoScreen() {
         console.error("Server response:", response.data);
       }
     } catch (err: any) {
-      console.error("❌ Lỗi upload:", err.message);
+      console.error("❌ Lỗi:", err.message);
       Alert.alert(
         "Lỗi",
-        err.response?.data?.message || "Không thể tải video. Vui lòng thử lại."
+        err.response?.data?.message || "Không thể lưu video. Vui lòng thử lại."
       );
     } finally {
       setSaving(false);
       setUploadProgress(0);
     }
-  };
-
-  const addTag = () => {
-    const newTag = tagText.trim();
-    if (newTag && !tags.includes(newTag)) {
-      setTags([...tags, newTag]);
-      setTagText("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
   };
 
   return (
@@ -166,7 +192,7 @@ export default function UploadVideoScreen() {
               flex: 1,
             }}
           >
-            Thêm video mới
+            {videoId ? "Chỉnh sửa video" : "Thêm video mới"}
           </Text>
 
           <View style={{ width: 24 }} />
@@ -206,64 +232,6 @@ export default function UploadVideoScreen() {
               paddingHorizontal: 12,
             }}
           />
-        </View>
-
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: "600", marginBottom: 6 }}>Tags</Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TextInput
-              value={tagText}
-              onChangeText={setTagText}
-              placeholder="Nhập tag mới"
-              placeholderTextColor="#6B7280"
-              style={{
-                flex: 1,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                borderRadius: 8,
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-              }}
-              onSubmitEditing={addTag}
-            />
-            <TouchableOpacity
-              onPress={addTag}
-              style={{
-                backgroundColor: "#059669",
-                marginLeft: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 8,
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Thêm</Text>
-            </TouchableOpacity>
-          </View>
-          <View
-            style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 6 }}
-          >
-            {tags.map((tag) => (
-              <View
-                key={tag}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: "#059669",
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 20,
-                  marginRight: 6,
-                  marginBottom: 6,
-                }}
-              >
-                <Text style={{ color: "#059669", marginRight: 4 }}>{tag}</Text>
-                <TouchableOpacity onPress={() => removeTag(tag)}>
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
         </View>
 
         {[
@@ -449,10 +417,10 @@ export default function UploadVideoScreen() {
 
         <TouchableOpacity
           onPress={handleUploadVideo}
-          disabled={saving || !video}
+          disabled={saving || (!videoId && !video)}
           activeOpacity={0.8}
           style={{
-            backgroundColor: saving || !video ? "#9CA3AF" : "#059669",
+            backgroundColor: saving || (!videoId && !video) ? "#9CA3AF" : "#059669",
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
@@ -470,12 +438,12 @@ export default function UploadVideoScreen() {
                   fontWeight: "600",
                 }}
               >
-                Đang tải lên... {uploadProgress}%
+                {videoId ? "Đang cập nhật" : "Đang tải lên"}... {uploadProgress}%
               </Text>
             </>
           ) : (
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>
-              Tải video lên
+              {videoId ? "Cập nhật video" : "Tải video lên"}
             </Text>
           )}
         </TouchableOpacity>
