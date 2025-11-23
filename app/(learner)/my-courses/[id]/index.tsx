@@ -1,4 +1,3 @@
-import VideoConference from "@/components/common/VideoConference";
 import { get, post } from "@/services/http/httpService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
 import videoConferenceService from "@/services/videoConference.service";
@@ -842,14 +841,6 @@ export default function CourseDetailScreen() {
           </View>
         </View>
       </Modal>
-
-      <VideoConference
-        isVisible={isVCVisible}
-        onClose={() => setIsVCVisible(false)}
-        channelName={channelName}
-        token={vcToken}
-        uid={currentUserId || 0}
-      />
     </View>
   );
 }

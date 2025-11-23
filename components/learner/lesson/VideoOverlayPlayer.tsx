@@ -1,10 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
-import { useVideoPlayer, VideoView } from "expo-video";
+import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   Dimensions,
   Modal,
   StyleSheet,
@@ -16,10 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
-// Memoized Slider to reduce unnecessary renders
-const MemoizedSlider = React.memo((props: any) => {
-  return <Slider {...props} />;
-});
+const MemoizedSlider = React.memo((props: any) => <Slider {...props} />);
 
 interface VideoOverlayPlayerProps {
   visible: boolean;
@@ -35,157 +31,131 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   learnerVideoUrl,
 }) => {
   const insets = useSafeAreaInsets();
-  const opacityAnim = useRef(new Animated.Value(0.5)).current;
   const [opacityDisplay, setOpacityDisplay] = useState(0.5);
-
-  // Mode state: false = Split View (default), true = Overlay View (Compare)
   const [isOverlayMode, setIsOverlayMode] = useState(false);
 
-  const [isPlaying, setIsPlaying] = useState({ coach: false, learner: false });
-  const [isLoading, setIsLoading] = useState(false);
+  const coachVideoRef = useRef<Video>(null);
+  const learnerVideoRef = useRef<Video>(null);
 
-  const coachPlayer = useVideoPlayer(coachVideoUrl, (player) => {
-    player.loop = false;
-    player.play();
-    player.pause();
+  const [status, setStatus] = useState({
+    coach: { isPlaying: false, position: 0, duration: 0, isLoaded: false },
+    learner: { isPlaying: false, position: 0, duration: 0, isLoaded: false },
   });
-
-  const learnerPlayer = useVideoPlayer(learnerVideoUrl, (player) => {
-    player.loop = false;
-    player.play();
-    player.pause();
-  });
-
-  const currentTimesRef = useRef({ coach: 0, learner: 0 });
-  const [uiTimes, setUiTimes] = useState({ coach: 0, learner: 0 });
-
-  const coachDuration = coachPlayer.duration;
-  const learnerDuration = learnerPlayer.duration;
 
   const [isSeeking, setIsSeeking] = useState({ coach: false, learner: false });
   const [sliderValues, setSliderValues] = useState({ coach: 0, learner: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Update UI times loop
-  useEffect(() => {
-    let animationFrameId: number;
-    let lastUpdate = Date.now();
-
-    const updateLoop = () => {
-      if (visible) {
-        const now = Date.now();
-
-        // Update UI times max every 200ms
-        if (now - lastUpdate > 200) {
-          const coachTime = coachPlayer.currentTime;
-          const learnerTime = learnerPlayer.currentTime;
-          currentTimesRef.current = { coach: coachTime, learner: learnerTime };
-          setUiTimes({ coach: coachTime, learner: learnerTime });
-          lastUpdate = now;
-        }
-
-        // Check playing status to update UI icons if needed (though we manage state manually too)
-        if (coachPlayer.playing !== isPlaying.coach) {
-          setIsPlaying((prev) => ({ ...prev, coach: coachPlayer.playing }));
-        }
-        if (learnerPlayer.playing !== isPlaying.learner) {
-          setIsPlaying((prev) => ({ ...prev, learner: learnerPlayer.playing }));
-        }
-
-        // Clear loading indicator once videos playing or ready
-        if (isLoading && (coachPlayer.playing || learnerPlayer.playing)) {
-          setIsLoading(false);
-        }
-
-        animationFrameId = requestAnimationFrame(updateLoop);
-      }
-    };
-
-    if (visible) animationFrameId = requestAnimationFrame(updateLoop);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [visible, coachPlayer, learnerPlayer, isLoading, isPlaying]);
-
-  // Reset on modal visible
   useEffect(() => {
     if (visible) {
       setIsLoading(true);
-      setIsOverlayMode(false); // Default to Split View
-
-      coachPlayer.currentTime = 0;
-      learnerPlayer.currentTime = 0;
-      coachPlayer.pause();
-      learnerPlayer.pause();
-
-      setIsPlaying({ coach: false, learner: false });
+      setIsOverlayMode(false);
+      setStatus({
+        coach: { isPlaying: false, position: 0, duration: 0, isLoaded: false },
+        learner: {
+          isPlaying: false,
+          position: 0,
+          duration: 0,
+          isLoaded: false,
+        },
+      });
       setSliderValues({ coach: 0, learner: 0 });
-      currentTimesRef.current = { coach: 0, learner: 0 };
-      setUiTimes({ coach: 0, learner: 0 });
-
-      // Small delay to clear loading if needed, or wait for user to play
-      setTimeout(() => setIsLoading(false), 500);
+      // Reset position as well on visible
+      coachVideoRef.current?.setPositionAsync(0);
+      learnerVideoRef.current?.setPositionAsync(0);
     }
   }, [visible]);
 
-  const handlePlay = useCallback(
-    (type: "coach" | "learner") => {
-      if (type === "coach") {
-        if (coachPlayer.playing) {
-          coachPlayer.pause();
-          setIsPlaying((prev) => ({ ...prev, coach: false }));
-        } else {
-          // Mutual exclusion: Pause learner before playing coach
-          learnerPlayer.pause();
-          setIsPlaying((prev) => ({ ...prev, learner: false }));
+  // Pause both when in overlay mode to reduce CPU load until playing explicitly
+  useEffect(() => {
+    if (isOverlayMode) {
+      coachVideoRef.current?.pauseAsync();
+      learnerVideoRef.current?.pauseAsync();
+      setIsLoading(false);
+    }
+  }, [isOverlayMode]);
 
-          coachPlayer.play();
-          setIsPlaying((prev) => ({ ...prev, coach: true }));
-        }
+  // Update playback status throttled to reduce frequent rerenders
+  const onPlaybackStatusUpdate =
+    (type: "coach" | "learner") => (playbackStatus: AVPlaybackStatus) => {
+      if (!playbackStatus.isLoaded) return;
+
+      setStatus((prev) => ({
+        ...prev,
+        [type]: {
+          isPlaying: playbackStatus.isPlaying,
+          position: playbackStatus.positionMillis / 1000,
+          duration: (playbackStatus.durationMillis || 0) / 1000,
+          isLoaded: true,
+        },
+      }));
+
+      if (playbackStatus.isBuffering) {
+        setIsLoading(true);
       } else {
-        if (learnerPlayer.playing) {
-          learnerPlayer.pause();
-          setIsPlaying((prev) => ({ ...prev, learner: false }));
-        } else {
-          // Mutual exclusion: Pause coach before playing learner
-          coachPlayer.pause();
-          setIsPlaying((prev) => ({ ...prev, coach: false }));
-
-          learnerPlayer.play();
-          setIsPlaying((prev) => ({ ...prev, learner: true }));
-        }
+        setIsLoading(false);
       }
-    },
-    [coachPlayer, learnerPlayer]
-  );
+    };
 
-  const handleSeek = useCallback(
-    (type: "coach" | "learner", value: number) => {
-      setSliderValues((prev) => ({ ...prev, [type]: value }));
-      setUiTimes((prev) => ({ ...prev, [type]: value }));
-
-      if (type === "coach") {
-        coachPlayer.currentTime = value;
-        currentTimesRef.current.coach = value;
+  // Ensure only one video plays at a time for better performance
+  const handlePlay = async (type: "coach" | "learner") => {
+    if (type === "coach") {
+      if (status.coach.isPlaying) {
+        await coachVideoRef.current?.pauseAsync();
       } else {
-        learnerPlayer.currentTime = value;
-        currentTimesRef.current.learner = value;
+        await learnerVideoRef.current?.pauseAsync();
+        await coachVideoRef.current?.playAsync();
       }
-    },
-    [coachPlayer, learnerPlayer]
-  );
+    } else {
+      if (status.learner.isPlaying) {
+        await learnerVideoRef.current?.pauseAsync();
+      } else {
+        await coachVideoRef.current?.pauseAsync();
+        await learnerVideoRef.current?.playAsync();
+      }
+    }
+  };
+
+  // Seeking handler throttled to reduce rapid state updates
+  const handleSeek = (type: "coach" | "learner", value: number) => {
+    setSliderValues((prev) => ({ ...prev, [type]: value }));
+  };
+
+  const handleSeekComplete = async (
+    type: "coach" | "learner",
+    value: number
+  ) => {
+    const ref =
+      type === "coach" ? coachVideoRef.current : learnerVideoRef.current;
+    if (ref) {
+      try {
+        await ref.setPositionAsync(value * 1000, {
+          toleranceMillisBefore: 100,
+          toleranceMillisAfter: 100,
+        });
+      } catch (error) {
+        console.log("Seek error:", error);
+      }
+    }
+    setTimeout(() => {
+      setIsSeeking((prev) => ({ ...prev, [type]: false }));
+    }, 500);
+  };
 
   const getDisplayValue = (type: "coach" | "learner") => {
     const isTypeSeeking =
       type === "coach" ? isSeeking.coach : isSeeking.learner;
-    const currentTime = type === "coach" ? uiTimes.coach : uiTimes.learner;
-    const sliderValue =
+    const currentPos =
+      type === "coach" ? status.coach.position : status.learner.position;
+    const sliderVal =
       type === "coach" ? sliderValues.coach : sliderValues.learner;
-
     if (
-      (type === "coach" ? isPlaying.coach : isPlaying.learner) &&
+      (type === "coach" ? status.coach.isPlaying : status.learner.isPlaying) &&
       !isTypeSeeking
     ) {
-      return currentTime;
+      return currentPos;
     }
-    return sliderValue;
+    return sliderVal;
   };
 
   const formatTime = (seconds: number) => {
@@ -195,17 +165,9 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
     return `${mins}:${secs.toString().padStart(2, "0")}.${ms}`;
   };
 
-  const onOpacityChange = useCallback(
-    (val: number) => {
-      setOpacityDisplay(val);
-      Animated.timing(opacityAnim, {
-        toValue: val,
-        duration: 0,
-        useNativeDriver: true,
-      }).start();
-    },
-    [opacityAnim]
-  );
+  const onOpacityChange = useCallback((val: number) => {
+    setOpacityDisplay(val);
+  }, []);
 
   return (
     <Modal
@@ -220,14 +182,11 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
           { paddingTop: insets.top, paddingBottom: insets.bottom },
         ]}
       >
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>So sánh Video</Text>
-
-          {/* Toggle Mode Button */}
           <TouchableOpacity
             onPress={() => setIsOverlayMode(!isOverlayMode)}
             style={styles.modeButton}
@@ -243,57 +202,69 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Video Area */}
         <View style={styles.videoContainer}>
           {!isOverlayMode ? (
-            // SPLIT VIEW
             <View style={styles.splitViewContainer}>
               <View style={styles.splitVideoWrapper}>
                 <View style={styles.videoLabelTag}>
-                  <Text style={styles.videoLabelText}>Learner</Text>
+                  <Text style={styles.videoLabelText}>Học viên</Text>
                 </View>
-                <VideoView
-                  player={learnerPlayer}
+                <Video
+                  ref={learnerVideoRef}
+                  source={{ uri: learnerVideoUrl }}
                   style={styles.video}
-                  contentFit="contain"
+                  resizeMode={ResizeMode.CONTAIN}
+                  onPlaybackStatusUpdate={onPlaybackStatusUpdate("learner")}
+                  shouldPlay={false}
+                  useNativeControls={false}
                 />
               </View>
               <View style={styles.splitVideoDivider} />
               <View style={styles.splitVideoWrapper}>
                 <View style={styles.videoLabelTag}>
-                  <Text style={styles.videoLabelText}>Coach</Text>
+                  <Text style={styles.videoLabelText}>HLV</Text>
                 </View>
-                <VideoView
-                  player={coachPlayer}
+                <Video
+                  ref={coachVideoRef}
+                  source={{ uri: coachVideoUrl }}
                   style={styles.video}
-                  contentFit="contain"
+                  resizeMode={ResizeMode.CONTAIN}
+                  onPlaybackStatusUpdate={onPlaybackStatusUpdate("coach")}
+                  shouldPlay={false}
+                  useNativeControls={false}
                 />
               </View>
             </View>
           ) : (
-            // OVERLAY VIEW
             <View style={styles.overlayViewContainer}>
-              {/* Coach Video (Background) */}
-              <VideoView
-                player={coachPlayer}
+              <Video
+                ref={coachVideoRef}
+                source={{ uri: coachVideoUrl }}
                 style={styles.video}
-                contentFit="contain"
+                resizeMode={ResizeMode.CONTAIN}
+                onPlaybackStatusUpdate={onPlaybackStatusUpdate("coach")}
+                shouldPlay={false}
+                useNativeControls={false}
               />
-
-              {/* Learner Video with opacity */}
-              <Animated.View
-                style={[styles.overlayVideoContainer, { opacity: opacityAnim }]}
-                needsOffscreenAlphaCompositing={true}
+              <View
+                style={[
+                  styles.learnerVideoContainer,
+                  { opacity: opacityDisplay },
+                ]}
+                collapsable={false}
                 renderToHardwareTextureAndroid={true}
               >
-                <VideoView
-                  player={learnerPlayer}
-                  style={styles.video}
-                  contentFit="contain"
+                <Video
+                  ref={learnerVideoRef}
+                  source={{ uri: learnerVideoUrl }}
+                  style={styles.learnerVideoContent}
+                  resizeMode={ResizeMode.CONTAIN}
+                  onPlaybackStatusUpdate={onPlaybackStatusUpdate("learner")}
+                  shouldPlay={false}
+                  useNativeControls={false}
                 />
-              </Animated.View>
+              </View>
 
-              {/* Opacity Slider */}
               <View style={styles.verticalSliderContainer}>
                 <View style={styles.verticalSliderWrapper}>
                   <MemoizedSlider
@@ -314,7 +285,6 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
             </View>
           )}
 
-          {/* Loading Indicator */}
           {isLoading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#3B82F6" />
@@ -323,90 +293,88 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
           )}
         </View>
 
-        {/* Controls */}
         <View style={styles.controlsContainer}>
-          {/* Sliders for Coach and Learner */}
           <View style={styles.slidersContainer}>
-            {/* Coach Control Row */}
             <View style={styles.sliderRow}>
               <View style={styles.sliderHeader}>
                 <View style={styles.sliderLabelContainer}>
                   <TouchableOpacity onPress={() => handlePlay("coach")}>
                     <Ionicons
-                      name={isPlaying.coach ? "pause-circle" : "play-circle"}
+                      name={
+                        status.coach.isPlaying ? "pause-circle" : "play-circle"
+                      }
                       size={28}
                       color="#3B82F6"
                     />
                   </TouchableOpacity>
                   <Text style={[styles.sliderLabel, { color: "#3B82F6" }]}>
-                    Coach
+                    HLV
                   </Text>
                 </View>
                 <Text style={styles.timeValue}>
                   {formatTime(getDisplayValue("coach"))}
                   <Text style={styles.durationText}>
                     {" "}
-                    / {formatTime(coachDuration || 0)}
+                    / {formatTime(status.coach.duration)}
                   </Text>
                 </Text>
               </View>
               <MemoizedSlider
                 style={{ width: "100%", height: 40 }}
                 minimumValue={0}
-                maximumValue={coachDuration || 60}
+                maximumValue={status.coach.duration || 60}
                 value={getDisplayValue("coach")}
                 onSlidingStart={() =>
                   setIsSeeking((prev) => ({ ...prev, coach: true }))
                 }
                 onValueChange={(val: number) => handleSeek("coach", val)}
-                onSlidingComplete={() => {
-                  setTimeout(() => {
-                    setIsSeeking((prev) => ({ ...prev, coach: false }));
-                  }, 500);
-                }}
+                onSlidingComplete={(val: number) =>
+                  handleSeekComplete("coach", val)
+                }
                 minimumTrackTintColor="#3B82F6"
                 maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
                 thumbTintColor="#3B82F6"
               />
             </View>
 
-            {/* Learner Control Row */}
             <View style={styles.sliderRow}>
               <View style={styles.sliderHeader}>
                 <View style={styles.sliderLabelContainer}>
                   <TouchableOpacity onPress={() => handlePlay("learner")}>
                     <Ionicons
-                      name={isPlaying.learner ? "pause-circle" : "play-circle"}
+                      name={
+                        status.learner.isPlaying
+                          ? "pause-circle"
+                          : "play-circle"
+                      }
                       size={28}
                       color="#10B981"
                     />
                   </TouchableOpacity>
                   <Text style={[styles.sliderLabel, { color: "#10B981" }]}>
-                    Learner
+                    Học viên
                   </Text>
                 </View>
                 <Text style={styles.timeValue}>
                   {formatTime(getDisplayValue("learner"))}
                   <Text style={styles.durationText}>
                     {" "}
-                    / {formatTime(learnerDuration || 0)}
+                    / {formatTime(status.learner.duration)}
                   </Text>
                 </Text>
               </View>
               <MemoizedSlider
                 style={{ width: "100%", height: 40 }}
                 minimumValue={0}
-                maximumValue={learnerDuration || 60}
+                maximumValue={status.learner.duration || 60}
                 value={getDisplayValue("learner")}
                 onSlidingStart={() =>
                   setIsSeeking((prev) => ({ ...prev, learner: true }))
                 }
                 onValueChange={(val: number) => handleSeek("learner", val)}
-                onSlidingComplete={() => {
-                  setTimeout(() => {
-                    setIsSeeking((prev) => ({ ...prev, learner: false }));
-                  }, 500);
-                }}
+                onSlidingComplete={(val: number) =>
+                  handleSeekComplete("learner", val)
+                }
                 minimumTrackTintColor="#10B981"
                 maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
                 thumbTintColor="#10B981"
@@ -420,10 +388,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000000",
-  },
+  container: { flex: 1, backgroundColor: "#000" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -439,47 +404,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
-  headerTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   modeButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     gap: 6,
   },
-  modeButtonText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
+  modeButtonText: { color: "#fff", fontSize: 12, fontWeight: "600" },
   videoContainer: {
-    width: width,
+    width,
     flex: 1,
     position: "relative",
     backgroundColor: "#1F2937",
   },
-  splitViewContainer: {
-    flex: 1,
-    flexDirection: "column",
-  },
-  splitVideoWrapper: {
-    flex: 1,
-    position: "relative",
-  },
-  splitVideoDivider: {
-    height: 2,
-    backgroundColor: "#374151",
-  },
-  overlayViewContainer: {
-    flex: 1,
-    position: "relative",
-  },
+  splitViewContainer: { flex: 1, flexDirection: "column" },
+  splitVideoWrapper: { flex: 1, position: "relative" },
+  splitVideoDivider: { height: 2, backgroundColor: "#374151" },
+  overlayViewContainer: { flex: 1, position: "relative" },
   video: {
     width: "100%",
     height: "100%",
@@ -488,6 +433,18 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     zIndex: 1,
+  },
+  learnerVideoContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
+  },
+  learnerVideoContent: {
+    width: "100%",
+    height: "100%",
   },
   videoLabelTag: {
     position: "absolute",
@@ -499,29 +456,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     zIndex: 10,
   },
-  videoLabelText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  overlayVideoContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "transparent",
-    zIndex: 2,
-  },
+  videoLabelText: { color: "#fff", fontSize: 12, fontWeight: "bold" },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     zIndex: 20,
   },
   loadingText: {
-    color: "#FFFFFF",
+    color: "#fff",
     marginTop: 10,
     fontSize: 16,
     fontWeight: "600",
@@ -544,11 +488,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   opacityLabel: {
-    color: "#FFFFFF",
+    color: "#fff",
     fontSize: 12,
     fontWeight: "bold",
     marginTop: 100,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowColor: "rgba(0,0,0,0.75)",
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10,
   },
@@ -560,41 +504,28 @@ const styles = StyleSheet.create({
   },
   slidersContainer: {
     gap: 16,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  sliderRow: {
-    gap: 4,
-  },
+  sliderRow: { gap: 4 },
   sliderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
-  sliderLabelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sliderLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  sliderLabelContainer: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sliderLabel: { fontSize: 14, fontWeight: "600" },
   timeValue: {
-    color: "#FFFFFF",
+    color: "#fff",
     fontSize: 14,
     fontWeight: "bold",
     fontVariant: ["tabular-nums"],
   },
-  durationText: {
-    color: "#E5E7EB",
-    fontSize: 12,
-    fontWeight: "normal",
-  },
+  durationText: { color: "#E5E7EB", fontSize: 12, fontWeight: "normal" },
 });
 
 export default VideoOverlayPlayer;

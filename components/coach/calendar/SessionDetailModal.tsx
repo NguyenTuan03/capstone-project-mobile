@@ -16,7 +16,7 @@ import sessionService from "../../../services/sessionService";
 import videoConferenceService from "../../../services/videoConference.service";
 import { AttendanceStatus } from "../../../types/attendance";
 import { CalendarSession, SessionStatus } from "../../../types/session";
-import VideoConference from "../../common/VideoConference";
+// import VideoConference from "../../common/VideoConference";
 
 export enum EnrollmentStatus {
   PENDING_GROUP = "PENDING_GROUP",
@@ -564,13 +564,13 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-      <VideoConference
+      {/* <VideoConference
         isVisible={isVCVisible}
         onClose={() => setIsVCVisible(false)}
         channelName={channelName}
         token={vcToken}
         uid={user?.id || 0}
-      />
+      /> */}
     </Modal>
   );
 };
