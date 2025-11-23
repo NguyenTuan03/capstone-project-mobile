@@ -97,8 +97,10 @@ export default function CoachHomeScreen() {
               <Text style={styles.ratingText}>4.8</Text>
             </View>
           </View>
-          Hôm nay bạn có{" "}
-          <Text style={styles.highlightText}>{sessions.length} buổi học</Text>{" "}
+          <Text style={styles.welcomeSubtext}>
+            Hôm nay bạn có{" "}
+            <Text style={styles.highlightText}>{sessions.length} buổi học</Text>
+          </Text>
           <View style={styles.statusRow}>
             <View style={styles.statusBadge}>
               <View style={styles.statusDot} />

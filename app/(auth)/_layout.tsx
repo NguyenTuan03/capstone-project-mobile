@@ -4,7 +4,7 @@ import { Href, Redirect, Stack } from "expo-router";
 export default function AuthLayout() {
   const { isAuthenticated, user } = useJWTAuth();
 
-  if (isAuthenticated && user) {
+  if (isAuthenticated && user && user.role) {
     if (user.role.name === "COACH") {
       return <Redirect href={"/(coach)/home" as Href} />;
     }
@@ -17,7 +17,7 @@ export default function AuthLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+      <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -26,6 +26,7 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
     const fetchSessions = async () => {
       try {
         setLoading(true);
+        console.log("fetchSessions", courseId);
         const res = await get<Session[]>(`/v1/sessions/courses/${courseId}`);
         // Extract sessions from response - API returns array of sessions
         const sessionsData = Array.isArray(res.data) ? res.data : [];
@@ -72,8 +73,11 @@ const AssignmentTab: React.FC<Props> = ({ courseId }) => {
                 onPress={() =>
                   router.push({
                     pathname: "/(coach)/course/session/[sessionId]",
-                    params: { sessionId: String(s.id) },
-                  })
+                    params: {
+                      sessionId: String(s.id),
+                      sessionData: JSON.stringify(s),
+                    },
+                  } as any)
                 }
               >
                 <View style={styles.itemHeader}>

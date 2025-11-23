@@ -28,11 +28,34 @@ const formatDateTime = (value?: string | null) => {
     "vi-VN"
   )}`;
 };
+
+// Helper to extract videos from response - handle both array and single object
+const extractVideosFromPayload = (payload: any): any[] => {
+  if (!payload || typeof payload !== "object") return [];
+  if (Array.isArray((payload as any).videos)) {
+    return (payload as any).videos;
+  }
+  // Handle single video object (from /v1/sessions/courses/:id response)
+  if ((payload as any).video && typeof (payload as any).video === "object") {
+    return [(payload as any).video];
+  }
+  if ("data" in payload) {
+    const nested = extractVideosFromPayload((payload as any).data);
+    if (nested.length) return nested;
+  }
+  if ("metadata" in payload) {
+    const nested = extractVideosFromPayload((payload as any).metadata);
+    if (nested.length) return nested;
+  }
+  return [];
+};
+
 const SubmissionReviewScreen: React.FC = () => {
   const router = useRouter();
-  const { sessionId, submissionId } = useLocalSearchParams<{
+  const { sessionId, submissionId, sessionData } = useLocalSearchParams<{
     sessionId?: string;
     submissionId?: string;
+    sessionData?: string;
   }>();
 
   const [loading, setLoading] = useState(true);
@@ -80,7 +103,7 @@ const SubmissionReviewScreen: React.FC = () => {
       return uri;
     } catch (e) {
       console.warn("⚠️ Failed to cache video, using URL directly:", e);
-      return url; // ✅ Fallback to URL
+      return url;
     }
   }, []);
 
@@ -105,24 +128,60 @@ const SubmissionReviewScreen: React.FC = () => {
           Alert.alert("Không tìm thấy", "Bài nộp này có thể đã bị xóa.");
         }
         let enhancedSubmission = found ?? null;
+        
         if (found && sessionId) {
-          try {
-            const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
-            if (sessionRes?.data) {
-              const sessionData = sessionRes.data;
-              enhancedSubmission = {
-                ...found,
-                session: {
-                  ...sessionData,
-                  lesson: sessionData.lesson ?? found.session?.lesson,
-                },
-              } as LearnerVideo;
+          let sessionDataToUse: Session | null = null;
+          
+          // If session data is passed via params (from assignment tab), use it directly
+          if (sessionData && typeof sessionData === "string") {
+            try {
+              const parsedSession = JSON.parse(sessionData);
+              const videos = extractVideosFromPayload(parsedSession);
+              sessionDataToUse = {
+                ...parsedSession,
+                videos: parsedSession.videos?.length
+                  ? parsedSession.videos
+                  : videos.length
+                  ? videos
+                  : parsedSession.videos,
+              } as Session;
+            } catch (e) {
+              console.warn("Failed to parse session data from params:", e);
             }
-          } catch (err) {
-            console.warn(
-              "Không thể tải session chi tiết cho coach video:",
-              err
-            );
+          }
+          
+          // If no session data from params, fetch from API
+          if (!sessionDataToUse) {
+            try {
+              const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
+              if (sessionRes?.data) {
+                const sessionData = sessionRes.data;
+                const videos = extractVideosFromPayload(sessionRes.data);
+                sessionDataToUse = {
+                  ...sessionData,
+                  videos: sessionData.videos?.length
+                    ? sessionData.videos
+                    : videos.length
+                    ? videos
+                    : sessionData.videos,
+                } as Session;
+              }
+            } catch (err) {
+              console.warn(
+                "Không thể tải session chi tiết cho coach video:",
+                err
+              );
+            }
+          }
+          
+          if (sessionDataToUse) {
+            enhancedSubmission = {
+              ...found,
+              session: {
+                ...sessionDataToUse,
+                lesson: sessionDataToUse.lesson ?? found.session?.lesson,
+              },
+            } as LearnerVideo;
           }
         }
         setSubmission(enhancedSubmission);
@@ -136,7 +195,7 @@ const SubmissionReviewScreen: React.FC = () => {
     };
 
     fetchSubmission();
-  }, [sessionId, submissionId]);
+  }, [sessionId, submissionId, sessionData]);
 
   useEffect(() => {
     const fetchCompareResult = async () => {
@@ -578,7 +637,7 @@ const SubmissionReviewScreen: React.FC = () => {
           <View style={styles.videoCard}>
             <View style={styles.videoHeader}>
               <Ionicons name="sparkles" size={18} color="#7C3AED" />
-              <Text style={styles.cardTitle}>Video mẫu - Coach</Text>
+              <Text style={styles.cardTitle}>Video mẫu của coach</Text>
             </View>
             {coachSource ? (
               <View style={styles.videoPlayerContainer}>
