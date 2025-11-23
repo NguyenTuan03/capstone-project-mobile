@@ -1,5 +1,5 @@
 // services/ai/geminiService.ts
-import type { VideoComparisonResult, PoseLandmark } from "@/types/ai";
+import type { PoseLandmark, VideoComparisonResult } from "@/types/ai";
 
 const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 const MODEL = "gemini-2.5-flash";

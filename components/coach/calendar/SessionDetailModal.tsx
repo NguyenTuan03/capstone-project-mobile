@@ -11,9 +11,12 @@ import {
 } from "react-native";
 import attendanceService from "../../../services/attendanceService";
 import configurationService from "../../../services/configurationService";
+import { useJWTAuth } from "../../../services/jwt-auth/JWTAuthProvider";
 import sessionService from "../../../services/sessionService";
+import videoConferenceService from "../../../services/videoConference.service";
 import { AttendanceStatus } from "../../../types/attendance";
 import { CalendarSession, SessionStatus } from "../../../types/session";
+import VideoConference from "../../common/VideoConference";
 
 export enum EnrollmentStatus {
   PENDING_GROUP = "PENDING_GROUP",
@@ -40,6 +43,10 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
     {}
   );
   const [completeBeforeHours, setCompleteBeforeHours] = useState<number>(24);
+  const { user } = useJWTAuth();
+  const [isVCVisible, setIsVCVisible] = useState(false);
+  const [channelName, setChannelName] = useState("");
+  const [vcToken, setVcToken] = useState("");
 
   const [sessionData, setSessionData] = useState<CalendarSession | null>(
     session
@@ -263,6 +270,24 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
     }
   };
 
+  const handleJoinVideoConference = async () => {
+    if (!sessionData?.courseId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin khóa học");
+      return;
+    }
+
+    try {
+      const details = await videoConferenceService.getVideoConferenceDetails(
+        sessionData.courseId
+      );
+      setChannelName(details.channelName);
+      setVcToken(details.vcToken);
+      setIsVCVisible(true);
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể tham gia lớp học trực tuyến");
+    }
+  };
+
   // Extract location information
   const course = sessionData.course as any;
 
@@ -302,6 +327,19 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               {getSessionStatusText(sessionData.status)}
             </Text>
           </View>
+
+          {/* Video Conference Button */}
+          {sessionData.status !== SessionStatus.CANCELLED && (
+            <TouchableOpacity
+              style={styles.vcButton}
+              onPress={handleJoinVideoConference}
+            >
+              <Ionicons name="videocam" size={20} color="#FFFFFF" />
+              <Text style={styles.vcButtonText}>
+                Tham gia lớp học trực tuyến
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Payment Warning */}
           <View style={styles.warningSection}>
@@ -526,6 +564,13 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </TouchableOpacity>
         </View>
       </View>
+      <VideoConference
+        isVisible={isVCVisible}
+        onClose={() => setIsVCVisible(false)}
+        channelName={channelName}
+        token={vcToken}
+        uid={user?.id || 0}
+      />
     </Modal>
   );
 };
@@ -608,6 +653,26 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 0.5,
     textTransform: "uppercase",
+  },
+  vcButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#3B82F6",
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  vcButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    marginLeft: 8,
   },
   warningSection: {
     backgroundColor: "#FFFBEB",

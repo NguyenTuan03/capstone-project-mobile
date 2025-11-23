@@ -1,5 +1,7 @@
+import VideoConference from "@/components/common/VideoConference";
 import { get, post } from "@/services/http/httpService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
+import videoConferenceService from "@/services/videoConference.service";
 import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
 import { Feedback } from "@/types/feecbacks";
@@ -39,6 +41,10 @@ export default function CourseDetailScreen() {
     rating: 5,
     isAnonymous: false,
   });
+
+  const [isVCVisible, setIsVCVisible] = useState(false);
+  const [channelName, setChannelName] = useState("");
+  const [vcToken, setVcToken] = useState("");
 
   const fetchDetail = useCallback(async () => {
     if (!courseId) return;
@@ -126,6 +132,24 @@ export default function CourseDetailScreen() {
       setSubmittingFeedback(false);
     }
   }, [courseId, feedbackForm, fetchDetail]);
+
+  const handleJoinVideoConference = async () => {
+    if (!courseId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin khóa học");
+      return;
+    }
+
+    try {
+      const details = await videoConferenceService.getVideoConferenceDetails(
+        courseId
+      );
+      setChannelName(details.channelName);
+      setVcToken(details.vcToken);
+      setIsVCVisible(true);
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể tham gia lớp học trực tuyến");
+    }
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
@@ -573,6 +597,24 @@ export default function CourseDetailScreen() {
                           )}
                         </View>
 
+                        {(session.status === "IN_PROGRESS" ||
+                          session.status === "SCHEDULED") && (
+                          <TouchableOpacity
+                            style={styles.vcButton}
+                            activeOpacity={0.8}
+                            onPress={handleJoinVideoConference}
+                          >
+                            <Text style={styles.vcButtonText}>
+                              Tham gia lớp học trực tuyến
+                            </Text>
+                            <Ionicons
+                              name="videocam"
+                              size={16}
+                              color="#FFFFFF"
+                            />
+                          </TouchableOpacity>
+                        )}
+
                         <TouchableOpacity
                           style={styles.accessButton}
                           activeOpacity={0.8}
@@ -800,6 +842,14 @@ export default function CourseDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <VideoConference
+        isVisible={isVCVisible}
+        onClose={() => setIsVCVisible(false)}
+        channelName={channelName}
+        token={vcToken}
+        uid={currentUserId || 0}
+      />
     </View>
   );
 }
@@ -1296,5 +1346,19 @@ const styles = StyleSheet.create({
   submitText: {
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  vcButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#3B82F6",
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  vcButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
