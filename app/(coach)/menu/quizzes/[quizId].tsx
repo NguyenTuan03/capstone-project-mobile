@@ -57,13 +57,11 @@ export default function QuizDetailScreen() {
   const fetchDataQuiz = async (lessonId: string, quizId: string) => {
     try {
       setLoading(true);
-      const response = await get<QuizType[]>(
+      const response = await get<QuizType>(
         `${API_URL}/v1/quizzes/lessons/${lessonId}`
       );
-      const quizzes = response.data;
-      const selectedQuiz = quizzes.find((q) => q.id === Number(quizId));
-      if (selectedQuiz) setQuiz(selectedQuiz);
-      else setQuiz(null);
+      const quiz = response.data;
+      setQuiz(quiz);
     } catch (error) {
       console.error("Error fetching quiz data:", error);
       setQuiz(null);
@@ -330,9 +328,7 @@ export default function QuizDetailScreen() {
           onPress: async () => {
             try {
               setSubmitting(true);
-              await http.delete(
-                `/v1/quizzes/questions/${questionId}`
-              );
+              await http.delete(`/v1/quizzes/questions/${questionId}`);
 
               alert("Xóa câu hỏi thành công");
 
@@ -371,17 +367,47 @@ export default function QuizDetailScreen() {
           >
             <Ionicons name="chevron-back" size={24} color="#111827" />
           </TouchableOpacity>
-          <View style={{ flex: 1, height: 24, backgroundColor: "#E5E7EB", borderRadius: 4, marginHorizontal: 12 }} />
+          <View
+            style={{
+              flex: 1,
+              height: 24,
+              backgroundColor: "#E5E7EB",
+              borderRadius: 4,
+              marginHorizontal: 12,
+            }}
+          />
           <View style={{ width: 32 }} />
         </View>
 
         {/* Quiz Info Skeleton */}
         <View style={styles.quizInfoSection}>
           <View style={styles.infoCard}>
-            <View style={{ width: 24, height: 24, backgroundColor: "#E5E7EB", borderRadius: 12, marginRight: 12 }} />
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                backgroundColor: "#E5E7EB",
+                borderRadius: 12,
+                marginRight: 12,
+              }}
+            />
             <View style={{ flex: 1 }}>
-              <View style={{ height: 12, backgroundColor: "#E5E7EB", borderRadius: 4, marginBottom: 6 }} />
-              <View style={{ height: 16, backgroundColor: "#E5E7EB", borderRadius: 4, width: "60%" }} />
+              <View
+                style={{
+                  height: 12,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 4,
+                  marginBottom: 6,
+                }}
+              />
+              <View
+                style={{
+                  height: 16,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 4,
+                  width: "60%",
+                }}
+              />
             </View>
           </View>
         </View>
@@ -396,10 +422,32 @@ export default function QuizDetailScreen() {
             <View key={index} style={styles.questionCard}>
               {/* Question Header Skeleton */}
               <View style={styles.questionHeader}>
-                <View style={{ width: 36, height: 36, backgroundColor: "#E5E7EB", borderRadius: 18, marginRight: 12 }} />
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    backgroundColor: "#E5E7EB",
+                    borderRadius: 18,
+                    marginRight: 12,
+                  }}
+                />
                 <View style={{ flex: 1 }}>
-                  <View style={{ height: 16, backgroundColor: "#E5E7EB", borderRadius: 4, marginBottom: 8 }} />
-                  <View style={{ height: 14, backgroundColor: "#E5E7EB", borderRadius: 4, width: "80%" }} />
+                  <View
+                    style={{
+                      height: 16,
+                      backgroundColor: "#E5E7EB",
+                      borderRadius: 4,
+                      marginBottom: 8,
+                    }}
+                  />
+                  <View
+                    style={{
+                      height: 14,
+                      backgroundColor: "#E5E7EB",
+                      borderRadius: 4,
+                      width: "80%",
+                    }}
+                  />
                 </View>
               </View>
 
@@ -407,16 +455,46 @@ export default function QuizDetailScreen() {
               <View style={styles.optionsContainer}>
                 {[1, 2].map((optIndex) => (
                   <View key={optIndex} style={styles.optionButton}>
-                    <View style={{ width: 32, height: 32, backgroundColor: "#E5E7EB", borderRadius: 16, marginRight: 12 }} />
-                    <View style={{ flex: 1, height: 14, backgroundColor: "#E5E7EB", borderRadius: 4 }} />
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        backgroundColor: "#E5E7EB",
+                        borderRadius: 16,
+                        marginRight: 12,
+                      }}
+                    />
+                    <View
+                      style={{
+                        flex: 1,
+                        height: 14,
+                        backgroundColor: "#E5E7EB",
+                        borderRadius: 4,
+                      }}
+                    />
                   </View>
                 ))}
               </View>
 
               {/* Buttons Skeleton */}
               <View style={styles.questionActions}>
-                <View style={{ flex: 1, height: 36, backgroundColor: "#E5E7EB", borderRadius: 8 }} />
-                <View style={{ flex: 1, height: 36, backgroundColor: "#E5E7EB", borderRadius: 8, marginLeft: 10 }} />
+                <View
+                  style={{
+                    flex: 1,
+                    height: 36,
+                    backgroundColor: "#E5E7EB",
+                    borderRadius: 8,
+                  }}
+                />
+                <View
+                  style={{
+                    flex: 1,
+                    height: 36,
+                    backgroundColor: "#E5E7EB",
+                    borderRadius: 8,
+                    marginLeft: 10,
+                  }}
+                />
               </View>
             </View>
           ))}
@@ -472,89 +550,96 @@ export default function QuizDetailScreen() {
             return dateA - dateB;
           })
           .map((question, qIndex) => (
-          <View key={question.id} style={styles.questionCard}>
-            {/* Question Number and Title */}
-            <View style={styles.questionHeader}>
-              <View style={styles.questionNumberBadge}>
-                <Text style={styles.questionNumber}>{qIndex + 1}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.questionTitle} numberOfLines={3}>
-                  {question.title}
-                </Text>
-                {question.explanation && (
-                  <Text style={styles.questionExplanation} numberOfLines={2}>
-                    {question.explanation}
+            <View key={question.id} style={styles.questionCard}>
+              {/* Question Number and Title */}
+              <View style={styles.questionHeader}>
+                <View style={styles.questionNumberBadge}>
+                  <Text style={styles.questionNumber}>{qIndex + 1}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.questionTitle} numberOfLines={3}>
+                    {question.title}
                   </Text>
+                  {question.explanation && (
+                    <Text style={styles.questionExplanation} numberOfLines={2}>
+                      {question.explanation}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Options */}
+              <View style={styles.optionsContainer}>
+                {question.options.length === 0 ? (
+                  <View style={styles.emptyOptions}>
+                    <Ionicons name="alert-circle" size={20} color="#9CA3AF" />
+                    <Text style={styles.emptyOptionsText}>Không có đáp án</Text>
+                  </View>
+                ) : (
+                  question.options
+                    .sort((a, b) => {
+                      const dateA = a.createdAt
+                        ? new Date(a.createdAt).getTime()
+                        : 0;
+                      const dateB = b.createdAt
+                        ? new Date(b.createdAt).getTime()
+                        : 0;
+                      return dateA - dateB;
+                    })
+                    .map((option, oIndex) => (
+                      <View
+                        key={option.id}
+                        style={[
+                          styles.optionButton,
+                          option.isCorrect && styles.optionCorrect,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.optionLetter,
+                            option.isCorrect && styles.optionLetterCorrect,
+                          ]}
+                        >
+                          <Text style={styles.optionLetterText}>
+                            {String.fromCharCode(97 + oIndex).toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={styles.optionText}>{option.content}</Text>
+                        {option.isCorrect && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#059669"
+                            style={{ marginLeft: "auto" }}
+                          />
+                        )}
+                      </View>
+                    ))
                 )}
               </View>
-            </View>
 
-            {/* Options */}
-            <View style={styles.optionsContainer}>
-              {question.options.length === 0 ? (
-                <View style={styles.emptyOptions}>
-                  <Ionicons name="alert-circle" size={20} color="#9CA3AF" />
-                  <Text style={styles.emptyOptionsText}>Không có đáp án</Text>
-                </View>
-              ) : (
-                question.options
-                  .sort((a, b) => {
-                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                    return dateA - dateB;
-                  })
-                  .map((option, oIndex) => (
-                  <View
-                    key={option.id}
-                    style={[
-                      styles.optionButton,
-                      option.isCorrect && styles.optionCorrect,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.optionLetter,
-                        option.isCorrect && styles.optionLetterCorrect,
-                      ]}
-                    >
-                      <Text style={styles.optionLetterText}>
-                        {String.fromCharCode(97 + oIndex).toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={styles.optionText}>{option.content}</Text>
-                    {option.isCorrect && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color="#059669"
-                        style={{ marginLeft: "auto" }}
-                      />
-                    )}
-                  </View>
-                ))
-              )}
+              {/* Edit/Delete Buttons */}
+              <View style={styles.questionActions}>
+                <TouchableOpacity
+                  style={styles.questionActionButton}
+                  onPress={() => handleOpenEditQuestion(question)}
+                >
+                  <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                  <Text style={styles.questionActionButtonText}>Sửa</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.questionActionButton,
+                    styles.questionActionButtonDelete,
+                  ]}
+                  onPress={() => handleDeleteQuestion(question.id)}
+                >
+                  <Ionicons name="trash" size={16} color="#FFFFFF" />
+                  <Text style={styles.questionActionButtonText}>Xóa</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-
-            {/* Edit/Delete Buttons */}
-            <View style={styles.questionActions}>
-              <TouchableOpacity
-                style={styles.questionActionButton}
-                onPress={() => handleOpenEditQuestion(question)}
-              >
-                <Ionicons name="pencil" size={16} color="#FFFFFF" />
-                <Text style={styles.questionActionButtonText}>Sửa</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.questionActionButton, styles.questionActionButtonDelete]}
-                onPress={() => handleDeleteQuestion(question.id)}
-              >
-                <Ionicons name="trash" size={16} color="#FFFFFF" />
-                <Text style={styles.questionActionButtonText}>Xóa</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+          ))}
       </ScrollView>
 
       {/* Create Question Button - Circular FAB */}
@@ -650,7 +735,11 @@ export default function QuizDetailScreen() {
                   </>
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#FFFFFF"
+                    />
                     <Text style={styles.submitButtonText}>Cập nhật Quiz</Text>
                   </>
                 )}
@@ -814,8 +903,14 @@ export default function QuizDetailScreen() {
                   </>
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                    <Text style={styles.submitButtonText}>Cập nhật Câu Hỏi</Text>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.submitButtonText}>
+                      Cập nhật Câu Hỏi
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>

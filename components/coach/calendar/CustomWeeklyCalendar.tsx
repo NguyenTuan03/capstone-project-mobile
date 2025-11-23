@@ -1,4 +1,7 @@
+import scheduleService from "@/services/schedule.service";
+import { SessionNewScheduleDto } from "@/types/schedule";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   addWeeks,
   eachDayOfInterval,
@@ -19,14 +22,18 @@ import type {
   PanResponderGestureState,
 } from "react-native";
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   PanResponder,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import { CalendarSession, SessionStatus } from "../../../types/session";
 import { toVietnameseDay } from "../../../utils/localization";
 import SessionDetailModal from "./SessionDetailModal";
@@ -69,9 +76,16 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
     null
   );
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editScheduleDate, setEditScheduleDate] = useState("");
-  const [editStartTime, setEditStartTime] = useState("");
-  const [editEndTime, setEditEndTime] = useState("");
+  const [editScheduleDate, setEditScheduleDate] = useState(new Date());
+  const [editStartTime, setEditStartTime] = useState(new Date());
+  const [editEndTime, setEditEndTime] = useState(new Date());
+  const [replaceScheduleId, setReplaceScheduleId] = useState<number | null>(
+    null
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (initialStartDate) {
@@ -82,7 +96,7 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
   const weekData = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday
-    const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 }); // Sunday
+    const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 }); // Sunday;
     const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
     return days.map((day) => {
@@ -195,39 +209,82 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
     setSelectedSession(null);
   }, []);
 
-  const handleEditSession = useCallback((session: CalendarSession) => {
-    setEditingSession(session);
-    setEditScheduleDate(session.scheduleDate);
-    setEditStartTime(session.startTime);
-    setEditEndTime(session.endTime);
-    setIsEditModalVisible(true);
+  const handleEditSession = useCallback(async (session: CalendarSession) => {
+    try {
+      setEditingSession(session);
+
+      // Set initial values for pickers
+      setEditScheduleDate(new Date(session.scheduleDate));
+
+      const [startHour, startMinute] = session.startTime.split(":").map(Number);
+      const startDate = new Date();
+      startDate.setHours(startHour, startMinute, 0, 0);
+      setEditStartTime(startDate);
+
+      const [endHour, endMinute] = session.endTime.split(":").map(Number);
+      const endDate = new Date();
+      endDate.setHours(endHour, endMinute, 0, 0);
+      setEditEndTime(endDate);
+
+      setIsEditModalVisible(true);
+    } catch (error) {
+      console.error("Error preparing edit session:", error);
+      Alert.alert("Lỗi", "Không thể chuẩn bị chỉnh sửa lịch học.");
+    }
   }, []);
 
-  const handleSaveSessionChanges = useCallback(() => {
+  const handleSaveSessionChanges = useCallback(async () => {
     if (!editingSession) return;
 
-    // This is where you would call your API to update the session
-    console.log("Updating session:", {
-      sessionId: editingSession.id,
-      scheduleDate: editScheduleDate,
-      startTime: editStartTime,
-      endTime: editEndTime,
-    });
+    try {
+      setIsSaving(true);
+      const formatTime = (date: Date) => format(date, "HH:mm:ss");
 
-    // TODO: Call API here
-    // await sessionService.updateSession(editingSession.id, {
-    //   scheduleDate: editScheduleDate,
-    //   startTime: editStartTime,
-    //   endTime: editEndTime,
-    // });
+      const payload: SessionNewScheduleDto = {
+        scheduledDate: editScheduleDate,
+        startTime: formatTime(editStartTime),
+        endTime: formatTime(editEndTime),
+      };
 
-    setIsEditModalVisible(false);
-    setEditingSession(null);
-  }, [editingSession, editScheduleDate, editStartTime, editEndTime]);
+      await scheduleService.changeSessionSchedule(editingSession.id, payload);
+
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Đã cập nhật lịch học thành công",
+      });
+
+      setIsEditModalVisible(false);
+      setEditingSession(null);
+
+      // Refresh the calendar
+      if (onWeekChange && initialStartDate && initialEndDate) {
+        onWeekChange(initialStartDate, initialEndDate);
+      }
+    } catch (error) {
+      console.error("Error updating schedule:", error);
+      Toast.show({
+        type: "error",
+        text1: "Thất bại",
+        text2: "Có lỗi xảy ra khi cập nhật lịch học",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    editingSession,
+    editScheduleDate,
+    editStartTime,
+    editEndTime,
+    onWeekChange,
+    initialStartDate,
+    initialEndDate,
+  ]);
 
   const handleCancelEdit = useCallback(() => {
     setIsEditModalVisible(false);
     setEditingSession(null);
+    setReplaceScheduleId(null);
   }, []);
 
   const handleDayPress = useCallback(
@@ -300,6 +357,7 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
       },
     })
   ).current;
+
   const renderDayHeader = (day: any) => {
     const sessionCountColor = getSessionCountColor(day.sessions.length);
 
@@ -432,6 +490,27 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
     );
   }, [weekStart]);
 
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setEditScheduleDate(selectedDate);
+    }
+  };
+
+  const onStartTimeChange = (event: any, selectedDate?: Date) => {
+    setShowStartTimePicker(false);
+    if (selectedDate) {
+      setEditStartTime(selectedDate);
+    }
+  };
+
+  const onEndTimeChange = (event: any, selectedDate?: Date) => {
+    setShowEndTimePicker(false);
+    if (selectedDate) {
+      setEditEndTime(selectedDate);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View {...panResponder.panHandlers} style={styles.gestureContainer}>
@@ -559,9 +638,14 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
               <Text style={styles.editModalTitle}>Chỉnh sửa lịch học</Text>
               <TouchableOpacity
                 onPress={handleSaveSessionChanges}
-                style={styles.saveButton}
+                style={[styles.saveButton, isSaving && { opacity: 0.7 }]}
+                disabled={isSaving}
               >
-                <Text style={styles.saveButtonText}>Lưu</Text>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#059669" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Lưu</Text>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -586,9 +670,7 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
                     <Text style={styles.editLabel}>Ngày học</Text>
                     <TouchableOpacity
                       style={styles.editInput}
-                      onPress={() => {
-                        /* TODO: Open date picker */
-                      }}
+                      onPress={() => setShowDatePicker(true)}
                     >
                       <Ionicons
                         name="calendar-outline"
@@ -596,10 +678,21 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
                         color="#6B7280"
                       />
                       <Text style={styles.editInputText}>
-                        {format(new Date(editScheduleDate), "dd/MM/yyyy")}
+                        {format(editScheduleDate, "dd/MM/yyyy")}
                       </Text>
                       <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                     </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={editScheduleDate}
+                        mode="date"
+                        display={Platform.OS === "ios" ? "inline" : "default"}
+                        onChange={onDateChange}
+                        minimumDate={new Date()}
+                        themeVariant="light"
+                        accentColor="#059669"
+                      />
+                    )}
                   </View>
 
                   {/* Start Time */}
@@ -607,14 +700,24 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
                     <Text style={styles.editLabel}>Giờ bắt đầu</Text>
                     <TouchableOpacity
                       style={styles.editInput}
-                      onPress={() => {
-                        /* TODO: Open time picker */
-                      }}
+                      onPress={() => setShowStartTimePicker(true)}
                     >
                       <Ionicons name="time-outline" size={20} color="#6B7280" />
-                      <Text style={styles.editInputText}>{editStartTime}</Text>
+                      <Text style={styles.editInputText}>
+                        {format(editStartTime, "HH:mm")}
+                      </Text>
                       <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                     </TouchableOpacity>
+                    {showStartTimePicker && (
+                      <DateTimePicker
+                        value={editStartTime}
+                        mode="time"
+                        display={Platform.OS === "ios" ? "spinner" : "default"}
+                        onChange={onStartTimeChange}
+                        themeVariant="light"
+                        textColor="#000000"
+                      />
+                    )}
                   </View>
 
                   {/* End Time */}
@@ -622,14 +725,24 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
                     <Text style={styles.editLabel}>Giờ kết thúc</Text>
                     <TouchableOpacity
                       style={styles.editInput}
-                      onPress={() => {
-                        /* TODO: Open time picker */
-                      }}
+                      onPress={() => setShowEndTimePicker(true)}
                     >
                       <Ionicons name="time-outline" size={20} color="#6B7280" />
-                      <Text style={styles.editInputText}>{editEndTime}</Text>
+                      <Text style={styles.editInputText}>
+                        {format(editEndTime, "HH:mm")}
+                      </Text>
                       <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                     </TouchableOpacity>
+                    {showEndTimePicker && (
+                      <DateTimePicker
+                        value={editEndTime}
+                        mode="time"
+                        display={Platform.OS === "ios" ? "spinner" : "default"}
+                        onChange={onEndTimeChange}
+                        themeVariant="light"
+                        textColor="#000000"
+                      />
+                    )}
                   </View>
 
                   {/* Info Message */}
@@ -675,6 +788,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
+  },
+  weekTitleContainer: {
+    flexDirection: "column",
+    justifyContent: "center",
   },
   navButton: {
     width: 36,
@@ -799,105 +916,113 @@ const styles = StyleSheet.create({
   },
   sessionBadgeText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   emptyIndicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: "#E5E7EB",
-    marginTop: 6,
+    marginTop: 14,
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#059669",
+    position: "absolute",
+    bottom: 4,
+  },
+  dayHeaderToday: {
+    borderColor: "#059669",
+    borderWidth: 1,
+  },
+  dayTextToday: {
+    color: "#059669",
+  },
+  dayNumberToday: {
+    color: "#059669",
   },
   sessionsContainer: {
     flex: 1,
     backgroundColor: "#F3F4F6",
   },
   sessionsContent: {
-    padding: 12,
-    paddingBottom: 24,
+    padding: 16,
+    paddingBottom: 80,
   },
   selectedDayHeader: {
-    marginBottom: 12,
-    paddingHorizontal: 4,
-    paddingBottom: 8,
-    borderBottomWidth: 1.5,
-    borderBottomColor: "#E5E7EB",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
   selectedDayTitle: {
-    fontSize: 17,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "700",
     color: "#111827",
-    marginBottom: 3,
+    textTransform: "capitalize",
   },
   sessionCount: {
-    fontSize: 12,
-    color: "#059669",
-    fontWeight: "600",
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   sessionItem: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sessionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 12,
+    padding: 16,
     borderLeftWidth: 4,
-    overflow: "hidden",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   sessionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-    gap: 6,
+    alignItems: "flex-start",
+    marginBottom: 8,
   },
   timeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 10,
+    gap: 4,
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   sessionTime: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4B5563",
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
   },
   statusText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
   sessionContent: {
-    gap: 8,
+    gap: 4,
   },
   sessionName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
-    lineHeight: 20,
+    color: "#1F2937",
+    lineHeight: 24,
   },
   sessionMeta: {
-    gap: 8,
-    backgroundColor: "#F9FAFB",
-    padding: 10,
-    borderRadius: 10,
+    marginTop: 4,
+    gap: 4,
   },
   metaItem: {
     flexDirection: "row",
@@ -905,246 +1030,169 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   courseName: {
-    fontSize: 12,
-    color: "#374151",
-    fontWeight: "600",
+    fontSize: 13,
+    color: "#6B7280",
     flex: 1,
   },
   locationText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#6B7280",
-    fontWeight: "500",
     flex: 1,
-  },
-  sessionDescription: {
-    fontSize: 12,
-    color: "#9CA3AF",
   },
   emptyState: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
-    minHeight: 280,
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 6,
-    marginTop: 6,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    justifyContent: "center",
+    paddingVertical: 48,
+    gap: 12,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "600",
     color: "#374151",
-    marginTop: 12,
-    marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 20,
-    fontWeight: "500",
+    color: "#9CA3AF",
   },
-  // Week Title Container
-  weekTitleContainer: {
-    alignItems: "center",
-    gap: 3,
-  },
-  // Today Button
-  todayButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: "#ECFDF5",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#059669",
-  },
-  todayButtonText: {
-    fontSize: 10,
-    color: "#059669",
-    fontWeight: "700",
-  },
-  // Today Indicator
-  dayHeaderToday: {
-    borderWidth: 1.5,
-    borderColor: "#FCD34D",
-  },
-  dayTextToday: {
-    color: "#D97706",
-  },
-  dayNumberToday: {
-    color: "#D97706",
-  },
-  todayDot: {
-    position: "absolute",
-    top: 3,
-    right: 3,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: "#F59E0B",
-  },
-  // Week Summary Stats
   weekSummary: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    justifyContent: "space-around",
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statItem: {
     alignItems: "center",
-    gap: 3,
+    gap: 2,
     flex: 1,
   },
   statValue: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#111827",
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1F2937",
   },
   statLabel: {
     fontSize: 10,
     color: "#6B7280",
-    fontWeight: "600",
-    textTransform: "uppercase",
+    fontWeight: "500",
   },
   statDivider: {
     width: 1,
-    height: 32,
+    height: 24,
     backgroundColor: "#E5E7EB",
   },
-  // Edit Button
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
   editButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#ECFDF5",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D1FAE5",
+    padding: 4,
   },
-  // Edit Modal
   editModalContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F3F4F6",
   },
   editModalHeader: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
-  editModalTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111827",
-  },
   cancelButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    padding: 8,
   },
   cancelButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     color: "#6B7280",
-    fontWeight: "600",
   },
   saveButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "#059669",
-    borderRadius: 8,
+    padding: 8,
   },
   saveButtonText: {
-    fontSize: 15,
-    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#059669",
+  },
+  editModalTitle: {
+    fontSize: 18,
     fontWeight: "700",
+    color: "#111827",
   },
   editModalContent: {
     flex: 1,
     padding: 16,
   },
   editSection: {
-    marginBottom: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 8,
   },
   editSectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
     color: "#6B7280",
-    textTransform: "uppercase",
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   sessionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
+    color: "#1F2937",
   },
   courseTitle: {
     fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "600",
+    color: "#4B5563",
   },
   editLabel: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     color: "#374151",
-    marginBottom: 8,
   },
   editInput: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 10,
+    justifyContent: "space-between",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   editInputText: {
     flex: 1,
-    fontSize: 15,
-    color: "#111827",
-    fontWeight: "600",
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#1F2937",
   },
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
     backgroundColor: "#EFF6FF",
     padding: 12,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: "#3B82F6",
-    marginTop: 10,
+    borderRadius: 8,
+    gap: 8,
   },
   infoText: {
     flex: 1,
     fontSize: 13,
     color: "#1E40AF",
-    lineHeight: 18,
   },
 });
 

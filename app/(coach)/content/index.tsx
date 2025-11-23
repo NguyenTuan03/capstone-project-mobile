@@ -5,6 +5,7 @@ import {
   getVerificationLabel,
 } from "@/helper/content.helper";
 import { get } from "@/services/http/httpService";
+import { useJWTAuthActions } from "@/services/jwt-auth/JWTAuthProvider";
 import storageService from "@/services/storageService";
 import { User } from "@/types/user";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -27,6 +28,7 @@ export default function ContentScreen() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [rating, setRating] = useState<number | null>(null);
+  const { logout } = useJWTAuthActions();
 
   const loadRating = useCallback(async (coachId: number) => {
     try {
@@ -71,13 +73,16 @@ export default function ContentScreen() {
       {
         text: "Đăng xuất",
         style: "destructive",
-        onPress: () => {
+        onPress: async () => {
           setLoading(true);
-          // Add logout logic here
-          setTimeout(() => {
-            setLoading(false);
+          try {
+            await logout();
             router.replace("/(auth)");
-          }, 500);
+          } catch (error) {
+            console.error("Logout error:", error);
+          } finally {
+            setLoading(false);
+          }
         },
       },
     ]);

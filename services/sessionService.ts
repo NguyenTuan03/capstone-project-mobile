@@ -28,8 +28,8 @@ class SessionService {
           courseId: session.course?.id,
           scheduleDate: session.scheduleDate,
           course: session.course, // Keep full course object for future use
-          quizzes: session.quizzes || [],
-          videos: session.videos || [],
+          quiz: session.quiz,
+          video: session.video,
         };
 
         return transformedSession;

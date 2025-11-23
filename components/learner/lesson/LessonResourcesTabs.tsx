@@ -1,4 +1,4 @@
-import { get, post } from "@/services/http/httpService";
+import { get } from "@/services/http/httpService";
 import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,14 +16,13 @@ import storageService from "../../../services/storageService";
 import { QuizType } from "../../../types/quiz";
 import { LearnerVideo } from "../../../types/video";
 import QuizAttemptCard from "../quiz/QuizAttempCard";
-import OverlayVideoModal from "./OverlayVideoModal";
 import VideoList from "./VideoList";
 
 type LessonResourcesTab = "videos" | "quizzes";
 
 const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
   ({ lessonId, sessionId, style }) => {
-    const { quizzes, videos, loading, error, refresh } =
+    const { quiz, video, loading, error, refresh } =
       useLessonResources(lessonId);
     const [activeTab, setActiveTab] = useState<LessonResourcesTab>("videos");
     const [tabLoading, setTabLoading] = useState(false);
@@ -46,16 +45,15 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       useState<AiVideoCompareResult | null>(null);
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
     const [overlayVideoUrl, setOverlayVideoUrl] = useState<string | null>(null);
-    const [generatingOverlay, setGeneratingOverlay] = useState(false);
     const [showOverlayModal, setShowOverlayModal] = useState(false);
 
     const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
       useMemo(
         () => [
-          { key: "videos", label: "Video", count: videos.length },
-          { key: "quizzes", label: "Quiz", count: quizzes.length },
+          { key: "videos", label: "Video", count: video ? 1 : 0 },
+          { key: "quizzes", label: "Quiz", count: quiz ? 1 : 0 },
         ],
-        [quizzes.length, videos.length]
+        [quiz, video]
       );
 
     const handlePickVideo = async () => {
@@ -109,7 +107,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
     // UPDATED: Load both submitted video and overlayVideoUrl
     const loadSubmittedVideo = useCallback(async () => {
-
       if (!sessionId) {
         setSubmittedVideo(null);
         setOverlayVideoUrl(null);
@@ -230,54 +227,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       }
     };
 
-    const handleGenerateOverlay = async () => {
-      if (!submittedVideo?.id) {
-        Alert.alert("Lỗi", "Không tìm thấy video để so sánh");
-        return;
-      }
-
-      const coachVideo = videos.length > 0 ? videos[0] : null;
-      if (!coachVideo?.id) {
-        Alert.alert("Lỗi", "Không tìm thấy video của coach để so sánh");
-        return;
-      }
-
-      try {
-        setGeneratingOverlay(true);
-
-        const response = await post(
-          `/v1/learner-videos/${submittedVideo.id}/overlay-video/${coachVideo.id}`
-        );
-
-        if (response.data && typeof response.data === "string") {
-          if (response.data.startsWith("http")) {
-            // Reload submitted video to get updated overlayVideoUrl from database
-            await loadSubmittedVideo();
-            setShowOverlayModal(true);
-            Alert.alert("Thành công", "Video overlay đã được tạo!");
-          } else {
-            Alert.alert(
-              "Thông báo",
-              "Đang tạo video lồng nhau, vui lòng đợi và thử lại sau"
-            );
-          }
-        } else {
-          Alert.alert(
-            "Thông báo",
-            "Đang tạo video lồng nhau, vui lòng đợi và thử lại sau"
-          );
-        }
-      } catch (err: any) {
-        console.error("❌ Error generating overlay video:", err);
-        Alert.alert(
-          "Lỗi",
-          err?.response?.data?.message || "Không thể tạo video overlay"
-        );
-      } finally {
-        setGeneratingOverlay(false);
-      }
-    };
-
     const handleViewOverlay = () => {
       setShowOverlayModal(true);
     };
@@ -323,8 +272,8 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       void loadAiAnalysisResult();
     }, [loadAiAnalysisResult]);
 
-    const renderQuizzes = (items: QuizType[]) => {
-      if (items.length === 0) {
+    const renderQuizzes = (item: QuizType | undefined) => {
+      if (!item) {
         return (
           <Text style={styles.emptyText}>
             Chưa có quiz nào cho bài học này.
@@ -332,32 +281,30 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         );
       }
 
-      return items.map((quiz) => {
-        const transformedQuiz = {
-          id: quiz.id,
-          title: quiz.title,
-          description: quiz.description,
-          totalQuestions: quiz.totalQuestions,
-          questions: quiz.questions.map((q) => ({
-            id: q.id,
-            title: q.title,
-            explanation: q.explanation,
-            options: q.options
-              .filter((opt) => opt.id !== undefined)
-              .map((opt) => ({
-                id: opt.id!,
-                content: opt.content,
-                isCorrect: opt.isCorrect,
-              })),
-          })),
-        };
+      const transformedQuiz = {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        totalQuestions: item.totalQuestions,
+        questions: item.questions.map((q) => ({
+          id: q.id,
+          title: q.title,
+          explanation: q.explanation,
+          options: q.options
+            .filter((opt) => opt.id !== undefined)
+            .map((opt) => ({
+              id: opt.id!,
+              content: opt.content,
+              isCorrect: opt.isCorrect,
+            })),
+        })),
+      };
 
-        return (
-          <View key={quiz.id} style={styles.resourceCard}>
-            <QuizAttemptCard quiz={transformedQuiz} />
-          </View>
-        );
-      });
+      return (
+        <View key={item.id} style={styles.resourceCard}>
+          <QuizAttemptCard quiz={transformedQuiz} onRefresh={refresh} />
+        </View>
+      );
     };
 
     if (!lessonId) {
@@ -413,34 +360,24 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             <Text style={styles.errorText}>{error}</Text>
           ) : activeTab === "videos" ? (
             <VideoList
-              videos={videos}
+              video={video}
               submittedVideo={submittedVideo}
               localVideo={localVideo}
               overlayVideoUrl={overlayVideoUrl}
-              generatingOverlay={generatingOverlay}
               loadingAnalysis={loadingAnalysis}
               aiAnalysisResult={aiAnalysisResult}
-              onGenerateOverlay={handleGenerateOverlay}
               onViewOverlay={handleViewOverlay}
               onPickVideo={handlePickVideo}
               onUploadVideo={handleUploadVideo}
               onVideoCapture={handleVideoCapture}
               isUploading={isUploading}
-              coachVideoId={videos.length > 0 ? videos[0].id : undefined}
-              coachVideoDuration={
-                videos.length > 0 ? videos[0].duration : undefined
-              }
+              coachVideoId={video?.id}
+              coachVideoDuration={video?.duration}
             />
           ) : (
-            renderQuizzes(quizzes)
+            renderQuizzes(quiz)
           )}
         </View>
-
-        <OverlayVideoModal
-          visible={showOverlayModal}
-          overlayVideoUrl={overlayVideoUrl}
-          onClose={() => setShowOverlayModal(false)}
-        />
       </View>
     );
   }
@@ -448,7 +385,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
 
 LessonResourcesTabs.displayName = "LessonResourcesTabs";
 
-// Styles remain the same... (copy from previous file)
 const styles = StyleSheet.create({
   container: {
     marginTop: 10,

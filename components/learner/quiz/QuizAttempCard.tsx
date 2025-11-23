@@ -3,6 +3,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -40,23 +41,24 @@ type QuizAttempt = {
 
 type Props = {
   quiz: Quiz;
+  onRefresh?: () => void;
 };
 
-const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
+const QuizAttemptCard: React.FC<Props> = ({ quiz, onRefresh }) => {
   const questions = useMemo(() => quiz.questions ?? [], [quiz.questions]);
   const [answers, setAnswers] = useState<Record<number, number | undefined>>(
     {}
   );
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<{
-    correctCount: number;
-    total: number;
+    score?: number;
   } | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<QuizAttempt[]>([]);
   const [showAttempts, setShowAttempts] = useState(false);
   const [expandedAttemptId, setExpandedAttemptId] = useState<number | null>(
     null
   );
+  const [showResultModal, setShowResultModal] = useState(false);
 
   const { submitAttempt, submitting, error } = useAttemptQuiz();
 
@@ -94,11 +96,18 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
     const res = await submitAttempt(quiz.id, payload);
     if (res) {
       setSubmitted(true);
-      setResult({ correctCount: res.correctCount, total: res.total });
-      // Refresh attempts list
+      setResult({ score: res.score });
+      setShowResultModal(true);
+
+      // Refresh attempts list locally
       const data = await quizService.getQuizAttempts(quiz.id);
       const attemptsList = Array.isArray(data) ? data : data?.data || [];
       setPreviousAttempts(attemptsList);
+
+      // Trigger parent refresh if provided
+      // if (onRefresh) {
+      //   onRefresh();
+      // }
     }
   };
 
@@ -122,6 +131,17 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const handleCloseModal = () => {
+    setShowResultModal(false);
+    // Reset form for new attempt
+    setAnswers({});
+    setSubmitted(false);
+    setResult(null);
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   return (
@@ -308,17 +328,40 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz }) => {
         </TouchableOpacity>
       </View>
 
-      {submitted && result && (
-        <View style={s.resultBox}>
-          <Text style={s.resultLabel}>Kết quả lần này:</Text>
-          <Text style={s.resultScore}>
-            {result.correctCount}/{result.total}{" "}
-            <Text style={s.resultPercentage}>
-              ({Math.round((result.correctCount / result.total) * 100)}%)
-            </Text>
-          </Text>
+      {/* Result Modal */}
+      <Modal
+        visible={showResultModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Kết quả bài làm</Text>
+              <TouchableOpacity onPress={handleCloseModal}>
+                <MaterialIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {result && (
+              <View style={s.modalBody}>
+                <View style={s.resultCircle}>
+                  <Text style={s.resultScoreLarge}>{result.score} </Text>
+                  <Text style={s.resultLabelLarge}>Câu đúng</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={s.modalButton}
+                  onPress={handleCloseModal}
+                >
+                  <Text style={s.modalButtonText}>Đóng & Làm lại</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 };
@@ -642,36 +685,84 @@ const s = StyleSheet.create({
     fontSize: 12,
     paddingHorizontal: 8,
   },
-  resultBox: {
-    marginTop: 12,
-    padding: 11,
-    borderRadius: 9,
-    backgroundColor: "#EFF6FF",
-    borderLeftWidth: 3,
-    borderLeftColor: "#3B82F6",
-    borderTopWidth: 1,
-    borderTopColor: "#BFDBFE",
-    borderRightWidth: 1,
-    borderRightColor: "#BFDBFE",
-    borderBottomWidth: 1,
-    borderBottomColor: "#BFDBFE",
-    gap: 5,
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
-  resultLabel: {
-    fontSize: 11,
-    color: "#1D4ED8",
+  modalContent: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalHeader: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  modalBody: {
+    width: "100%",
+    alignItems: "center",
+    gap: 16,
+  },
+  resultCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#ECFDF5",
+    borderWidth: 4,
+    borderColor: "#34D399",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  resultScoreLarge: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#059669",
+  },
+  resultLabelLarge: {
+    fontSize: 14,
+    color: "#047857",
     fontWeight: "600",
   },
-  resultScore: {
-    fontSize: 17,
-    color: "#1D4ED8",
-    fontWeight: "700",
-    letterSpacing: 0.2,
+  resultMessage: {
+    fontSize: 15,
+    color: "#4B5563",
+    textAlign: "center",
+    lineHeight: 22,
   },
-  resultPercentage: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#3B82F6",
+  modalButton: {
+    width: "100%",
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modalButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 

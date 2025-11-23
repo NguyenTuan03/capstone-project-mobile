@@ -9,13 +9,7 @@ type AttemptPayload = {
 };
 
 type AttemptResult = {
-  correctCount: number;
-  total: number;
-  details?: {
-    questionId: number;
-    isCorrect: boolean;
-    correctOptionId?: number;
-  }[];
+  score?: number;
 };
 
 export function useAttemptQuiz() {
@@ -32,7 +26,8 @@ export function useAttemptQuiz() {
       try {
         const doPost = async (path: string) => {
           const res = await post(path, payload);
-          return res.data;
+          console.log("🚀 ~ submitAttempt ~ res:", res.data);
+          return res.data.metadata;
         };
 
         // chuẩn: /attempts ; fallback: /attemps
@@ -66,9 +61,7 @@ export function useAttemptQuiz() {
 
         // Chuẩn hoá kết quả để UI xài (BE bạn có thể trả khác)
         return {
-          correctCount: Number(data?.correctCount ?? 0),
-          total: Number(data?.total ?? payload.learnerAnswers.length),
-          details: data?.details,
+          score: Number(data?.score ?? 0),
         };
       } catch (e: any) {
         setError(e?.message || "Submit thất bại");

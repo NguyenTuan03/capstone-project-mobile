@@ -21,7 +21,7 @@ interface Props {
 }
 
 const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
-  const quizzes: QuizType[] = (session?.quizzes as QuizType[]) || [];
+  const quiz: QuizType | null = session?.quiz || null;
   const [selectedQuiz, setSelectedQuiz] = useState<QuizType | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -37,9 +37,9 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
     }, 300);
   };
 
-  console.log("Quizzes in SessionDetailQuiz:", quizzes[0].questions);
+  console.log("Quizzes in SessionDetailQuiz:", quiz?.questions);
 
-  if (!quizzes || quizzes.length === 0) return null;
+  if (!quiz) return null;
 
   return (
     <>
@@ -50,44 +50,39 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
           </View>
           <Text style={styles.sectionTitle}>Bài kiểm tra</Text>
           <View style={localStyles.badgeContainer}>
-            <Text style={localStyles.badgeText}>{quizzes.length}</Text>
+            <Text style={localStyles.badgeText}>{quiz.questions.length}</Text>
           </View>
         </View>
         <View style={styles.sectionContent}>
-          {quizzes.map((quiz: QuizType, index: number) => (
-            <TouchableOpacity
-              key={quiz.id || index}
-              style={localStyles.quizCard}
-              activeOpacity={0.7}
-              onPress={() => handleQuizPress(quiz)}
-            >
-              <View style={localStyles.quizHeader}>
-                <View style={localStyles.quizNumberBadge}>
-                  <Text style={localStyles.quizNumberText}>{index + 1}</Text>
-                </View>
-                <View style={localStyles.quizTitleContainer}>
-                  <Text style={localStyles.quizTitle} numberOfLines={2}>
-                    {quiz.title}
+          <TouchableOpacity
+            style={localStyles.quizCard}
+            activeOpacity={0.7}
+            onPress={() => handleQuizPress(quiz)}
+          >
+            <View style={localStyles.quizHeader}>
+              <View style={localStyles.quizNumberBadge}></View>
+              <View style={localStyles.quizTitleContainer}>
+                <Text style={localStyles.quizTitle} numberOfLines={2}>
+                  {quiz.title}
+                </Text>
+                <View style={localStyles.quizMeta}>
+                  <Ionicons name="list-outline" size={14} color="#6B7280" />
+                  <Text style={localStyles.quizMetaText}>
+                    {quiz.totalQuestions} câu hỏi
                   </Text>
-                  <View style={localStyles.quizMeta}>
-                    <Ionicons name="list-outline" size={14} color="#6B7280" />
-                    <Text style={localStyles.quizMetaText}>
-                      {quiz.totalQuestions} câu hỏi
-                    </Text>
-                  </View>
-                </View>
-                <View style={localStyles.chevronContainer}>
-                  <Ionicons name="chevron-forward" size={20} color="#059669" />
                 </View>
               </View>
+              <View style={localStyles.chevronContainer}>
+                <Ionicons name="chevron-forward" size={20} color="#059669" />
+              </View>
+            </View>
 
-              {quiz.description && (
-                <Text style={localStyles.quizDescription} numberOfLines={2}>
-                  {quiz.description}
-                </Text>
-              )}
-            </TouchableOpacity>
-          ))}
+            {quiz.description && (
+              <Text style={localStyles.quizDescription} numberOfLines={2}>
+                {quiz.description}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 

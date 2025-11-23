@@ -352,8 +352,8 @@ const SubmissionReviewScreen: React.FC = () => {
       }
       const learnerUrl = submission.publicUrl ?? "";
       const coachUrl =
-        submission.session?.videos?.[0]?.publicUrl ??
-        submission.session?.lesson?.videos?.[0]?.publicUrl ??
+        submission.session?.video?.publicUrl ??
+        submission.session?.lesson?.video?.publicUrl ??
         "";
 
       const [learnerPath, coachPath] = await Promise.all([
@@ -383,12 +383,12 @@ const SubmissionReviewScreen: React.FC = () => {
   }, [submission?.publicUrl]);
 
   const coachSource = useMemo(() => {
-    const coachUrl = submission?.session?.videos?.[0]?.publicUrl;
+    const coachUrl = submission?.session?.video?.publicUrl;
     if (coachUrl) {
       return { uri: coachUrl, contentType: "auto" as const };
     }
     return null;
-  }, [submission?.session]);
+  }, [submission?.session?.video?.publicUrl]);
 
   const learnerPlayer = useVideoPlayer(learnerSource, (player) => {
     if (player) player.loop = false;
@@ -461,11 +461,11 @@ const SubmissionReviewScreen: React.FC = () => {
       Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
       return;
     }
-  
+
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
-  
+
     try {
       // Get duration from multiple sources, prioritize video player duration
       let coachDuration = 0;
@@ -931,25 +931,15 @@ const SubmissionReviewScreen: React.FC = () => {
             )}
           </View>
 
-        {/* Hiển thị kết quả nếu đã có response */}
-        {displayResult ? (
-          <View style={styles.actionCard}>
-            {loadingCompareResult ? (
-              <View style={styles.loadingCard}>
-                <ActivityIndicator size="small" color="#059669" />
-                <Text style={styles.loadingText}>
-                  Đang tải kết quả so sánh...
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.compareResultCard}>
-                <View style={styles.compareResultHeader}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color="#059669"
-                  />
-                  <Text style={styles.cardTitle}>Kết quả so sánh AI</Text>
+          {/* Hiển thị kết quả nếu đã có response */}
+          {displayResult ? (
+            <View style={styles.actionCard}>
+              {loadingCompareResult ? (
+                <View style={styles.loadingCard}>
+                  <ActivityIndicator size="small" color="#059669" />
+                  <Text style={styles.loadingText}>
+                    Đang tải kết quả so sánh...
+                  </Text>
                 </View>
                 {displayResult.summary ? (
                   <View style={styles.compareResultSection}>
@@ -1091,11 +1081,83 @@ const SubmissionReviewScreen: React.FC = () => {
                       </View>
                     ))}
                   </View>
-                ) : null}
-                {displayResult.coachNote ? (
-                  <View style={styles.compareResultSection}>
-                    <Text style={styles.compareResultLabel}>
-                      Ghi chú của coach:
+                  {displayResult.summary ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>Tóm tắt:</Text>
+                      <Text style={styles.compareResultText}>
+                        {displayResult.summary}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {displayResult.learnerScore !== null &&
+                  displayResult.learnerScore !== undefined ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>Điểm số:</Text>
+                      <Text style={styles.compareResultScore}>
+                        {displayResult.learnerScore}/100
+                      </Text>
+                    </View>
+                  ) : null}
+                  {displayResult.keyDifferents &&
+                  displayResult.keyDifferents.length > 0 ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>
+                        Điểm khác biệt chính:
+                      </Text>
+                      {displayResult.keyDifferents.map((diff, index) => (
+                        <View key={index} style={styles.keyDifferenceItem}>
+                          <Text style={styles.keyDifferenceAspect}>
+                            {diff.aspect}
+                          </Text>
+                          <Text style={styles.keyDifferenceText}>
+                            <Text style={styles.boldText}>Coach: </Text>
+                            {diff.coachTechnique}
+                          </Text>
+                          <Text style={styles.keyDifferenceText}>
+                            <Text style={styles.boldText}>Học viên: </Text>
+                            {diff.learnerTechnique}
+                          </Text>
+                          <Text style={styles.keyDifferenceImpact}>
+                            Tác động: {diff.impact}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  {displayResult.recommendationDrills &&
+                  displayResult.recommendationDrills.length > 0 ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>
+                        Bài tập đề xuất:
+                      </Text>
+                      {displayResult.recommendationDrills.map(
+                        (drill, index) => (
+                          <View key={index} style={styles.drillItem}>
+                            <Text style={styles.drillName}>{drill.name}</Text>
+                            <Text style={styles.drillDescription}>
+                              {drill.description}
+                            </Text>
+                            <Text style={styles.drillPracticeSets}>
+                              Số lần tập: {drill.practiceSets}
+                            </Text>
+                          </View>
+                        )
+                      )}
+                    </View>
+                  ) : null}
+                  {displayResult.coachNote ? (
+                    <View style={styles.compareResultSection}>
+                      <Text style={styles.compareResultLabel}>
+                        Ghi chú của coach:
+                      </Text>
+                      <Text style={styles.compareResultText}>
+                        {displayResult.coachNote}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {displayResult.createdAt ? (
+                    <Text style={styles.compareResultDate}>
+                      Tạo lúc: {formatDateTime(displayResult.createdAt)}
                     </Text>
                     <Text style={styles.compareResultText}>
                       {displayResult.coachNote}

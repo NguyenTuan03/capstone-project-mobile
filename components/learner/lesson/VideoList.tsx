@@ -1,16 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { AiVideoCompareResult } from "../../../types/ai";
 import { VideoType } from "../../../types/video";
 import AIAnalysisResult from "./AIAnalysisResult";
 import CoachVideoCard from "./CoachVideoCard";
 import SubmittedVideoCard from "./SubmittedVideoCard";
 import VideoDetailsModal from "./VideoDetailsModal";
+import VideoOverlayPlayer from "./VideoOverlayPlayer";
 import VideoUploadSection from "./VideoUploadSection";
 
 interface VideoListProps {
-  videos: VideoType[];
+  video: VideoType | undefined;
   submittedVideo: {
     publicUrl: string;
     thumbnailUrl?: string | null;
@@ -26,10 +27,8 @@ interface VideoListProps {
     uploaded?: boolean;
   } | null;
   overlayVideoUrl: string | null;
-  generatingOverlay: boolean;
   loadingAnalysis: boolean;
   aiAnalysisResult: AiVideoCompareResult | null;
-  onGenerateOverlay: () => void;
   onViewOverlay: () => void;
   onPickVideo: () => void;
   onUploadVideo: (coachVideoId: number) => void;
@@ -44,14 +43,12 @@ interface VideoListProps {
 }
 
 const VideoList: React.FC<VideoListProps> = ({
-  videos,
+  video,
   submittedVideo,
   localVideo,
   overlayVideoUrl,
-  generatingOverlay,
   loadingAnalysis,
   aiAnalysisResult,
-  onGenerateOverlay,
   onViewOverlay,
   onPickVideo,
   onUploadVideo,
@@ -61,6 +58,9 @@ const VideoList: React.FC<VideoListProps> = ({
   coachVideoDuration,
 }) => {
   const [showCoachVideosModal, setShowCoachVideosModal] = useState(false);
+  const [showOverlayPlayer, setShowOverlayPlayer] = useState(false);
+
+  console.log(video?.duration, submittedVideo?.status);
 
   return (
     <>
@@ -68,9 +68,7 @@ const VideoList: React.FC<VideoListProps> = ({
         <SubmittedVideoCard
           submittedVideo={submittedVideo}
           overlayVideoUrl={overlayVideoUrl}
-          generatingOverlay={generatingOverlay}
-          onGenerateOverlay={onGenerateOverlay}
-          onViewOverlay={onViewOverlay}
+          onViewOverlay={() => setShowOverlayPlayer(true)}
         />
       )}
 
@@ -88,49 +86,30 @@ const VideoList: React.FC<VideoListProps> = ({
         />
       )}
 
-      {videos.length === 0 && !localVideo && (
-        <Text style={styles.emptyText}>Chưa có video nào cho bài học này.</Text>
+      {video === null && !localVideo && (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="videocam-off-outline" size={32} color="#9CA3AF" />
+          <Text style={styles.emptyText}>
+            Chưa có video nào cho bài học này.
+          </Text>
+        </View>
       )}
 
       {/* Coach Videos Section */}
-      {videos.length > 0 && (
+      {video && (
         <View style={styles.coachVideosSection}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Ionicons name="videocam" size={20} color="#059669" />
-              <Text style={styles.sectionTitle}>Video từ Coach</Text>
-              <View style={styles.videoBadge}>
-                <Text style={styles.videoBadgeText}>{videos.length}</Text>
+              <View style={styles.iconContainer}>
+                <Ionicons name="videocam" size={20} color="#059669" />
               </View>
+              <Text style={styles.sectionTitle}>Video từ Coach</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => setShowCoachVideosModal(true)}
-              style={styles.viewAllButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-              <Ionicons name="arrow-forward" size={16} color="#059669" />
-            </TouchableOpacity>
           </View>
 
           {/* Show preview (first video only) */}
           <View style={styles.previewContainer}>
-            <CoachVideoCard video={videos[0]} />
-            {videos.length > 1 && (
-              <TouchableOpacity
-                style={styles.moreVideosCard}
-                onPress={() => setShowCoachVideosModal(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="albums-outline" size={32} color="#059669" />
-                <Text style={styles.moreVideosText}>
-                  +{videos.length - 1} video khác
-                </Text>
-                <Text style={styles.moreVideosSubtext}>
-                  Nhấn để xem tất cả video
-                </Text>
-              </TouchableOpacity>
-            )}
+            <CoachVideoCard video={video} />
           </View>
         </View>
       )}
@@ -140,29 +119,48 @@ const VideoList: React.FC<VideoListProps> = ({
       {/* Coach Videos Modal */}
       <VideoDetailsModal
         visible={showCoachVideosModal}
-        videos={videos}
+        video={video}
         onClose={() => setShowCoachVideosModal(false)}
         title="Video từ Coach"
       />
+
+      {/* Custom Overlay Player */}
+      {video && video.publicUrl && submittedVideo && (
+        <VideoOverlayPlayer
+          visible={showOverlayPlayer}
+          onClose={() => setShowOverlayPlayer(false)}
+          coachVideoUrl={video.publicUrl}
+          learnerVideoUrl={submittedVideo.publicUrl}
+        />
+      )}
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 30,
+    gap: 8,
+  },
   emptyText: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#9CA3AF",
     textAlign: "center",
-    paddingVertical: 20,
     fontStyle: "italic",
   },
   coachVideosSection: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    gap: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -172,12 +170,20 @@ const styles = StyleSheet.create({
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
     flex: 1,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "bold",
     color: "#111827",
   },
   videoBadge: {
@@ -198,12 +204,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: "#ECFDF5",
+    backgroundColor: "#F3F4F6",
   },
   viewAllText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#059669",
+    color: "#374151",
   },
   previewContainer: {
     gap: 12,

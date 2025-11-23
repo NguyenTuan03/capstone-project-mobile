@@ -1,16 +1,14 @@
 import AppForm from "@/components/common/AppForm";
-import { User } from "@/types/user";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { useJWTAuthActions } from "@/services/jwt-auth/JWTAuthProvider";
+import storageService from "@/services/storageService";
 import { Href, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 
-const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
-
 export default function AuthScreen() {
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const { signInUser } = useJWTAuthActions();
 
   const handleLogin = async (values: Record<string, string>) => {
     setSubmitting(true);
@@ -20,22 +18,16 @@ export default function AuthScreen() {
         ? "+84" + values.phoneNumber.substring(1)
         : values.phoneNumber;
 
-      const res = await axios.post(`${API_URL}/v1/auth/login`, {
+      await signInUser({
         phoneNumber: phoneNumber,
         password: values.password,
       });
-      const { accessToken, refreshToken } = res.data.metadata;
-      const user = res.data.metadata.user as User;
-      // console.log("Logged in user:", user);
 
-      await AsyncStorage.setItem("token", accessToken);
-      await AsyncStorage.setItem("refreshToken", refreshToken);
-      await AsyncStorage.setItem("user", JSON.stringify(user));
+      const user = await storageService.getUser();
 
-      if (user.role.name === "COACH") {
+      if (user?.role?.name === "COACH") {
         router.push("/(coach)/home" as Href);
-      }
-      if (user.role.name === "LEARNER") {
+      } else if (user?.role?.name === "LEARNER") {
         router.push("/(learner)/home" as Href);
       }
     } catch (err: any) {
