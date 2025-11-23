@@ -87,9 +87,9 @@ const CourseList: FC<CourseListProps> = ({
 
   return (
     <View style={{ paddingHorizontal: 12, paddingBottom: 20 }}>
-      {courses?.length > 0 && courses?.map((course, index) => (
+      {courses?.length > 0 && courses?.map((course) => (
         <CourseCard
-          key={index}
+          key={course.id}
           course={course}
           platformFee={platformFee}
           onPress={() => onPressCourse(course)}
