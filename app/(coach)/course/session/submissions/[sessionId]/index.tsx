@@ -22,6 +22,27 @@ const formatDateTime = (value?: string | null) => {
   )}`;
 };
 
+// Helper to extract videos from response - handle both array and single object
+const extractVideosFromPayload = (payload: any): any[] => {
+  if (!payload || typeof payload !== "object") return [];
+  if (Array.isArray((payload as any).videos)) {
+    return (payload as any).videos;
+  }
+  // Handle single video object (from /v1/sessions/courses/:id response)
+  if ((payload as any).video && typeof (payload as any).video === "object") {
+    return [(payload as any).video];
+  }
+  if ("data" in payload) {
+    const nested = extractVideosFromPayload((payload as any).data);
+    if (nested.length) return nested;
+  }
+  if ("metadata" in payload) {
+    const nested = extractVideosFromPayload((payload as any).metadata);
+    if (nested.length) return nested;
+  }
+  return [];
+};
+
 const SubmissionListScreen: React.FC = () => {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId?: string }>();
@@ -38,11 +59,33 @@ const SubmissionListScreen: React.FC = () => {
       );
       const list = Array.isArray(res.data) ? res.data : [];
       setVideos(list);
-      if (list.length > 0) {
-        setSession(list[0].session);
+      if (list.length > 0 && list[0].session) {
+        // Normalize session data - handle both video object and videos array
+        const sessionData = list[0].session;
+        const videos = extractVideosFromPayload(sessionData);
+        const normalizedSession = {
+          ...sessionData,
+          videos: sessionData.videos?.length
+            ? sessionData.videos
+            : videos.length
+            ? videos
+            : sessionData.videos,
+        } as Session;
+        setSession(normalizedSession);
       } else {
         const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
-        setSession(sessionRes.data);
+        if (sessionRes.data) {
+          const videos = extractVideosFromPayload(sessionRes.data);
+          const normalizedSession = {
+            ...sessionRes.data,
+            videos: sessionRes.data.videos?.length
+              ? sessionRes.data.videos
+              : videos.length
+              ? videos
+              : sessionRes.data.videos,
+          } as Session;
+          setSession(normalizedSession);
+        }
       }
     } catch {
       Alert.alert("Lỗi", "Không thể tải danh sách bài nộp");
@@ -116,6 +159,7 @@ const SubmissionListScreen: React.FC = () => {
                   key={video.id}
                   video={video}
                   sessionId={sessionId ? String(sessionId) : undefined}
+                  session={session}
                 />
               ))}
             </View>
@@ -129,9 +173,11 @@ const SubmissionListScreen: React.FC = () => {
 const SubmissionCard = ({
   video,
   sessionId,
+  session,
 }: {
   video: LearnerVideo;
   sessionId?: string;
+  session?: Session | null;
 }) => {
   const router = useRouter();
   const lessonVideo: VideoType | undefined =
@@ -142,14 +188,14 @@ const SubmissionCard = ({
     if (!video.publicUrl || !effectiveSessionId) {
       return;
     }
-
     router.push({
       pathname:
         "/(coach)/course/session/submissions/[sessionId]/[submissionId]",
       params: {
         sessionId: effectiveSessionId,
         submissionId: String(video.id),
-      },
+        ...(session ? { sessionData: JSON.stringify(session) } : {}),
+      } as any,
     });
   };
 

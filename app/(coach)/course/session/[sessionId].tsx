@@ -3,13 +3,15 @@ import { get } from "@/services/http/httpService";
 import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
+import { extractQuizzesFromPayload, extractSessionPayload, extractVideosFromPayload, formatDate, formatTime, getStatusBadgeColors } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { VideoView, useVideoPlayer } from "expo-video";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -49,28 +51,54 @@ const getCoachVideos = (session?: Session | null): VideoType | undefined => {
   return session?.video;
 };
 
-const formatFullDateTime = (value?: string | null) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return `${date.toLocaleDateString("vi-VN")} ${date.toLocaleTimeString(
-    "vi-VN"
-  )}`;
-};
-
 const SessionDetailScreen: React.FC = () => {
   const router = useRouter();
-  const { sessionId } = useLocalSearchParams();
+  const { sessionId, sessionData } = useLocalSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [learnerVideos, setLearnerVideos] = useState<LearnerVideo[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
+  const [videoModalVisible, setVideoModalVisible] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSession = async () => {
       if (!sessionId) return;
       try {
         setLoading(true);
+
+        // If session data is passed via params (from assignment tab), use it directly
+        if (sessionData && typeof sessionData === "string") {
+          try {
+            const parsedSession = JSON.parse(sessionData);
+            const normalized = extractSessionPayload(parsedSession);
+            if (normalized) {
+              const fallbackVideos = extractVideosFromPayload(parsedSession);
+              const fallbackQuizzes = extractQuizzesFromPayload(parsedSession);
+
+              setSession({
+                ...normalized,
+                videos: normalized.videos?.length
+                  ? normalized.videos
+                  : fallbackVideos.length
+                  ? fallbackVideos
+                  : normalized.videos,
+                quizzes: normalized.quizzes?.length
+                  ? normalized.quizzes
+                  : fallbackQuizzes.length
+                  ? fallbackQuizzes
+                  : normalized.quizzes,
+              });
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed to parse session data from params:", e);
+          }
+        }
+
+        // Otherwise, fetch from API
         const res = await get<Session>(`/v1/sessions/${sessionId}`);
         const normalized = extractSessionPayload(res.data);
         if (!normalized) {
@@ -86,7 +114,7 @@ const SessionDetailScreen: React.FC = () => {
     };
 
     fetchSession();
-  }, [sessionId]);
+  }, [sessionId, sessionData]);
 
   const exercises = useMemo(
     () => (session ? BuildExercise(session) : []),
@@ -135,22 +163,18 @@ const SessionDetailScreen: React.FC = () => {
     }
   };
   const handleOpenCoachVideo = (url: string) => {
-    Linking.openURL(url).catch(() =>
-      Alert.alert("Lỗi", "Không thể mở video. Vui lòng thử lại sau.")
-    );
+    setSelectedVideoUrl(url);
+    setVideoModalVisible(true);
   };
 
-  const handleOpenLearnerSubmission = (submissionId: number) => {
-    if (!sessionId) return;
-    router.push({
-      pathname:
-        "/(coach)/course/session/submissions/[sessionId]/[submissionId]",
-      params: {
-        sessionId: String(sessionId),
-        submissionId: String(submissionId),
-      },
-    });
-  };
+  const videoSource = useMemo(() => {
+    if (!selectedVideoUrl) return null;
+    return { uri: selectedVideoUrl, contentType: "auto" as const };
+  }, [selectedVideoUrl]);
+
+  const videoPlayer = useVideoPlayer(videoSource, (player) => {
+    if (player) player.loop = false;
+  });
 
   return (
     <View style={styles.container}>
@@ -203,7 +227,106 @@ const SessionDetailScreen: React.FC = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Video {videoExercises.length ? `(${videoExercises.length})` : ""}
+              Quiz{" "}
+              {session.quizzes && session.quizzes.length
+                ? `(${session.quizzes.length})`
+                : ""}
+            </Text>
+            {session.quizzes && session.quizzes.length > 0 ? (
+              session.quizzes.map((quiz, index) => (
+                <TouchableOpacity
+                  key={quiz.id}
+                  style={styles.quizCard}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedQuiz(quiz);
+                    setQuizModalVisible(true);
+                  }}
+                >
+                  {/* Quiz Header */}
+                  <View style={styles.quizCardHeader}>
+                    <View style={styles.quizCardTitle}>
+                      <Text style={styles.quizStepLabel}>Quiz {index + 1}</Text>
+                      <Text style={styles.quizCardTitleText} numberOfLines={2}>
+                        {quiz.title}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.quizStatusBadge,
+                        {
+                          backgroundColor: "#EFF6FF",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: "#2563EB",
+                          fontSize: 11,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Sẵn sàng
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Quiz Description */}
+                  {quiz.description && (
+                    <View style={styles.quizDescriptionSection}>
+                      <Text style={styles.quizDescText}>
+                        {quiz.description}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Quick Metadata Row */}
+                  <View style={styles.quickMetadataRow}>
+                    <View style={styles.quickMetadataItem}>
+                      <Ionicons name="help-circle" size={14} color="#2563EB" />
+                      <Text style={styles.quickMetadataTextBlue}>
+                        {(quiz as any).questions?.length || 0} câu hỏi
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={36}
+                  color="#9CA3AF"
+                />
+                <Text style={styles.emptyText}>Chưa có quiz cho buổi này</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Video mẫu của Coach{" "}
+              {coachVideos.length ? `(${coachVideos.length})` : ""}
+            </Text>
+            {coachVideos.length ? (
+              coachVideos.map((video) => (
+                <CoachVideoCard
+                  key={video.id}
+                  video={video}
+                  onOpen={handleOpenCoachVideo}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
+                <Text style={styles.emptyText}>Chưa có video mẫu</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Video của học viên {videoExercises.length ? `(${videoExercises.length})` : ""}
             </Text>
 
             {videoExercises.length ? (
@@ -454,6 +577,43 @@ const SessionDetailScreen: React.FC = () => {
           }
         }}
       />
+
+      {/* Video Modal */}
+      <Modal
+        visible={videoModalVisible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => {
+          setVideoModalVisible(false);
+          setSelectedVideoUrl(null);
+        }}
+      >
+        <View style={styles.videoModalContainer}>
+          <View style={styles.videoModalHeader}>
+            <TouchableOpacity
+              style={styles.videoModalCloseButton}
+              onPress={() => {
+                setVideoModalVisible(false);
+                setSelectedVideoUrl(null);
+              }}
+            >
+              <Ionicons name="close" size={24} color="#111827" />
+            </TouchableOpacity>
+            <Text style={styles.videoModalTitle}>Video mẫu</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          {videoSource && (
+            <View style={styles.videoPlayerContainer}>
+              <VideoView
+                style={styles.videoPlayer}
+                player={videoPlayer}
+                allowsFullscreen
+                allowsPictureInPicture
+              />
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -990,6 +1150,46 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
+  },
+  videoModalContainer: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+  videoModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  videoModalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoModalTitle: {
+    flex: 1,
+    marginHorizontal: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+  videoPlayerContainer: {
+    flex: 1,
+    backgroundColor: "#000000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoPlayer: {
+    width: "100%",
+    height: "100%",
   },
 });
 

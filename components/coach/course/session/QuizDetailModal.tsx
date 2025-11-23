@@ -2,15 +2,15 @@ import http from "@/services/http/interceptor";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -23,7 +23,7 @@ interface QuizDetailModalProps {
   onQuizUpdated?: () => void;
 }
 
-export const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
+const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
   visible,
   quiz,
   sessionId,
@@ -631,3 +631,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+
+export default QuizDetailModal;
