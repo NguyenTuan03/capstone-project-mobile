@@ -1,15 +1,16 @@
 import { formatAnalysisResult } from "@/helper/FormatAnalysisResult";
 import * as geminiService from "@/services/ai/geminiService";
 import { get, post } from "@/services/http/httpService";
-import type { AiVideoCompareResult, PoseLandmark, VideoComparisonResult } from "@/types/ai";
+import type { AiVideoCompareResult, VideoComparisonResult } from "@/types/ai";
 import type { Session } from "@/types/session";
 import type { LearnerVideo } from "@/types/video";
+import { extractSessionPayload, extractVideosFromPayload } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
 import * as FileSystem from "expo-file-system";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,25 +30,44 @@ const formatDateTime = (value?: string | null) => {
   )}`;
 };
 
-// Helper to extract videos from response - handle both array and single object
-const extractVideosFromPayload = (payload: any): any[] => {
-  if (!payload || typeof payload !== "object") return [];
-  if (Array.isArray((payload as any).videos)) {
-    return (payload as any).videos;
+// Helper function to translate comparison type to Vietnamese
+const translateComparisonType = (type: string): string => {
+  const typeMap: Record<string, string> = {
+    preparation: "Chuẩn bị",
+    PREPARATION: "Chuẩn bị",
+    swingAndContact: "Vung vợt & Tiếp xúc",
+    SWING_AND_CONTACT: "Vung vợt & Tiếp xúc",
+    "swing and contact": "Vung vợt & Tiếp xúc",
+    followThrough: "Kết thúc theo đà",
+    FOLLOW_THROUGH: "Kết thúc theo đà",
+    "follow through": "Kết thúc theo đà",
+  };
+  return typeMap[type] || type;
+};
+
+// Helper function to calculate valid timestamps based on video duration
+const calculateTimestamps = (duration: number, count: number = 3): number[] => {
+  if (!duration || duration <= 0) {
+    duration = 10;
   }
-  // Handle single video object (from /v1/sessions/courses/:id response)
-  if ((payload as any).video && typeof (payload as any).video === "object") {
-    return [(payload as any).video];
+  
+  // Calculate timestamps at 25%, 50%, 75% of video
+  const percentages = [0.25, 0.5, 0.75];
+  const timestamps = percentages.map(p => duration * p);
+  
+  // Validate and clamp timestamps to not exceed duration
+  const validTimestamps = timestamps
+    .map((t: number) => Math.min(t, duration - 0.1)) // Ensure timestamps are less than duration
+    .filter((t: number) => t > 0) // Remove invalid timestamps
+    .map((t: number) => parseFloat(t.toFixed(2))); // Round to 2 decimal places
+  
+  // If we have less than 3 valid timestamps, use fewer points
+  if (validTimestamps.length === 0) {
+    // Fallback: use single timestamp at 50% if duration is very short
+    return [Math.max(0.1, Math.min(duration / 2, duration - 0.1))];
   }
-  if ("data" in payload) {
-    const nested = extractVideosFromPayload((payload as any).data);
-    if (nested.length) return nested;
-  }
-  if ("metadata" in payload) {
-    const nested = extractVideosFromPayload((payload as any).metadata);
-    if (nested.length) return nested;
-  }
-  return [];
+  
+  return validTimestamps;
 };
 
 const SubmissionReviewScreen: React.FC = () => {
@@ -73,6 +93,7 @@ const SubmissionReviewScreen: React.FC = () => {
   const [compareResult, setCompareResult] =
     useState<AiVideoCompareResult | null>(null);
   const [loadingCompareResult, setLoadingCompareResult] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const ensureLocalFile = useCallback(async (url: string, name: string) => {
     if (!url) return null;
@@ -97,9 +118,7 @@ const SubmissionReviewScreen: React.FC = () => {
       }
 
       // Download file
-      console.log(`⬇️ Downloading: ${url.substring(0, 80)}...`);
       const { uri } = await FileSystem.downloadAsync(url, filePath);
-      console.log(`✅ Downloaded to: ${uri}`);
       return uri;
     } catch (e) {
       console.warn("⚠️ Failed to cache video, using URL directly:", e);
@@ -132,38 +151,50 @@ const SubmissionReviewScreen: React.FC = () => {
         if (found && sessionId) {
           let sessionDataToUse: Session | null = null;
           
-          // If session data is passed via params (from assignment tab), use it directly
+          // If session data is passed via params (from assignment tab or session detail), use it directly
           if (sessionData && typeof sessionData === "string") {
             try {
               const parsedSession = JSON.parse(sessionData);
-              const videos = extractVideosFromPayload(parsedSession);
-              sessionDataToUse = {
-                ...parsedSession,
-                videos: parsedSession.videos?.length
-                  ? parsedSession.videos
-                  : videos.length
-                  ? videos
-                  : parsedSession.videos,
-              } as Session;
+              
+              const normalized = extractSessionPayload(parsedSession);
+              if (normalized) {
+                const fallbackVideos = extractVideosFromPayload(parsedSession);
+                
+                const videos = normalized.videos?.length
+                  ? normalized.videos
+                  : fallbackVideos.length
+                  ? fallbackVideos
+                  : normalized.videos;
+                
+                sessionDataToUse = {
+                  ...normalized,
+                  videos,
+                } as Session;
+                
+                // If no videos from params, fetch from API to get videos
+                if (!sessionDataToUse.videos || sessionDataToUse.videos.length === 0) {
+                  sessionDataToUse = null; // Reset to fetch from API
+                }
+              }
             } catch (e) {
               console.warn("Failed to parse session data from params:", e);
             }
           }
           
-          // If no session data from params, fetch from API
+          // If no session data from params or no videos, fetch from API
           if (!sessionDataToUse) {
             try {
               const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
-              if (sessionRes?.data) {
-                const sessionData = sessionRes.data;
-                const videos = extractVideosFromPayload(sessionRes.data);
+              const normalized = extractSessionPayload(sessionRes.data);
+              if (normalized) {
+                const fallbackVideos = extractVideosFromPayload(sessionRes.data);
                 sessionDataToUse = {
-                  ...sessionData,
-                  videos: sessionData.videos?.length
-                    ? sessionData.videos
-                    : videos.length
-                    ? videos
-                    : sessionData.videos,
+                  ...normalized,
+                  videos: normalized.videos?.length
+                    ? normalized.videos
+                    : fallbackVideos.length
+                    ? fallbackVideos
+                    : normalized.videos,
                 } as Session;
               }
             } catch (err) {
@@ -246,9 +277,6 @@ const SubmissionReviewScreen: React.FC = () => {
         submission.session?.lesson?.videos?.[0]?.publicUrl ??
         "";
 
-      console.log("📹 Coach URL:", coachUrl);
-      console.log("📹 Learner URL:", learnerUrl);
-
       const [learnerPath, coachPath] = await Promise.all([
         ensureLocalFile(learnerUrl, `learner-${submission.id}.mp4`),
         ensureLocalFile(
@@ -258,8 +286,6 @@ const SubmissionReviewScreen: React.FC = () => {
       ]);
 
       if (!cancelled) {
-        console.log("✅ Coach local path:", coachPath);
-        console.log("✅ Learner local path:", learnerPath);
         setLearnerLocalPath(learnerPath);
         setCoachLocalPath(coachPath);
       }
@@ -283,7 +309,7 @@ const SubmissionReviewScreen: React.FC = () => {
       return { uri: coachUrl, contentType: "auto" as const };
     }
     return null;
-  }, [submission?.session?.videos]);
+  }, [submission?.session]);
 
   const learnerPlayer = useVideoPlayer(learnerSource, (player) => {
     if (player) player.loop = false;
@@ -329,61 +355,125 @@ const SubmissionReviewScreen: React.FC = () => {
     }
   }, [learnerStatus, learnerSource]);
 
+  // Function to play both videos at specific timestamps
+  const playAtTimestamp = useCallback((coachTimestamp: number, learnerTimestamp: number) => {
+    // Scroll to top first
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    
+    // Small delay to ensure scroll completes before playing
+    setTimeout(() => {
+      if (coachPlayer && coachSource) {
+        coachPlayer.currentTime = coachTimestamp;
+        coachPlayer.play();
+      }
+      if (learnerPlayer && learnerSource) {
+        learnerPlayer.currentTime = learnerTimestamp;
+        learnerPlayer.play();
+      }
+    }, 300);
+  }, [coachPlayer, learnerPlayer, coachSource, learnerSource]);
+
   const learnerName =
     submission?.user?.fullName ??
     (submission?.user?.id ? `Learner #${submission.user.id}` : "Học viên");
 
-    const handleAnalyzeTechnique = useCallback(async () => {
-      if (!coachLocalPath || !learnerLocalPath) {
-        Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
-        return;
+  const handleAnalyzeTechnique = useCallback(async () => {
+    if (!coachLocalPath || !learnerLocalPath) {
+      Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
+      return;
+    }
+  
+    setIsAnalyzing(true);
+    setError(null);
+    setAnalysisResult(null);
+  
+    try {
+      // Get duration from multiple sources, prioritize video player duration
+      let coachDuration = 0;
+      let learnerDuration = 0;
+      
+      // Try to get duration from video player (most accurate)
+      if (coachPlayer?.duration) {
+        coachDuration = coachPlayer.duration;
+      } else if (submission?.session?.videos?.[0]?.duration) {
+        // Duration from API (might be in minutes, convert to seconds)
+        const apiDuration = submission.session.videos[0].duration;
+        coachDuration = typeof apiDuration === 'number' ? apiDuration : parseFloat(apiDuration) || 0;
+        // If duration seems too large (> 100), assume it's in seconds, otherwise might be minutes
+        if (coachDuration < 100 && coachDuration > 0) {
+          coachDuration = coachDuration * 60; // Convert minutes to seconds
+        }
+      } else if (submission?.session?.lesson?.videos?.[0]?.duration) {
+        const apiDuration = submission.session.lesson.videos[0].duration;
+        coachDuration = typeof apiDuration === 'number' ? apiDuration : parseFloat(apiDuration) || 0;
+        if (coachDuration < 100 && coachDuration > 0) {
+          coachDuration = coachDuration * 60;
+        }
       }
-    
-      setIsAnalyzing(true);
-      setError(null);
-      setAnalysisResult(null);
-    
-      try {
-        console.log("🔍 Starting video comparison...");
-    
-        const coachDuration = submission?.session?.lesson?.videos?.[0]?.duration ?? 10;
-        const learnerDuration = submission?.duration ?? 10;
-    
-        const coachTimestamps = [
-          coachDuration * 0.25,
-          coachDuration * 0.5,
-          coachDuration * 0.75
-        ].map(t => parseFloat(t.toFixed(2)));
-    
-        const learnerTimestamps = [
-          learnerDuration * 0.25,
-          learnerDuration * 0.5,
-          learnerDuration * 0.75
-        ].map(t => parseFloat(t.toFixed(2)));
-    
-        console.log("📤 Sending videos to backend...");
-    
+      
+      // Get learner video duration
+      if (learnerPlayer?.duration) {
+        learnerDuration = learnerPlayer.duration;
+      } else if (submission?.duration != null) {
+        // submission.duration is usually in seconds
+        if (typeof submission.duration === 'number') {
+          learnerDuration = submission.duration;
+        } else {
+          learnerDuration = parseFloat(String(submission.duration)) || 0;
+        }
+      }
+      // Calculate valid timestamps
+      const coachTimestamps = calculateTimestamps(coachDuration);
+      const learnerTimestamps = calculateTimestamps(learnerDuration);
+      
+      // Validate timestamps before sending
+      if (coachTimestamps.length === 0 || learnerTimestamps.length === 0) {
+        throw new Error("Không thể tính toán timestamps hợp lệ từ video. Vui lòng kiểm tra độ dài video.");
+      }
+      
+      // Check if any timestamp exceeds duration
+      const invalidCoachTimestamps = coachTimestamps.filter(t => t >= coachDuration);
+      const invalidLearnerTimestamps = learnerTimestamps.filter(t => t >= learnerDuration);
+      
+      if (invalidCoachTimestamps.length > 0 || invalidLearnerTimestamps.length > 0) {
+        // Filter out invalid timestamps
+        const validCoachTimestamps = coachTimestamps.filter(t => t < coachDuration);
+        const validLearnerTimestamps = learnerTimestamps.filter(t => t < learnerDuration);
+        
+        if (validCoachTimestamps.length === 0 || validLearnerTimestamps.length === 0) {
+          throw new Error("Không có timestamps hợp lệ sau khi validate. Video có thể quá ngắn.");
+        }
+        
+        // Use filtered timestamps
+        const fullResult = await geminiService.compareVideosWithBackend(
+          coachLocalPath,
+          learnerLocalPath,
+          validCoachTimestamps,
+          validLearnerTimestamps
+        );
+        setAnalysisResult(fullResult);
+      } else {
+        // All timestamps are valid, proceed normally
         const fullResult = await geminiService.compareVideosWithBackend(
           coachLocalPath,
           learnerLocalPath,
           coachTimestamps,
           learnerTimestamps
         );
-    
-        console.log("✅ Analysis complete!");
         setAnalysisResult(fullResult);
-    
-      } catch (err) {
-        console.error("Analysis failed:", err);
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Đã xảy ra lỗi không xác định.");
-        }
-      } finally {
-        setIsAnalyzing(false);
       }
-    }, [coachLocalPath, learnerLocalPath, submission]);
+  
+    } catch (err) {
+      console.error("Analysis failed:", err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Đã xảy ra lỗi không xác định.");
+      }
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [coachLocalPath, learnerLocalPath, submission, coachPlayer, learnerPlayer]);
     
   
   const derivedCompareResult = useMemo<AiVideoCompareResult | null>(() => {
@@ -404,12 +494,45 @@ const SubmissionReviewScreen: React.FC = () => {
         practiceSets: item.drill?.practice_sets ?? "—",
       })) ?? [];
 
+    // Map comparison data to details format
+    const details = analysisResult.comparison
+      ? [
+          {
+            type: "preparation",
+            advanced: analysisResult.comparison.preparation.player2.analysis,
+            userRole: "learner",
+            strengths: analysisResult.comparison.preparation.player2.strengths,
+            weaknesses: analysisResult.comparison.preparation.player2.weaknesses,
+            coachTimestamp: analysisResult.comparison.preparation.player1.timestamp,
+            learnerTimestamp: analysisResult.comparison.preparation.player2.timestamp,
+          },
+          {
+            type: "swingAndContact",
+            advanced: analysisResult.comparison.swingAndContact.player2.analysis,
+            userRole: "learner",
+            strengths: analysisResult.comparison.swingAndContact.player2.strengths,
+            weaknesses: analysisResult.comparison.swingAndContact.player2.weaknesses,
+            coachTimestamp: analysisResult.comparison.swingAndContact.player1.timestamp,
+            learnerTimestamp: analysisResult.comparison.swingAndContact.player2.timestamp,
+          },
+          {
+            type: "followThrough",
+            advanced: analysisResult.comparison.followThrough.player2.analysis,
+            userRole: "learner",
+            strengths: analysisResult.comparison.followThrough.player2.strengths,
+            weaknesses: analysisResult.comparison.followThrough.player2.weaknesses,
+            coachTimestamp: analysisResult.comparison.followThrough.player1.timestamp,
+            learnerTimestamp: analysisResult.comparison.followThrough.player2.timestamp,
+          },
+        ]
+      : null;
+
     return {
       id: -1,
       summary: analysisResult.summary,
       learnerScore: analysisResult.overallScoreForPlayer2,
       keyDifferents,
-      details: null,
+      details,
       recommendationDrills,
       coachNote: null,
       createdAt: new Date().toISOString(),
@@ -419,6 +542,9 @@ const SubmissionReviewScreen: React.FC = () => {
   }, [analysisResult, submission]);
 
   const displayResult = derivedCompareResult ?? compareResult;
+  
+  // Check if result already exists in database (from API)
+  const hasSavedResult = compareResult !== null;
   
   const canAnalyze = Boolean(
     coachLocalPath &&
@@ -465,7 +591,57 @@ const SubmissionReviewScreen: React.FC = () => {
       if (analysisResult) {
         payload.summary = analysisResult.summary;
         payload.overallScoreForPlayer2 = analysisResult.overallScoreForPlayer2;
-        payload.comparison = analysisResult.comparison;
+        
+        // Map comparison với timestamp - đảm bảo timestamp luôn là number
+        if (analysisResult.comparison) {
+          const ensureTimestamp = (ts: any): number | undefined => {
+            if (ts === null || ts === undefined) return undefined;
+            const num = typeof ts === 'number' ? ts : parseFloat(ts);
+            return isNaN(num) ? undefined : num;
+          };
+
+          payload.comparison = {
+            preparation: {
+              player1: {
+                analysis: analysisResult.comparison.preparation?.player1?.analysis,
+                timestamp: ensureTimestamp(analysisResult.comparison.preparation?.player1?.timestamp),
+              },
+              player2: {
+                analysis: analysisResult.comparison.preparation?.player2?.analysis,
+                strengths: analysisResult.comparison.preparation?.player2?.strengths,
+                weaknesses: analysisResult.comparison.preparation?.player2?.weaknesses,
+                timestamp: ensureTimestamp(analysisResult.comparison.preparation?.player2?.timestamp),
+              },
+              advantage: analysisResult.comparison.preparation?.advantage,
+            },
+            swingAndContact: {
+              player1: {
+                analysis: analysisResult.comparison.swingAndContact?.player1?.analysis,
+                timestamp: ensureTimestamp(analysisResult.comparison.swingAndContact?.player1?.timestamp),
+              },
+              player2: {
+                analysis: analysisResult.comparison.swingAndContact?.player2?.analysis,
+                strengths: analysisResult.comparison.swingAndContact?.player2?.strengths,
+                weaknesses: analysisResult.comparison.swingAndContact?.player2?.weaknesses,
+                timestamp: ensureTimestamp(analysisResult.comparison.swingAndContact?.player2?.timestamp),
+              },
+              advantage: analysisResult.comparison.swingAndContact?.advantage,
+            },
+            followThrough: {
+              player1: {
+                analysis: analysisResult.comparison.followThrough?.player1?.analysis,
+                timestamp: ensureTimestamp(analysisResult.comparison.followThrough?.player1?.timestamp),
+              },
+              player2: {
+                analysis: analysisResult.comparison.followThrough?.player2?.analysis,
+                strengths: analysisResult.comparison.followThrough?.player2?.strengths,
+                weaknesses: analysisResult.comparison.followThrough?.player2?.weaknesses,
+                timestamp: ensureTimestamp(analysisResult.comparison.followThrough?.player2?.timestamp),
+              },
+              advantage: analysisResult.comparison.followThrough?.advantage,
+            },
+          };
+        }
 
         // Map keyDifferences để có coachTechnique và learnerTechnique
         if (
@@ -504,7 +680,27 @@ const SubmissionReviewScreen: React.FC = () => {
         payload.coachNote = feedback.trim();
       }
 
-      await post(`/v1/learner-videos/${submissionId}/ai-feedback`, payload);
+      // Thêm videoId nếu có (từ session.videos)
+      if (submission?.session?.videos?.[0]?.id) {
+        payload.videoId = submission.session.videos[0].id;
+      }
+
+      console.log("📤 Sending payload to save:", JSON.stringify(payload, null, 2));
+      console.log("📤 Comparison timestamps:");
+      if (payload.comparison) {
+        console.log("  - preparation.player1.timestamp:", payload.comparison.preparation?.player1?.timestamp);
+        console.log("  - preparation.player2.timestamp:", payload.comparison.preparation?.player2?.timestamp);
+        console.log("  - swingAndContact.player1.timestamp:", payload.comparison.swingAndContact?.player1?.timestamp);
+        console.log("  - swingAndContact.player2.timestamp:", payload.comparison.swingAndContact?.player2?.timestamp);
+        console.log("  - followThrough.player1.timestamp:", payload.comparison.followThrough?.player1?.timestamp);
+        console.log("  - followThrough.player2.timestamp:", payload.comparison.followThrough?.player2?.timestamp);
+      }
+
+      // Gọi API để lưu kết quả so sánh
+      await post(
+        `/v1/ai-video-compare-results/${submissionId}/save`,
+        payload
+      );
 
       Alert.alert("Thành công", "Đã gửi kết quả và feedback cho học viên.", [
         {
@@ -535,7 +731,7 @@ const SubmissionReviewScreen: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [submissionId, analysisResult, feedback, sessionId]);
+  }, [submissionId, analysisResult, feedback, sessionId, submission?.session?.videos]);
 
   return (
     <View style={styles.container}>
@@ -572,6 +768,7 @@ const SubmissionReviewScreen: React.FC = () => {
         </View>
       ) : (
         <ScrollView
+          ref={scrollViewRef}
           style={styles.content}
           contentContainerStyle={{ paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
@@ -692,6 +889,85 @@ const SubmissionReviewScreen: React.FC = () => {
                     </Text>
                   </View>
                 ) : null}
+                {/* Comparison sections with timestamps */}
+                {displayResult.details && displayResult.details.length > 0 ? (
+                  <View style={styles.compareResultSection}>
+                    <Text style={styles.compareResultLabel}>
+                      Phân tích chi tiết:
+                    </Text>
+                    {displayResult.details.map((detail, index) => {
+                      const typeLabel = translateComparisonType(detail.type);
+                      const coachTimestamp = (detail as any).coachTimestamp;
+                      const learnerTimestamp = (detail as any).learnerTimestamp;
+
+                      return (
+                        <View key={index} style={styles.comparisonDetailItem}>
+                          <View style={styles.comparisonDetailHeader}>
+                            <Text style={styles.comparisonDetailType}>
+                              {typeLabel}
+                            </Text>
+                            {coachTimestamp != null &&
+                            learnerTimestamp != null ? (
+                              <TouchableOpacity
+                                style={styles.playTimestampButton}
+                                onPress={() =>
+                                  playAtTimestamp(
+                                    coachTimestamp,
+                                    learnerTimestamp
+                                  )
+                                }
+                              >
+                                <Ionicons
+                                  name="play-circle"
+                                  size={18}
+                                  color="#059669"
+                                />
+                                <Text style={styles.playTimestampText}>
+                                  Xem tại {learnerTimestamp.toFixed(1)}s
+                                </Text>
+                              </TouchableOpacity>
+                            ) : null}
+                          </View>
+                          {coachTimestamp != null &&
+                          learnerTimestamp != null ? (
+                            <View style={styles.timestampInfo}>
+                              <Text style={styles.timestampText}>
+                                Coach: {coachTimestamp.toFixed(2)}s | Học viên:{" "}
+                                {learnerTimestamp.toFixed(2)}s
+                              </Text>
+                            </View>
+                          ) : null}
+                          <Text style={styles.comparisonDetailAnalysis}>
+                            {detail.advanced}
+                          </Text>
+                          {detail.strengths && detail.strengths.length > 0 ? (
+                            <View style={styles.strengthsWeaknessesContainer}>
+                              <Text style={styles.strengthsLabel}>Điểm mạnh:</Text>
+                              {detail.strengths.map((strength, idx) => (
+                                <Text key={idx} style={styles.strengthItem}>
+                                  • {strength}
+                                </Text>
+                              ))}
+                            </View>
+                          ) : null}
+                          {detail.weaknesses &&
+                          detail.weaknesses.length > 0 ? (
+                            <View style={styles.strengthsWeaknessesContainer}>
+                              <Text style={styles.weaknessesLabel}>
+                                Điểm cần cải thiện:
+                              </Text>
+                              {detail.weaknesses.map((weakness, idx) => (
+                                <Text key={idx} style={styles.weaknessItem}>
+                                  • {weakness}
+                                </Text>
+                              ))}
+                            </View>
+                          ) : null}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : null}
                 {displayResult.keyDifferents &&
                 displayResult.keyDifferents.length > 0 ? (
                   <View style={styles.compareResultSection}>
@@ -754,6 +1030,41 @@ const SubmissionReviewScreen: React.FC = () => {
                 ) : null}
               </View>
             )}
+            
+            {/* Feedback section - only show if result exists but not saved yet */}
+            {displayResult && !hasSavedResult && (
+              <View style={styles.feedbackSection}>
+                <Text style={styles.feedbackLabel}>Feedback cho học viên</Text>
+                <TextInput
+                  style={styles.feedbackInput}
+                  placeholder="Nhập feedback cho học viên..."
+                  placeholderTextColor="#9CA3AF"
+                  value={feedback}
+                  onChangeText={setFeedback}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    (!canSubmitFeedback || isSubmitting) &&
+                      styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmitFeedback}
+                  disabled={!canSubmitFeedback || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={16} color="#FFFFFF" />
+                      <Text style={styles.submitText}>Trả kết quả</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.actionCard}>
@@ -801,37 +1112,40 @@ const SubmissionReviewScreen: React.FC = () => {
                 </ScrollView>
               </View>
             ) : null}
-            <View style={styles.feedbackSection}>
-              <Text style={styles.feedbackLabel}>Feedback</Text>
-              <TextInput
-                style={styles.feedbackInput}
-                placeholder="Nhập feedback cho học viên..."
-                placeholderTextColor="#9CA3AF"
-                value={feedback}
-                onChangeText={setFeedback}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  (!canSubmitFeedback || isSubmitting) &&
-                    styles.submitButtonDisabled,
-                ]}
-                onPress={handleSubmitFeedback}
-                disabled={!canSubmitFeedback || isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={16} color="#FFFFFF" />
-                    <Text style={styles.submitText}>Trả kết quả</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+            {/* Only show feedback section if no saved result exists */}
+            {!hasSavedResult && (
+              <View style={styles.feedbackSection}>
+                <Text style={styles.feedbackLabel}>Feedback</Text>
+                <TextInput
+                  style={styles.feedbackInput}
+                  placeholder="Nhập feedback cho học viên..."
+                  placeholderTextColor="#9CA3AF"
+                  value={feedback}
+                  onChangeText={setFeedback}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    (!canSubmitFeedback || isSubmitting) &&
+                      styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmitFeedback}
+                  disabled={!canSubmitFeedback || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={16} color="#FFFFFF" />
+                      <Text style={styles.submitText}>Trả kết quả</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
         </ScrollView>
@@ -1074,6 +1388,83 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#059669",
+  },
+  comparisonDetailItem: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  comparisonDetailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  comparisonDetailType: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  playTimestampButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 6,
+  },
+  playTimestampText: {
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "600",
+  },
+  timestampInfo: {
+    marginBottom: 8,
+  },
+  timestampText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontStyle: "italic",
+  },
+  comparisonDetailAnalysis: {
+    fontSize: 13,
+    color: "#374151",
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  strengthsWeaknessesContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  strengthsLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#059669",
+    marginBottom: 4,
+  },
+  strengthItem: {
+    fontSize: 12,
+    color: "#374151",
+    marginLeft: 8,
+    marginBottom: 2,
+  },
+  weaknessesLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#DC2626",
+    marginBottom: 4,
+  },
+  weaknessItem: {
+    fontSize: 12,
+    color: "#374151",
+    marginLeft: 8,
+    marginBottom: 2,
   },
   keyDifferenceItem: {
     backgroundColor: "#FFFFFF",

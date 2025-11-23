@@ -3,13 +3,15 @@ import { get } from "@/services/http/httpService";
 import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
+import { extractQuizzesFromPayload, extractSessionPayload, extractVideosFromPayload, formatDate, formatTime, getStatusBadgeColors } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { VideoView, useVideoPlayer } from "expo-video";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,7 +20,6 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import QuizDetailModal from "../../../../components/coach/course/session/QuizDetailModal";
-import { extractSessionPayload, extractVideosFromPayload, extractQuizzesFromPayload, formatDate, formatTime, getStatusBadgeColors } from "@/utils/SessionFormat";
 const getCoachVideos = (session?: Session | null): VideoType[] => {
   if (!session || !Array.isArray(session.videos)) {
     return [];
@@ -34,6 +35,8 @@ const SessionDetailScreen: React.FC = () => {
   const [learnerVideos, setLearnerVideos] = useState<LearnerVideo[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
   const [quizModalVisible, setQuizModalVisible] = useState(false);
+  const [videoModalVisible, setVideoModalVisible] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -162,10 +165,18 @@ const SessionDetailScreen: React.FC = () => {
     }
   };
   const handleOpenCoachVideo = (url: string) => {
-    Linking.openURL(url).catch(() =>
-      Alert.alert("Lỗi", "Không thể mở video. Vui lòng thử lại sau.")
-    );
+    setSelectedVideoUrl(url);
+    setVideoModalVisible(true);
   };
+
+  const videoSource = useMemo(() => {
+    if (!selectedVideoUrl) return null;
+    return { uri: selectedVideoUrl, contentType: "auto" as const };
+  }, [selectedVideoUrl]);
+
+  const videoPlayer = useVideoPlayer(videoSource, (player) => {
+    if (player) player.loop = false;
+  });
 
   return (
     <View style={styles.container}>
@@ -458,6 +469,43 @@ const SessionDetailScreen: React.FC = () => {
           }
         }}
       />
+
+      {/* Video Modal */}
+      <Modal
+        visible={videoModalVisible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => {
+          setVideoModalVisible(false);
+          setSelectedVideoUrl(null);
+        }}
+      >
+        <View style={styles.videoModalContainer}>
+          <View style={styles.videoModalHeader}>
+            <TouchableOpacity
+              style={styles.videoModalCloseButton}
+              onPress={() => {
+                setVideoModalVisible(false);
+                setSelectedVideoUrl(null);
+              }}
+            >
+              <Ionicons name="close" size={24} color="#111827" />
+            </TouchableOpacity>
+            <Text style={styles.videoModalTitle}>Video mẫu</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          {videoSource && (
+            <View style={styles.videoPlayerContainer}>
+              <VideoView
+                style={styles.videoPlayer}
+                player={videoPlayer}
+                allowsFullscreen
+                allowsPictureInPicture
+              />
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -912,6 +960,46 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
+  },
+  videoModalContainer: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+  videoModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  videoModalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoModalTitle: {
+    flex: 1,
+    marginHorizontal: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+  videoPlayerContainer: {
+    flex: 1,
+    backgroundColor: "#000000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  videoPlayer: {
+    width: "100%",
+    height: "100%",
   },
 });
 

@@ -63,26 +63,28 @@ const SubmissionListScreen: React.FC = () => {
         // Normalize session data - handle both video object and videos array
         const sessionData = list[0].session;
         const videos = extractVideosFromPayload(sessionData);
-        setSession({
+        const normalizedSession = {
           ...sessionData,
           videos: sessionData.videos?.length
             ? sessionData.videos
             : videos.length
             ? videos
             : sessionData.videos,
-        } as Session);
+        } as Session;
+        setSession(normalizedSession);
       } else {
         const sessionRes = await get<Session>(`/v1/sessions/${sessionId}`);
         if (sessionRes.data) {
           const videos = extractVideosFromPayload(sessionRes.data);
-          setSession({
+          const normalizedSession = {
             ...sessionRes.data,
             videos: sessionRes.data.videos?.length
               ? sessionRes.data.videos
               : videos.length
               ? videos
               : sessionRes.data.videos,
-          } as Session);
+          } as Session;
+          setSession(normalizedSession);
         }
       }
     } catch {
@@ -186,7 +188,6 @@ const SubmissionCard = ({
     if (!video.publicUrl || !effectiveSessionId) {
       return;
     }
-
     router.push({
       pathname:
         "/(coach)/course/session/submissions/[sessionId]/[submissionId]",

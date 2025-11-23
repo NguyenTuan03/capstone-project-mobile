@@ -60,7 +60,6 @@ const VideoList: React.FC<VideoListProps> = ({
   coachVideoId,
   coachVideoDuration,
 }) => {
-  const [showAllVideos, setShowAllVideos] = useState(false);
   const [showCoachVideosModal, setShowCoachVideosModal] = useState(false);
 
   return (
@@ -75,16 +74,19 @@ const VideoList: React.FC<VideoListProps> = ({
         />
       )}
 
-      <VideoUploadSection
-        localVideo={localVideo}
-        isUploading={isUploading}
-        hasCoachVideo={videos.length > 0}
-        coachVideoId={coachVideoId}
-        coachVideoDuration={coachVideoDuration}
-        onPickVideo={onPickVideo}
-        onUploadVideo={onUploadVideo}
-        onVideoCapture={onVideoCapture}
-      />
+      {/* Chỉ hiển thị phần quay video nếu chưa có kết quả AI */}
+      {!aiAnalysisResult && (
+        <VideoUploadSection
+          localVideo={localVideo}
+          isUploading={isUploading}
+          hasCoachVideo={videos.length > 0}
+          coachVideoId={coachVideoId}
+          coachVideoDuration={coachVideoDuration}
+          onPickVideo={onPickVideo}
+          onUploadVideo={onUploadVideo}
+          onVideoCapture={onVideoCapture}
+        />
+      )}
 
       {videos.length === 0 && !localVideo && (
         <Text style={styles.emptyText}>Chưa có video nào cho bài học này.</Text>
