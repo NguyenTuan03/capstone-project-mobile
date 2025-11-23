@@ -324,7 +324,6 @@ const SubmissionReviewScreen: React.FC = () => {
             hasLearnerTimestamp: !!(resultWithTimestamps.details?.[0] as any)?.learnerTimestamp,
           });
           setCompareResult(resultWithTimestamps);
-          // Pre-populate feedback with coachNote if available and feedback is empty
           if (result.coachNote) {
             setFeedback((prev) => (prev ? prev : result.coachNote || ""));
           }
@@ -669,88 +668,116 @@ const SubmissionReviewScreen: React.FC = () => {
       // Nếu có kết quả phân tích, gửi toàn bộ dữ liệu
       if (analysisResult) {
         payload.summary = analysisResult.summary;
-        payload.overallScoreForPlayer2 = analysisResult.overallScoreForPlayer2;
+        // Backend entity uses 'learnerScore', not 'overallScoreForPlayer2'
+        payload.learnerScore = analysisResult.overallScoreForPlayer2;
         
-        // Map comparison với timestamp - đảm bảo timestamp luôn là number
+        // Map comparison với timestamp - đảm bảo timestamp luôn là number và được gửi
         if (analysisResult.comparison) {
-          const ensureTimestamp = (ts: any): number | undefined => {
-            if (ts === null || ts === undefined) return undefined;
-            const num = typeof ts === 'number' ? ts : parseFloat(ts);
-            return isNaN(num) ? undefined : num;
+          const ensureTimestamp = (ts: any): number | null => {
+            if (ts === null || ts === undefined) {
+              console.warn("⚠️ Timestamp is null or undefined, skipping");
+              return null;
+            }
+            const num = typeof ts === 'number' ? ts : parseFloat(String(ts));
+            if (isNaN(num) || num < 0) {
+              console.warn("⚠️ Invalid timestamp value:", ts, "-> skipping");
+              return null;
+            }
+            return num;
           };
+
+          // Extract timestamps with validation
+          const prepP1Ts = ensureTimestamp(analysisResult.comparison.preparation?.player1?.timestamp);
+          const prepP2Ts = ensureTimestamp(analysisResult.comparison.preparation?.player2?.timestamp);
+          const swingP1Ts = ensureTimestamp(analysisResult.comparison.swingAndContact?.player1?.timestamp);
+          const swingP2Ts = ensureTimestamp(analysisResult.comparison.swingAndContact?.player2?.timestamp);
+          const followP1Ts = ensureTimestamp(analysisResult.comparison.followThrough?.player1?.timestamp);
+          const followP2Ts = ensureTimestamp(analysisResult.comparison.followThrough?.player2?.timestamp);
 
           payload.comparison = {
             preparation: {
               player1: {
                 analysis: analysisResult.comparison.preparation?.player1?.analysis,
-                timestamp: ensureTimestamp(analysisResult.comparison.preparation?.player1?.timestamp),
+                timestamp: prepP1Ts, // Always include timestamp (can be null if invalid)
               },
               player2: {
                 analysis: analysisResult.comparison.preparation?.player2?.analysis,
                 strengths: analysisResult.comparison.preparation?.player2?.strengths,
                 weaknesses: analysisResult.comparison.preparation?.player2?.weaknesses,
-                timestamp: ensureTimestamp(analysisResult.comparison.preparation?.player2?.timestamp),
+                timestamp: prepP2Ts, // Always include timestamp (can be null if invalid)
               },
               advantage: analysisResult.comparison.preparation?.advantage,
             },
             swingAndContact: {
               player1: {
                 analysis: analysisResult.comparison.swingAndContact?.player1?.analysis,
-                timestamp: ensureTimestamp(analysisResult.comparison.swingAndContact?.player1?.timestamp),
+                timestamp: swingP1Ts, // Always include timestamp (can be null if invalid)
               },
               player2: {
                 analysis: analysisResult.comparison.swingAndContact?.player2?.analysis,
                 strengths: analysisResult.comparison.swingAndContact?.player2?.strengths,
                 weaknesses: analysisResult.comparison.swingAndContact?.player2?.weaknesses,
-                timestamp: ensureTimestamp(analysisResult.comparison.swingAndContact?.player2?.timestamp),
+                timestamp: swingP2Ts, // Always include timestamp (can be null if invalid)
               },
               advantage: analysisResult.comparison.swingAndContact?.advantage,
             },
             followThrough: {
               player1: {
                 analysis: analysisResult.comparison.followThrough?.player1?.analysis,
-                timestamp: ensureTimestamp(analysisResult.comparison.followThrough?.player1?.timestamp),
+                timestamp: followP1Ts, // Always include timestamp (can be null if invalid)
               },
               player2: {
                 analysis: analysisResult.comparison.followThrough?.player2?.analysis,
                 strengths: analysisResult.comparison.followThrough?.player2?.strengths,
                 weaknesses: analysisResult.comparison.followThrough?.player2?.weaknesses,
-                timestamp: ensureTimestamp(analysisResult.comparison.followThrough?.player2?.timestamp),
+                timestamp: followP2Ts, // Always include timestamp (can be null if invalid)
               },
               advantage: analysisResult.comparison.followThrough?.advantage,
             },
           };
+
+          // Log all timestamps to verify they are being sent
+          console.log("✅ Timestamps being sent to backend:");
+          console.log("  - preparation.player1.timestamp:", prepP1Ts);
+          console.log("  - preparation.player2.timestamp:", prepP2Ts);
+          console.log("  - swingAndContact.player1.timestamp:", swingP1Ts);
+          console.log("  - swingAndContact.player2.timestamp:", swingP2Ts);
+          console.log("  - followThrough.player1.timestamp:", followP1Ts);
+          console.log("  - followThrough.player2.timestamp:", followP2Ts);
         }
 
-        // Map keyDifferences để có coachTechnique và learnerTechnique
+        // Map keyDifferences -> keyDifferents (backend entity name)
+        // Backend only has learnerTechnique, not coachTechnique
         if (
           analysisResult.keyDifferences &&
           analysisResult.keyDifferences.length > 0
         ) {
-          payload.keyDifferences = analysisResult.keyDifferences.map((kd) => ({
+          payload.keyDifferents = analysisResult.keyDifferences.map((kd) => ({
             aspect: kd.aspect,
             impact: kd.impact,
-            coachTechnique: kd.player1_technique,
-            learnerTechnique: kd.player2_technique,
+            learnerTechnique: kd.player2_technique, // Backend only has learnerTechnique
           }));
         }
 
-        // Map recommendationsForPlayer2
+        // Map recommendationsForPlayer2 -> recommendationDrills (backend entity name)
+        // Backend expects: name, description, practiceSets (not title, practice_sets)
         if (
           analysisResult.recommendationsForPlayer2 &&
           analysisResult.recommendationsForPlayer2.length > 0
         ) {
-          payload.recommendationsForPlayer2 =
-            analysisResult.recommendationsForPlayer2.map((rec) => ({
-              recommendation: rec.recommendation,
-              drill: rec.drill
-                ? {
-                    title: rec.drill.title,
-                    description: rec.drill.description,
-                    practice_sets: rec.drill.practice_sets,
-                  }
-                : undefined,
-            }));
+          payload.recommendationDrills =
+            analysisResult.recommendationsForPlayer2.map((rec) => {
+              const drill: any = {
+                name: rec.drill?.title || rec.recommendation || "Bài tập",
+              };
+              if (rec.drill?.description) {
+                drill.description = rec.drill.description;
+              }
+              if (rec.drill?.practice_sets) {
+                drill.practiceSets = rec.drill.practice_sets;
+              }
+              return drill;
+            });
         }
       }
 
