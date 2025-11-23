@@ -274,98 +274,58 @@ const SubmissionReviewScreen: React.FC = () => {
     submission?.user?.fullName ??
     (submission?.user?.id ? `Learner #${submission.user.id}` : "Học viên");
 
-  const handleAnalyzeTechnique = useCallback(async () => {
-    if (!coachLocalPath || !learnerLocalPath) {
-      Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
-      return;
-    }
-  
-    setIsAnalyzing(true);
-    setError(null);
-    setAnalysisResult(null);
-  
-    try {
-      console.log("🔍 Starting pose extraction and analysis...");
-      console.log("👨‍🏫 Coach video:", coachLocalPath);
-      console.log("👨‍🎓 Learner video:", learnerLocalPath);
-  
-      // ✅ BƯỚC 1: Extract pose data từ video (sử dụng MediaPipe hoặc TensorFlow)
-      // Bạn cần implement hàm extractPoseDataForTimestamps
-      const coachDuration = submission?.session?.lesson?.videos?.[0]?.duration ?? 0;
-      const learnerDuration = submission?.duration ?? 0;
-  
-      const coachTimestamps = [
-        coachDuration * 0.25,
-        coachDuration * 0.5,
-        coachDuration * 0.75
-      ].map(t => parseFloat(t.toFixed(2)));
-  
-      const learnerTimestamps = [
-        learnerDuration * 0.25,
-        learnerDuration * 0.5,
-        learnerDuration * 0.75
-      ].map(t => parseFloat(t.toFixed(2)));
-  
-      console.log("📊 Extracting pose data...");
-      
-      // TODO: Implement extractPoseDataForTimestamps function
-      // const [coachPoses, learnerPoses] = await Promise.all([
-      //   extractPoseDataForTimestamps(coachLocalPath, coachTimestamps),
-      //   extractPoseDataForTimestamps(learnerLocalPath, learnerTimestamps)
-      // ]);
-  
-      // TEMPORARY: Mock data for testing
-      const coachPoses: PoseLandmark[][] = [[], [], []]; // Replace with actual extraction
-      const learnerPoses: PoseLandmark[][] = [[], [], []]; // Replace with actual extraction
-  
-      console.log("🤖 Calling Gemini API with pose data...");
-  
-      // ✅ BƯỚC 2: Gọi API với pose data thay vì frames
-      const analysisResult = await geminiService.comparePoseData(
-        coachPoses,
-        coachTimestamps,
-        learnerPoses,
-        learnerTimestamps
-      );
-  
-      // ✅ BƯỚC 3: Merge API response với pose data
-      const fullResult: VideoComparisonResult = {
-        ...analysisResult,
-        coachPoses,
-        learnerPoses
-      };
-  
-      console.log("📊 Full Analysis Result:");
-      console.log(JSON.stringify(fullResult, null, 2));
-  
-      setAnalysisResult(fullResult);
-    } catch (err) {
-      console.error("Analysis failed:", err);
-      if (err instanceof Error) {
-        if (err.message.includes("503") || err.message.includes("overloaded")) {
-          setError(
-            "Server AI đang quá tải. Vui lòng đợi 1-2 phút rồi thử lại."
-          );
-          Alert.alert(
-            "Server quá tải",
-            "Gemini API đang quá tải. Vui lòng thử lại sau 1-2 phút.",
-            [{ text: "OK" }]
-          );
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError("Đã xảy ra lỗi không xác định khi so sánh kỹ thuật.");
+    const handleAnalyzeTechnique = useCallback(async () => {
+      if (!coachLocalPath || !learnerLocalPath) {
+        Alert.alert("Lỗi", "Video chưa sẵn sàng. Vui lòng thử lại.");
+        return;
       }
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [
-    coachLocalPath,
-    learnerLocalPath,
-    submission?.duration,
-    submission?.session?.lesson?.videos,
-  ]);
+    
+      setIsAnalyzing(true);
+      setError(null);
+      setAnalysisResult(null);
+    
+      try {
+        console.log("🔍 Starting video comparison...");
+    
+        const coachDuration = submission?.session?.lesson?.videos?.[0]?.duration ?? 10;
+        const learnerDuration = submission?.duration ?? 10;
+    
+        const coachTimestamps = [
+          coachDuration * 0.25,
+          coachDuration * 0.5,
+          coachDuration * 0.75
+        ].map(t => parseFloat(t.toFixed(2)));
+    
+        const learnerTimestamps = [
+          learnerDuration * 0.25,
+          learnerDuration * 0.5,
+          learnerDuration * 0.75
+        ].map(t => parseFloat(t.toFixed(2)));
+    
+        console.log("📤 Sending videos to backend...");
+    
+        const fullResult = await geminiService.compareVideosWithBackend(
+          coachLocalPath,
+          learnerLocalPath,
+          coachTimestamps,
+          learnerTimestamps
+        );
+    
+        console.log("✅ Analysis complete!");
+        setAnalysisResult(fullResult);
+    
+      } catch (err) {
+        console.error("Analysis failed:", err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Đã xảy ra lỗi không xác định.");
+        }
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }, [coachLocalPath, learnerLocalPath, submission]);
+    
   
   const derivedCompareResult = useMemo<AiVideoCompareResult | null>(() => {
     if (!analysisResult) return null;
