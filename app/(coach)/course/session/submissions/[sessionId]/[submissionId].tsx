@@ -45,6 +45,70 @@ const translateComparisonType = (type: string): string => {
   return typeMap[type] || type;
 };
 
+// Helper function to map timestamp from comparison object to details array
+const mapTimestampsToDetails = (
+  result: AiVideoCompareResult & { comparison?: any }
+): AiVideoCompareResult => {
+  // If no comparison object or no details, return as is
+  if (!result.comparison || !result.details || !Array.isArray(result.details)) {
+    console.log("⚠️ Cannot map timestamps - missing comparison or details:", {
+      hasComparison: !!result.comparison,
+      hasDetails: !!result.details,
+      detailsIsArray: Array.isArray(result.details),
+    });
+    return result;
+  }
+
+  // Map timestamps from comparison to details
+  const updatedDetails = result.details.map((detail: any) => {
+    const type = (detail.type || "").toLowerCase().replace(/_/g, "").replace(/\s+/g, "");
+    let coachTimestamp: number | undefined;
+    let learnerTimestamp: number | undefined;
+
+    // Extract timestamps from comparison object based on type
+    // Match various type formats: "preparation", "PREPARATION", "swingAndContact", "SWING_AND_CONTACT", etc.
+    if (type === "preparation") {
+      coachTimestamp = result.comparison.preparation?.player1?.timestamp;
+      learnerTimestamp = result.comparison.preparation?.player2?.timestamp;
+    } else if (type === "swingandcontact" || type === "swingandcontact") {
+      coachTimestamp = result.comparison.swingAndContact?.player1?.timestamp;
+      learnerTimestamp = result.comparison.swingAndContact?.player2?.timestamp;
+    } else if (type === "followthrough") {
+      coachTimestamp = result.comparison.followThrough?.player1?.timestamp;
+      learnerTimestamp = result.comparison.followThrough?.player2?.timestamp;
+    }
+
+    // Convert to number if needed
+    const ensureNumber = (val: any): number | undefined => {
+      if (val === null || val === undefined) return undefined;
+      const num = typeof val === "number" ? val : parseFloat(val);
+      return isNaN(num) ? undefined : num;
+    };
+
+    const mappedTimestamp = {
+      coachTimestamp: ensureNumber(coachTimestamp),
+      learnerTimestamp: ensureNumber(learnerTimestamp),
+    };
+
+    // Log if timestamp was found
+    if (coachTimestamp !== undefined || learnerTimestamp !== undefined) {
+      console.log(`✅ Mapped timestamps for type "${detail.type}":`, mappedTimestamp);
+    } else {
+      console.log(`⚠️ No timestamps found for type "${detail.type}" (normalized: "${type}")`);
+    }
+
+    return {
+      ...detail,
+      ...mappedTimestamp,
+    };
+  });
+
+  return {
+    ...result,
+    details: updatedDetails,
+  };
+};
+
 // Helper function to calculate valid timestamps based on video duration
 const calculateTimestamps = (duration: number, count: number = 3): number[] => {
   if (!duration || duration <= 0) {
@@ -243,8 +307,23 @@ const SubmissionReviewScreen: React.FC = () => {
         const results = Array.isArray(res.data) ? res.data : [];
         // Get the most recent result (first item if sorted by createdAt desc)
         if (results.length > 0) {
-          const result = results[0];
-          setCompareResult(result);
+          const result = results[0] as AiVideoCompareResult & { comparison?: any };
+          console.log("📊 Raw compare result from API:", {
+            hasComparison: !!result.comparison,
+            comparisonKeys: result.comparison ? Object.keys(result.comparison) : [],
+            detailsCount: result.details?.length || 0,
+            firstDetail: result.details?.[0],
+            fullComparison: result.comparison,
+          });
+          // Map timestamps from comparison object to details array
+          const resultWithTimestamps = mapTimestampsToDetails(result);
+          console.log("📊 Mapped compare result with timestamps:", {
+            detailsCount: resultWithTimestamps.details?.length || 0,
+            firstDetail: resultWithTimestamps.details?.[0],
+            hasCoachTimestamp: !!(resultWithTimestamps.details?.[0] as any)?.coachTimestamp,
+            hasLearnerTimestamp: !!(resultWithTimestamps.details?.[0] as any)?.learnerTimestamp,
+          });
+          setCompareResult(resultWithTimestamps);
           // Pre-populate feedback with coachNote if available and feedback is empty
           if (result.coachNote) {
             setFeedback((prev) => (prev ? prev : result.coachNote || ""));
