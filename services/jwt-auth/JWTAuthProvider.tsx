@@ -12,11 +12,11 @@ interface JWTAuthAuthProviderProps {
   children: ReactNode;
 }
 interface SignInProps {
-  email: string;
+  phoneNumber: string;
   password: string;
 }
 interface JWTAuthActionsProps {
-  signInUser: (data: SignInProps) => void;
+  signInUser: (data: SignInProps) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
@@ -38,7 +38,7 @@ const JWTAuthContext = createContext<JWTAuthContextProps>({
   isLoading: false,
 });
 const JWTAuthActionsContext = createContext<JWTAuthActionsProps>({
-  signInUser: () => {},
+  signInUser: async () => {},
   logout: () => {},
   refreshUser: () => Promise.resolve(),
   requestPasswordReset: () => Promise.resolve(false),
@@ -68,25 +68,31 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
           storageService.getUser(),
         ]);
 
+        // If no token, user is not authenticated regardless of stored user data
+        if (!token) {
+          setJwtAuthData({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+          // Clear any stale user data
+          if (storedUser) {
+            await storageService.removeUser();
+          }
+          return;
+        }
+
+        // If we have a token, show stored user while we validate
         if (storedUser) {
           setJwtAuthData((prevState) => ({
             ...prevState,
             user: storedUser,
-            isAuthenticated: true,
+            isAuthenticated: false, // Don't mark as authenticated until token is validated
             isLoading: true,
           }));
         }
 
-        if (!token) {
-          setJwtAuthData((prevState) => ({
-            ...prevState,
-            user: storedUser ?? undefined,
-            isAuthenticated: Boolean(storedUser),
-            isLoading: false,
-          }));
-          return;
-        }
-
+        // Validate token with server
         setAuthToken(token);
         const { data } = await jwtAxios.get("/auth/current-user", {
           headers: {
@@ -94,6 +100,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
           },
         });
 
+        // Token is valid, update user data and mark as authenticated
         await storageService.setUser(data);
         setJwtAuthData({
           user: data,
@@ -102,6 +109,10 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
         });
       } catch (error) {
         console.error("Failed to initialize auth user:", error);
+        // Clear all auth data on error
+        await storageService.clearAll();
+        await setAuthToken();
+        await setRefreshToken();
         setJwtAuthData({
           user: null,
           isAuthenticated: false,
@@ -113,16 +124,16 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
     getAuthUser();
   }, []);
 
-  const signInUser = async ({ email, password }: SignInProps) => {
+  const signInUser = async ({ phoneNumber, password }: SignInProps) => {
     try {
       const { data } = await jwtAxios.post("/auth/login", {
-        email,
+        phoneNumber,
         password,
       });
       const { metadata } = data;
       // Store authentication tokens
-      setAuthToken(metadata.accessToken);
-      setRefreshToken(metadata.refresh_token);
+      await setAuthToken(metadata.accessToken);
+      await setRefreshToken(metadata.refreshToken);
 
       // Update authentication state
       setJwtAuthData({
@@ -132,15 +143,19 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
       });
       // Persist user
       await storageService.setUser(metadata.user);
-    } catch {
+    } catch (error) {
+      console.error("Login error in provider:", error);
       setJwtAuthData({
         ...jwtAuthData,
         isAuthenticated: false,
         isLoading: false,
       });
+      throw error; // Re-throw to let the component handle the error UI
     }
   };
   const logout = async () => {
+    await setAuthToken();
+    await setRefreshToken();
     await storageService.clearAll();
     setJwtAuthData({
       user: null,

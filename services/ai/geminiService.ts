@@ -9,7 +9,7 @@ export const compareVideosWithBackend = async (
 ): Promise<VideoComparisonResult> => {
   try {
     const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
-    
+
     // Get token for authorization
     const token = await storageService.getToken();
     if (!token) {
@@ -44,7 +44,7 @@ export const compareVideosWithBackend = async (
     const requestHeaders = {
       Authorization: `Bearer ${token}`,
     };
-    
+
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: requestHeaders,
@@ -61,27 +61,37 @@ export const compareVideosWithBackend = async (
     console.log("📊 Result breakdown:");
     console.log("  - summary:", result.summary);
     console.log("  - overallScoreForPlayer2:", result.overallScoreForPlayer2);
-    console.log("  - keyDifferences:", JSON.stringify(result.keyDifferences, null, 2));
-    console.log("  - recommendationsForPlayer2:", JSON.stringify(result.recommendationsForPlayer2, null, 2));
+    console.log(
+      "  - keyDifferences:",
+      JSON.stringify(result.keyDifferences, null, 2)
+    );
+    console.log(
+      "  - recommendationsForPlayer2:",
+      JSON.stringify(result.recommendationsForPlayer2, null, 2)
+    );
     console.log("  - comparison:", JSON.stringify(result.comparison, null, 2));
     console.log("  - coachPoses count:", result.coachPoses?.length || 0);
     console.log("  - learnerPoses count:", result.learnerPoses?.length || 0);
-    
+
     // Log coachPoses details (first timestamp only to avoid too much output)
     if (result.coachPoses && result.coachPoses.length > 0) {
-      console.log("  - coachPoses[0] (first timestamp):", JSON.stringify(result.coachPoses[0], null, 2));
+      console.log(
+        "  - coachPoses[0] (first timestamp):",
+        JSON.stringify(result.coachPoses[0], null, 2)
+      );
     }
-    
+
     // Log learnerPoses details (first timestamp only)
     if (result.learnerPoses && result.learnerPoses.length > 0) {
-      console.log("  - learnerPoses[0] (first timestamp):", JSON.stringify(result.learnerPoses[0], null, 2));
+      console.log(
+        "  - learnerPoses[0] (first timestamp):",
+        JSON.stringify(result.learnerPoses[0], null, 2)
+      );
     }
-    
+
     return result;
   } catch (error: any) {
     console.error("Có một chút rắc rối từ AI, hãy thử lại nhé 🫶🏻");
-    throw new Error(
-      error.message || "Đã xảy ra lỗi không xác định."
-    );
+    throw new Error(error.message || "Đã xảy ra lỗi không xác định.");
   }
 };

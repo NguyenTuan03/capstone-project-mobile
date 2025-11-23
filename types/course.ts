@@ -1,5 +1,6 @@
 import { Court } from "./court";
 import { Enrollment } from "./enrollments";
+import { Session } from "./session";
 
 export type LearningFormat = "GROUP" | "INDIVIDUAL";
 
@@ -20,7 +21,6 @@ export type Schedule = {
   startTime: string;
   endTime: string;
   totalSessions?: number;
-  course?: Course;
 };
 export type Course = {
   id: number;
@@ -38,7 +38,6 @@ export type Course = {
   startDate: string;
   endDate: string | null;
   progressPct: number;
-  publicUrl?: string;
   address: string;
   subject: {
     id: number;
@@ -54,6 +53,7 @@ export type Course = {
     email: string;
   };
   enrollments: Enrollment[];
+  sessions?: Session[];
 };
 
 export type CourseResponse = {

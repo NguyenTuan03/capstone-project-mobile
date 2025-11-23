@@ -19,12 +19,36 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
-import QuizDetailModal from "../../../../components/coach/course/session/QuizDetailModal";
-const getCoachVideos = (session?: Session | null): VideoType[] => {
-  if (!session || !Array.isArray(session.videos)) {
-    return [];
+import { QuizDetailModal } from "./components/QuizDetailModal";
+
+const formatTime = (time?: string | null) => {
+  if (!time) return "—";
+  return time.substring(0, 5);
+};
+
+const formatDate = (date?: string | null) => {
+  if (!date) return "—";
+  return new Date(date).toLocaleDateString("vi-VN");
+};
+
+const extractSessionPayload = (payload: any): Session | null => {
+  if (!payload || typeof payload !== "object") return null;
+  if ("id" in payload && "sessionNumber" in payload) {
+    return payload as Session;
   }
-  return session.videos;
+  if ("data" in payload) {
+    const nested = extractSessionPayload((payload as any).data);
+    if (nested) return nested;
+  }
+  if ("metadata" in payload) {
+    const nested = extractSessionPayload((payload as any).metadata);
+    if (nested) return nested;
+  }
+  return null;
+};
+
+const getCoachVideos = (session?: Session | null): VideoType | undefined => {
+  return session?.video;
 };
 
 const SessionDetailScreen: React.FC = () => {
@@ -81,24 +105,7 @@ const SessionDetailScreen: React.FC = () => {
           setSession(null);
           return;
         }
-        // Extract videos - handle both array and single object
-        const fallbackVideos = extractVideosFromPayload(res.data);
-        // Extract quizzes - handle both array and single object
-        const fallbackQuizzes = extractQuizzesFromPayload(res.data);
-
-        setSession({
-          ...normalized,
-          videos: normalized.videos?.length
-            ? normalized.videos
-            : fallbackVideos.length
-            ? fallbackVideos
-            : normalized.videos,
-          quizzes: normalized.quizzes?.length
-            ? normalized.quizzes
-            : fallbackQuizzes.length
-            ? fallbackQuizzes
-            : normalized.quizzes,
-        });
+        setSession(normalized);
       } catch {
         Alert.alert("Lỗi", "Không thể tải thông tin buổi học");
       } finally {
@@ -137,15 +144,6 @@ const SessionDetailScreen: React.FC = () => {
   const deleteQuiz = async (quizId: number, quizTitle: string) => {
     try {
       await http.delete(`/v1/quizzes/${quizId}`);
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              quizzes: prev.quizzes?.filter((q) => q.id !== quizId) || [],
-            }
-          : null
-      );
-
       Toast.show({
         type: "success",
         text1: "Thành công",
@@ -441,6 +439,116 @@ const SessionDetailScreen: React.FC = () => {
               </View>
             )}
           </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quiz </Text>
+            {session.quiz ? (
+              <TouchableOpacity
+                style={styles.quizCard}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSelectedQuiz(session.quiz);
+                  setQuizModalVisible(true);
+                }}
+              >
+                {/* Quiz Header */}
+                <View style={styles.quizCardHeader}>
+                  <View style={styles.quizCardTitle}>
+                    <Text style={styles.quizStepLabel}>Quiz</Text>
+                    <Text style={styles.quizCardTitleText} numberOfLines={2}>
+                      {session.quiz.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.quizStatusBadge,
+                      {
+                        backgroundColor: "#EFF6FF",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: "#2563EB",
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Sẵn sàng
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Quiz Description */}
+                {session.quiz.description && (
+                  <View style={styles.quizDescriptionSection}>
+                    <Text style={styles.quizDescText}>
+                      {session.quiz.description}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Quick Metadata Row */}
+                <View style={styles.quickMetadataRow}>
+                  <View style={styles.quickMetadataItem}>
+                    <Ionicons name="help-circle" size={14} color="#2563EB" />
+                    <Text style={styles.quickMetadataTextBlue}>
+                      {session.quiz.questions?.length || 0} câu hỏi
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={36}
+                  color="#9CA3AF"
+                />
+                <Text style={styles.emptyText}>Chưa có quiz cho buổi này</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Video mẫu của Coach </Text>
+            {coachVideos ? (
+              <CoachVideoCard
+                video={coachVideos}
+                onOpen={handleOpenCoachVideo}
+              />
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
+                <Text style={styles.emptyText}>Chưa có video mẫu</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Video của học viên{" "}
+              {learnerVideos.length ? `(${learnerVideos.length})` : ""}
+            </Text>
+            {learnerVideos.length ? (
+              learnerVideos.map((video) => (
+                <LearnerVideoCard
+                  key={video.id}
+                  video={video}
+                  onOpenSubmission={handleOpenLearnerSubmission}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={36}
+                  color="#9CA3AF"
+                />
+                <Text style={styles.emptyText}>Chưa có video học viên</Text>
+              </View>
+            )}
+          </View>
         </ScrollView>
       )}
 
@@ -510,7 +618,7 @@ const SessionDetailScreen: React.FC = () => {
   );
 };
 
-const InfoRow = ({
+function InfoRow({
   label,
   value,
   multiline,
@@ -520,21 +628,46 @@ const InfoRow = ({
   value?: string | null;
   multiline?: boolean;
   valueStyle?: any;
-}) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text
-      style={[styles.infoValue, valueStyle]}
-      numberOfLines={multiline ? undefined : 2}
-    >
-      {value || "—"}
-    </Text>
-  </View>
-);
-const CoachVideoCard: React.FC<{
+}) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text
+        style={[styles.infoValue, valueStyle]}
+        numberOfLines={multiline ? undefined : 2}
+      >
+        {value || "—"}
+      </Text>
+    </View>
+  );
+}
+
+function getStatusBadgeColors(status?: string | null) {
+  switch (status) {
+    case "READY":
+      return { backgroundColor: "#ECFDF5", color: "#059669" };
+    case "UPLOADING":
+      return { backgroundColor: "#FEF3C7", color: "#B45309" };
+    case "ERROR":
+      return { backgroundColor: "#FEE2E2", color: "#B91C1C" };
+    case "ANALYZING":
+      return { backgroundColor: "#DBEAFE", color: "#1D4ED8" };
+    case "PENDING":
+      return { backgroundColor: "#E0E7FF", color: "#4338CA" };
+    case "PAID":
+      return { backgroundColor: "#DCFCE7", color: "#15803D" };
+    default:
+      return { backgroundColor: "#F3F4F6", color: "#4B5563" };
+  }
+}
+
+function CoachVideoCard({
+  video,
+  onOpen,
+}: {
   video: VideoType;
   onOpen: (url: string) => void;
-}> = ({ video, onOpen }) => {
+}) {
   const badgeStyle = getStatusBadgeColors(video.status);
   return (
     <View style={styles.coachCard}>
@@ -596,7 +729,64 @@ const CoachVideoCard: React.FC<{
       )}
     </View>
   );
-};
+}
+
+function LearnerVideoCard({
+  video,
+  onOpenSubmission,
+}: {
+  video: LearnerVideo;
+  onOpenSubmission: (id: number) => void;
+}) {
+  const badgeStyle = getStatusBadgeColors(video.status);
+  return (
+    <View style={styles.learnerCard}>
+      <View style={styles.learnerHeader}>
+        <View>
+          <Text style={styles.learnerName}>
+            {video.user?.fullName || `Học viên #${video.user?.id ?? "N/A"}`}
+          </Text>
+          <Text style={styles.learnerMeta}>
+            Nộp lúc: {formatFullDateTime(video.createdAt)}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: badgeStyle.backgroundColor,
+              color: badgeStyle.color,
+            },
+          ]}
+        >
+          {video.status}
+        </Text>
+      </View>
+
+      {video.duration != null ? (
+        <Text style={styles.meta}>⏱ {video.duration} giây</Text>
+      ) : null}
+
+      {video.overlayVideoUrl ? (
+        <Text style={styles.meta}>Có video overlay đã xử lý</Text>
+      ) : null}
+
+      <View style={styles.learnerActions}>
+        {video.publicUrl ? (
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => onOpenSubmission(video.id)}
+          >
+            <Ionicons name="sparkles" size={14} color="#7C3AED" />
+            <Text style={styles.linkText}>Xem & chấm</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.meta}>Video đang xử lý</Text>
+        )}
+      </View>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {

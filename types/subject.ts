@@ -41,6 +41,6 @@ export interface Lesson {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  video: VideoType[];
-  quizzes: QuizType[];
+  video: VideoType;
+  quiz: QuizType;
 }

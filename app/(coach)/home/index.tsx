@@ -1,8 +1,16 @@
+import coachService from "@/services/coach.service";
+import storageService from "@/services/storageService";
+import { User } from "@/types/user";
+import { formatPrice } from "@/utils/priceFormat";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
+  Image,
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,10 +20,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import sessionService from "../../../services/sessionService";
-import { CalendarSession } from "../../../types/session";
+import { CalendarSession, SessionStatus } from "../../../types/session";
+
+const { width } = Dimensions.get("window");
 
 export default function CoachHomeScreen() {
   const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
+  const [revenue, setRevenue] = useState<number>(0);
+  const [revenueGrowth, setRevenueGrowth] = useState<number | null>(null);
 
   // Helper function to get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -56,113 +69,178 @@ export default function CoachHomeScreen() {
     }, ${today.getFullYear()}`;
   };
 
+  const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
-  const loadTodaySessions = useCallback(async () => {
+
+  const loadData = useCallback(async () => {
+    const user = await storageService.getUser();
+    setUser(user);
     setLoadingSessions(true);
     try {
-      const today = getTodayDate();
-      const data = await sessionService.getSessionsForWeeklyCalendar({
-        startDate: today,
-        endDate: today,
-      });
-      setSessions(data);
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const year = today.getFullYear();
+      const dateStr = getTodayDate();
+
+      const [sessionsData, revenueData] = await Promise.all([
+        sessionService.getSessionsForWeeklyCalendar({
+          startDate: dateStr,
+          endDate: dateStr,
+        }),
+        user?.id
+          ? coachService.getMonthlyRevenue(user.id, month, year)
+          : Promise.resolve(null),
+      ]);
+
+      setSessions(sessionsData);
+
+      if (revenueData && revenueData.data.length > 0) {
+        setRevenue(revenueData.data[0].data);
+        setRevenueGrowth(revenueData.data[0].increaseFromLastMonth ?? null);
+      }
     } catch (error) {
-      console.error("❌ Failed to load today's sessions:", error);
+      console.error("❌ Failed to load data:", error);
     } finally {
       setLoadingSessions(false);
     }
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
   useEffect(() => {
-    loadTodaySessions();
-  }, [loadTodaySessions]);
+    loadData();
+  }, [loadData]);
+
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 50 },
-      ]}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="#059669" />
-      <ScrollView style={styles.scrollView}>
-        {/* Welcome Card */}
-        <View style={styles.welcomeCard}>
-          <View style={styles.welcomeHeader}>
-            <View>
-              <Text style={styles.welcomeText}>Chào mừng trở lại,</Text>
-              <Text style={styles.welcomeName}>Lại Đức Hùng! 👋</Text>
-            </View>
-            <View style={styles.ratingBadge}>
-              <Ionicons name="star" size={16} color="#FCD34D" />
-              <Text style={styles.ratingText}>4.8</Text>
-            </View>
+    <View style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/* Header Background */}
+      <LinearGradient
+        colors={["#059669", "#10B981"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerGradient, { paddingTop: insets.top + 20 }]}
+      >
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.welcomeLabel}>Chào mừng trở lại,</Text>
+            <Text style={styles.welcomeName}>{user?.fullName} 👋</Text>
           </View>
-          <Text style={styles.welcomeSubtext}>
-            Hôm nay bạn có{" "}
-            <Text style={styles.highlightText}>{sessions.length} buổi học</Text>
-          </Text>
-          <View style={styles.statusRow}>
-            <View style={styles.statusBadge}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Đang hoạt động</Text>
+          <View style={styles.profileImageContainer}>
+            {/* Placeholder for profile image or avatar */}
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileInitials}>{user?.fullName}</Text>
             </View>
-            <Text style={styles.dateText}>{formatDisplayDate()}</Text>
+            <View style={styles.onlineBadge} />
           </View>
         </View>
+      </LinearGradient>
 
-        {/* Statistics Cards */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View
-              style={[styles.statIconContainer, { backgroundColor: "#DBEAFE" }]}
-            >
-              <Ionicons name="person" size={24} color="#3B82F6" />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 80,
+          paddingTop: 20,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#059669"
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Main Stats Grid */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Tổng quan</Text>
+          <View style={styles.statsGrid}>
+            {/* Row 1 */}
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <View
+                  style={[styles.iconContainer, { backgroundColor: "#DBEAFE" }]}
+                >
+                  <Ionicons name="cash-outline" size={24} color="#3B82F6" />
+                </View>
+                <Text style={styles.statCardLabel}>Thu nhập</Text>
+                <Text style={styles.statCardValue}>{formatPrice(revenue)}</Text>
+                {revenueGrowth !== null && (
+                  <View style={styles.trendBadge}>
+                    <Ionicons
+                      name={
+                        revenueGrowth >= 0 ? "trending-up" : "trending-down"
+                      }
+                      size={12}
+                      color={revenueGrowth >= 0 ? "#059669" : "#EF4444"}
+                    />
+                    <Text
+                      style={[
+                        styles.trendText,
+                        { color: revenueGrowth >= 0 ? "#059669" : "#EF4444" },
+                      ]}
+                    >
+                      {revenueGrowth > 0 ? "+" : ""}
+                      {revenueGrowth}%
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.statCard}>
+                <View
+                  style={[styles.iconContainer, { backgroundColor: "#FEF3C7" }]}
+                >
+                  <Ionicons name="star-outline" size={24} color="#F59E0B" />
+                </View>
+                <Text style={styles.statCardLabel}>Đánh giá</Text>
+                <Text style={styles.statCardValue}>4.8</Text>
+                <View style={styles.trendBadge}>
+                  <Ionicons name="star" size={12} color="#F59E0B" />
+                  <Text style={[styles.trendText, { color: "#F59E0B" }]}>
+                    Top 10%
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.statLabel}>Tổng học viên</Text>
-            <Text style={styles.statValue}>45</Text>
-            <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>+8%</Text>
-            </View>
-          </View>
 
-          <View style={styles.statCard}>
-            <View
-              style={[styles.statIconContainer, { backgroundColor: "#D1FAE5" }]}
-            >
-              <Ionicons name="book" size={24} color="#10B981" />
-            </View>
-            <Text style={styles.statLabel}>Khóa học đang có</Text>
-            <Text style={styles.statValue}>8</Text>
-            <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>+2</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View
-              style={[styles.statIconContainer, { backgroundColor: "#FEF3C7" }]}
-            >
-              <Ionicons name="cash" size={24} color="#F59E0B" />
-            </View>
-            <Text style={styles.statLabel}>Thu nhập tháng này</Text>
-            <Text style={styles.statValue}>15.5M</Text>
-            <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>+12%</Text>
-            </View>
-          </View>
-
-          <View style={styles.statCard}>
-            <View
-              style={[styles.statIconContainer, { backgroundColor: "#D1FAE5" }]}
-            >
-              <Ionicons name="star" size={24} color="#10B981" />
-            </View>
-            <Text style={styles.statLabel}>Đánh giá TB</Text>
-            <Text style={styles.statValue}>4.8/5</Text>
-            <View style={styles.statBadge}>
-              <Text style={styles.statBadgeText}>+0.2</Text>
+            {/* Row 2 */}
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <View
+                  style={[styles.iconContainer, { backgroundColor: "#D1FAE5" }]}
+                >
+                  <Ionicons name="book-outline" size={24} color="#10B981" />
+                </View>
+                <Text style={styles.statCardLabel}>Khóa học</Text>
+                <Text style={styles.statCardValue}>8</Text>
+                <View style={styles.trendBadge}>
+                  <Ionicons name="add" size={12} color="#059669" />
+                  <Text style={styles.trendText}>+2 mới</Text>
+                </View>
+              </View>
+              <View style={styles.statCard}>
+                <View
+                  style={[styles.iconContainer, { backgroundColor: "#E0E7FF" }]}
+                >
+                  <Ionicons name="people-outline" size={24} color="#6366F1" />
+                </View>
+                <Text style={styles.statCardLabel}>Học viên</Text>
+                <Text style={styles.statCardValue}>45</Text>
+                <View style={styles.trendBadge}>
+                  <Ionicons name="trending-up" size={12} color="#059669" />
+                  <Text style={styles.trendText}>+5 mới</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -170,15 +248,20 @@ export default function CoachHomeScreen() {
         {/* Today's Schedule */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Ionicons name="calendar" size={20} color="#059669" />
+            <View>
               <Text style={styles.sectionTitle}>Lịch dạy hôm nay</Text>
-              <Text style={styles.sectionCount}>
-                {sessions.length} buổi học
-              </Text>
+              <View style={styles.subtitleRow}>
+                <Text style={styles.sectionSubtitle}>
+                  {formatDisplayDate()}
+                </Text>
+                <View style={styles.dotSeparator} />
+                <Text style={styles.sessionCountText}>
+                  {sessions.length} buổi
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={() => router.push("/(coach)/calendar")}>
-              <Text style={styles.viewAllText}>Xem tất cả →</Text>
+              <Text style={styles.viewAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -189,88 +272,114 @@ export default function CoachHomeScreen() {
             </View>
           ) : sessions.length > 0 ? (
             sessions.map((session) => (
-              <View key={session.id} style={styles.classCard}>
-                <View style={styles.classHeader}>
-                  <View style={styles.classAvatar}>
-                    <Text style={styles.classAvatarText}>
-                      {session.courseName?.substring(0, 3).toUpperCase() ||
-                        "---"}
+              <TouchableOpacity
+                key={session.id}
+                style={styles.sessionCard}
+                onPress={() => router.push(`/(coach)/calendar` as any)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.sessionTimeContainer}>
+                  <Text style={styles.sessionStartTime}>
+                    {session.startTime}
+                  </Text>
+                  <View style={styles.sessionTimeLine} />
+                  <Text style={styles.sessionEndTime}>{session.endTime}</Text>
+                </View>
+
+                <View style={styles.sessionInfoContainer}>
+                  <View style={styles.sessionHeaderRow}>
+                    <Text style={styles.sessionCourseName} numberOfLines={1}>
+                      {session.courseName}
                     </Text>
-                  </View>
-                  <View style={styles.classInfo}>
-                    <Text style={styles.className}>{session.courseName}</Text>
-                    <View style={styles.classDetails}>
-                      <Ionicons name="time-outline" size={14} color="#6B7280" />
-                      <Text style={styles.classTime}>
-                        {session.startTime} - {session.endTime}
+                    <View
+                      style={[
+                        styles.sessionStatusBadge,
+                        { backgroundColor: "#ECFDF5" }, // Dynamic color based on status if available
+                      ]}
+                    >
+                      <Text
+                        style={[styles.sessionStatusText, { color: "#059669" }]}
+                      >
+                        {session.status === SessionStatus.IN_PROGRESS
+                          ? "Đang diễn ra"
+                          : session.status === SessionStatus.COMPLETED
+                          ? "Đã kết thúc"
+                          : "Đang chờ"}
                       </Text>
-                      {session.course?.currentParticipants != null && (
-                        <>
-                          <Ionicons
-                            name="people-outline"
-                            size={14}
-                            color="#6B7280"
-                            style={{ marginLeft: 8 }}
-                          />
-                          <Text style={styles.classTime}>
-                            {session.course.currentParticipants} người
-                          </Text>
-                        </>
-                      )}
                     </View>
                   </View>
+
+                  <View style={styles.sessionDetailsRow}>
+                    <View style={styles.sessionDetailItem}>
+                      <Ionicons
+                        name="location-outline"
+                        size={14}
+                        color="#6B7280"
+                      />
+                      <Text style={styles.sessionDetailText} numberOfLines={1}>
+                        Sân 1 - Khu A
+                      </Text>
+                    </View>
+                    {session.course?.currentParticipants != null && (
+                      <View style={styles.sessionDetailItem}>
+                        <Ionicons
+                          name="people-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.sessionDetailText}>
+                          {session.course.currentParticipants} học viên
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.classActions}>
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => router.push(`/(coach)/calendar` as any)}
-                  >
-                    <Text style={styles.detailButtonText}>Chi tiết</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              </TouchableOpacity>
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
+              <Image
+                source={{
+                  uri: "https://img.freepik.com/free-vector/no-data-concept-illustration_114360-536.jpg",
+                }} // Placeholder or local asset
+                style={styles.emptyStateImage}
+                resizeMode="contain"
+              />
               <Text style={styles.emptyStateText}>
-                Không có buổi học hôm nay
+                Không có lịch dạy hôm nay
               </Text>
               <Text style={styles.emptyStateSubtext}>
-                Hãy nghỉ ngơi và chuẩn bị cho ngày mai!
+                Tận hưởng ngày nghỉ của bạn nhé!
               </Text>
             </View>
           )}
         </View>
 
-        {/* Quick Stats */}
+        {/* Quick Actions */}
         <View style={styles.sectionContainer}>
-          <View style={styles.sectionTitleContainer}>
-            <Ionicons name="flash" size={20} color="#F59E0B" />
-            <Text style={styles.sectionTitle}>Thống kê nhanh</Text>
-          </View>
-
-          <View style={styles.quickStatsCard}>
-            <View style={styles.quickStatRow}>
-              <Text style={styles.quickStatLabel}>Tuần này</Text>
-              <Text style={styles.quickStatValue}>12 buổi học</Text>
-            </View>
-            <View style={styles.quickStatRow}>
-              <Text style={styles.quickStatLabel}>Doanh thu</Text>
-              <Text style={styles.quickStatValue}>8.5M VND</Text>
-            </View>
-            <View style={styles.quickStatRow}>
-              <Text style={styles.quickStatLabel}>Học viên mới</Text>
-              <Text style={styles.quickStatValue}>+5</Text>
-            </View>
-          </View>
+          <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
+          <TouchableOpacity style={styles.createCourseButton}>
+            <LinearGradient
+              colors={["#059669", "#047857"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.createCourseGradient}
+            >
+              <View style={styles.createCourseContent}>
+                <View style={styles.createCourseIcon}>
+                  <Ionicons name="add" size={24} color="#059669" />
+                </View>
+                <View>
+                  <Text style={styles.createCourseTitle}>Tạo khóa học mới</Text>
+                  <Text style={styles.createCourseSubtitle}>
+                    Thiết lập lớp học và lịch trình
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-
-        {/* Action Button */}
-        <TouchableOpacity style={styles.createButton}>
-          <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-          <Text style={styles.createButtonText}>Tạo khóa học mới</Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -279,340 +388,227 @@ export default function CoachHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
+  },
+  headerGradient: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  welcomeLabel: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    marginBottom: 4,
+  },
+  welcomeName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  profileImageContainer: {
+    position: "relative",
+  },
+  profileAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.5)",
+  },
+  profileInitials: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  onlineBadge: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#10B981",
+    borderWidth: 2,
+    borderColor: "#059669",
   },
   scrollView: {
     flex: 1,
   },
-  welcomeCard: {
-    margin: 16,
-    marginBottom: 12,
-    padding: 20,
-    borderRadius: 16,
-    backgroundColor: "#059669",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  sectionContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
-  welcomeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: "#E0F2FE",
-    marginBottom: 2,
-  },
-  welcomeName: {
-    fontSize: 20,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#FFFFFF",
+    color: "#111827",
+    marginBottom: 16,
   },
-  ratingBadge: {
+  sectionSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  subtitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 4,
+    marginTop: 2,
   },
-  ratingText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+  dotSeparator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#9CA3AF",
+    marginHorizontal: 8,
   },
-  welcomeSubtext: {
-    fontSize: 14,
-    color: "#E0F2FE",
-    marginBottom: 12,
-  },
-  settingsButton: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: "#ECFDF5",
-    borderWidth: 1,
-    borderColor: "#D1FAE5",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  settingsButtonText: {
+  sessionCountText: {
+    fontSize: 13,
     color: "#059669",
     fontWeight: "600",
-    flex: 1,
   },
-
-  welcomeContent: {
-    flex: 1,
+  statsGrid: {
+    gap: 12,
   },
-  statusBadge: {
+  statsRow: {
     flexDirection: "row",
-    alignItems: "center",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#10B981",
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginRight: 8,
-  },
-  statusDate: {
-    fontSize: 12,
-    color: "#E0F2FE",
-  },
-  ratingCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    minWidth: 100,
-  },
-  ratingScore: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  ratingLabel: {
-    fontSize: 12,
-    color: "#E0F2FE",
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  stars: {
-    flexDirection: "row",
-  },
-  statsContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    marginBottom: 12,
     gap: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  statIconContainer: {
-    width: 48,
-    height: 48,
+  iconContainer: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
-  statLabel: {
-    fontSize: 12,
+  statCardLabel: {
+    fontSize: 13,
     color: "#6B7280",
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
     marginBottom: 4,
   },
-  statBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#D1FAE5",
+  statCardValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  trendBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ECFDF5",
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    gap: 4,
   },
-  statBadgeText: {
-    fontSize: 12,
-    color: "#059669",
+  trendText: {
+    fontSize: 11,
     fontWeight: "600",
-  },
-  sectionContainer: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    color: "#059669",
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#111827",
-    marginLeft: 8,
-  },
-  sectionCount: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginLeft: 8,
+    marginBottom: 16,
   },
   viewAllText: {
     fontSize: 14,
-    color: "#059669",
     fontWeight: "600",
+    color: "#059669",
   },
-  classCard: {
+  sessionCard: {
+    flexDirection: "row",
     backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 12,
     marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
-  classHeader: {
-    flexDirection: "row",
-    marginBottom: 12,
-  },
-  classAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#059669",
-    justifyContent: "center",
+  sessionTimeContainer: {
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
+    minWidth: 50,
   },
-  classAvatarText: {
-    color: "#FFFFFF",
-    fontSize: 16,
+  sessionStartTime: {
+    fontSize: 14,
     fontWeight: "bold",
+    color: "#111827",
   },
-  classInfo: {
+  sessionTimeLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: "#E5E7EB",
+    marginVertical: 4,
+  },
+  sessionEndTime: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  sessionInfoContainer: {
     flex: 1,
+    justifyContent: "center",
   },
-  className: {
+  sessionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sessionCourseName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 8,
   },
-  classDetails: {
+  sessionStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  sessionStatusText: {
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  sessionDetailsRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
   },
-  classTime: {
+  sessionDetailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  sessionDetailText: {
     fontSize: 12,
     color: "#6B7280",
-    marginLeft: 4,
-  },
-  classActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  joinButton: {
-    flex: 1,
-    backgroundColor: "#059669",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
-  },
-  joinButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  detailButton: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  detailButtonText: {
-    color: "#374151",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  quickStatsCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  quickStatRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  quickStatLabel: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  quickStatValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#059669",
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  highlightText: {
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  dateText: {
-    fontSize: 11,
-    color: "#E0F2FE",
-  },
-  createButton: {
-    margin: 16,
-    backgroundColor: "#059669",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  createButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
   },
   loadingContainer: {
     padding: 40,
@@ -621,28 +617,66 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
     color: "#6B7280",
   },
   emptyState: {
-    padding: 40,
     alignItems: "center",
-    justifyContent: "center",
+    padding: 40,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+  },
+  emptyStateImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+    opacity: 0.5,
   },
   emptyStateText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#374151",
-    marginTop: 16,
-    textAlign: "center",
+    marginBottom: 4,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: "#6B7280",
-    marginTop: 8,
-    textAlign: "center",
+    color: "#9CA3AF",
+  },
+  createCourseButton: {
+    borderRadius: 16,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  createCourseGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 20,
+    borderRadius: 16,
+  },
+  createCourseContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  createCourseIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  createCourseTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 2,
+  },
+  createCourseSubtitle: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.9)",
   },
 });

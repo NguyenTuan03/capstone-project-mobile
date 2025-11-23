@@ -91,7 +91,7 @@ http.interceptors.response.use(
       try {
         const refreshToken = await AsyncStorage.getItem("refreshToken");
         const res = await axios.post(
-          `${process.env.EXPO_PUBLIC_API_BASE_URL}/v1/auth/refresh-token`,
+          `${process.env.EXPO_PUBLIC_API_BASE_URL}/v1/auth/refresh`,
           { refreshToken }
         );
 
