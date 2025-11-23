@@ -77,7 +77,7 @@ const VideoList: React.FC<VideoListProps> = ({
         <VideoUploadSection
           localVideo={localVideo}
           isUploading={isUploading}
-          hasCoachVideo={videos.length > 0}
+          hasCoachVideo={video !== null}
           coachVideoId={coachVideoId}
           coachVideoDuration={coachVideoDuration}
           onPickVideo={onPickVideo}

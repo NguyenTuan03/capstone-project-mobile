@@ -283,6 +283,8 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
               {/* Learner Video with opacity */}
               <Animated.View
                 style={[styles.overlayVideoContainer, { opacity: opacityAnim }]}
+                needsOffscreenAlphaCompositing={true}
+                renderToHardwareTextureAndroid={true}
               >
                 <VideoView
                   player={learnerPlayer}
@@ -481,6 +483,11 @@ const styles = StyleSheet.create({
   video: {
     width: "100%",
     height: "100%",
+    backgroundColor: "black",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    zIndex: 1,
   },
   videoLabelTag: {
     position: "absolute",
@@ -503,6 +510,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 2,
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,

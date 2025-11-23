@@ -1,9 +1,13 @@
+import QuizDetailModal from "@/components/coach/course/session/QuizDetailModal";
 import { BuildExercise } from "@/helper/BuildExercise";
 import { get } from "@/services/http/httpService";
 import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
-import { extractQuizzesFromPayload, extractSessionPayload, extractVideosFromPayload, formatDate, formatTime, getStatusBadgeColors } from "@/utils/SessionFormat";
+import {
+  extractQuizzesFromPayload,
+  extractVideosFromPayload,
+} from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
@@ -19,7 +23,6 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
-import { QuizDetailModal } from "./components/QuizDetailModal";
 
 const formatTime = (time?: string | null) => {
   if (!time) return "—";
@@ -79,16 +82,8 @@ const SessionDetailScreen: React.FC = () => {
 
               setSession({
                 ...normalized,
-                videos: normalized.videos?.length
-                  ? normalized.videos
-                  : fallbackVideos.length
-                  ? fallbackVideos
-                  : normalized.videos,
-                quizzes: normalized.quizzes?.length
-                  ? normalized.quizzes
-                  : fallbackQuizzes.length
-                  ? fallbackQuizzes
-                  : normalized.quizzes,
+                video: normalized.video,
+                quiz: normalized.quiz,
               });
               setLoading(false);
               return;
@@ -226,71 +221,63 @@ const SessionDetailScreen: React.FC = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Quiz{" "}
-              {session.quizzes && session.quizzes.length
-                ? `(${session.quizzes.length})`
-                : ""}
-            </Text>
-            {session.quizzes && session.quizzes.length > 0 ? (
-              session.quizzes.map((quiz, index) => (
-                <TouchableOpacity
-                  key={quiz.id}
-                  style={styles.quizCard}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setSelectedQuiz(quiz);
-                    setQuizModalVisible(true);
-                  }}
-                >
-                  {/* Quiz Header */}
-                  <View style={styles.quizCardHeader}>
-                    <View style={styles.quizCardTitle}>
-                      <Text style={styles.quizStepLabel}>Quiz {index + 1}</Text>
-                      <Text style={styles.quizCardTitleText} numberOfLines={2}>
-                        {quiz.title}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.quizStatusBadge,
-                        {
-                          backgroundColor: "#EFF6FF",
-                        },
-                      ]}
+            <Text style={styles.sectionTitle}>Quiz</Text>
+            {session.quiz ? (
+              <TouchableOpacity
+                style={styles.quizCard}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSelectedQuiz(session.quiz);
+                  setQuizModalVisible(true);
+                }}
+              >
+                {/* Quiz Header */}
+                <View style={styles.quizCardHeader}>
+                  <View style={styles.quizCardTitle}>
+                    <Text style={styles.quizStepLabel}>Quiz</Text>
+                    <Text style={styles.quizCardTitleText} numberOfLines={2}>
+                      {session.quiz.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.quizStatusBadge,
+                      {
+                        backgroundColor: "#EFF6FF",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: "#2563EB",
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}
                     >
-                      <Text
-                        style={{
-                          color: "#2563EB",
-                          fontSize: 11,
-                          fontWeight: "600",
-                        }}
-                      >
-                        Sẵn sàng
-                      </Text>
-                    </View>
+                      Sẵn sàng
+                    </Text>
                   </View>
+                </View>
 
-                  {/* Quiz Description */}
-                  {quiz.description && (
-                    <View style={styles.quizDescriptionSection}>
-                      <Text style={styles.quizDescText}>
-                        {quiz.description}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Quick Metadata Row */}
-                  <View style={styles.quickMetadataRow}>
-                    <View style={styles.quickMetadataItem}>
-                      <Ionicons name="help-circle" size={14} color="#2563EB" />
-                      <Text style={styles.quickMetadataTextBlue}>
-                        {(quiz as any).questions?.length || 0} câu hỏi
-                      </Text>
-                    </View>
+                {/* Quiz Description */}
+                {session.quiz.description && (
+                  <View style={styles.quizDescriptionSection}>
+                    <Text style={styles.quizDescText}>
+                      {session.quiz.description}
+                    </Text>
                   </View>
-                </TouchableOpacity>
-              ))
+                )}
+
+                {/* Quick Metadata Row */}
+                <View style={styles.quickMetadataRow}>
+                  <View style={styles.quickMetadataItem}>
+                    <Ionicons name="help-circle" size={14} color="#2563EB" />
+                    <Text style={styles.quickMetadataTextBlue}>
+                      {session.quiz.questions?.length || 0} câu hỏi
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             ) : (
               <View style={styles.emptyCard}>
                 <Ionicons
@@ -304,18 +291,12 @@ const SessionDetailScreen: React.FC = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Video mẫu của Coach{" "}
-              {coachVideos.length ? `(${coachVideos.length})` : ""}
-            </Text>
-            {coachVideos.length ? (
-              coachVideos.map((video) => (
-                <CoachVideoCard
-                  key={video.id}
-                  video={video}
-                  onOpen={handleOpenCoachVideo}
-                />
-              ))
+            <Text style={styles.sectionTitle}>Video mẫu của Coach</Text>
+            {coachVideos ? (
+              <CoachVideoCard
+                video={coachVideos}
+                onOpen={handleOpenCoachVideo}
+              />
             ) : (
               <View style={styles.emptyCard}>
                 <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
@@ -326,7 +307,8 @@ const SessionDetailScreen: React.FC = () => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Video của học viên {videoExercises.length ? `(${videoExercises.length})` : ""}
+              Video của học viên{" "}
+              {videoExercises.length ? `(${videoExercises.length})` : ""}
             </Text>
 
             {videoExercises.length ? (
@@ -521,31 +503,6 @@ const SessionDetailScreen: React.FC = () => {
               <View style={styles.emptyCard}>
                 <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
                 <Text style={styles.emptyText}>Chưa có video mẫu</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Video của học viên{" "}
-              {learnerVideos.length ? `(${learnerVideos.length})` : ""}
-            </Text>
-            {learnerVideos.length ? (
-              learnerVideos.map((video) => (
-                <LearnerVideoCard
-                  key={video.id}
-                  video={video}
-                  onOpenSubmission={handleOpenLearnerSubmission}
-                />
-              ))
-            ) : (
-              <View style={styles.emptyCard}>
-                <Ionicons
-                  name="document-text-outline"
-                  size={36}
-                  color="#9CA3AF"
-                />
-                <Text style={styles.emptyText}>Chưa có video học viên</Text>
               </View>
             )}
           </View>
@@ -747,7 +704,7 @@ function LearnerVideoCard({
             {video.user?.fullName || `Học viên #${video.user?.id ?? "N/A"}`}
           </Text>
           <Text style={styles.learnerMeta}>
-            Nộp lúc: {formatFullDateTime(video.createdAt)}
+            Nộp lúc: {formatDate(video.createdAt)}
           </Text>
         </View>
         <Text
