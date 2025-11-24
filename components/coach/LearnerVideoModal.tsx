@@ -1,12 +1,17 @@
+import { compareVideosWithBackend } from "@/services/ai/geminiService";
+import { AiVideoComparisonDetailsType } from "@/types/ai";
 import { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { ResizeMode, Video } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -27,6 +32,9 @@ export default function LearnerVideoModal({
   videoTitle,
 }: LearnerVideoModalProps) {
   const [selectedVideo, setSelectedVideo] = useState(learnerVideo);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coachNote, setCoachNote] = useState("");
   const videoRef = useRef<Video>(null);
 
   useEffect(() => {
@@ -37,7 +45,114 @@ export default function LearnerVideoModal({
 
   if (!selectedVideo) return null;
 
-  const aiResult = selectedVideo.aiVideoComparisonResults;
+  const mapAiReultTypeToVN = (type: AiVideoComparisonDetailsType) => {
+    switch (type) {
+      case AiVideoComparisonDetailsType.PREPARATION:
+        return "Tư thế chuẩn bị";
+      case AiVideoComparisonDetailsType.SWING_AND_CONTACT:
+        return "Vung vợt và tiếp xúc bóng";
+      case AiVideoComparisonDetailsType.FOLLOW_THROUGH:
+        return "Động tác kết thúc";
+      default:
+        return "";
+    }
+  };
+
+  const getLatestAiResult = (video: LearnerVideo) => {
+    if (
+      !video.aiVideoComparisonResults ||
+      !Array.isArray(video.aiVideoComparisonResults) ||
+      video.aiVideoComparisonResults.length === 0
+    ) {
+      return null;
+    }
+    return [...video.aiVideoComparisonResults].sort(
+      (a, b) =>
+        (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+        (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+    )[0];
+  };
+
+  const handleGenerateAI = async () => {
+    console.log("Selected Video:", selectedVideo.video);
+    if (!selectedVideo?.publicUrl || !selectedVideo?.video?.publicUrl) {
+      Alert.alert("Lỗi", "Không tìm thấy video để phân tích");
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      const result = await compareVideosWithBackend(
+        selectedVideo.video.publicUrl,
+        selectedVideo.publicUrl
+      );
+
+      setSelectedVideo({
+        ...selectedVideo,
+        aiVideoComparisonResults: [
+          ...(selectedVideo.aiVideoComparisonResults || []),
+          result,
+        ],
+      });
+    } catch (error) {
+      console.error("AI Generation Error:", error);
+      Alert.alert("Lỗi", "Không thể tạo phân tích AI. Vui lòng thử lại.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSubmitCoachNote = async () => {
+    if (!coachNote.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập ghi chú của HLV");
+      return;
+    }
+
+    if (!aiResult) {
+      Alert.alert("Lỗi", "Không tìm thấy kết quả phân tích AI");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const { default: learnerVideoService } = await import(
+        "@/services/learnerVideo.service"
+      );
+
+      const aiData = {
+        summary: aiResult.summary || "",
+        learnerScore: aiResult.learnerScore || 0,
+        keyDifferents: aiResult.keyDifferents || [],
+        details: aiResult.details || [],
+        recommendationDrills: aiResult.recommendationDrills || [],
+      };
+
+      await learnerVideoService.submitAiFeedback(
+        selectedVideo.id,
+        aiData,
+        coachNote
+      );
+
+      // Update the selected video with the coach note
+      setSelectedVideo({
+        ...selectedVideo,
+        aiVideoComparisonResults:
+          selectedVideo.aiVideoComparisonResults?.map((result) =>
+            result === aiResult ? { ...result, coachNote } : result
+          ) || [],
+      });
+
+      setCoachNote("");
+      Alert.alert("Thành công", "Đã lưu ghi chú của HLV");
+    } catch (error) {
+      console.error("Submit Coach Note Error:", error);
+      Alert.alert("Lỗi", "Không thể lưu ghi chú. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const aiResult = getLatestAiResult(selectedVideo);
 
   return (
     <Modal
@@ -68,43 +183,47 @@ export default function LearnerVideoModal({
                 {learnerVideos
                   .sort(
                     (a, b) =>
-                      new Date(b.createdAt).getTime() -
-                      new Date(a.createdAt).getTime()
+                      (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+                      (a.createdAt ? new Date(a.createdAt).getTime() : 0)
                   )
-                  .map((video, index) => (
-                    <TouchableOpacity
-                      key={video.id}
-                      style={[
-                        styles.videoTab,
-                        selectedVideo?.id === video.id && styles.videoTabActive,
-                      ]}
-                      onPress={() => setSelectedVideo(video)}
-                    >
-                      <Text
+                  .map((video, index) => {
+                    const latestResult = getLatestAiResult(video);
+                    return (
+                      <TouchableOpacity
+                        key={video.id}
                         style={[
-                          styles.videoTabText,
+                          styles.videoTab,
                           selectedVideo?.id === video.id &&
-                            styles.videoTabTextActive,
+                            styles.videoTabActive,
                         ]}
+                        onPress={() => setSelectedVideo(video)}
                       >
-                        Lần {index + 1}
-                      </Text>
-                      {video.aiVideoComparisonResults?.learnerScore && (
                         <Text
                           style={[
-                            styles.videoTabScore,
+                            styles.videoTabText,
                             selectedVideo?.id === video.id &&
-                              styles.videoTabScoreActive,
-                            video.aiVideoComparisonResults?.learnerScore >= 70
-                              ? { color: "#059669" }
-                              : { color: "#DC2626" },
+                              styles.videoTabTextActive,
                           ]}
                         >
-                          {video.aiVideoComparisonResults?.learnerScore}đ
+                          Lần {index + 1}
                         </Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                        {latestResult?.learnerScore && (
+                          <Text
+                            style={[
+                              styles.videoTabScore,
+                              selectedVideo?.id === video.id &&
+                                styles.videoTabScoreActive,
+                              latestResult.learnerScore >= 70
+                                ? { color: "#059669" }
+                                : { color: "#DC2626" },
+                            ]}
+                          >
+                            {latestResult.learnerScore}đ
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
               </ScrollView>
             </View>
           )}
@@ -170,12 +289,6 @@ export default function LearnerVideoModal({
                           </Text>
                           <View style={styles.techniqueComparison}>
                             <View style={styles.techniqueRow}>
-                              <Text style={styles.techniqueLabel}>HLV:</Text>
-                              <Text style={styles.coachTechnique}>
-                                {diff.coachTechnique}
-                              </Text>
-                            </View>
-                            <View style={styles.techniqueRow}>
                               <Text style={styles.techniqueLabel}>
                                 Học viên:
                               </Text>
@@ -199,7 +312,7 @@ export default function LearnerVideoModal({
                     {aiResult.details.map((detail, index) => (
                       <View key={index} style={styles.detailItem}>
                         <Text style={styles.detailType}>
-                          {detail.type.replace(/_/g, " ")}
+                          {mapAiReultTypeToVN(detail.type)}
                         </Text>
                         <Text style={styles.detailText}>{detail.advanced}</Text>
                         {detail.strengths && detail.strengths.length > 0 && (
@@ -248,24 +361,66 @@ export default function LearnerVideoModal({
                     </View>
                   )}
 
-                {/* Coach Note */}
-                {aiResult.coachNote && (
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Ghi chú của HLV</Text>
+                {/* Coach Note Input */}
+                <View style={[styles.card, { paddingBottom: 200 }]}>
+                  <Text style={styles.cardTitle}>Ghi chú của HLV</Text>
+                  {aiResult.coachNote ? (
                     <Text style={styles.cardContent}>{aiResult.coachNote}</Text>
-                  </View>
-                )}
+                  ) : (
+                    <View>
+                      <TextInput
+                        style={styles.coachNoteInput}
+                        placeholder="Nhập ghi chú, nhận xét cho học viên..."
+                        multiline
+                        numberOfLines={4}
+                        value={coachNote}
+                        onChangeText={setCoachNote}
+                        textAlignVertical="top"
+                      />
+                      <TouchableOpacity
+                        style={[
+                          styles.submitButton,
+                          isSubmitting && { opacity: 0.6 },
+                        ]}
+                        onPress={handleSubmitCoachNote}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <ActivityIndicator color="#FFFFFF" size="small" />
+                        ) : (
+                          <Text style={styles.submitButtonText}>
+                            Lưu ghi chú
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
               </View>
             )}
 
             {!aiResult && (
               <View style={styles.noAnalysis}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={48}
-                  color="#9CA3AF"
-                />
-                <Text style={styles.noAnalysisText}>Chưa có phân tích AI</Text>
+                <Ionicons name="analytics-outline" size={48} color="#6366F1" />
+                <Text style={styles.noAnalysisText}>
+                  Chưa có phân tích AI cho video này
+                </Text>
+                <TouchableOpacity
+                  style={styles.generateButton}
+                  onPress={handleGenerateAI}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+                      <Text style={styles.generateButtonText}>
+                        Tạo phân tích AI
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             )}
           </ScrollView>
@@ -527,5 +682,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#9CA3AF",
     marginTop: 12,
+  },
+  generateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#6366F1",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    gap: 8,
+  },
+  generateButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  coachNoteInput: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: "#374151",
+    backgroundColor: "#F9FAFB",
+    minHeight: 100,
+    marginBottom: 12,
+  },
+  submitButton: {
+    backgroundColor: "#059669",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

@@ -146,11 +146,17 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   };
 
   const handleAnalysisItemClick = async (item: any) => {
-    if (item.timestamp !== undefined) {
-      // For details items
-      handleSeek("learner", item.timestamp);
-      handleSeekComplete("learner", item.timestamp);
+    // Set both videos to their respective timestamps
+    if (item.learnerTimestamp !== undefined) {
+      handleSeek("learner", item.learnerTimestamp);
+      await handleSeekComplete("learner", item.learnerTimestamp);
     }
+
+    if (item.coachTimestamp !== undefined) {
+      handleSeek("coach", item.coachTimestamp);
+      await handleSeekComplete("coach", item.coachTimestamp);
+    }
+
     setShowAnalysis(false);
   };
 
@@ -471,7 +477,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                                   ? "2. Vung vợt"
                                   : "3. Động tác kết thúc"}
                               </Text>
-                              {detail.timestamp !== undefined && (
+                              {detail.learnerTimestamp !== undefined && (
                                 <Ionicons
                                   name="play-circle"
                                   size={20}
