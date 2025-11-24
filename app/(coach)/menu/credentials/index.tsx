@@ -7,19 +7,19 @@ import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function CredentialsScreen() {
@@ -45,23 +45,22 @@ export default function CredentialsScreen() {
   const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
   const [isEditingModal, setIsEditingModal] = useState(false);
 
-  // Load credentials from API
-  useFocusEffect(
-    useCallback(() => {
-      const loadCredentials = async () => {
-        try {
-          
-          const response = await credentialService.getCredentials();
-          
-          setCredentials(response);
-        } catch (error) {
-          console.error("Failed to load credentials:", error);
-          setCredentials([]);
-        }
-      };
-      loadCredentials();
-    }, [])
-  );
+const loadCredentials = useCallback(async () => {
+  try {
+    const response = await credentialService.getCredentials();
+    setCredentials(response);
+  } catch (error) {
+    console.error("Failed to load credentials:", error);
+    setCredentials([]);
+  }
+}, []);
+
+// Load credentials from API
+useFocusEffect(
+  useCallback(() => {
+    loadCredentials();
+  }, [loadCredentials])
+);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -149,6 +148,7 @@ export default function CredentialsScreen() {
       });
 
       Alert.alert("Thành công", "Chứng chỉ đã được thêm thành công");
+      await loadCredentials();
     } catch (error) {
       console.error("Failed to add credential:", error);
       Alert.alert(
@@ -170,11 +170,6 @@ export default function CredentialsScreen() {
             // Use credential ID for deletion
             await credentialService.deleteCredential(String(credentialId));
 
-            // Update local state by filtering out the deleted credential
-            setCredentials((prevCredentials) =>
-              prevCredentials.filter((cred) => cred.id !== credentialId)
-            );
-
             // Also update stored user data
             const user = await storageService.getUser();
             if (user?.coach?.[0]) {
@@ -186,6 +181,7 @@ export default function CredentialsScreen() {
             }
 
             Alert.alert("Thành công", "Chứng chỉ đã được xóa");
+            await loadCredentials();
           } catch (error) {
             console.error("Failed to delete credential:", error);
             Alert.alert(
@@ -220,9 +216,7 @@ export default function CredentialsScreen() {
         selectedImage || undefined
       );
 
-      // Reload credentials from API
-      const response = await credentialService.getCredentials();
-      setCredentials(response);
+      await loadCredentials();
 
       setDetailModalVisible(false);
       setSelectedImage(null);
