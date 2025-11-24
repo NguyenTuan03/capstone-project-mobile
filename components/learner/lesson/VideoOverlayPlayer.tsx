@@ -280,15 +280,6 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
               {isOverlayMode ? "Tách biệt" : "Chồng lớp"}
             </Text>
           </TouchableOpacity>
-          {aiAnalysisResult && (
-            <TouchableOpacity
-              onPress={() => setShowAnalysis(true)}
-              style={[styles.modeButton, { marginLeft: 8 }]}
-            >
-              <Ionicons name="analytics-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.modeButtonText}>Phân tích</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <View style={styles.videoContainer}>
@@ -384,52 +375,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
 
         <View style={styles.controlsContainer}>
           <View style={styles.slidersContainer}>
-            <View style={styles.sliderRow}>
-              <View style={styles.sliderHeader}>
-                <View style={styles.sliderLabelContainer}>
-                  {!isOverlayMode && (
-                    <TouchableOpacity onPress={() => handlePlay("coach")}>
-                      <Ionicons
-                        name={
-                          status.coach.isPlaying
-                            ? "pause-circle"
-                            : "play-circle"
-                        }
-                        size={28}
-                        color="#3B82F6"
-                      />
-                    </TouchableOpacity>
-                  )}
-                  <Text style={[styles.sliderLabel, { color: "#3B82F6" }]}>
-                    HLV
-                  </Text>
-                </View>
-                <Text style={styles.timeValue}>
-                  {formatTime(getDisplayValue("coach"))}
-                  <Text style={styles.durationText}>
-                    {" "}
-                    / {formatTime(status.coach.duration)}
-                  </Text>
-                </Text>
-              </View>
-              <MemoizedSlider
-                style={{ width: "100%", height: 40 }}
-                minimumValue={0}
-                maximumValue={status.coach.duration || 60}
-                value={getDisplayValue("coach")}
-                onSlidingStart={() =>
-                  setIsSeeking((prev) => ({ ...prev, coach: true }))
-                }
-                onValueChange={(val: number) => handleSeek("coach", val)}
-                onSlidingComplete={(val: number) =>
-                  handleSeekComplete("coach", val)
-                }
-                minimumTrackTintColor="#3B82F6"
-                maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
-                thumbTintColor="#3B82F6"
-              />
-            </View>
-
+            {/* Learner Slider - Now on top */}
             <View style={styles.sliderRow}>
               <View style={styles.sliderHeader}>
                 <View style={styles.sliderLabelContainer}>
@@ -475,7 +421,69 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                 thumbTintColor="#10B981"
               />
             </View>
+
+            {/* Coach Slider - Now below */}
+            <View style={styles.sliderRow}>
+              <View style={styles.sliderHeader}>
+                <View style={styles.sliderLabelContainer}>
+                  {!isOverlayMode && (
+                    <TouchableOpacity onPress={() => handlePlay("coach")}>
+                      <Ionicons
+                        name={
+                          status.coach.isPlaying
+                            ? "pause-circle"
+                            : "play-circle"
+                        }
+                        size={28}
+                        color="#3B82F6"
+                      />
+                    </TouchableOpacity>
+                  )}
+                  <Text style={[styles.sliderLabel, { color: "#3B82F6" }]}>
+                    HLV
+                  </Text>
+                </View>
+                <Text style={styles.timeValue}>
+                  {formatTime(getDisplayValue("coach"))}
+                  <Text style={styles.durationText}>
+                    {" "}
+                    / {formatTime(status.coach.duration)}
+                  </Text>
+                </Text>
+              </View>
+              <MemoizedSlider
+                style={{ width: "100%", height: 40 }}
+                minimumValue={0}
+                maximumValue={status.coach.duration || 60}
+                value={getDisplayValue("coach")}
+                onSlidingStart={() =>
+                  setIsSeeking((prev) => ({ ...prev, coach: true }))
+                }
+                onValueChange={(val: number) => handleSeek("coach", val)}
+                onSlidingComplete={(val: number) =>
+                  handleSeekComplete("coach", val)
+                }
+                minimumTrackTintColor="#3B82F6"
+                maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
+                thumbTintColor="#3B82F6"
+              />
+            </View>
           </View>
+
+          {/* AI Analysis Button */}
+          {aiAnalysisResult && (
+            <TouchableOpacity
+              onPress={() => setShowAnalysis(true)}
+              style={styles.analysisButton}
+              activeOpacity={0.7}
+            >
+              <View style={styles.analysisButtonContent}>
+                <Ionicons name="analytics-outline" size={20} color="#6B7280" />
+                <Text style={styles.analysisButtonText}>Xem phân tích AI</Text>
+              </View>
+              <Ionicons name="chevron-up" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -489,21 +497,31 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
         <View style={styles.analysisModalContainer}>
           <View style={styles.analysisModalContent}>
             <View style={styles.analysisHeader}>
-              <Text style={styles.analysisTitle}>📊 Phân tích AI</Text>
+              <Text style={styles.analysisTitle}>Phân tích AI</Text>
               <TouchableOpacity onPress={() => setShowAnalysis(false)}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color="#94A3B8" />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={true}>
               {aiAnalysisResult && (
                 <>
+                  {/* Coach Note - Moved to top */}
+                  {aiAnalysisResult.coachNote && (
+                    <View style={styles.coachNoteContainer}>
+                      <Text style={styles.sectionTitle}>Ghi chú từ Coach</Text>
+                      <Text style={styles.coachNoteText}>
+                        {aiAnalysisResult.coachNote}
+                      </Text>
+                    </View>
+                  )}
+
                   {/* Score */}
                   {aiAnalysisResult.learnerScore !== null && (
                     <View style={styles.scoreContainer}>
                       <Text style={styles.scoreLabel}>Điểm tổng thể:</Text>
                       <Text style={styles.scoreValue}>
-                        ⭐ {aiAnalysisResult.learnerScore}/100
+                        {aiAnalysisResult.learnerScore}/100
                       </Text>
                     </View>
                   )}
@@ -511,7 +529,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {/* Summary */}
                   {aiAnalysisResult.summary && (
                     <View style={styles.summaryContainer}>
-                      <Text style={styles.sectionTitle}>📝 Tóm tắt</Text>
+                      <Text style={styles.sectionTitle}>Tóm tắt</Text>
                       <Text style={styles.summaryText}>
                         {aiAnalysisResult.summary}
                       </Text>
@@ -523,7 +541,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                     aiAnalysisResult.details.length > 0 && (
                       <View style={styles.detailsContainer}>
                         <Text style={styles.sectionTitle}>
-                          🎯 Phân tích theo giai đoạn
+                          Phân tích theo giai đoạn
                         </Text>
                         {aiAnalysisResult.details.map((detail, index) => (
                           <TouchableOpacity
@@ -539,14 +557,24 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                                   ? "2. Vung vợt"
                                   : "3. Động tác kết thúc"}
                               </Text>
-                              {detail.learnerTimestamp !== undefined && (
-                                <Ionicons
-                                  name="play-circle"
-                                  size={20}
-                                  color="#3B82F6"
-                                />
-                              )}
                             </View>
+                            {/* Show timestamps */}
+                            {(detail.learnerTimestamp !== undefined ||
+                              detail.coachTimestamp !== undefined) && (
+                              <View style={styles.timestampContainer}>
+                                {detail.learnerTimestamp !== undefined && (
+                                  <Text style={styles.timestampLabel}>
+                                    Học viên:{" "}
+                                    {formatTime(detail.learnerTimestamp)}
+                                  </Text>
+                                )}
+                                {detail.coachTimestamp !== undefined && (
+                                  <Text style={styles.timestampLabel}>
+                                    HLV: {formatTime(detail.coachTimestamp)}
+                                  </Text>
+                                )}
+                              </View>
+                            )}
                             <Text style={styles.detailAdvanced}>
                               {detail.advanced}
                             </Text>
@@ -554,7 +582,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                               detail.strengths.length > 0 && (
                                 <View style={styles.strengthsContainer}>
                                   <Text style={styles.strengthsLabel}>
-                                    ✓ Điểm mạnh:
+                                    Điểm mạnh:
                                   </Text>
                                   {detail.strengths.map((strength, i) => (
                                     <Text key={i} style={styles.strengthText}>
@@ -586,7 +614,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                     aiAnalysisResult.keyDifferents.length > 0 && (
                       <View style={styles.differencesContainer}>
                         <Text style={styles.sectionTitle}>
-                          🔍 Điểm khác biệt chính
+                          Điểm khác biệt chính
                         </Text>
                         {aiAnalysisResult.keyDifferents.map((diff, index) => (
                           <View key={index} style={styles.differenceItem}>
@@ -614,7 +642,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                     aiAnalysisResult.recommendationDrills.length > 0 && (
                       <View style={styles.recommendationsContainer}>
                         <Text style={styles.sectionTitle}>
-                          💡 Khuyến nghị & Bài tập
+                          Khuyến nghị & Bài tập
                         </Text>
                         {aiAnalysisResult.recommendationDrills.map(
                           (drill, index) => (
@@ -633,18 +661,6 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                         )}
                       </View>
                     )}
-
-                  {/* Coach Note */}
-                  {aiAnalysisResult.coachNote && (
-                    <View style={styles.coachNoteContainer}>
-                      <Text style={styles.sectionTitle}>
-                        💬 Ghi chú từ Coach
-                      </Text>
-                      <Text style={styles.coachNoteText}>
-                        {aiAnalysisResult.coachNote}
-                      </Text>
-                    </View>
-                  )}
 
                   {/* Timestamp */}
                   {aiAnalysisResult.createdAt && (
@@ -802,58 +818,89 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   durationText: { color: "#E5E7EB", fontSize: 12, fontWeight: "normal" },
+  analysisButton: {
+    marginTop: 12,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  analysisButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  analysisButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+  },
   analysisModalContainer: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.85)",
   },
   analysisModalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+    backgroundColor: "#0F172A",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
     maxHeight: "85%",
+    borderTopWidth: 2,
+    borderTopColor: "#3B82F6",
   },
   analysisHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "rgba(59, 130, 246, 0.2)",
   },
-  analysisTitle: { fontSize: 18, fontWeight: "bold", color: "#111827" },
+  analysisTitle: { fontSize: 20, fontWeight: "bold", color: "#60A5FA" },
   scoreContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FEF3C7",
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.3)",
   },
-  scoreLabel: { fontSize: 14, fontWeight: "600", color: "#92400E" },
-  scoreValue: { fontSize: 20, fontWeight: "bold", color: "#B45309" },
+  scoreLabel: { fontSize: 14, fontWeight: "600", color: "#94A3B8" },
+  scoreValue: { fontSize: 24, fontWeight: "bold", color: "#60A5FA" },
   summaryContainer: {
-    backgroundColor: "#F3F4F6",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 8,
+    color: "#60A5FA",
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  summaryText: { fontSize: 12, color: "#374151", lineHeight: 18 },
-  detailsContainer: { marginBottom: 12 },
+  summaryText: { fontSize: 13, color: "#CBD5E1", lineHeight: 20 },
+  detailsContainer: { marginBottom: 16 },
   detailItem: {
-    backgroundColor: "#EFF6FF",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    backgroundColor: "rgba(30, 41, 59, 0.8)",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.3)",
   },
   detailHeader: {
     flexDirection: "row",
@@ -861,72 +908,96 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 6,
   },
-  detailType: { fontSize: 13, fontWeight: "bold", color: "#1E40AF" },
-  detailAdvanced: { fontSize: 12, color: "#1F2937", marginBottom: 6 },
+  detailType: { fontSize: 14, fontWeight: "bold", color: "#60A5FA" },
+  detailAdvanced: { fontSize: 13, color: "#E2E8F0", marginBottom: 8 },
   strengthsContainer: { marginTop: 6 },
   strengthsLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#059669",
-    marginBottom: 4,
+    color: "#34D399",
+    marginBottom: 6,
   },
-  strengthText: { fontSize: 11, color: "#047857", marginLeft: 8 },
+  strengthText: { fontSize: 12, color: "#A7F3D0", marginLeft: 8 },
   weaknessesContainer: { marginTop: 6 },
   weaknessesLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#DC2626",
-    marginBottom: 4,
+    color: "#FBBF24",
+    marginBottom: 6,
   },
-  weaknessText: { fontSize: 11, color: "#B91C1C", marginLeft: 8 },
-  differencesContainer: { marginBottom: 12 },
+  weaknessText: { fontSize: 12, color: "#FDE68A", marginLeft: 8 },
+  differencesContainer: { marginBottom: 16 },
   differenceItem: {
-    backgroundColor: "#FFF7ED",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#F97316",
+    backgroundColor: "rgba(30, 41, 59, 0.6)",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(139, 92, 246, 0.3)",
   },
   differenceAspect: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "bold",
-    color: "#92400E",
-    marginBottom: 4,
+    color: "#A78BFA",
+    marginBottom: 6,
   },
-  analysisText: { fontSize: 11, color: "#4B5563", marginBottom: 2 },
+  analysisText: { fontSize: 12, color: "#CBD5E1", marginBottom: 4 },
   impactText: {
-    fontSize: 11,
-    color: "#EA580C",
-    fontWeight: "600",
-    marginTop: 4,
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "500",
+    marginTop: 6,
+    fontStyle: "italic",
   },
-  recommendationsContainer: { marginBottom: 12 },
+  recommendationsContainer: { marginBottom: 16 },
   recommendationItem: {
-    backgroundColor: "#F0FDF4",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#10B981",
+    backgroundColor: "rgba(30, 41, 59, 0.7)",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(34, 211, 238, 0.3)",
   },
   drillTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "bold",
-    color: "#166534",
-    marginBottom: 4,
+    color: "#22D3EE",
+    marginBottom: 6,
   },
-  drillText: { fontSize: 11, color: "#15803D", marginBottom: 4 },
-  drillSets: { fontSize: 10, color: "#16A34A", fontStyle: "italic" },
+  drillText: { fontSize: 12, color: "#CBD5E1", marginBottom: 6 },
+  drillSets: { fontSize: 11, color: "#94A3B8", fontStyle: "italic" },
   coachNoteContainer: {
-    backgroundColor: "#FEF3C7",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#F59E0B",
+    backgroundColor: "rgba(37, 99, 235, 0.15)",
+    padding: 18,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#3B82F6",
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
-  coachNoteText: { fontSize: 12, color: "#92400E", lineHeight: 18 },
+  coachNoteText: {
+    fontSize: 14,
+    color: "#BFDBFE",
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  timestampContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  timestampLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
   timestampText: {
     fontSize: 10,
     color: "#9CA3AF",
