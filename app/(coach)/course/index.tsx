@@ -70,7 +70,7 @@ export default function CoachCourseScreen() {
         }
       } finally {
         if (!append) {
-          setLoading(false);
+        setLoading(false);
         }
         setLoadingMore(false);
       }

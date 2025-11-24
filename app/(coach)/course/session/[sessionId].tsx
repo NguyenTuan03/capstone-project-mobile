@@ -4,10 +4,6 @@ import { get } from "@/services/http/httpService";
 import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
-import {
-  extractQuizzesFromPayload,
-  extractVideosFromPayload,
-} from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
@@ -77,9 +73,6 @@ const SessionDetailScreen: React.FC = () => {
             const parsedSession = JSON.parse(sessionData);
             const normalized = extractSessionPayload(parsedSession);
             if (normalized) {
-              const fallbackVideos = extractVideosFromPayload(parsedSession);
-              const fallbackQuizzes = extractQuizzesFromPayload(parsedSession);
-
               setSession({
                 ...normalized,
                 video: normalized.video,
@@ -684,63 +677,6 @@ function CoachVideoCard({
       ) : (
         <Text style={styles.meta}>Video đang được xử lý</Text>
       )}
-    </View>
-  );
-}
-
-function LearnerVideoCard({
-  video,
-  onOpenSubmission,
-}: {
-  video: LearnerVideo;
-  onOpenSubmission: (id: number) => void;
-}) {
-  const badgeStyle = getStatusBadgeColors(video.status);
-  return (
-    <View style={styles.learnerCard}>
-      <View style={styles.learnerHeader}>
-        <View>
-          <Text style={styles.learnerName}>
-            {video.user?.fullName || `Học viên #${video.user?.id ?? "N/A"}`}
-          </Text>
-          <Text style={styles.learnerMeta}>
-            Nộp lúc: {formatDate(video.createdAt)}
-          </Text>
-        </View>
-        <Text
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: badgeStyle.backgroundColor,
-              color: badgeStyle.color,
-            },
-          ]}
-        >
-          {video.status}
-        </Text>
-      </View>
-
-      {video.duration != null ? (
-        <Text style={styles.meta}>⏱ {video.duration} giây</Text>
-      ) : null}
-
-      {video.overlayVideoUrl ? (
-        <Text style={styles.meta}>Có video overlay đã xử lý</Text>
-      ) : null}
-
-      <View style={styles.learnerActions}>
-        {video.publicUrl ? (
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => onOpenSubmission(video.id)}
-          >
-            <Ionicons name="sparkles" size={14} color="#7C3AED" />
-            <Text style={styles.linkText}>Xem & chấm</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={styles.meta}>Video đang xử lý</Text>
-        )}
-      </View>
     </View>
   );
 }
