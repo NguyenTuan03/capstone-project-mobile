@@ -7,6 +7,7 @@ import type { LearnerVideo, VideoType } from "@/types/video";
 import {
   extractQuizzesFromPayload,
   extractVideosFromPayload,
+  formatStatus,
 } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -215,8 +216,11 @@ const SessionDetailScreen: React.FC = () => {
             />
             <InfoRow
               label="Trạng thái"
-              value={session.status || "—"}
-              valueStyle={{ color: "#059669", fontWeight: "600" }}
+              value={formatStatus(session.status).text || "—"}
+              valueStyle={{
+                color: formatStatus(session.status).color,
+                fontWeight: "600",
+              }}
             />
           </View>
 

@@ -3,7 +3,13 @@ import { Course } from "@/types/course";
 import { Feedback } from "@/types/feecbacks";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 type Props = {
   course: Course;
   progress: number; // 0..100
@@ -121,6 +127,8 @@ const statusMap = (status: string) => {
     APPROVED: { text: "Đã duyệt", color: "#16A34A" },
     PENDING: { text: "Chờ duyệt", color: "#F59E0B" },
     REJECTED: { text: "Từ chối", color: "#DC2626" },
+    ON_GOING: { text: "Đang diễn ra", color: "#16A34A" },
+    COMPLETED: { text: "Hoàn thành", color: "#16A34A" },
   };
   const found = map[status] || { text: status, color: "#6B7280" };
   return (
@@ -144,7 +152,7 @@ const levelMap = (lv?: string) => {
 const formatFormat = (f?: string) => {
   const map: Record<string, string> = {
     GROUP: "Học nhóm",
-    PRIVATE: "1-1",
+    INDIVIDUAL: "Cá nhân",
     ONLINE: "Online",
   };
   return map[f ?? ""] ?? f ?? "";
@@ -291,30 +299,27 @@ export const OverviewTab: React.FC<Props> = ({
         ) : (
           <View style={{ gap: 10 }}>
             {feedbacks.map((feedback, index) => (
-              <View
-                key={feedback.id || index}
-                style={styles.feedbackItem}
-              >
+              <View key={feedback.id || index} style={styles.feedbackItem}>
                 <View style={styles.feedbackHeader}>
                   <View style={styles.ratingContainer}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Ionicons
                         key={star}
-                        name={
-                          star <= feedback.rating
-                            ? "star"
-                            : "star-outline"
-                        }
+                        name={star <= feedback.rating ? "star" : "star-outline"}
                         size={16}
-                        color={
-                          star <= feedback.rating ? "#FBBF24" : "#D1D5DB"
-                        }
+                        color={star <= feedback.rating ? "#FBBF24" : "#D1D5DB"}
                       />
                     ))}
                   </View>
                   <View style={styles.feedbackAuthorContainer}>
                     {feedback.isAnonymous ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
                         <Ionicons
                           name="eye-off-outline"
                           size={14}
@@ -332,9 +337,7 @@ export const OverviewTab: React.FC<Props> = ({
                   </View>
                 </View>
                 {feedback.comment && (
-                  <Text style={styles.feedbackComment}>
-                    {feedback.comment}
-                  </Text>
+                  <Text style={styles.feedbackComment}>{feedback.comment}</Text>
                 )}
                 {feedback.createdAt && (
                   <Text style={styles.feedbackDate}>
