@@ -49,35 +49,40 @@ export interface RecommendationWithDrill {
 }
 
 export interface VideoComparisonResult {
-  comparison: {
-    preparation: {
-      player1: ComparisonDetail;
-      player2: ComparisonDetail;
-      advantage: string;
-    };
-    swingAndContact: {
-      player1: ComparisonDetail;
-      player2: ComparisonDetail;
-      advantage: string;
-    };
-    followThrough: {
-      player1: ComparisonDetail;
-      player2: ComparisonDetail;
-      advantage: string;
-    };
-  };
-  keyDifferences: KeyDifference[];
+  details: Array<{
+    type: AiVideoComparisonDetailsType;
+    advanced: string;
+    strengths: string[];
+    weaknesses: string[];
+    learnerTimestamp: number;
+    coachTimestamp: number;
+  }>;
+  keyDifferents: Array<{
+    aspect: string;
+    learnerTechnique: string;
+    impact: string;
+  }>;
   summary: string;
-  recommendationsForPlayer2: RecommendationWithDrill[];
-  overallScoreForPlayer2: number;
-  coachPoses: PoseLandmark[][];
-  learnerPoses: PoseLandmark[][];
+  recommendationDrills: Array<{
+    name: string;
+    description: string;
+    practiceSets: string;
+  }>;
+  learnerScore: number;
+  coachNote?: string;
+  createdAt?: Date;
 }
 
 export interface PoseLandmark {
   name: string;
   x: number;
   y: number;
+}
+
+export enum AiVideoComparisonDetailsType {
+  PREPARATION = "PREPARATION",
+  SWING_AND_CONTACT = "SWING_AND_CONTACT",
+  FOLLOW_THROUGH = "FOLLOW_THROUGH",
 }
 
 export interface AiVideoCompareResult {
@@ -94,11 +99,13 @@ export interface AiVideoCompareResult {
     | null;
   details:
     | {
-        type: string;
+        type: AiVideoComparisonDetailsType;
         advanced: string;
         userRole: string;
         strengths?: string[];
         weaknesses?: string[];
+        learnerTimestamp?: number;
+        coachTimestamp?: number;
       }[]
     | null;
   recommendationDrills:

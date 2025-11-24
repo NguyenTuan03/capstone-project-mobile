@@ -1,44 +1,174 @@
-import { useMemo, useState } from "react";
+import coachService from "@/services/coach.service";
+import storageService from "@/services/storageService";
+import { MonthlyData } from "@/types/coach";
+import { User } from "@/types/user";
+import { formatPrice } from "@/utils/priceFormat";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Dimensions,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { LineChart } from "react-native-chart-kit";
 
-type Overview = {
-  totalStudents: number;
-  totalRevenue: number;
-  averageRating: number;
-  totalSessions: number;
-  growthRate: number;
-};
-
-type Monthly = {
-  month: string;
-  students: number;
-  revenue: number;
-  sessions: number;
-};
-type Source = { source: string; count: number; percentage: number };
-type CoursePerf = {
-  courseName: string;
-  enrollments: number;
-  completionRate: number;
-  revenue: number;
-  averageRating: number;
-};
+const { width } = Dimensions.get("window");
 
 export default function CoachAnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<"3months" | "6months" | "1year">(
     "6months"
   );
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const data = useMemo(() => getMockData(timeRange), [timeRange]);
+  // Data states
+  const [revenueData, setRevenueData] = useState<number>(0);
+  const [learnerData, setLearnerData] = useState<number>(0);
+  const [courseData, setCourseData] = useState<number>(0);
+  const [ratingData, setRatingData] = useState<{
+    overall: number;
+    total: number;
+  } | null>(null);
+
+  // Monthly data arrays for charts
+  const [revenueMonthly, setRevenueMonthly] = useState<MonthlyData[]>([]);
+  const [learnerMonthly, setLearnerMonthly] = useState<MonthlyData[]>([]);
+  const [courseMonthly, setCourseMonthly] = useState<MonthlyData[]>([]);
+
+  const loadData = useCallback(async () => {
+    const currentUser = await storageService.getUser();
+    setUser(currentUser);
+
+    if (!currentUser?.id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Fetch all data without month/year filters to get aggregate data
+      const [revenue, learners, courses, rating] = await Promise.all([
+        coachService.getMonthlyRevenue(currentUser.id),
+        coachService.getMonthlyLearnerCount(currentUser.id),
+        coachService.getMonthlyCourseCount(currentUser.id),
+        coachService.loadRating(currentUser.id),
+      ]);
+
+      // Store monthly data for charts
+      setRevenueMonthly(revenue.data);
+      setLearnerMonthly(learners.data);
+      setCourseMonthly(courses.data);
+      setRatingData(rating);
+
+      // Calculate totals from all months
+      const totalRevenue = revenue.data.reduce(
+        (sum, item) => sum + item.data,
+        0
+      );
+      const totalLearners = learners.data.reduce(
+        (sum, item) => sum + item.data,
+        0
+      );
+      const totalCourses = courses.data.reduce(
+        (sum, item) => sum + item.data,
+        0
+      );
+
+      setRevenueData(totalRevenue);
+      setLearnerData(totalLearners);
+      setCourseData(totalCourses);
+    } catch (error) {
+      console.error("❌ Failed to load analytics data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Helper function to format month labels
+  const formatMonthLabel = (month: string) => {
+    const [m] = month.split("/");
+    return `${m}`;
+  };
+
+  // Helper function to prepare chart data
+  const prepareChartData = (monthlyData: MonthlyData[]) => {
+    if (monthlyData.length === 0) {
+      return {
+        labels: [""],
+        datasets: [{ data: [0] }],
+      };
+    }
+
+    const dataPoints = monthlyData.map((item) => item.data);
+
+    // Check if all values are 0, add small minimum value to prevent NaN
+    // while keeping the shape of the data
+    const allZero = dataPoints.every((val) => val === 0);
+    const chartData = allZero
+      ? dataPoints.map(() => 0.001) // Very small value shows flat line at 0
+      : dataPoints;
+
+    return {
+      labels: monthlyData.map((item) => formatMonthLabel(item.month)),
+      datasets: [
+        {
+          data: chartData,
+        },
+      ],
+    };
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#10B981" />
+        <Text style={styles.loadingText}>Đang tải dữ liệu phân tích...</Text>
+      </View>
+    );
+  }
+
+  const chartConfig = {
+    backgroundColor: "#ffffff",
+    backgroundGradientFrom: "#ffffff",
+    backgroundGradientTo: "#ffffff",
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+    style: {
+      borderRadius: 16,
+    },
+    propsForDots: {
+      r: "4",
+      strokeWidth: "2",
+      stroke: "#10B981",
+    },
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#059669"
+        />
+      }
+    >
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.title}>Phân tích học viên</Text>
@@ -46,141 +176,114 @@ export default function CoachAnalyticsScreen() {
             Theo dõi hiệu quả và phát triển kinh doanh
           </Text>
         </View>
-        <View style={styles.rangeRow}>
-          {(["3months", "6months", "1year"] as const).map((r) => (
-            <TouchableOpacity
-              key={r}
-              onPress={() => setTimeRange(r)}
-              activeOpacity={0.9}
-              style={[styles.chip, timeRange === r && styles.chipActive]}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  timeRange === r && styles.chipTextActive,
-                ]}
-              >
-                {r === "3months"
-                  ? "3 tháng"
-                  : r === "6months"
-                  ? "6 tháng"
-                  : "1 năm"}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </View>
 
       {/* Overview cards */}
       <View style={styles.grid5}>
         <KPI
           title="Tổng học viên"
-          value={`${data.overview.totalStudents}`}
-          hint={`+${data.overview.growthRate}% so với kỳ trước`}
+          value={`${learnerData}`}
+          hint={`Tổng số học viên`}
         />
         <KPI
           title="Doanh thu"
-          value={`${formatPrice(data.overview.totalRevenue)}đ`}
-          hint={`+${Math.round(data.overview.growthRate)}% so với kỳ trước`}
+          value={`${formatPrice(revenueData)}`}
+          hint={`Tổng doanh thu`}
         />
         <KPI
           title="Đánh giá TB"
-          value={`${data.overview.averageRating}/5`}
-          hint={`Dựa trên ${data.overview.totalSessions} buổi`}
+          value={`${ratingData?.overall}/5`}
+          hint={`${ratingData?.total} đánh giá`}
         />
         <KPI
-          title="Tổng buổi học"
-          value={`${data.overview.totalSessions}`}
-          hint={`Trung bình ${Math.round(
-            data.overview.totalSessions / 6
-          )} buổi/tháng`}
-        />
-        <KPI
-          title="Chuyển đổi"
-          value={`24.8%`}
-          hint={`Từ demo thành đăng ký`}
+          title="Tổng khóa học"
+          value={`${courseData}`}
+          hint={`Số khóa học đã tạo`}
         />
       </View>
 
-      {/* Student sources */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Nguồn học viên</Text>
-        <View style={{ gap: 8 }}>
-          {data.studentSources.map((s, i) => (
-            <View key={`${s.source}-${i}`} style={styles.rowBetween}>
-              <Text style={styles.itemLabel}>{s.source}</Text>
-              <View style={styles.rowCenter}>
-                <Text style={styles.itemValue}>{s.count} HV</Text>
-                <Text style={[styles.meta, { marginLeft: 8 }]}>
-                  {s.percentage}%
-                </Text>
-              </View>
-            </View>
-          ))}
+      {/* Revenue Chart */}
+      {revenueMonthly.length > 0 && (
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Doanh thu theo tháng</Text>
+          <LineChart
+            data={prepareChartData(revenueMonthly)}
+            width={width - 64}
+            height={220}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+            }}
+            bezier
+            style={styles.chart}
+            withInnerLines={false}
+            withOuterLines={true}
+            withVerticalLabels={true}
+            withHorizontalLabels={true}
+          />
         </View>
-      </View>
+      )}
 
-      {/* Course performance */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Hiệu suất khóa học</Text>
-        <View style={{ gap: 8 }}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.th, { flex: 2 }]}>Khóa học</Text>
-            <Text style={[styles.th, { flex: 1, textAlign: "center" }]}>
-              Học viên
-            </Text>
-            <Text style={[styles.th, { flex: 1, textAlign: "center" }]}>
-              Hoàn thành
-            </Text>
-            <Text style={[styles.th, { flex: 1, textAlign: "right" }]}>
-              Doanh thu
-            </Text>
-            <Text style={[styles.th, { flex: 1, textAlign: "center" }]}>
-              Đánh giá
-            </Text>
-          </View>
-          {data.coursePerformance.map((c, i) => (
-            <View key={`${c.courseName}-${i}`} style={styles.tableRow}>
-              <Text style={[styles.td, { flex: 2 }]} numberOfLines={1}>
-                {c.courseName}
-              </Text>
-              <Text style={[styles.td, { flex: 1, textAlign: "center" }]}>
-                {c.enrollments}
-              </Text>
-              <Text
-                style={[
-                  styles.td,
-                  {
-                    flex: 1,
-                    textAlign: "center",
-                    color: c.completionRate >= 90 ? "#065F46" : "#374151",
-                  },
-                ]}
-              >
-                {c.completionRate}%
-              </Text>
-              <Text style={[styles.td, { flex: 1, textAlign: "right" }]}>
-                {formatPrice(c.revenue)}đ
-              </Text>
-              <Text style={[styles.td, { flex: 1, textAlign: "center" }]}>
-                {c.averageRating}
-              </Text>
-            </View>
-          ))}
+      {/* Learners Chart */}
+      {learnerMonthly.length > 0 && (
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Học viên theo tháng</Text>
+          <LineChart
+            data={prepareChartData(learnerMonthly)}
+            width={width - 64}
+            height={220}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+              propsForDots: {
+                r: "4",
+                strokeWidth: "2",
+                stroke: "#3B82F6",
+              },
+            }}
+            bezier
+            style={styles.chart}
+            withInnerLines={false}
+            withOuterLines={true}
+            withVerticalLabels={true}
+            withHorizontalLabels={true}
+          />
         </View>
-      </View>
+      )}
 
-      {/* Student progress summary (textual) */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Phát triển học viên (tóm tắt)</Text>
-        <View style={{ gap: 6 }}>
-          {data.studentProgress.map((m, idx) => (
-            <Text key={`m-${idx}`} style={styles.meta}>
-              {m.month}: mới {m.newStudents}, quay lại {m.returningStudents},
-              tổng {m.totalStudents}
-            </Text>
-          ))}
+      {/* Courses Chart */}
+      {courseMonthly.length > 0 && (
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Khóa học theo tháng</Text>
+          <LineChart
+            data={prepareChartData(courseMonthly)}
+            width={width - 64}
+            height={220}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+              propsForDots: {
+                r: "4",
+                strokeWidth: "2",
+                stroke: "#8B5CF6",
+              },
+            }}
+            bezier
+            style={styles.chart}
+            withInnerLines={false}
+            withOuterLines={true}
+            withVerticalLabels={true}
+            withHorizontalLabels={true}
+          />
         </View>
+      )}
+
+      {/* Info message */}
+      <View style={styles.infoCard}>
+        <Text style={styles.infoText}>
+          📊 Dữ liệu phân tích chi tiết sẽ được cập nhật khi backend API hỗ trợ
+          đầy đủ các endpoint analytics.
+        </Text>
       </View>
     </ScrollView>
   );
@@ -204,118 +307,26 @@ function KPI({
   );
 }
 
-function getMockData(range: "3months" | "6months" | "1year") {
-  if (range === "3months") {
-    return baseData({
-      months: ["T4", "T5", "T6"],
-      totals: {
-        totalStudents: 89,
-        totalRevenue: 68400000,
-        averageRating: 4.7,
-        totalSessions: 648,
-        growthRate: 18.2,
-      },
-    });
-  }
-  if (range === "1year") {
-    return baseData({
-      months: ["T7", "T8", "T9", "T10", "T11", "T12"],
-      totals: {
-        totalStudents: 284,
-        totalRevenue: 286800000,
-        averageRating: 4.8,
-        totalSessions: 2496,
-        growthRate: 31.4,
-      },
-    });
-  }
-  return baseData({
-    months: ["T1", "T2", "T3", "T4", "T5", "T6"],
-    totals: {
-      totalStudents: 156,
-      totalRevenue: 124500000,
-      averageRating: 4.8,
-      totalSessions: 1248,
-      growthRate: 23.5,
-    },
-  });
-}
-
-function baseData({ months, totals }: { months: string[]; totals: Overview }) {
-  const monthly: Monthly[] = months.map((m, i) => ({
-    month: m,
-    students: 20 + i * 5,
-    revenue: 10_000_000 + i * 4_000_000,
-    sessions: 100 + i * 40,
-  }));
-  const sources: Source[] = [
-    { source: "Tìm kiếm tự nhiên", count: 68, percentage: 43.6 },
-    { source: "Giới thiệu", count: 45, percentage: 28.8 },
-    { source: "Mạng xã hội", count: 28, percentage: 17.9 },
-    { source: "Quảng cáo", count: 15, percentage: 9.7 },
-  ];
-  const courses: CoursePerf[] = [
-    {
-      courseName: "Pickleball cơ bản",
-      enrollments: 48,
-      completionRate: 92,
-      revenue: 38_400_000,
-      averageRating: 4.9,
-    },
-    {
-      courseName: "Kỹ thuật nâng cao",
-      enrollments: 36,
-      completionRate: 85,
-      revenue: 36_000_000,
-      averageRating: 4.7,
-    },
-    {
-      courseName: "Chiến thuật thi đấu",
-      enrollments: 28,
-      completionRate: 88,
-      revenue: 28_000_000,
-      averageRating: 4.8,
-    },
-    {
-      courseName: "Lớp private 1-1",
-      enrollments: 44,
-      completionRate: 95,
-      revenue: 22_000_000,
-      averageRating: 4.9,
-    },
-  ];
-  const progress = months.map((m, i) => ({
-    month: m,
-    newStudents: 12 + i * 4,
-    returningStudents: 8 + i * 5,
-    totalStudents: 20 + i * 9,
-  }));
-  return {
-    overview: totals,
-    monthlyData: monthly,
-    studentSources: sources,
-    coursePerformance: courses,
-    studentProgress: progress,
-  };
-}
-
-function formatPrice(price: number) {
-  try {
-    return new Intl.NumberFormat("vi-VN").format(price);
-  } catch {
-    return String(price);
-  }
-}
-
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 16 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#6B7280",
+    fontSize: 14,
+  },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  title: { fontWeight: "700", color: "#111827" },
-  meta: { color: "#6B7280", fontSize: 12 },
+  title: { fontWeight: "700", color: "#111827", fontSize: 20 },
+  meta: { color: "#6B7280", fontSize: 12, marginTop: 4 },
   rangeRow: { flexDirection: "row", gap: 8 },
   chip: {
     borderWidth: 1,
@@ -325,7 +336,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   chipActive: { backgroundColor: "#10B981", borderColor: "#10B981" },
-  chipText: { color: "#111827", fontWeight: "600" },
+  chipText: { color: "#111827", fontWeight: "600", fontSize: 11 },
   chipTextActive: { color: "#fff" },
 
   grid5: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
@@ -338,39 +349,38 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   kpiTitle: { color: "#6B7280", fontSize: 12 },
-  kpiValue: { color: "#111827", fontWeight: "700", marginTop: 4 },
+  kpiValue: { color: "#111827", fontWeight: "700", marginTop: 4, fontSize: 18 },
   kpiHint: { color: "#6B7280", fontSize: 11, marginTop: 4 },
 
-  card: {
+  chartCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     padding: 16,
-  },
-  cardTitle: { fontWeight: "700", color: "#111827", marginBottom: 10 },
-  rowBetween: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
   },
-  rowCenter: { flexDirection: "row", alignItems: "center" },
-  itemLabel: { color: "#111827", fontWeight: "600" },
-  itemValue: { color: "#111827" },
+  chartTitle: {
+    fontWeight: "700",
+    color: "#111827",
+    fontSize: 16,
+    marginBottom: 12,
+    alignSelf: "flex-start",
+  },
+  chart: {
+    borderRadius: 16,
+  },
 
-  tableHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingBottom: 6,
+  infoCard: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    padding: 16,
   },
-  th: { color: "#6B7280", fontSize: 12 },
-  tableRow: {
-    flexDirection: "row",
-    paddingTop: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-    paddingBottom: 8,
+  infoText: {
+    color: "#1E40AF",
+    fontSize: 13,
+    lineHeight: 20,
   },
-  td: { color: "#111827", fontSize: 12 },
 });

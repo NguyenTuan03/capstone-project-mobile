@@ -214,9 +214,7 @@ export default function CreateQuizScreen() {
       </View>
 
       <ScrollView>
-        <Text style={{ fontWeight: "700", marginBottom: 4 }}>
-          Tên bài quizz
-        </Text>
+        <Text style={{ fontWeight: "700", marginBottom: 4 }}>Tiêu đề</Text>
         <TextInput
           style={{
             borderWidth: 1,
@@ -225,7 +223,7 @@ export default function CreateQuizScreen() {
             borderRadius: 8,
             marginBottom: 12,
           }}
-          placeholder="Nhập tên bài quizz"
+          placeholder="Nhập tiêu đề của quiz"
           placeholderTextColor="#9CA3AF"
           value={quiz.title}
           onChangeText={(text) => updateQuizField("title", text)}

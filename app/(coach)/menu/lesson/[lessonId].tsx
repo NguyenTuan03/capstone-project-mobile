@@ -4,7 +4,7 @@ import { QuizType } from "@/types/quiz";
 import { VideoType } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { VideoView, useVideoPlayer } from "expo-video";
+import { createVideoPlayer, VideoView } from "expo-video";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -17,7 +17,6 @@ import {
   Switch,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import Toast from "react-native-toast-message";
@@ -66,14 +65,7 @@ export default function LessonDetailScreen() {
     { id: number | string; content: string; isCorrect: boolean }[]
   >([]);
 
-  // Create player instance for selected video
-  const player = useVideoPlayer(selectedVideo?.publicUrl || null);
-  // Extract the numeric player ID for VideoView component
-  const playerId =
-    (player &&
-      ((player as any).__expo_shared_object_id__ ??
-        (typeof player === "number" ? player : null))) ||
-    null;
+  // Video player is created dynamically in the modal when needed
 
   const fetchQuizByLesson = useCallback(async () => {
     try {
@@ -81,7 +73,6 @@ export default function LessonDetailScreen() {
       const response = await get<QuizType>(
         `${API_URL}/v1/quizzes/lessons/${lessonId}`
       );
-      console.log("Response quiz:", response.data);
       setQuiz(response.data);
     } catch (error) {
       console.error("Lỗi khi tải  quiz:", error);
@@ -353,7 +344,6 @@ export default function LessonDetailScreen() {
       setShowEditQuiz(false);
       alert("Cập nhật quiz thành công");
     } catch (error: any) {
-      console.error("Error updating quiz:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật quiz";
       alert(errorMessage);
@@ -967,50 +957,6 @@ export default function LessonDetailScreen() {
               </View>
             )}
 
-            {/* Video Player Modal */}
-            {selectedVideo && selectedVideo.publicUrl && (
-              <Modal
-                visible={true}
-                animationType="fade"
-                transparent={true}
-                onRequestClose={() => setSelectedVideo(null)}
-              >
-                <TouchableWithoutFeedback
-                  onPress={() => setSelectedVideo(null)}
-                >
-                  <View style={styles.modalBackdrop} />
-                </TouchableWithoutFeedback>
-
-                <View style={styles.modalWrapper} pointerEvents="box-none">
-                  <View style={styles.modalContent}>
-                    <TouchableOpacity
-                      style={styles.closeButton}
-                      onPress={() => setSelectedVideo(null)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Ionicons name="close" size={20} color="#FFF" />
-                    </TouchableOpacity>
-
-                    {playerId ? (
-                      <VideoView
-                        player={playerId as any}
-                        style={styles.video}
-                        allowsPictureInPicture
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.video,
-                          { justifyContent: "center", alignItems: "center" },
-                        ]}
-                      >
-                        <ActivityIndicator size="large" color="#059669" />
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </Modal>
-            )}
           </View>
         ) : (
           <>
@@ -1130,7 +1076,7 @@ export default function LessonDetailScreen() {
                   </View>
                 ))}
               </View>
-            ) : quiz === undefined ? (
+            ) : !quiz ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconContainer}>
                   <Ionicons name="help-circle" size={56} color="#059669" />
@@ -1759,6 +1705,66 @@ export default function LessonDetailScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Video Player Modal */}
+      <Modal
+        visible={selectedVideo !== null}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setSelectedVideo(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: "#000" ,paddingTop:40}}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 16,
+              backgroundColor: "#fff",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedVideo(null)}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="close" size={28} color="#000" />
+            </TouchableOpacity>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                flex: 1,
+                marginLeft: 12,
+              }}
+              numberOfLines={1}
+            >
+              {selectedVideo?.title || "Video"}
+            </Text>
+          </View>
+
+          <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
+            {selectedVideo?.publicUrl ? (
+              <VideoView
+                player={createVideoPlayer({
+                  uri: selectedVideo.publicUrl,
+                })}
+                style={styles.fullScreenVideo}
+                nativeControls
+                contentFit="contain"
+              />
+            ) : (
+              <View style={{ justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={{ color: "#fff", marginTop: 12 }}>
+                  Đang tải video...
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2254,6 +2260,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  modalContent: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 8,
+  },
   video: {
     width: "100%",
     height: "100%",
@@ -2263,6 +2276,11 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 16 / 9,
     backgroundColor: "#000000",
+  },
+  fullScreenVideo: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#000",
   },
 
   /* Quick Metadata Row */
@@ -2650,11 +2668,6 @@ const styles = StyleSheet.create({
     color: "#111827",
     flex: 1,
     textAlign: "center",
-  },
-  modalContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
   },
   formSection: {
     marginBottom: 20,

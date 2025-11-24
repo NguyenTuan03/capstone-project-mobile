@@ -136,12 +136,12 @@ export default function CoachStudentsScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{item.avgAiAnalysisScore}</Text>
-            <Text style={styles.statLabel}>AI Score</Text>
+            <Text style={styles.statLabel}>Điểm AI</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{item.avgQuizScore}</Text>
-            <Text style={styles.statLabel}>Quiz Score</Text>
+            <Text style={styles.statLabel}>Điểm Quiz</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
@@ -152,7 +152,7 @@ export default function CoachStudentsScreen() {
           </View>
         </View>
 
-        <View style={styles.progressSection}>
+        {/* <View style={styles.progressSection}>
           <View style={styles.progressLabels}>
             <Text style={styles.levelLabel}>{getLevelLabel(skillLevel)}</Text>
             <Text style={styles.levelLabel}>{getLevelLabel(learningGoal)}</Text>
@@ -163,7 +163,7 @@ export default function CoachStudentsScreen() {
           <Text style={styles.progressText}>
             Mục tiêu: {getLevelLabel(learningGoal)}
           </Text>
-        </View>
+        </View> */}
       </TouchableOpacity>
     );
   };

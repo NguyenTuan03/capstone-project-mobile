@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { AiVideoCompareResult } from "../../../types/ai";
 import { VideoType } from "../../../types/video";
-import AIAnalysisResult from "./AIAnalysisResult";
 import CoachVideoCard from "./CoachVideoCard";
 import SubmittedVideoCard from "./SubmittedVideoCard";
 import VideoDetailsModal from "./VideoDetailsModal";
@@ -114,8 +113,6 @@ const VideoList: React.FC<VideoListProps> = ({
         </View>
       )}
 
-      <AIAnalysisResult loading={loadingAnalysis} result={aiAnalysisResult} />
-
       {/* Coach Videos Modal */}
       <VideoDetailsModal
         visible={showCoachVideosModal}
@@ -131,6 +128,7 @@ const VideoList: React.FC<VideoListProps> = ({
           onClose={() => setShowOverlayPlayer(false)}
           coachVideoUrl={video.publicUrl}
           learnerVideoUrl={submittedVideo.publicUrl}
+          aiAnalysisResult={aiAnalysisResult}
         />
       )}
     </>

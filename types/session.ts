@@ -21,6 +21,7 @@ export interface Session {
   lesson?: Lesson | null;
   video?: VideoType;
   quiz?: QuizType;
+  attendances?: AttendanceType[];
 }
 
 export interface Lesson {
