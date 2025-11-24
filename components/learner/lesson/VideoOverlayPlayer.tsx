@@ -65,18 +65,50 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
         },
       });
       setSliderValues({ coach: 0, learner: 0 });
-      // Reset position as well on visible
-      coachVideoRef.current?.setPositionAsync(0);
-      learnerVideoRef.current?.setPositionAsync(0);
+
+      // Reset position with error handling
+      setTimeout(() => {
+        try {
+          if (coachVideoRef.current) {
+            coachVideoRef.current
+              .setPositionAsync(0)
+              .catch((err) => console.log("Coach video reset error:", err));
+          }
+          if (learnerVideoRef.current) {
+            learnerVideoRef.current
+              .setPositionAsync(0)
+              .catch((err) => console.log("Learner video reset error:", err));
+          }
+        } catch (error) {
+          console.log("Video reset error:", error);
+        }
+      }, 100);
+    } else {
+      // Pause videos when modal closes to prevent background playback
+      try {
+        coachVideoRef.current?.pauseAsync().catch(() => {});
+        learnerVideoRef.current?.pauseAsync().catch(() => {});
+      } catch (error) {
+        console.log("Pause on close error:", error);
+      }
     }
   }, [visible]);
 
   // Pause both when in overlay mode to reduce CPU load until playing explicitly
   useEffect(() => {
     if (isOverlayMode) {
-      coachVideoRef.current?.pauseAsync();
-      learnerVideoRef.current?.pauseAsync();
-      setIsLoading(false);
+      try {
+        coachVideoRef.current
+          ?.pauseAsync()
+          .catch((err) => console.log("Pause coach error:", err));
+        learnerVideoRef.current
+          ?.pauseAsync()
+          .catch((err) => console.log("Pause learner error:", err));
+        setIsLoading(false);
+      } catch (error) {
+        console.log("Overlay mode pause error:", error);
+        setIsLoading(false);
+      }
     }
   }, [isOverlayMode]);
 
@@ -104,18 +136,36 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
 
   // Allow independent playback control
   const handlePlay = async (type: "coach" | "learner") => {
-    if (type === "coach") {
-      if (status.coach.isPlaying) {
-        await coachVideoRef.current?.pauseAsync();
+    const ref =
+      type === "coach" ? coachVideoRef.current : learnerVideoRef.current;
+    const videoStatus = type === "coach" ? status.coach : status.learner;
+
+    if (!ref) {
+      console.log(`${type} video ref is null, cannot play`);
+      return;
+    }
+
+    if (!videoStatus.isLoaded) {
+      console.log(`${type} video not loaded yet, cannot play`);
+      return;
+    }
+
+    try {
+      if (type === "coach") {
+        if (status.coach.isPlaying) {
+          await coachVideoRef.current?.pauseAsync();
+        } else {
+          await coachVideoRef.current?.playAsync();
+        }
       } else {
-        await coachVideoRef.current?.playAsync();
+        if (status.learner.isPlaying) {
+          await learnerVideoRef.current?.pauseAsync();
+        } else {
+          await learnerVideoRef.current?.playAsync();
+        }
       }
-    } else {
-      if (status.learner.isPlaying) {
-        await learnerVideoRef.current?.pauseAsync();
-      } else {
-        await learnerVideoRef.current?.playAsync();
-      }
+    } catch (error) {
+      console.log(`Play/Pause error for ${type}:`, error);
     }
   };
 
@@ -130,16 +180,28 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   ) => {
     const ref =
       type === "coach" ? coachVideoRef.current : learnerVideoRef.current;
-    if (ref) {
-      try {
-        await ref.setPositionAsync(value * 1000, {
-          toleranceMillisBefore: 100,
-          toleranceMillisAfter: 100,
-        });
-      } catch (error) {
-        console.log("Seek error:", error);
-      }
+
+    // Check if ref exists and video is loaded before seeking
+    if (!ref) {
+      console.log(`${type} video ref is null, skipping seek`);
+      return;
     }
+
+    const videoStatus = type === "coach" ? status.coach : status.learner;
+    if (!videoStatus.isLoaded) {
+      console.log(`${type} video not loaded yet, skipping seek`);
+      return;
+    }
+
+    try {
+      await ref.setPositionAsync(value * 1000, {
+        toleranceMillisBefore: 100,
+        toleranceMillisAfter: 100,
+      });
+    } catch (error) {
+      console.log("Seek error:", error);
+    }
+
     setTimeout(() => {
       setIsSeeking((prev) => ({ ...prev, [type]: false }));
     }, 500);
