@@ -2,7 +2,6 @@ import VideoOverlayPlayer from "@/components/learner/lesson/VideoOverlayPlayer";
 import { getAiVideoComparisonResultsByUser } from "@/services/ai/geminiService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
 import { AiVideoCompareResult } from "@/types/ai";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -68,30 +67,6 @@ export default function AIScreen() {
       ]}
     >
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 8,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="video-check"
-              size={24}
-              color="black"
-            />
-            <Text style={styles.cardTitle}>AI có thể phân tích:</Text>
-          </View>
-          <View style={{ gap: 6 }}>
-            <Text style={styles.item}>• Kỹ thuật giao bóng (serve)</Text>
-            <Text style={styles.item}>• Cú đánh trái (forehand)</Text>
-            <Text style={styles.item}>• Cú đánh phải (backhand)</Text>
-            <Text style={styles.item}>• Volley ở gần lưới</Text>
-          </View>
-        </View>
-
         <Text style={styles.sectionTitle}>Video đã phân tích</Text>
 
         {loading ? (

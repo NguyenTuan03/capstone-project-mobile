@@ -299,12 +299,12 @@ export default function LearnerProgressModal({
                   <Text style={styles.statValue}>
                     {learner.avgAiAnalysisScore}
                   </Text>
-                  <Text style={styles.statLabel}>AI Score</Text>
+                  <Text style={styles.statLabel}>Điểm AI</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{learner.avgQuizScore}</Text>
-                  <Text style={styles.statLabel}>Quiz Score</Text>
+                  <Text style={styles.statLabel}>Điểm Quiz</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>

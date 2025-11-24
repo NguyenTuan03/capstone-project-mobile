@@ -150,7 +150,7 @@ export default function CoachStudentsScreen() {
           </View>
         </View>
 
-        <View style={styles.progressSection}>
+        {/* <View style={styles.progressSection}>
           <View style={styles.progressLabels}>
             <Text style={styles.levelLabel}>{getLevelLabel(skillLevel)}</Text>
             <Text style={styles.levelLabel}>{getLevelLabel(learningGoal)}</Text>
@@ -161,7 +161,7 @@ export default function CoachStudentsScreen() {
           <Text style={styles.progressText}>
             Mục tiêu: {getLevelLabel(learningGoal)}
           </Text>
-        </View>
+        </View> */}
       </TouchableOpacity>
     );
   };
