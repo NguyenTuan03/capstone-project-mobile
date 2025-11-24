@@ -4,7 +4,7 @@ import { QuizType } from "@/types/quiz";
 import { VideoType } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { VideoView, useVideoPlayer } from "expo-video";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -81,7 +81,6 @@ export default function LessonDetailScreen() {
       const response = await get<QuizType>(
         `${API_URL}/v1/quizzes/lessons/${lessonId}`
       );
-      console.log("Response quiz:", response.data);
       setQuiz(response.data);
     } catch (error) {
       console.error("Lỗi khi tải  quiz:", error);
@@ -1129,7 +1128,7 @@ export default function LessonDetailScreen() {
                   </View>
                 ))}
               </View>
-            ) : quiz === undefined ? (
+            ) : !quiz ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconContainer}>
                   <Ionicons name="help-circle" size={56} color="#059669" />
@@ -1756,6 +1755,64 @@ export default function LessonDetailScreen() {
               </TouchableOpacity>
             </View>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Video Player Modal */}
+      <Modal
+        visible={selectedVideo !== null}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setSelectedVideo(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: "#000" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 16,
+              backgroundColor: "#fff",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedVideo(null)}
+              style={{ padding: 8 }}
+            >
+              <Ionicons name="close" size={28} color="#000" />
+            </TouchableOpacity>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                flex: 1,
+                marginLeft: 12,
+              }}
+              numberOfLines={1}
+            >
+              {selectedVideo?.title || "Video"}
+            </Text>
+          </View>
+
+          <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
+            {playerId !== null && selectedVideo?.publicUrl ? (
+              <VideoView
+                player={playerId as any}
+                style={{ width: "100%", height: "100%" }}
+                nativeControls
+                contentFit="contain"
+              />
+            ) : (
+              <View style={{ justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={{ color: "#fff", marginTop: 12 }}>
+                  Đang tải video...
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </Modal>
     </View>
