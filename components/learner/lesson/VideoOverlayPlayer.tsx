@@ -97,20 +97,25 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   // Pause both when in overlay mode to reduce CPU load until playing explicitly
   useEffect(() => {
     if (isOverlayMode) {
-      try {
-        coachVideoRef.current
-          ?.pauseAsync()
-          .catch((err) => console.log("Pause coach error:", err));
-        learnerVideoRef.current
-          ?.pauseAsync()
-          .catch((err) => console.log("Pause learner error:", err));
-        setIsLoading(false);
-      } catch (error) {
-        console.log("Overlay mode pause error:", error);
-        setIsLoading(false);
-      }
+      // Only pause if videos are loaded
+      setTimeout(() => {
+        try {
+          if (coachVideoRef.current && status.coach.isLoaded) {
+            coachVideoRef.current
+              .pauseAsync()
+              .catch((err) => console.log("Pause coach error:", err));
+          }
+          if (learnerVideoRef.current && status.learner.isLoaded) {
+            learnerVideoRef.current
+              .pauseAsync()
+              .catch((err) => console.log("Pause learner error:", err));
+          }
+        } catch (error) {
+          console.log("Overlay mode pause error:", error);
+        }
+      }, 200);
     }
-  }, [isOverlayMode]);
+  }, [isOverlayMode, status.coach.isLoaded, status.learner.isLoaded]);
 
   // Update playback status throttled to reduce frequent rerenders
   const onPlaybackStatusUpdate =
@@ -127,9 +132,10 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
         },
       }));
 
+      // Only hide loading when BOTH videos are loaded
       if (playbackStatus.isBuffering) {
         setIsLoading(true);
-      } else {
+      } else if (status.coach.isLoaded && status.learner.isLoaded) {
         setIsLoading(false);
       }
     };
