@@ -4,15 +4,16 @@ import { get } from "@/services/http/httpService";
 import http from "@/services/http/interceptor";
 import type { Session } from "@/types/session";
 import type { LearnerVideo, VideoType } from "@/types/video";
-import {
-  extractQuizzesFromPayload,
-  extractVideosFromPayload,
-  formatStatus,
-} from "@/utils/SessionFormat";
+import { formatStatus } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +24,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 const formatTime = (time?: string | null) => {
@@ -57,6 +59,7 @@ const getCoachVideos = (session?: Session | null): VideoType | undefined => {
 
 const SessionDetailScreen: React.FC = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { sessionId, sessionData } = useLocalSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,51 +69,41 @@ const SessionDetailScreen: React.FC = () => {
   const [videoModalVisible, setVideoModalVisible] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      if (!sessionId) return;
-      try {
-        setLoading(true);
-
-        // If session data is passed via params (from assignment tab), use it directly
-        if (sessionData && typeof sessionData === "string") {
-          try {
-            const parsedSession = JSON.parse(sessionData);
-            const normalized = extractSessionPayload(parsedSession);
-            if (normalized) {
-              const fallbackVideos = extractVideosFromPayload(parsedSession);
-              const fallbackQuizzes = extractQuizzesFromPayload(parsedSession);
-
-              setSession({
-                ...normalized,
-                video: normalized.video,
-                quiz: normalized.quiz,
-              });
-              setLoading(false);
-              return;
-            }
-          } catch (e) {
-            console.warn("Failed to parse session data from params:", e);
-          }
-        }
-
-        // Otherwise, fetch from API
-        const res = await get<Session>(`/v1/sessions/${sessionId}`);
-        const normalized = extractSessionPayload(res.data);
-        if (!normalized) {
-          setSession(null);
-          return;
-        }
-        setSession(normalized);
-      } catch {
-        Alert.alert("Lỗi", "Không thể tải thông tin buổi học");
-      } finally {
-        setLoading(false);
+  const fetchSession = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      // If session data is passed via params (from assignment tab), use it directly initially
+      // But we still want to fetch fresh data if we are focusing back
+      if (loading && sessionData && typeof sessionData === "string") {
+        // ... (existing logic for initial load from params can stay if needed,
+        // but for simplicity and correctness on refresh, we might prefer API)
       }
-    };
 
+      // Always fetch from API to get latest status
+      const res = await get<Session>(`/v1/sessions/${sessionId}`);
+      const normalized = extractSessionPayload(res.data);
+      if (!normalized) {
+        setSession(null);
+        return;
+      }
+      setSession(normalized);
+    } catch {
+      Alert.alert("Lỗi", "Không thể tải thông tin buổi học");
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    setLoading(true);
     fetchSession();
-  }, [sessionId, sessionData]);
+  }, [fetchSession]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchSession();
+    }, [fetchSession])
+  );
 
   const exercises = useMemo(
     () => (session ? BuildExercise(session) : []),
@@ -147,6 +140,7 @@ const SessionDetailScreen: React.FC = () => {
         position: "top",
         visibilityTime: 3000,
       });
+      fetchSession();
     } catch (error) {
       console.error("Lỗi khi xóa quiz:", error);
       Toast.show({
@@ -158,6 +152,52 @@ const SessionDetailScreen: React.FC = () => {
       });
     }
   };
+
+  const deleteVideo = async (videoId: number, videoTitle: string) => {
+    try {
+      await http.delete(`/v1/videos/${videoId}`);
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: `Xóa video "${videoTitle}" thành công`,
+        position: "top",
+        visibilityTime: 3000,
+      });
+      fetchSession();
+    } catch (error) {
+      console.error("Lỗi khi xóa video:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể xóa video. Vui lòng thử lại.",
+        position: "top",
+        visibilityTime: 3000,
+      });
+    }
+  };
+
+  const updateVideo = (videoId: number, video: VideoType) => {
+    router.push({
+      pathname: "/(coach)/menu/lesson/uploadVideo",
+      params: {
+        // lessonId is not strictly needed for update if the API only needs videoId,
+        // but we might need to pass something if the screen requires it.
+        // Based on uploadVideo.tsx, it uses lessonId for CREATE, but videoId for UPDATE.
+        // We can pass a dummy lessonId or the current session's courseId if available,
+        // but let's try passing just what's needed.
+        lessonId: "", // Not used for update
+        videoId: String(videoId),
+        videoTitle: video.title,
+        videoDescription: video.description || "",
+        drillName: video.drillName || "",
+        drillDescription: video.drillDescription || "",
+        drillPracticeSets: video.drillPracticeSets
+          ? String(video.drillPracticeSets)
+          : "",
+      },
+    });
+  };
+
   const handleOpenCoachVideo = (url: string) => {
     setSelectedVideoUrl(url);
     setVideoModalVisible(true);
@@ -299,6 +339,8 @@ const SessionDetailScreen: React.FC = () => {
               <CoachVideoCard
                 video={coachVideos}
                 onOpen={handleOpenCoachVideo}
+                onUpdate={updateVideo}
+                onDelete={deleteVideo}
               />
             ) : (
               <View style={styles.emptyCard}>
@@ -340,13 +382,13 @@ const SessionDetailScreen: React.FC = () => {
       <Modal
         visible={videoModalVisible}
         animationType="slide"
-        presentationStyle="fullScreen"
+        presentationStyle="pageSheet"
         onRequestClose={() => {
           setVideoModalVisible(false);
           setSelectedVideoUrl(null);
         }}
       >
-        <View style={styles.videoModalContainer}>
+        <View style={(styles.videoModalContainer, { paddingTop: insets.top })}>
           <View style={styles.videoModalHeader}>
             <TouchableOpacity
               style={styles.videoModalCloseButton}
@@ -365,8 +407,10 @@ const SessionDetailScreen: React.FC = () => {
               <VideoView
                 style={styles.videoPlayer}
                 player={videoPlayer}
-                allowsFullscreen
-                allowsPictureInPicture
+                fullscreenOptions={{
+                  enable: true,
+                }}
+                // allowsPictureInPicture
               />
             </View>
           )}
@@ -422,69 +466,118 @@ function getStatusBadgeColors(status?: string | null) {
 function CoachVideoCard({
   video,
   onOpen,
+  onUpdate,
+  onDelete,
 }: {
   video: VideoType;
   onOpen: (url: string) => void;
+  onUpdate?: (videoId: number, video: VideoType) => void;
+  onDelete?: (videoId: number, videoTitle: string) => void;
 }) {
   const badgeStyle = getStatusBadgeColors(video.status);
   return (
     <View style={styles.coachCard}>
-      <View style={styles.coachHeader}>
-        <View style={styles.exerciseIcon}>
-          <Ionicons name="videocam-outline" size={18} color="#7C3AED" />
+      {/* Header Section */}
+      <View style={styles.coachHeaderRow}>
+        <View style={styles.coachTitleContainer}>
+          <View style={styles.videoIconBadge}>
+            <Ionicons name="videocam" size={16} color="#7C3AED" />
+          </View>
+          <Text style={styles.coachTitle} numberOfLines={2}>
+            {video.title}
+          </Text>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.coachTitle}>{video.title}</Text>
-          {video.description ? (
-            <Text style={styles.coachDescription}>{video.description}</Text>
-          ) : null}
-        </View>
-        <Text
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: badgeStyle.backgroundColor,
-              color: badgeStyle.color,
-            },
-          ]}
-        >
-          {video.status || "—"}
+      </View>
+
+      {/* Description */}
+      {video.description ? (
+        <Text style={styles.coachDescription} numberOfLines={3}>
+          {video.description}
         </Text>
-      </View>
+      ) : null}
 
-      <View style={styles.coachMeta}>
-        {video.duration != null ? (
-          <View style={styles.coachMetaItem}>
+      {/* Metadata Tags */}
+      <View style={styles.metaTagsRow}>
+        {video.duration != null && (
+          <View style={styles.metaTag}>
             <Ionicons name="time-outline" size={12} color="#6B7280" />
-            <Text style={styles.meta}>{video.duration} phút</Text>
+            <Text style={styles.metaTagText}>{video.duration} phút</Text>
+          </View>
+        )}
+        {video.drillName ? (
+          <View style={styles.metaTag}>
+            <Ionicons name="tennisball-outline" size={12} color="#6B7280" />
+            <Text style={styles.metaTagText}>{video.drillName}</Text>
           </View>
         ) : null}
-        {video.drillName ? (
-          <View style={styles.coachMetaItem}>
-            <Ionicons name="tennisball-outline" size={12} color="#6B7280" />
-            <Text style={styles.meta}>{video.drillName}</Text>
+        {video.drillPracticeSets ? (
+          <View style={styles.metaTag}>
+            <Ionicons name="repeat-outline" size={12} color="#6B7280" />
+            <Text style={styles.metaTagText}>{video.drillPracticeSets}</Text>
           </View>
         ) : null}
       </View>
 
+      {/* Drill Description (if separate from main description) */}
       {video.drillDescription ? (
-        <Text style={styles.meta}>{video.drillDescription}</Text>
-      ) : null}
-      {video.drillPracticeSets ? (
-        <Text style={styles.meta}>{video.drillPracticeSets}</Text>
+        <View style={styles.drillDescContainer}>
+          <Text style={styles.drillDescLabel}>Bài tập:</Text>
+          <Text style={styles.drillDescText} numberOfLines={2}>
+            {video.drillDescription}
+          </Text>
+        </View>
       ) : null}
 
-      {video.publicUrl ? (
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => onOpen(video.publicUrl!)}
-        >
-          <Ionicons name="play-circle" size={16} color="#2563EB" />
-          <Text style={styles.linkText}>Xem video mẫu</Text>
-        </TouchableOpacity>
-      ) : (
-        <Text style={styles.meta}>Video đang được xử lý</Text>
-      )}
+      {/* Action Buttons */}
+      <View style={styles.cardActions}>
+        {video.publicUrl ? (
+          <TouchableOpacity
+            style={styles.primaryActionButton}
+            onPress={() => onOpen(video.publicUrl!)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="play" size={16} color="#FFFFFF" />
+            <Text style={styles.primaryActionText}>Xem video</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.processingBadge}>
+            <ActivityIndicator size="small" color="#6B7280" />
+            <Text style={styles.processingText}>Đang xử lý...</Text>
+          </View>
+        )}
+
+        <View style={styles.secondaryActions}>
+          {onUpdate && (
+            <TouchableOpacity
+              style={styles.iconActionButton}
+              onPress={() => onUpdate(video.id, video)}
+            >
+              <Ionicons name="pencil-outline" size={18} color="#4B5563" />
+            </TouchableOpacity>
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              style={[styles.iconActionButton, styles.deleteActionButton]}
+              onPress={() => {
+                Alert.alert(
+                  "Xác nhận xóa",
+                  `Bạn có chắc chắn muốn xóa video "${video.title}" không?`,
+                  [
+                    { text: "Hủy", style: "cancel" },
+                    {
+                      text: "Xóa",
+                      style: "destructive",
+                      onPress: () => onDelete(video.id, video.title),
+                    },
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color="#DC2626" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
@@ -527,34 +620,40 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 12,
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
   infoLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#6B7280",
     flex: 1,
     marginRight: 12,
   },
   infoValue: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#111827",
     flex: 1,
     textAlign: "right",
+    fontWeight: "500",
   },
   card: {
     backgroundColor: "#F9FAFB",
@@ -583,59 +682,155 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6B7280",
   },
+  // Coach Video Card Styles
   coachCard: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    marginBottom: 12,
-    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    gap: 12,
   },
-  coachHeader: {
+  coachHeaderRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 8,
+    gap: 12,
+  },
+  coachTitleContainer: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 10,
+  },
+  videoIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#F5F3FF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   coachTitle: {
-    fontSize: 14,
+    flex: 1,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
-  },
-  coachDescription: {
-    fontSize: 12,
-    color: "#4B5563",
-    marginTop: 2,
+    lineHeight: 22,
   },
   statusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusText: {
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
   },
-  coachMeta: {
+  coachDescription: {
+    fontSize: 13,
+    color: "#4B5563",
+    lineHeight: 20,
+  },
+  metaTagsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
-    marginTop: 6,
+    gap: 8,
   },
-  coachMetaItem: {
+  metaTag: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  linkButton: {
+  metaTagText: {
+    fontSize: 12,
+    color: "#4B5563",
+    fontWeight: "500",
+  },
+  drillDescContainer: {
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 8,
+    gap: 4,
+  },
+  drillDescLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+  },
+  drillDescText: {
+    fontSize: 13,
+    color: "#374151",
+  },
+  cardActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 8,
+    gap: 12,
+    marginTop: 4,
   },
-  linkText: {
-    fontSize: 13,
+  primaryActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 8,
+    shadowColor: "#2563EB",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  primaryActionText: {
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "600",
-    color: "#2563EB",
+  },
+  processingBadge: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 8,
+  },
+  processingText: {
+    color: "#6B7280",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  secondaryActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  iconActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  deleteActionButton: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
   },
   learnerCard: {
     borderWidth: 1,
@@ -669,6 +864,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderStyle: "dashed",
   },
   emptyText: {
     fontSize: 14,
@@ -721,13 +921,6 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 12, fontWeight: "600" },
 
-  actionRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-
   btn: {
     flexDirection: "row",
     alignItems: "center",
@@ -755,7 +948,6 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     shadowColor: "#000",
     shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
   },

@@ -29,6 +29,14 @@ export default function CoachHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [revenue, setRevenue] = useState<number>(0);
   const [revenueGrowth, setRevenueGrowth] = useState<number | null>(null);
+  const [courseCount, setCourseCount] = useState<number>(0);
+  const [courseGrowth, setCourseGrowth] = useState<number | null>(null);
+  const [learnerCount, setLearnerCount] = useState<number>(0);
+  const [learnerGrowth, setLearnerGrowth] = useState<number | null>(null);
+  const [rating, setRating] = useState<{
+    overall: number;
+    total: number;
+  } | null>(null);
 
   // Helper function to get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -83,21 +91,40 @@ export default function CoachHomeScreen() {
       const year = today.getFullYear();
       const dateStr = getTodayDate();
 
-      const [sessionsData, revenueData] = await Promise.all([
-        sessionService.getSessionsForWeeklyCalendar({
-          startDate: dateStr,
-          endDate: dateStr,
-        }),
-        user?.id
-          ? coachService.getMonthlyRevenue(user.id, month, year)
-          : Promise.resolve(null),
-      ]);
+      const [sessionsData, revenueData, courseData, learnerData, ratingData] =
+        await Promise.all([
+          sessionService.getSessionsForWeeklyCalendar({
+            startDate: dateStr,
+            endDate: dateStr,
+          }),
+          user?.id
+            ? coachService.getMonthlyRevenue(user.id, month, year)
+            : Promise.resolve(null),
+          user?.id
+            ? coachService.getMonthlyCourseCount(user.id, month, year)
+            : Promise.resolve(null),
+          user?.id
+            ? coachService.getMonthlyLearnerCount(user.id, month, year)
+            : Promise.resolve(null),
+          user?.id ? coachService.loadRating(user.id) : Promise.resolve(null),
+        ]);
 
       setSessions(sessionsData);
 
       if (revenueData && revenueData.data.length > 0) {
         setRevenue(revenueData.data[0].data);
         setRevenueGrowth(revenueData.data[0].increaseFromLastMonth ?? null);
+      }
+      if (courseData && courseData.data.length > 0) {
+        setCourseCount(courseData.data[0].data);
+        setCourseGrowth(courseData.data[0].increaseFromLastMonth ?? null);
+      }
+      if (learnerData && learnerData.data.length > 0) {
+        setLearnerCount(learnerData.data[0].data);
+        setLearnerGrowth(learnerData.data[0].increaseFromLastMonth ?? null);
+      }
+      if (ratingData) {
+        setRating(ratingData);
       }
     } catch (error) {
       console.error("❌ Failed to load data:", error);
@@ -203,11 +230,11 @@ export default function CoachHomeScreen() {
                   <Ionicons name="star-outline" size={24} color="#F59E0B" />
                 </View>
                 <Text style={styles.statCardLabel}>Đánh giá</Text>
-                <Text style={styles.statCardValue}>4.8</Text>
+                <Text style={styles.statCardValue}>{rating?.overall}</Text>
                 <View style={styles.trendBadge}>
                   <Ionicons name="star" size={12} color="#F59E0B" />
                   <Text style={[styles.trendText, { color: "#F59E0B" }]}>
-                    Top 10%
+                    {rating?.total}
                   </Text>
                 </View>
               </View>
@@ -222,11 +249,13 @@ export default function CoachHomeScreen() {
                   <Ionicons name="book-outline" size={24} color="#10B981" />
                 </View>
                 <Text style={styles.statCardLabel}>Khóa học</Text>
-                <Text style={styles.statCardValue}>8</Text>
-                <View style={styles.trendBadge}>
-                  <Ionicons name="add" size={12} color="#059669" />
-                  <Text style={styles.trendText}>+2 mới</Text>
-                </View>
+                <Text style={styles.statCardValue}>{courseCount}</Text>
+                {courseGrowth && (
+                  <View style={styles.trendBadge}>
+                    <Ionicons name="add" size={12} color="#059669" />
+                    <Text style={styles.trendText}>{courseGrowth}</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.statCard}>
                 <View
@@ -235,11 +264,13 @@ export default function CoachHomeScreen() {
                   <Ionicons name="people-outline" size={24} color="#6366F1" />
                 </View>
                 <Text style={styles.statCardLabel}>Học viên</Text>
-                <Text style={styles.statCardValue}>45</Text>
-                <View style={styles.trendBadge}>
-                  <Ionicons name="trending-up" size={12} color="#059669" />
-                  <Text style={styles.trendText}>+5 mới</Text>
-                </View>
+                <Text style={styles.statCardValue}>{learnerCount}</Text>
+                {learnerGrowth && (
+                  <View style={styles.trendBadge}>
+                    <Ionicons name="trending-up" size={12} color="#059669" />
+                    <Text style={styles.trendText}>{learnerGrowth}</Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>

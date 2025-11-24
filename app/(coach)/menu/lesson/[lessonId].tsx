@@ -353,7 +353,6 @@ export default function LessonDetailScreen() {
       setShowEditQuiz(false);
       alert("Cập nhật quiz thành công");
     } catch (error: any) {
-      console.error("Error updating quiz:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật quiz";
       alert(errorMessage);

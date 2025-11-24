@@ -1,3 +1,4 @@
+import { formatDate } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { default as React, useEffect, useState } from "react";
 import {
@@ -313,7 +314,9 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           {/* Session Title */}
           <View style={styles.titleSection}>
             <Text style={styles.sessionTitle}>{sessionData.name}</Text>
-            <Text style={styles.sessionDate}>{sessionData.scheduleDate}</Text>
+            <Text style={styles.sessionDate}>
+              {formatDate(sessionData.scheduleDate)}
+            </Text>
           </View>
 
           {/* Status Badge */}
@@ -329,7 +332,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </View>
 
           {/* Video Conference Button */}
-          {sessionData.status !== SessionStatus.CANCELLED && (
+          {/* {sessionData.status !== SessionStatus.CANCELLED && (
             <TouchableOpacity
               style={styles.vcButton}
               onPress={handleJoinVideoConference}
@@ -339,7 +342,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 Tham gia lớp học trực tuyến
               </Text>
             </TouchableOpacity>
-          )}
+          )} */}
 
           {/* Payment Warning */}
           <View style={styles.warningSection}>

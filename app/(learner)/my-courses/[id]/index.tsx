@@ -596,7 +596,7 @@ export default function CourseDetailScreen() {
                           )}
                         </View>
 
-                        {(session.status === "IN_PROGRESS" ||
+                        {/* {(session.status === "IN_PROGRESS" ||
                           session.status === "SCHEDULED") && (
                           <TouchableOpacity
                             style={styles.vcButton}
@@ -612,7 +612,7 @@ export default function CourseDetailScreen() {
                               color="#FFFFFF"
                             />
                           </TouchableOpacity>
-                        )}
+                        )} */}
 
                         <TouchableOpacity
                           style={styles.accessButton}

@@ -35,10 +35,14 @@ export default function ContentScreen() {
       const res = await get<{
         statusCode: number;
         message: string;
-        metadata: number;
+        metadata: {
+          overall: number;
+          total: number;
+        };
       }>(`/v1/coaches/${coachId}/rating/overall`);
       if (res?.data?.metadata !== undefined) {
-        setRating(res.data.metadata);
+        console.log(res.data.metadata);
+        setRating(res.data.metadata.overall);
       }
     } catch (error) {
       setRating(null);
