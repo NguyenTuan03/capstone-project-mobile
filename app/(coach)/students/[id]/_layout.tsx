@@ -10,7 +10,7 @@ export default function StudentDetailStackLayout() {
         headerShown: false,
         contentStyle: {
           backgroundColor: "#FFFFFF",
-          paddingTop: insets.top,
+          paddingTop: 0,
           paddingBottom: insets.bottom + 20,
         },
       }}
