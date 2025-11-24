@@ -50,6 +50,16 @@ class SessionService {
     }
   }
 
+  async getSessionsByCourseId(courseId: number) {
+    try {
+      const response = await http.get(`/v1/sessions/courses/${courseId}`);
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching sessions by course ID:", error);
+      throw error;
+    }
+  }
+
   async updateSessionStatus(sessionId: number, status: string) {
     try {
       const response = await http.patch(`/v1/sessions/${sessionId}/status`, {

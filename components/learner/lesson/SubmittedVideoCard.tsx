@@ -80,44 +80,23 @@ const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
       <View style={styles.videoContainer}>
         <LessonVideoPlayer source={submittedVideo.publicUrl} />
       </View>
-
-      {overlayVideoUrl ? (
+      <View style={styles.actionsRow}>
         <TouchableOpacity
+          style={styles.customCompareButton}
           onPress={onViewOverlay}
           activeOpacity={0.8}
-          style={styles.actionButtonContainer}
         >
           <LinearGradient
-            colors={["#3B82F6", "#2563EB"]}
+            colors={["#10B981", "#059669"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.viewOverlayButton}
+            style={styles.compareButtonGradient}
           >
-            <Ionicons name="eye" size={20} color="#FFFFFF" />
-            <Text style={styles.viewOverlayButtonText}>
-              Xem so sánh với Coach
-            </Text>
+            <Ionicons name="layers" size={20} color="#FFFFFF" />
+            <Text style={styles.compareButtonText}>Xem phân tích AI</Text>
           </LinearGradient>
         </TouchableOpacity>
-      ) : (
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={styles.customCompareButton}
-            onPress={onViewOverlay}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={["#10B981", "#059669"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.compareButtonGradient}
-            >
-              <Ionicons name="layers" size={20} color="#FFFFFF" />
-              <Text style={styles.compareButtonText}>So sánh thủ công</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      )}
+      </View>
     </View>
   );
 };

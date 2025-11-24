@@ -1,3 +1,4 @@
+import { AiVideoCompareResult } from "@/types/ai";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { AVPlaybackStatus, ResizeMode, Video } from "expo-av";
@@ -6,6 +7,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,6 +24,7 @@ interface VideoOverlayPlayerProps {
   onClose: () => void;
   coachVideoUrl: string;
   learnerVideoUrl: string;
+  aiAnalysisResult: AiVideoCompareResult | null;
 }
 
 const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
@@ -29,6 +32,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   onClose,
   coachVideoUrl,
   learnerVideoUrl,
+  aiAnalysisResult,
 }) => {
   const insets = useSafeAreaInsets();
   const [opacityDisplay, setOpacityDisplay] = useState(0.5);
@@ -45,6 +49,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   const [isSeeking, setIsSeeking] = useState({ coach: false, learner: false });
   const [sliderValues, setSliderValues] = useState({ coach: 0, learner: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -97,20 +102,18 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       }
     };
 
-  // Ensure only one video plays at a time for better performance
+  // Allow independent playback control
   const handlePlay = async (type: "coach" | "learner") => {
     if (type === "coach") {
       if (status.coach.isPlaying) {
         await coachVideoRef.current?.pauseAsync();
       } else {
-        await learnerVideoRef.current?.pauseAsync();
         await coachVideoRef.current?.playAsync();
       }
     } else {
       if (status.learner.isPlaying) {
         await learnerVideoRef.current?.pauseAsync();
       } else {
-        await coachVideoRef.current?.pauseAsync();
         await learnerVideoRef.current?.playAsync();
       }
     }
@@ -140,6 +143,15 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
     setTimeout(() => {
       setIsSeeking((prev) => ({ ...prev, [type]: false }));
     }, 500);
+  };
+
+  const handleAnalysisItemClick = async (item: any) => {
+    if (item.timestamp !== undefined) {
+      // For details items
+      handleSeek("learner", item.timestamp);
+      handleSeekComplete("learner", item.timestamp);
+    }
+    setShowAnalysis(false);
   };
 
   const getDisplayValue = (type: "coach" | "learner") => {
@@ -200,6 +212,15 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
               {isOverlayMode ? "Tách biệt" : "Chồng lớp"}
             </Text>
           </TouchableOpacity>
+          {aiAnalysisResult && (
+            <TouchableOpacity
+              onPress={() => setShowAnalysis(true)}
+              style={[styles.modeButton, { marginLeft: 8 }]}
+            >
+              <Ionicons name="analytics-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.modeButtonText}>Phân tích</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.videoContainer}>
@@ -298,15 +319,19 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
             <View style={styles.sliderRow}>
               <View style={styles.sliderHeader}>
                 <View style={styles.sliderLabelContainer}>
-                  <TouchableOpacity onPress={() => handlePlay("coach")}>
-                    <Ionicons
-                      name={
-                        status.coach.isPlaying ? "pause-circle" : "play-circle"
-                      }
-                      size={28}
-                      color="#3B82F6"
-                    />
-                  </TouchableOpacity>
+                  {!isOverlayMode && (
+                    <TouchableOpacity onPress={() => handlePlay("coach")}>
+                      <Ionicons
+                        name={
+                          status.coach.isPlaying
+                            ? "pause-circle"
+                            : "play-circle"
+                        }
+                        size={28}
+                        color="#3B82F6"
+                      />
+                    </TouchableOpacity>
+                  )}
                   <Text style={[styles.sliderLabel, { color: "#3B82F6" }]}>
                     HLV
                   </Text>
@@ -340,17 +365,19 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
             <View style={styles.sliderRow}>
               <View style={styles.sliderHeader}>
                 <View style={styles.sliderLabelContainer}>
-                  <TouchableOpacity onPress={() => handlePlay("learner")}>
-                    <Ionicons
-                      name={
-                        status.learner.isPlaying
-                          ? "pause-circle"
-                          : "play-circle"
-                      }
-                      size={28}
-                      color="#10B981"
-                    />
-                  </TouchableOpacity>
+                  {!isOverlayMode && (
+                    <TouchableOpacity onPress={() => handlePlay("learner")}>
+                      <Ionicons
+                        name={
+                          status.learner.isPlaying
+                            ? "pause-circle"
+                            : "play-circle"
+                        }
+                        size={28}
+                        color="#10B981"
+                      />
+                    </TouchableOpacity>
+                  )}
                   <Text style={[styles.sliderLabel, { color: "#10B981" }]}>
                     Học viên
                   </Text>
@@ -383,6 +410,187 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
           </View>
         </View>
       </View>
+
+      {/* Analysis Bottom Sheet */}
+      <Modal
+        visible={showAnalysis}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAnalysis(false)}
+      >
+        <View style={styles.analysisModalContainer}>
+          <View style={styles.analysisModalContent}>
+            <View style={styles.analysisHeader}>
+              <Text style={styles.analysisTitle}>📊 Phân tích AI</Text>
+              <TouchableOpacity onPress={() => setShowAnalysis(false)}>
+                <Ionicons name="close" size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={true}>
+              {aiAnalysisResult && (
+                <>
+                  {/* Score */}
+                  {aiAnalysisResult.learnerScore !== null && (
+                    <View style={styles.scoreContainer}>
+                      <Text style={styles.scoreLabel}>Điểm tổng thể:</Text>
+                      <Text style={styles.scoreValue}>
+                        ⭐ {aiAnalysisResult.learnerScore}/100
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Summary */}
+                  {aiAnalysisResult.summary && (
+                    <View style={styles.summaryContainer}>
+                      <Text style={styles.sectionTitle}>📝 Tóm tắt</Text>
+                      <Text style={styles.summaryText}>
+                        {aiAnalysisResult.summary}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Details by Phase */}
+                  {aiAnalysisResult.details &&
+                    aiAnalysisResult.details.length > 0 && (
+                      <View style={styles.detailsContainer}>
+                        <Text style={styles.sectionTitle}>
+                          🎯 Phân tích theo giai đoạn
+                        </Text>
+                        {aiAnalysisResult.details.map((detail, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            style={styles.detailItem}
+                            onPress={() => handleAnalysisItemClick(detail)}
+                          >
+                            <View style={styles.detailHeader}>
+                              <Text style={styles.detailType}>
+                                {detail.type === "PREPARATION"
+                                  ? "1. Tư thế chuẩn bị"
+                                  : detail.type === "SWING_AND_CONTACT"
+                                  ? "2. Vung vợt"
+                                  : "3. Động tác kết thúc"}
+                              </Text>
+                              {detail.timestamp !== undefined && (
+                                <Ionicons
+                                  name="play-circle"
+                                  size={20}
+                                  color="#3B82F6"
+                                />
+                              )}
+                            </View>
+                            <Text style={styles.detailAdvanced}>
+                              {detail.advanced}
+                            </Text>
+                            {detail.strengths &&
+                              detail.strengths.length > 0 && (
+                                <View style={styles.strengthsContainer}>
+                                  <Text style={styles.strengthsLabel}>
+                                    ✓ Điểm mạnh:
+                                  </Text>
+                                  {detail.strengths.map((strength, i) => (
+                                    <Text key={i} style={styles.strengthText}>
+                                      • {strength}
+                                    </Text>
+                                  ))}
+                                </View>
+                              )}
+                            {detail.weaknesses &&
+                              detail.weaknesses.length > 0 && (
+                                <View style={styles.weaknessesContainer}>
+                                  <Text style={styles.weaknessesLabel}>
+                                    ⚠ Điểm yếu:
+                                  </Text>
+                                  {detail.weaknesses.map((weakness, i) => (
+                                    <Text key={i} style={styles.weaknessText}>
+                                      • {weakness}
+                                    </Text>
+                                  ))}
+                                </View>
+                              )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+
+                  {/* Key Differences */}
+                  {aiAnalysisResult.keyDifferents &&
+                    aiAnalysisResult.keyDifferents.length > 0 && (
+                      <View style={styles.differencesContainer}>
+                        <Text style={styles.sectionTitle}>
+                          🔍 Điểm khác biệt chính
+                        </Text>
+                        {aiAnalysisResult.keyDifferents.map((diff, index) => (
+                          <View key={index} style={styles.differenceItem}>
+                            <Text style={styles.differenceAspect}>
+                              {diff.aspect}
+                            </Text>
+                            <Text style={styles.analysisText}>
+                              <Text style={{ fontWeight: "bold" }}>HLV:</Text>{" "}
+                              {diff.coachTechnique}
+                            </Text>
+                            <Text style={styles.analysisText}>
+                              <Text style={{ fontWeight: "bold" }}>Bạn:</Text>{" "}
+                              {diff.learnerTechnique}
+                            </Text>
+                            <Text style={styles.impactText}>
+                              Tác động: {diff.impact}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                  {/* Recommendations */}
+                  {aiAnalysisResult.recommendationDrills &&
+                    aiAnalysisResult.recommendationDrills.length > 0 && (
+                      <View style={styles.recommendationsContainer}>
+                        <Text style={styles.sectionTitle}>
+                          💡 Khuyến nghị & Bài tập
+                        </Text>
+                        {aiAnalysisResult.recommendationDrills.map(
+                          (drill, index) => (
+                            <View key={index} style={styles.recommendationItem}>
+                              <Text style={styles.drillTitle}>
+                                {index + 1}. {drill.name}
+                              </Text>
+                              <Text style={styles.drillText}>
+                                {drill.description}
+                              </Text>
+                              <Text style={styles.drillSets}>
+                                Số hiệp: {drill.practiceSets}
+                              </Text>
+                            </View>
+                          )
+                        )}
+                      </View>
+                    )}
+
+                  {/* Coach Note */}
+                  {aiAnalysisResult.coachNote && (
+                    <View style={styles.coachNoteContainer}>
+                      <Text style={styles.sectionTitle}>
+                        💬 Ghi chú từ Coach
+                      </Text>
+                      <Text style={styles.coachNoteText}>
+                        {aiAnalysisResult.coachNote}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Timestamp */}
+                  {aiAnalysisResult.createdAt && (
+                    <Text style={styles.timestampText}>
+                      Phân tích lúc:{" "}
+                      {new Date(aiAnalysisResult.createdAt).toLocaleString()}
+                    </Text>
+                  )}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 };
@@ -526,6 +734,138 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   durationText: { color: "#E5E7EB", fontSize: 12, fontWeight: "normal" },
+  analysisModalContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  analysisModalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "85%",
+  },
+  analysisHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  analysisTitle: { fontSize: 18, fontWeight: "bold", color: "#111827" },
+  scoreContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  scoreLabel: { fontSize: 14, fontWeight: "600", color: "#92400E" },
+  scoreValue: { fontSize: 20, fontWeight: "bold", color: "#B45309" },
+  summaryContainer: {
+    backgroundColor: "#F3F4F6",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  summaryText: { fontSize: 12, color: "#374151", lineHeight: 18 },
+  detailsContainer: { marginBottom: 12 },
+  detailItem: {
+    backgroundColor: "#EFF6FF",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  detailType: { fontSize: 13, fontWeight: "bold", color: "#1E40AF" },
+  detailAdvanced: { fontSize: 12, color: "#1F2937", marginBottom: 6 },
+  strengthsContainer: { marginTop: 6 },
+  strengthsLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#059669",
+    marginBottom: 4,
+  },
+  strengthText: { fontSize: 11, color: "#047857", marginLeft: 8 },
+  weaknessesContainer: { marginTop: 6 },
+  weaknessesLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#DC2626",
+    marginBottom: 4,
+  },
+  weaknessText: { fontSize: 11, color: "#B91C1C", marginLeft: 8 },
+  differencesContainer: { marginBottom: 12 },
+  differenceItem: {
+    backgroundColor: "#FFF7ED",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F97316",
+  },
+  differenceAspect: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#92400E",
+    marginBottom: 4,
+  },
+  analysisText: { fontSize: 11, color: "#4B5563", marginBottom: 2 },
+  impactText: {
+    fontSize: 11,
+    color: "#EA580C",
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  recommendationsContainer: { marginBottom: 12 },
+  recommendationItem: {
+    backgroundColor: "#F0FDF4",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#10B981",
+  },
+  drillTitle: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#166534",
+    marginBottom: 4,
+  },
+  drillText: { fontSize: 11, color: "#15803D", marginBottom: 4 },
+  drillSets: { fontSize: 10, color: "#16A34A", fontStyle: "italic" },
+  coachNoteContainer: {
+    backgroundColor: "#FEF3C7",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F59E0B",
+  },
+  coachNoteText: { fontSize: 12, color: "#92400E", lineHeight: 18 },
+  timestampText: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 8,
+  },
 });
 
 export default VideoOverlayPlayer;

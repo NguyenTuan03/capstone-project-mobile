@@ -1,8 +1,7 @@
-import { getLearnerProgressDetails } from "@/services/learner.service";
-import {
-  LearnerProgress,
-  LearnerProgressDetails,
-} from "@/types/learner-progress";
+import learnerVideoService from "@/services/learnerVideo.service";
+import quizService from "@/services/quiz.service";
+import sessionService from "@/services/sessionService";
+import { LearnerProgress } from "@/types/learner-progress";
 import { Session } from "@/types/session";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import LearnerVideoModal from "./LearnerVideoModal";
 import QuizAttemptModal from "./QuizAttemptModal";
 
 interface LearnerProgressModalProps {
@@ -28,45 +28,94 @@ export default function LearnerProgressModal({
   onClose,
   learner,
 }: LearnerProgressModalProps) {
-  const [learnerDetails, setLearnerDetails] =
-    useState<LearnerProgressDetails | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedSessionId, setExpandedSessionId] = useState<number | null>(
     null
   );
   const [selectedAttempt, setSelectedAttempt] = useState<any>(null);
+  const [selectedQuizAttempts, setSelectedQuizAttempts] = useState<any[]>([]);
   const [quizAttemptModalVisible, setQuizAttemptModalVisible] = useState(false);
   const [selectedQuizTitle, setSelectedQuizTitle] = useState("");
 
+  // Learner video state
+  const [learnerVideos, setLearnerVideos] = useState<any[]>([]);
+  const [selectedLearnerVideo, setSelectedLearnerVideo] = useState<any>(null);
+  const [learnerVideoModalVisible, setLearnerVideoModalVisible] =
+    useState(false);
+  const [selectedVideoTitle, setSelectedVideoTitle] = useState("");
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [loadingQuizAttempts, setLoadingQuizAttempts] = useState(false);
+
   useEffect(() => {
-    if (visible && learner?.course?.id && learner?.user?.id) {
-      fetchLearnerProgressDetails(learner.user.id, learner.course.id);
+    if (visible && learner?.course?.id) {
+      fetchSessions(learner.course.id);
     } else {
-      setLearnerDetails(null);
+      setSessions([]);
       setExpandedSessionId(null);
     }
   }, [visible, learner]);
 
-  const fetchLearnerProgressDetails = async (
-    userId: number,
-    courseId: number
-  ) => {
+  const fetchSessions = async (courseId: number) => {
     try {
       setLoading(true);
-      const data = await getLearnerProgressDetails(userId, courseId);
-      setLearnerDetails(data);
+      const data = await sessionService.getSessionsByCourseId(courseId);
+      setSessions(data.metadata || data || []);
     } catch (error) {
-      console.error("Failed to fetch learner progress details:", error);
+      console.error("Failed to fetch sessions:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleSession = (sessionId: number) => {
+  const toggleSession = async (sessionId: number, quizId?: number) => {
     if (expandedSessionId === sessionId) {
       setExpandedSessionId(null);
+      setSelectedQuizAttempts([]);
     } else {
       setExpandedSessionId(sessionId);
+    }
+  };
+
+  const handleQuizClick = async (quizId: number, quizTitle: string) => {
+    if (!learner?.user?.id) return;
+
+    try {
+      setLoadingQuizAttempts(true);
+      console.log(
+        "Fetching quiz attempts for quizId:",
+        quizId,
+        "userId:",
+        learner.user.id
+      );
+      const attempts = await quizService.getQuizAttemptsByQuizAndUser(
+        quizId,
+        learner.user.id
+      );
+      console.log("Quiz attempts raw response:", attempts);
+      const attemptsArray = attempts.metadata || attempts || [];
+      console.log("Quiz attempts array:", attemptsArray);
+
+      setSelectedQuizAttempts(attemptsArray);
+      setSelectedQuizTitle(quizTitle);
+
+      if (attemptsArray.length > 0) {
+        // Sort by attempt number descending to get the latest attempt first
+        const sortedAttempts = [...attemptsArray].sort(
+          (a: any, b: any) => b.attemptNumber - a.attemptNumber
+        );
+        setSelectedAttempt(sortedAttempts[0]);
+      } else {
+        setSelectedAttempt(null);
+      }
+
+      setQuizAttemptModalVisible(true);
+    } catch (error) {
+      console.error("Failed to fetch quiz attempts:", error);
+      alert("Không thể tải dữ liệu bài làm quiz");
+      setSelectedQuizAttempts([]);
+    } finally {
+      setLoadingQuizAttempts(false);
     }
   };
 
@@ -78,39 +127,44 @@ export default function LearnerProgressModal({
     });
   };
 
+  const handleVideoClick = async (coachVideoId: number, videoTitle: string) => {
+    if (!learner?.user?.id) return;
+
+    try {
+      setLoadingVideos(true);
+      const videos =
+        await learnerVideoService.getLearnerVideosByUserAndCoachVideo(
+          learner.user.id,
+          coachVideoId
+        );
+      setLearnerVideos(videos);
+      setSelectedVideoTitle(videoTitle);
+
+      if (videos && videos.length > 0) {
+        const sortedVideos = [...videos].sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setSelectedLearnerVideo(sortedVideos[0]);
+        setLearnerVideoModalVisible(true);
+      } else {
+        alert("Học viên chưa nộp video cho bài này");
+      }
+    } catch (error) {
+      console.error("Error fetching learner videos:", error);
+      alert("Không thể tải dữ liệu video");
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
+
   const renderSessionItem = (session: Session) => {
     const isExpanded = expandedSessionId === session.id;
-    const sessionQuizAttempts =
-      session.quiz && learnerDetails?.user?.quizAttempts
-        ? learnerDetails.user.quizAttempts.filter((attempt: any) => {
-            // 1. Match by quizId on the attempt itself (most direct)
-            if (attempt.quizId === session.quiz!.id) return true;
-            if (attempt.quiz?.id === session.quiz!.id) return true;
-
-            // 2. Match by quizId on the question (if populated)
-            const matchByQuizId = attempt.learnerAnswers?.some(
-              (ans: any) => ans.question?.quizId === session.quiz!.id
-            );
-            if (matchByQuizId) return true;
-
-            // 3. Match by question IDs (if session.quiz.questions is populated)
-            if (session.quiz?.questions?.length) {
-              const questionIds = new Set(
-                session.quiz.questions.map((q) => q.id)
-              );
-              return attempt.learnerAnswers?.some((ans: any) =>
-                questionIds.has(ans.question?.id)
-              );
-            }
-
-            return false;
-          })
-        : [];
     return (
       <View key={session.id} style={styles.sessionCard}>
         <TouchableOpacity
           style={styles.sessionHeader}
-          onPress={() => toggleSession(session.id)}
+          onPress={() => toggleSession(session.id, session.quiz?.id)}
           activeOpacity={0.7}
         >
           <View style={styles.sessionInfo}>
@@ -134,20 +188,51 @@ export default function LearnerProgressModal({
             {session.video && (
               <View style={styles.sectionBlock}>
                 <Text style={styles.sectionTitle}>Video bài giảng</Text>
-                <View style={styles.videoItem}>
-                  <Ionicons name="play-circle" size={20} color="#059669" />
-                  <Text style={styles.videoTitle} numberOfLines={1}>
-                    {session.video.title}
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.videoItem}
+                  onPress={() =>
+                    handleVideoClick(session.video!.id, session.video!.title)
+                  }
+                  disabled={loadingVideos}
+                >
+                  <View style={styles.videoHeader}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        flex: 1,
+                      }}
+                    >
+                      <Ionicons name="play-circle" size={20} color="#059669" />
+                      <Text style={styles.videoTitle} numberOfLines={1}>
+                        {session.video.title}
+                      </Text>
+                    </View>
+                    {loadingVideos ? (
+                      <ActivityIndicator size="small" color="#059669" />
+                    ) : (
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color="#9CA3AF"
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
             {/* Quiz */}
             {session.quiz && (
               <View style={styles.sectionBlock}>
                 <Text style={styles.sectionTitle}>Bài tập Quiz</Text>
-                <View style={styles.quizItem}>
-                  <View style={styles.quizHeader}>
+                <TouchableOpacity
+                  style={styles.videoItem}
+                  onPress={() =>
+                    handleQuizClick(session.quiz!.id, session.quiz!.title)
+                  }
+                  disabled={loadingQuizAttempts}
+                >
+                  <View style={styles.videoHeader}>
                     <View
                       style={{
                         flexDirection: "row",
@@ -156,54 +241,22 @@ export default function LearnerProgressModal({
                       }}
                     >
                       <Ionicons name="help-circle" size={20} color="#F59E0B" />
-                      <Text style={styles.quizTitle} numberOfLines={1}>
+                      <Text style={styles.videoTitle} numberOfLines={1}>
                         {session.quiz.title}
                       </Text>
                     </View>
-                    {sessionQuizAttempts.length > 0 ? (
-                      <TouchableOpacity
-                        onPress={() => {
-                          // Find the best attempt (highest score) or just the first one
-                          // Ideally we let them choose, but for now show the best one
-                          const bestAttempt = sessionQuizAttempts.reduce(
-                            (prev: any, current: any) =>
-                              prev.score > current.score ? prev : current
-                          );
-                          setSelectedAttempt(bestAttempt);
-                          setSelectedQuizTitle(session.quiz!.title);
-                          setQuizAttemptModalVisible(true);
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.quizScore,
-                            Math.max(
-                              ...sessionQuizAttempts.map((a: any) => a.score)
-                            ) >= 80
-                              ? { color: "#059669" }
-                              : { color: "#6B7280" },
-                            { textDecorationLine: "underline" },
-                          ]}
-                        >
-                          {`${Math.max(
-                            ...sessionQuizAttempts.map((a: any) => a.score)
-                          )}%`}
-                        </Text>
-                      </TouchableOpacity>
+                    {loadingQuizAttempts ? (
+                      <ActivityIndicator size="small" color="#F59E0B" />
                     ) : (
-                      <Text style={[styles.quizScore, { color: "#6B7280" }]}>
-                        Chưa làm
-                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color="#9CA3AF"
+                      />
                     )}
                   </View>
-                </View>
+                </TouchableOpacity>
               </View>
-            )}
-            {/* Empty state */}
-            {!session.video && !session.quiz && (
-              <Text style={styles.emptyContentText}>
-                Không có tài liệu cho buổi học này
-              </Text>
             )}
           </View>
         )}
@@ -240,9 +293,7 @@ export default function LearnerProgressModal({
               style={styles.content}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.courseName}>
-                {learnerDetails?.course?.name}
-              </Text>
+              <Text style={styles.courseName}>sdsd</Text>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>
@@ -265,7 +316,7 @@ export default function LearnerProgressModal({
               </View>
               <Text style={styles.sectionHeader}>Danh sách buổi học</Text>
               <View style={styles.sessionsList}>
-                {learnerDetails?.course?.sessions
+                {sessions
                   ?.sort((a, b) => a.sessionNumber - b.sessionNumber)
                   .map((session) => renderSessionItem(session))}
               </View>
@@ -278,7 +329,15 @@ export default function LearnerProgressModal({
         visible={quizAttemptModalVisible}
         onClose={() => setQuizAttemptModalVisible(false)}
         attempt={selectedAttempt}
+        attempts={selectedQuizAttempts}
         quizTitle={selectedQuizTitle}
+      />
+      <LearnerVideoModal
+        visible={learnerVideoModalVisible}
+        onClose={() => setLearnerVideoModalVisible(false)}
+        learnerVideo={selectedLearnerVideo}
+        learnerVideos={learnerVideos}
+        videoTitle={selectedVideoTitle}
       />
     </Modal>
   );
@@ -429,31 +488,9 @@ const styles = StyleSheet.create({
     color: "#374151",
     flex: 1,
   },
-  quizItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  quizHeader: {
+  videoHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
-  },
-  quizTitle: {
-    fontSize: 14,
-    color: "#374151",
-    flex: 1,
-  },
-  quizScore: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  emptyContentText: {
-    marginTop: 16,
-    fontSize: 13,
-    color: "#9CA3AF",
-    fontStyle: "italic",
-    textAlign: "center",
+    justifyContent: "space-between",
   },
 });

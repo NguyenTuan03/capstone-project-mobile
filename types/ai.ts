@@ -72,12 +72,19 @@ export interface VideoComparisonResult {
   overallScoreForPlayer2: number;
   coachPoses: PoseLandmark[][];
   learnerPoses: PoseLandmark[][];
+  createdAt: string;
 }
 
 export interface PoseLandmark {
   name: string;
   x: number;
   y: number;
+}
+
+export enum AiVideoComparisonDetailsType {
+  PREPARATION = "PREPARATION",
+  SWING_AND_CONTACT = "SWING_AND_CONTACT",
+  FOLLOW_THROUGH = "FOLLOW_THROUGH",
 }
 
 export interface AiVideoCompareResult {
@@ -94,11 +101,12 @@ export interface AiVideoCompareResult {
     | null;
   details:
     | {
-        type: string;
+        type: AiVideoComparisonDetailsType;
         advanced: string;
         userRole: string;
         strengths?: string[];
         weaknesses?: string[];
+        timestamp?: number;
       }[]
     | null;
   recommendationDrills:

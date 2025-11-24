@@ -1,3 +1,4 @@
+import { AiVideoCompareResult } from "./ai";
 import type { Lesson, Session } from "./session";
 import { User } from "./user";
 
@@ -34,4 +35,6 @@ export type LearnerVideo = {
   user: User;
   session: Session;
   overlayVideoUrl: string | null;
+  aiVideoComparisonResults?: AiVideoCompareResult | null;
+  coachVideo?: VideoType;
 };

@@ -1,5 +1,5 @@
-import { UserType } from "./auth";
 import type { Session } from "./session";
+import { User } from "./user";
 
 /**
  * Frontend type for Attendance (mirrors server-side Attendance entity)
@@ -17,7 +17,7 @@ export interface AttendanceType {
   id: number;
   status: AttendanceStatus;
   createdAt: string;
-  user: UserType;
+  user: User;
   session: Session;
 }
 

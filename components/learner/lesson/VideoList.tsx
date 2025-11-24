@@ -131,6 +131,7 @@ const VideoList: React.FC<VideoListProps> = ({
           onClose={() => setShowOverlayPlayer(false)}
           coachVideoUrl={video.publicUrl}
           learnerVideoUrl={submittedVideo.publicUrl}
+          aiAnalysisResult={aiAnalysisResult}
         />
       )}
     </>

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   ScrollView,
@@ -12,7 +12,8 @@ import {
 interface QuizAttemptModalProps {
   visible: boolean;
   onClose: () => void;
-  attempt: any; // Using any for now as the full attempt structure is complex/dynamic
+  attempt: any; // The initially selected attempt
+  attempts?: any[]; // All attempts for this quiz
   quizTitle: string;
 }
 
@@ -20,9 +21,18 @@ export default function QuizAttemptModal({
   visible,
   onClose,
   attempt,
+  attempts,
   quizTitle,
 }: QuizAttemptModalProps) {
-  if (!attempt) return null;
+  const [selectedAttempt, setSelectedAttempt] = useState(attempt);
+
+  useEffect(() => {
+    if (attempt) {
+      setSelectedAttempt(attempt);
+    }
+  }, [attempt]);
+
+  if (!selectedAttempt) return null;
 
   const renderAnswerItem = (answer: any, index: number) => {
     const isCorrect = answer.isCorrect;
@@ -94,6 +104,49 @@ export default function QuizAttemptModal({
             </TouchableOpacity>
           </View>
 
+          {/* Attempt Selector - Show if there are multiple attempts */}
+          {attempts && attempts.length > 1 && (
+            <View style={styles.attemptSelector}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {attempts
+                  .sort((a: any, b: any) => a.attemptNumber - b.attemptNumber)
+                  .map((att: any, index: number) => (
+                    <TouchableOpacity
+                      key={att.id || index}
+                      style={[
+                        styles.attemptTab,
+                        selectedAttempt?.id === att.id &&
+                          styles.attemptTabActive,
+                      ]}
+                      onPress={() => setSelectedAttempt(att)}
+                    >
+                      <Text
+                        style={[
+                          styles.attemptTabText,
+                          selectedAttempt?.id === att.id &&
+                            styles.attemptTabTextActive,
+                        ]}
+                      >
+                        Lần {att.attemptNumber}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.attemptTabScore,
+                          selectedAttempt?.id === att.id &&
+                            styles.attemptTabScoreActive,
+                          att.score >= 80
+                            ? { color: "#059669" }
+                            : { color: "#DC2626" },
+                        ]}
+                      >
+                        {att.score}%
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+              </ScrollView>
+            </View>
+          )}
+
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
@@ -104,18 +157,18 @@ export default function QuizAttemptModal({
               <Text
                 style={[
                   styles.scoreValue,
-                  attempt.score >= 80
+                  selectedAttempt.score >= 80
                     ? { color: "#059669" }
                     : { color: "#DC2626" },
                 ]}
               >
-                {attempt.score}%
+                {selectedAttempt.score}%
               </Text>
             </View>
 
             <View style={styles.answersList}>
-              {attempt.learnerAnswers?.map((answer: any, index: number) =>
-                renderAnswerItem(answer, index)
+              {selectedAttempt.learnerAnswers?.map(
+                (answer: any, index: number) => renderAnswerItem(answer, index)
               )}
             </View>
           </ScrollView>
@@ -273,5 +326,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#374151",
     fontStyle: "italic",
+  },
+  attemptSelector: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  attemptTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginRight: 8,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    minWidth: 80,
+    alignItems: "center",
+  },
+  attemptTabActive: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "#6366F1",
+  },
+  attemptTabText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  attemptTabTextActive: {
+    color: "#6366F1",
+  },
+  attemptTabScore: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  attemptTabScoreActive: {
+    fontWeight: "bold",
   },
 });

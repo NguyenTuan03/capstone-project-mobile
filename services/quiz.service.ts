@@ -10,6 +10,18 @@ class QuizService {
       throw error;
     }
   }
+
+  async getQuizAttemptsByQuizAndUser(quizId: number, userId: number) {
+    try {
+      const response = await http.get(
+        `/v1/quizzes/${quizId}/attempts/users/${userId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching quiz attempts by user:", error);
+      throw error;
+    }
+  }
 }
 
 export default new QuizService();
