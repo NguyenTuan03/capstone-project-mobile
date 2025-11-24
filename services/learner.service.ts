@@ -27,6 +27,7 @@ export const getLearnerProgressDetails = async (
     const res = await get<LearnerProgressDetails>(
       `/v1/learner-progresses/coaches/details?userId=${userId}&courseId=${courseId}`
     );
+    console.log("res.data", res.data);
     return res.data;
   } catch (error) {
     console.error("Failed to fetch learner progress details:", error);

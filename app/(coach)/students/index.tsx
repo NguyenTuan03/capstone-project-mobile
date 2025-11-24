@@ -1,4 +1,3 @@
-import LearnerProgressModal from "@/components/coach/LearnerProgressModal";
 import { getAllCoachLearnerProgress } from "@/services/learner.service";
 import { CourseStatus } from "@/types/course";
 import { LearnerProgress } from "@/types/learner-progress";
@@ -22,9 +21,6 @@ export default function CoachStudentsScreen() {
   const [learners, setLearners] = useState<LearnerProgress[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [status, setStatus] = useState<CourseStatus>(CourseStatus.ON_GOING);
-  const [selectedLearner, setSelectedLearner] =
-    useState<LearnerProgress | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
 
   const fetchLearners = async () => {
     try {
@@ -41,6 +37,7 @@ export default function CoachStudentsScreen() {
 
   useEffect(() => {
     fetchLearners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   const onRefresh = () => {
@@ -94,8 +91,13 @@ export default function CoachStudentsScreen() {
         style={styles.card}
         activeOpacity={0.7}
         onPress={() => {
-          setSelectedLearner(item);
-          setModalVisible(true);
+          router.push({
+            pathname: "/(coach)/students/[id]",
+            params: {
+              id: item.id.toString(),
+              learnerData: JSON.stringify(item),
+            },
+          });
         }}
       >
         <View style={styles.cardHeader}>
@@ -232,15 +234,6 @@ export default function CoachStudentsScreen() {
           }
         />
       )}
-
-      <LearnerProgressModal
-        visible={modalVisible}
-        learner={selectedLearner}
-        onClose={() => {
-          setModalVisible(false);
-          setSelectedLearner(null);
-        }}
-      />
     </View>
   );
 }
