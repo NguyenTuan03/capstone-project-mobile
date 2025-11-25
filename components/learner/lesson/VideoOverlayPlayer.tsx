@@ -238,13 +238,14 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       type === "coach" ? status.coach.position : status.learner.position;
     const sliderVal =
       type === "coach" ? sliderValues.coach : sliderValues.learner;
-    if (
-      (type === "coach" ? status.coach.isPlaying : status.learner.isPlaying) &&
-      !isTypeSeeking
-    ) {
-      return currentPos;
+    
+    // While seeking, show the slider value
+    if (isTypeSeeking) {
+      return sliderVal;
     }
-    return sliderVal;
+    
+    // When not seeking, always show the actual video position
+    return currentPos;
   };
 
   const formatTime = (seconds: number) => {
@@ -347,7 +348,18 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   shouldPlay={false}
                   useNativeControls={false}
                 />
+                {/* Learner Label - Top Right */}
+                <View style={styles.overlayLearnerLabel}>
+                  <Text style={styles.overlayLabelText}>Học viên</Text>
+                </View>
               </View>
+
+              {/* Coach Label - Bottom Left - Hidden at 100% opacity */}
+              {opacityDisplay < 1 && (
+                <View style={[styles.overlayCoachLabel, { opacity: 1 - opacityDisplay }]}>
+                  <Text style={styles.overlayLabelText}>HLV</Text>
+                </View>
+              )}
 
               <View style={styles.verticalSliderContainer}>
                 <View style={styles.verticalSliderWrapper}>
@@ -762,6 +774,46 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  overlayLearnerLabel: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(16, 185, 129, 0.85)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    zIndex: 10,
+    borderWidth: 1.5,
+    borderColor: "#10B981",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  overlayCoachLabel: {
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    backgroundColor: "rgba(59, 130, 246, 0.85)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    zIndex: 10,
+    borderWidth: 1.5,
+    borderColor: "#3B82F6",
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  overlayLabelText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
   videoLabelTag: {
     position: "absolute",
     top: 10,
@@ -795,7 +847,7 @@ const styles = StyleSheet.create({
   },
   verticalSliderContainer: {
     position: "absolute",
-    top: 20,
+    top: 100,
     right: 10,
     alignItems: "center",
     justifyContent: "center",
