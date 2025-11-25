@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import learnerService from "../../../services/learnerService";
 import sessionService from "../../../services/sessionService";
 import { CalendarSession } from "../../../types/session";
 
@@ -23,42 +24,16 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-// Helper function to format date for display
-const formatDisplayDate = () => {
-  const days = [
-    "Chủ Nhật",
-    "Thứ Hai",
-    "Thứ Ba",
-    "Thứ Tư",
-    "Thứ Năm",
-    "Thứ Sáu",
-    "Thứ Bảy",
-  ];
-  const months = [
-    "tháng 1",
-    "tháng 2",
-    "tháng 3",
-    "tháng 4",
-    "tháng 5",
-    "tháng 6",
-    "tháng 7",
-    "tháng 8",
-    "tháng 9",
-    "tháng 10",
-    "tháng 11",
-    "tháng 12",
-  ];
-  const today = new Date();
-  return `${days[today.getDay()]}, ${today.getDate()} ${
-    months[today.getMonth()]
-  }, ${today.getFullYear()}`;
-};
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [totalCourses, setTotalCourses] = useState(0);
+  const [totalAiFeedbacks, setTotalAiFeedbacks] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [progresses, setProgresses] = useState<any[]>([]);
+  const [loadingProgress, setLoadingProgress] = useState(true);
 
   const loadTodaySessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -76,9 +51,39 @@ export default function HomeScreen() {
     }
   }, []);
 
+  const loadStats = useCallback(async () => {
+    setLoadingStats(true);
+    try {
+      const [courses, feedbacks] = await Promise.all([
+        learnerService.getTotalCourses(),
+        learnerService.getTotalAiFeedbacks(),
+      ]);
+      setTotalCourses(courses);
+      setTotalAiFeedbacks(feedbacks);
+    } catch (error) {
+      console.error("❌ Failed to load stats:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  const loadProgress = useCallback(async () => {
+    setLoadingProgress(true);
+    try {
+      const data = await learnerService.getLearnerProgresses();
+      setProgresses(data);
+    } catch (error) {
+      console.error("❌ Failed to load progress:", error);
+    } finally {
+      setLoadingProgress(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadTodaySessions();
-  }, [loadTodaySessions]);
+    loadStats();
+    loadProgress();
+  }, [loadTodaySessions, loadStats, loadProgress]);
 
   return (
     <SafeAreaView
@@ -97,10 +102,10 @@ export default function HomeScreen() {
                 Tiếp tục hành trình Pickleball của bạn
               </Text>
             </View>
-            <View style={styles.streakBox}>
+            {/* <View style={styles.streakBox}>
               <Text style={styles.streakNumber}>7</Text>
               <Text style={styles.streakText}>ngày liên tục</Text>
-            </View>
+            </View> */}
           </View>
         </View>
 
@@ -108,18 +113,94 @@ export default function HomeScreen() {
         <View style={styles.statsRow}>
           <View style={[styles.card, styles.statCard]}>
             <View style={styles.statIcon} />
-            <Text style={styles.statNumber}>3</Text>
-            <Text style={styles.statLabel}>Khóa học</Text>
+            {loadingStats ? (
+              <ActivityIndicator size="small" color="#059669" />
+            ) : (
+              <>
+                <Text style={styles.statNumber}>{totalCourses}</Text>
+                <Text style={styles.statLabel}>Khóa học</Text>
+              </>
+            )}
           </View>
           <View style={[styles.card, styles.statCard]}>
             <View style={[styles.statIcon, { backgroundColor: "#DCFCE7" }]} />
-            <Text style={styles.statNumber}>24</Text>
-            <Text style={styles.statLabel}>Giờ tập</Text>
+            {loadingStats ? (
+              <ActivityIndicator size="small" color="#059669" />
+            ) : (
+              <>
+                <Text style={styles.statNumber}>{totalAiFeedbacks}</Text>
+                <Text style={styles.statLabel}>Phân tích AI</Text>
+              </>
+            )}
           </View>
         </View>
 
+        {/* Learning Progress Section */}
+        {!loadingProgress && progresses.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Tiến độ học tập</Text>
+            {progresses.map((progress, index) => {
+              const progressPercent = Math.round(
+                (progress.sessionsCompleted / progress.totalSessions) * 100
+              );
+              return (
+                <View key={index} style={styles.progressItem}>
+                  <View style={styles.progressHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.progressTitle}>
+                        {progress.course.name}
+                      </Text>
+                      <Text style={styles.progressSessionCount}>
+                        {progress.sessionsCompleted}/{progress.totalSessions} buổi hoàn thành
+                      </Text>
+                    </View>
+                    <View style={styles.progressPercentBadge}>
+                      <Text style={styles.progressPercent}>{progressPercent}%</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.progressBarContainer}>
+                    <View
+                      style={[
+                        styles.progressBar,
+                        { width: `${progressPercent}%` },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.scoreContainer}>
+                    <View style={styles.scoreItem}>
+                      <View style={styles.scoreIconBox}>
+                        <Ionicons name="star" size={18} color="#059669" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.scoreLabel}>Phân tích AI</Text>
+                        <Text style={styles.scoreValue}>
+                          {progress.avgAiAnalysisScore}/100
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.scoreItem}>
+                      <View style={styles.scoreIconBox}>
+                        <Ionicons name="checkmark-done" size={18} color="#059669" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.scoreLabel}>Điểm Quiz</Text>
+                        <Text style={styles.scoreValue}>
+                          {progress.avgQuizScore}/100
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         {/* AI Analysis Quick */}
-        <View style={[styles.card, styles.aiCard]}>
+        {/* <View style={[styles.card, styles.aiCard]}>
           <View style={styles.aiRow}>
             <View style={styles.aiIcon} />
             <View style={{ flex: 1 }}>
@@ -129,7 +210,7 @@ export default function HomeScreen() {
               </Text>
             </View>
           </View>
-        </View>
+        </View>  */}
 
         {/* Today's Sessions */}
         <View style={styles.card}>
@@ -212,28 +293,63 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     padding: 16,
   },
-  welcomeCard: { backgroundColor: "#10B981", borderColor: "#10B981" },
+  welcomeCard: {
+    backgroundColor: "#059669",
+    borderColor: "#059669",
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
   welcomeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  welcomeTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  welcomeSubtitle: { color: "#ECFDF5", marginTop: 4 },
+  welcomeTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  welcomeSubtitle: {
+    color: "#DCFCE7",
+    marginTop: 6,
+    fontSize: 14,
+    fontWeight: "500",
+  },
   streakBox: { alignItems: "center" },
   streakNumber: { color: "#fff", fontSize: 22, fontWeight: "800" },
   streakText: { color: "#fff", fontSize: 11 },
-  statsRow: { flexDirection: "row", gap: 12 },
-  statCard: { flex: 1, alignItems: "center" },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#DBEAFE",
-    marginBottom: 8,
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 6,
   },
-  statNumber: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  statLabel: { color: "#6B7280", fontSize: 12 },
+  statCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 18,
+    backgroundColor: "#F9FAFB",
+    borderColor: "#E5E7EB",
+  },
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "#DBEAFE",
+    marginBottom: 10,
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: 0.3,
+  },
+  statLabel: {
+    color: "#6B7280",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 4,
+  },
   aiCard: { backgroundColor: "#F3E8FF", borderColor: "#E9D5FF" },
   aiRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   aiIcon: {
@@ -246,63 +362,82 @@ const styles = StyleSheet.create({
   aiSub: { color: "#7C3AED", fontSize: 12, marginTop: 2 },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#111827",
-    marginBottom: 10,
+    marginBottom: 12,
+    letterSpacing: 0.2,
   },
   sessionItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#F9FAFB",
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    marginBottom: 10,
   },
-  sessionTitle: { color: "#111827", fontWeight: "600" },
-  sessionCoach: { color: "#6B7280", fontSize: 12, marginTop: 2 },
+  sessionTitle: {
+    color: "#111827",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  sessionCoach: {
+    color: "#6B7280",
+    fontSize: 12,
+    marginTop: 3,
+    fontWeight: "500",
+  },
   sessionMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginTop: 6,
+    gap: 6,
+    marginTop: 8,
   },
-  sessionMeta: { color: "#6B7280", fontSize: 12 },
+  sessionMeta: {
+    color: "#9CA3AF",
+    fontSize: 12,
+    fontWeight: "400",
+  },
   chev: { width: 16, height: 16, borderRadius: 8, backgroundColor: "#D1D5DB" },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   viewAllText: {
-    color: "#10B981",
+    color: "#059669",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   loadingContainer: {
-    padding: 24,
+    paddingVertical: 28,
     alignItems: "center",
     justifyContent: "center",
   },
   loadingText: {
-    marginTop: 8,
+    marginTop: 10,
     fontSize: 13,
     color: "#6B7280",
+    fontWeight: "500",
   },
   emptyState: {
-    padding: 32,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F9FAFB",
-    borderRadius: 8,
+    borderRadius: 10,
   },
   emptyStateText: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#374151",
-    marginTop: 12,
+    marginTop: 14,
     textAlign: "center",
   },
   emptyStateSubtext: {
@@ -310,5 +445,118 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 6,
     textAlign: "center",
+    fontWeight: "400",
+  },
+  progressItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    letterSpacing: 0.2,
+  },
+  progressSessionCount: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 4,
+    fontWeight: "400",
+  },
+  progressPercentBadge: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  progressPercent: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#059669",
+    letterSpacing: 0.3,
+  },
+  progressBarContainer: {
+    height: 10,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 5,
+    overflow: "hidden",
+    marginBottom: 14,
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: "#059669",
+    borderRadius: 5,
+  },
+  scoreContainer: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  scoreItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 11,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  scoreIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "#DCFCE7",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scoreLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginBottom: 3,
+    fontWeight: "500",
+  },
+  scoreValue: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#059669",
+    letterSpacing: 0.2,
+  },
+  progressStats: {
+    gap: 6,
+  },
+  progressStatText: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  scoreRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  scoreText: {
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "500",
   },
 });

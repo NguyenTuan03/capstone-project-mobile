@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import CoursesHeader from "@/components/learner/courses/CoursesHeader";
 import LocationSelectionModal from "@/components/learner/courses/LocationSelectionModal";
@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { useFocusEffect } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useCallback, useEffect } from "react";
+
 import {
   ActivityIndicator,
   Image,
@@ -60,13 +60,13 @@ const getLevelInVietnamese = (level: string) => {
 // Helper function to convert day of week to Vietnamese
 const convertDayOfWeekToVietnamese = (day: string) => {
   const dayMap: Record<string, string> = {
-    MONDAY: "Thứ 2",
-    TUESDAY: "Thứ 3",
-    WEDNESDAY: "Thứ 4",
-    THURSDAY: "Thứ 5",
-    FRIDAY: "Thứ 6",
-    SATURDAY: "Thứ 7",
-    SUNDAY: "Chủ nhật",
+    Monday: "Thứ 2",
+    Tuesday: "Thứ 3",
+    Wednesday: "Thứ 4",
+    Thursday: "Thứ 5",
+    Friday: "Thứ 6",
+    Saturday: "Thứ 7",
+    Sunday: "Chủ nhật",
   };
   return dayMap[day] || day;
 };
@@ -195,7 +195,6 @@ export default function CoursesScreen() {
       } catch (error) {
         console.error("Failed to load user location:", error);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     []
   );
