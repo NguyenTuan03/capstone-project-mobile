@@ -218,7 +218,11 @@ export default function AccountInfoScreen() {
         </View>
 
         {/* Edit Button */}
-        <TouchableOpacity style={styles.editButton} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.editButton}
+          activeOpacity={0.85}
+          onPress={() => router.push("/(learner)/menu/account/edit" as any)}
+        >
           <Ionicons name="pencil" size={18} color="#FFFFFF" />
           <Text style={styles.editButtonText}>Chỉnh sửa thông tin</Text>
         </TouchableOpacity>

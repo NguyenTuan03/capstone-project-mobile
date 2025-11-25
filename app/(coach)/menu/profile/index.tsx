@@ -12,9 +12,9 @@ export default function CoachProfileScreen() {
   const [coach, setCoach] = useState(user?.coach?.[0] || null);
 
   const loadProfile = useCallback(async () => {
-    const storedUser = await storageService.getUser();
-    setUser(storedUser);
-    setCoach(storedUser?.coach?.[0] || null);
+      const storedUser = await storageService.getUser();
+      setUser(storedUser);
+      setCoach(storedUser?.coach?.[0] || null);
   }, []);
 
   useFocusEffect(
