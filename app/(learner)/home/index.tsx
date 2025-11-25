@@ -97,15 +97,15 @@ export default function HomeScreen() {
                 Tiếp tục hành trình Pickleball của bạn
               </Text>
             </View>
-            <View style={styles.streakBox}>
+            {/* <View style={styles.streakBox}>
               <Text style={styles.streakNumber}>7</Text>
               <Text style={styles.streakText}>ngày liên tục</Text>
-            </View>
+            </View> */}
           </View>
         </View>
 
         {/* Quick Stats */}
-        <View style={styles.statsRow}>
+        {/* <View style={styles.statsRow}>
           <View style={[styles.card, styles.statCard]}>
             <View style={styles.statIcon} />
             <Text style={styles.statNumber}>3</Text>
@@ -119,7 +119,7 @@ export default function HomeScreen() {
         </View>
 
         {/* AI Analysis Quick */}
-        <View style={[styles.card, styles.aiCard]}>
+        {/* <View style={[styles.card, styles.aiCard]}>
           <View style={styles.aiRow}>
             <View style={styles.aiIcon} />
             <View style={{ flex: 1 }}>
@@ -129,7 +129,7 @@ export default function HomeScreen() {
               </Text>
             </View>
           </View>
-        </View>
+        </View>  */}
 
         {/* Today's Sessions */}
         <View style={styles.card}>
