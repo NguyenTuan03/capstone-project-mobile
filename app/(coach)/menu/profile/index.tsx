@@ -2,8 +2,8 @@ import storageService from "@/services/storageService";
 import { CoachVerificationStatus, User } from "@/types/user";
 import { parseStringArray } from "@/utils/parseStringArray";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function CoachProfileScreen() {
@@ -11,14 +11,17 @@ export default function CoachProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [coach, setCoach] = useState(user?.coach?.[0] || null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
+  const loadProfile = useCallback(async () => {
       const storedUser = await storageService.getUser();
       setUser(storedUser);
       setCoach(storedUser?.coach?.[0] || null);
-    };
-    fetchUser();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
 
   const getVerificationStatusColor = (status: CoachVerificationStatus) => {
     switch (status) {
