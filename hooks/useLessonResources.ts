@@ -55,7 +55,7 @@ export const useLessonResources = (
       if (videoRes.status === "fulfilled") {
         setVideo(extractCollection(videoRes.value.data));
       } else {
-        console.error("Failed to fetch lesson videos:", videoRes.reason);
+         
         setVideo(undefined);
         setError("Không thể tải video cho bài học này.");
       }
@@ -63,7 +63,7 @@ export const useLessonResources = (
       if (quizRes.status === "fulfilled") {
         setQuiz(extractCollection(quizRes.value.data));
       } else {
-        console.error("Failed to fetch lesson quizzes:", quizRes.reason);
+         
         setQuiz(undefined);
         setError((prev) =>
           prev
@@ -72,7 +72,7 @@ export const useLessonResources = (
         );
       }
     } catch (err) {
-      console.error("Unexpected error while fetching lesson resources:", err);
+       
       setError("Đã xảy ra lỗi khi tải tài nguyên của bài học.");
       setVideo(undefined);
       setQuiz(undefined);

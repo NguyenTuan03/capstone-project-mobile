@@ -6,7 +6,6 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -23,49 +22,12 @@ type Props = {
 const ScheduleTab: React.FC<Props> = ({ course }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string>("Monday");
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
   const [changeScheduleBeforeHours, setChangeScheduleBeforeHours] = useState(0);
-
-  const getNextOccurrence = (dayOfWeek: string, timeStr: string): Date => {
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const targetDayIndex = days.indexOf(dayOfWeek);
-    const [hours, minutes] = timeStr.split(":").map(Number);
-
-    const now = new Date();
-    const currentDayIndex = now.getDay();
-
-    let daysUntilTarget = targetDayIndex - currentDayIndex;
-
-    // If it's the same day, check if the time has already passed
-    if (daysUntilTarget === 0) {
-      const nowHours = now.getHours();
-      const nowMinutes = now.getMinutes();
-      if (nowHours > hours || (nowHours === hours && nowMinutes >= minutes)) {
-        daysUntilTarget = 7;
-      }
-    } else if (daysUntilTarget < 0) {
-      daysUntilTarget += 7;
-    }
-
-    const nextDate = new Date(now);
-    nextDate.setDate(now.getDate() + daysUntilTarget);
-    nextDate.setHours(hours, minutes, 0, 0);
-
-    return nextDate;
-  };
 
   useEffect(() => {
     const fetchChangeScheduleBeforeHours = async () => {
@@ -82,7 +44,6 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
 
   const handleEditPress = (schedule: Schedule) => {
     setEditingSchedule(schedule);
-    setSelectedDay(schedule.dayOfWeek);
 
     const [startHour, startMinute] = schedule.startTime.split(":").map(Number);
     const startDate = new Date();
@@ -100,35 +61,6 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
   const handleCloseModal = () => {
     setIsModalVisible(false);
     setEditingSchedule(null);
-  };
-
-  const handleSave = async () => {
-    if (!editingSchedule) return;
-
-    const nextSessionDate = getNextOccurrence(
-      editingSchedule.dayOfWeek,
-      editingSchedule.startTime
-    );
-    const now = new Date();
-    const diffInHours =
-      (nextSessionDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < changeScheduleBeforeHours) {
-      Alert.alert(
-        "Không thể thay đổi lịch",
-        `Bạn chỉ có thể thay đổi lịch học trước ${changeScheduleBeforeHours} giờ trước khi buổi học bắt đầu.`
-      );
-      return;
-    }
-
-    // Placeholder for API call
-    console.log("Saving schedule:", {
-      id: editingSchedule?.id,
-      day: selectedDay,
-      start: format(startTime, "HH:mm:ss"),
-      end: format(endTime, "HH:mm:ss"),
-    });
-    handleCloseModal();
   };
 
   const onStartTimeChange = (event: any, selectedDate?: Date) => {
@@ -232,22 +164,10 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
             </View>
 
             <View style={styles.modalBody}>
-              <View style={styles.infoContainer}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#3B82F6"
-                />
-                <Text style={styles.infoText}>
-                  Thông tin: Lịch học sẽ được cập nhật cho các buổi tiếp theo.
-                </Text>
-              </View>
-
-              <View style={styles.warningContainer}>
-                <Ionicons name="warning-outline" size={20} color="#F59E0B" />
-                <Text style={styles.warningText}>
-                  Chỉ có thể thay đổi lịch học trước {changeScheduleBeforeHours}{" "}
-                  giờ trước khi buổi học bắt đầu.
+              <View style={styles.infoContainerCalendar}>
+                <Ionicons name="bulb-outline" size={20} color="#10B981" />
+                <Text style={styles.infoTextCalendar}>
+                  Để thay đổi lịch học, vui lòng đi tới trang Lịch dạy.
                 </Text>
               </View>
               {/* Day of Week - Simplified as Text for now since changing day might be complex logic */}
@@ -325,10 +245,7 @@ const ScheduleTab: React.FC<Props> = ({ course }) => {
                 style={styles.cancelButton}
                 onPress={handleCloseModal}
               >
-                <Text style={styles.cancelButtonText}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+                <Text style={styles.cancelButtonText}>Đóng</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -562,6 +479,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: "#B45309",
+  },
+  infoContainerCalendar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ECFDF5",
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  infoTextCalendar: {
+    flex: 1,
+    fontSize: 13,
+    color: "#10B981",
+    fontWeight: "500",
   },
 });
 

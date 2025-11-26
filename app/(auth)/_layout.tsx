@@ -3,7 +3,6 @@ import { Href, Redirect, Stack } from "expo-router";
 
 export default function AuthLayout() {
   const { isAuthenticated, user } = useJWTAuth();
-  console.log("AuthLayout user:", JSON.stringify(user, null, 2));
 
   if (isAuthenticated && user && user.role) {
     if (user.role.name === "COACH") {
@@ -14,7 +13,6 @@ export default function AuthLayout() {
     }
 
     if (!user.role) {
-      console.warn("User authenticated but has no role:", user);
     }
   }
 

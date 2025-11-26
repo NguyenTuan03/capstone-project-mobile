@@ -12,12 +12,12 @@ class AttendanceService {
         `/v1/attendances/sessions/${sessionId}/learners/${learnerId}`
       );
 
-      console.log("Attendance Service - API Response:", response.data);
+      
 
       // return the full API response so callers can inspect statusCode/message/metadata
       return response.data;
     } catch (error) {
-      console.error("Error fetching learner attendance:", error);
+       
       throw error;
     }
   }

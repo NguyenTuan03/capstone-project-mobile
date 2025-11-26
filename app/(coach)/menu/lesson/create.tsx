@@ -3,16 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -46,7 +46,7 @@ export default function CreateLessonScreen() {
         description: description.trim(),
         duration: durNum,
       };
-      console.log("Payload for creating lesson:", payload);
+      
 
       await post(`${API_URL}/v1/lessons/subjects/${subjectId}`, payload);
 

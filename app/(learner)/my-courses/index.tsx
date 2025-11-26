@@ -233,115 +233,145 @@ export default function MyCoursesScreen() {
                     router.push(`/(learner)/my-courses/${course.id}`)
                   }
                 >
-                  <View style={styles.cardInner}>
-                    {/* Left: Image & Status */}
-                    <View style={styles.cardImageContainer}>
-                      <Image
-                        source={{
-                          uri: course.publicUrl,
-                        }}
-                        style={styles.cardImage}
-                      />
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(course.status) },
-                        ]}
-                      >
-                        <Text style={styles.statusText}>
-                          {getStatusInVietnamese(course.status)}
+                  {/* Top: Image & Status */}
+                  <View style={styles.cardImageContainer}>
+                    <Image
+                      source={{
+                        uri: course.publicUrl,
+                      }}
+                      style={styles.cardImage}
+                    />
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(course.status) },
+                      ]}
+                    >
+                      <Text style={styles.statusText}>
+                        {getStatusInVietnamese(course.status)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Bottom: Content */}
+                  <View style={styles.cardContent}>
+                    {/* Header: Level & Type */}
+                    <View style={styles.cardHeader}>
+                      <View style={styles.tagContainer}>
+                        <Ionicons
+                          name="school-outline"
+                          size={12}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.tagText}>
+                          {getLevelInVietnamese(course.level)}
+                        </Text>
+                      </View>
+                      <View style={styles.tagContainer}>
+                        <Ionicons
+                          name="people-outline"
+                          size={12}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.tagText}>
+                          {getLearningFormatInVietnamese(
+                            course.learningFormat
+                          )}
                         </Text>
                       </View>
                     </View>
 
-                    {/* Right: Content */}
-                    <View style={styles.cardContent}>
-                      {/* Header: Level & Type */}
-                      <View style={styles.cardHeader}>
-                        <View style={styles.tagContainer}>
-                          <Ionicons
-                            name="school-outline"
-                            size={12}
-                            color="#6B7280"
-                          />
-                          <Text style={styles.tagText}>
-                            {getLevelInVietnamese(course.level)}
-                          </Text>
-                        </View>
-                        <View style={styles.tagContainer}>
-                          <Ionicons
-                            name="people-outline"
-                            size={12}
-                            color="#6B7280"
-                          />
-                          <Text style={styles.tagText}>
-                            {getLearningFormatInVietnamese(
-                              course.learningFormat
-                            )}
-                          </Text>
-                        </View>
-                      </View>
+                    {/* Title */}
+                    <Text style={styles.cardTitle} numberOfLines={2}>
+                      {course.name}
+                    </Text>
 
-                      {/* Title */}
-                      <Text style={styles.cardTitle} numberOfLines={2}>
-                        {course.name}
+                    {/* Coach */}
+                    <View style={styles.coachRow}>
+                      <Ionicons
+                        name="person-circle-outline"
+                        size={14}
+                        color="#9CA3AF"
+                      />
+                      <Text style={styles.coachName} numberOfLines={1}>
+                        HLV {course.createdBy?.fullName || "N/A"}
                       </Text>
+                    </View>
 
-                      {/* Coach */}
-                      <View style={styles.coachRow}>
-                        <Ionicons
-                          name="person-circle-outline"
-                          size={14}
-                          color="#9CA3AF"
-                        />
-                        <Text style={styles.coachName} numberOfLines={1}>
-                          HLV {course.createdBy?.fullName || "N/A"}
+                    {/* Progress */}
+                    <View style={styles.progressSection}>
+                      <View style={styles.progressRow}>
+                        <Text style={styles.progressLabel}>Tiến độ</Text>
+                        <Text style={styles.progressValue}>
+                          {Math.round(progress)}%
                         </Text>
                       </View>
+                      <View style={styles.progressBarBg}>
+                        <View
+                          style={[
+                            styles.progressBarFill,
+                            { width: `${progress}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
 
-                      {/* Progress */}
-                      <View style={styles.progressSection}>
-                        <View style={styles.progressRow}>
-                          <Text style={styles.progressLabel}>Tiến độ</Text>
-                          <Text style={styles.progressValue}>
-                            {Math.round(progress)}%
+                    {/* Participants & Sessions */}
+                      <View style={styles.infoBar}>
+                        <View style={styles.infoItem}>
+                          <Ionicons
+                            name="people"
+                            size={13}
+                            color="#059669"
+                            style={{ marginRight: 3 }}
+                          />
+                          <Text style={styles.infoText}>
+                            {course.currentParticipants}/{course.maxParticipants}
                           </Text>
                         </View>
-                        <View style={styles.progressBarBg}>
-                          <View
-                            style={[
-                              styles.progressBarFill,
-                              { width: `${progress}%` },
-                            ]}
+                        <View style={styles.infoDivider} />
+                        <View style={styles.infoItem}>
+                          <Ionicons
+                            name="time-outline"
+                            size={13}
+                            color="#6B7280"
+                            style={{ marginRight: 3 }}
                           />
+                          <Text style={styles.infoText} numberOfLines={1}>
+                            {course.totalSessions} buổi
+                          </Text>
                         </View>
                       </View>
 
-                      {/* Footer: Date & Sessions */}
+                      {/* Footer: Start & End Date */}
                       <View style={styles.cardFooter}>
                         <View style={styles.footerItem}>
                           <Ionicons
-                            name="calendar-outline"
+                            name="play-circle-outline"
                             size={12}
-                            color="#6B7280"
+                            color="#059669"
                           />
                           <Text style={styles.footerText}>
                             {formatDate(course.startDate)}
                           </Text>
                         </View>
-                        <View style={styles.footerItem}>
-                          <Ionicons
-                            name="time-outline"
-                            size={12}
-                            color="#6B7280"
-                          />
-                          <Text style={styles.footerText}>
-                            {course.totalSessions} buổi
-                          </Text>
-                        </View>
+                        {course.endDate && (
+                          <>
+                            <View style={styles.footerDivider} />
+                            <View style={styles.footerItem}>
+                              <Ionicons
+                                name="stop-circle-outline"
+                                size={12}
+                                color="#EF4444"
+                              />
+                              <Text style={styles.footerText}>
+                                {formatDate(course.endDate)}
+                              </Text>
+                            </View>
+                          </>
+                        )}
                       </View>
                     </View>
-                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -353,67 +383,64 @@ export default function MyCoursesScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F3F4F6" },
+  safe: { flex: 1, backgroundColor: "#FFFFFF" },
   headerSection: {
     backgroundColor: "#059669",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 4,
+    elevation: 3,
   },
   headerContent: {
-    gap: 6,
+    gap: 8,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "800",
     color: "#FFFFFF",
     letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.9)",
+    color: "rgba(255, 255, 255, 0.85)",
     fontWeight: "500",
   },
-  container: { padding: 16, gap: 16, paddingBottom: 30 },
+  container: { padding: 16, gap: 14, paddingBottom: 30 },
 
   /* Empty State */
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 80,
+    paddingVertical: 100,
     gap: 16,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#111827",
   },
   emptyStateSubtitle: {
     fontSize: 14,
     color: "#6B7280",
     textAlign: "center",
-    maxWidth: 260,
-    lineHeight: 20,
+    maxWidth: 280,
+    lineHeight: 21,
   },
   exploreCourseBtn: {
     flexDirection: "row",
     backgroundColor: "#059669",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 13,
+    paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: "center",
     gap: 8,
-    marginTop: 12,
+    marginTop: 16,
     shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
@@ -422,40 +449,45 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 14,
+    letterSpacing: 0.2,
   },
 
   /* Filter Container */
   filterContainer: {
-    marginBottom: 4,
+    marginBottom: 10,
   },
   filterScroll: {
     paddingRight: 16,
     gap: 8,
   },
   filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 0.5,
   },
   filterTabActive: {
     backgroundColor: "#059669",
     borderColor: "#059669",
+    shadowColor: "#059669",
+    shadowOpacity: 0.2,
+    elevation: 2,
   },
   filterTabText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#4B5563",
+    color: "#6B7280",
   },
   filterTabTextActive: {
     color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
 
   /* Premium Card */
@@ -463,69 +495,67 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "rgba(229, 231, 235, 0.5)",
+    borderColor: "#F0F0F0",
     overflow: "hidden",
-  },
-  cardInner: {
-    flexDirection: "row",
-    padding: 12,
-    gap: 14,
+    flexDirection: "column",
   },
   cardImageContainer: {
     position: "relative",
-    width: 110,
-    height: 130,
-    borderRadius: 12,
+    width: "100%",
+    height: 160,
+    borderRadius: 0,
     overflow: "hidden",
+    backgroundColor: "#F9FAFB",
   },
   cardImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#E5E7EB",
   },
   statusBadge: {
     position: "absolute",
-    top: 8,
-    left: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    top: 10,
+    right: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
     backdropFilter: "blur(4px)",
   },
   statusText: {
     color: "#FFFFFF",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
   cardContent: {
-    flex: 1,
-    justifyContent: "space-between",
-    paddingVertical: 2,
+    padding: 12,
+    gap: 6,
+    width: "100%",
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 6,
   },
   tagContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   tagText: {
-    fontSize: 10,
-    color: "#4B5563",
+    fontSize: 11,
+    color: "#059669",
     fontWeight: "600",
   },
   cardTitle: {
@@ -533,13 +563,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
     lineHeight: 22,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   coachRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginBottom: 10,
+    gap: 5,
+    marginBottom: 12,
   },
   coachName: {
     fontSize: 12,
@@ -547,8 +577,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   progressSection: {
-    gap: 6,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 12,
   },
   progressRow: {
     flexDirection: "row",
@@ -556,15 +586,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   progressLabel: {
-    fontSize: 10,
-    color: "#9CA3AF",
-    fontWeight: "600",
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "700",
     textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   progressValue: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#059669",
-    fontWeight: "700",
+    fontWeight: "800",
   },
   progressBarBg: {
     height: 6,
@@ -582,17 +613,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-    paddingTop: 8,
+    borderTopColor: "#F9FAFB",
+    paddingTop: 10,
   },
   footerItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
   },
   footerText: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#6B7280",
     fontWeight: "500",
+  },
+  infoBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  infoText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#059669",
+  },
+  infoDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: "#D1FAE5",
+    marginHorizontal: 8,
+  },
+  footerDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: "#E5E7EB",
+    marginHorizontal: 6,
   },
 });

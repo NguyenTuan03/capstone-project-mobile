@@ -1,3 +1,4 @@
+import { LearnerProgress } from "@/types/learner-progress";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -32,7 +33,7 @@ export default function HomeScreen() {
   const [totalCourses, setTotalCourses] = useState(0);
   const [totalAiFeedbacks, setTotalAiFeedbacks] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [progresses, setProgresses] = useState<any[]>([]);
+  const [progresses, setProgresses] = useState<LearnerProgress[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(true);
 
   const loadTodaySessions = useCallback(async () => {
@@ -112,7 +113,9 @@ export default function HomeScreen() {
         {/* Quick Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.card, styles.statCard]}>
-            <View style={styles.statIcon} />
+            <View style={styles.statIcon}>
+              <Ionicons name="book" size={20} color="#059669" />
+            </View>
             {loadingStats ? (
               <ActivityIndicator size="small" color="#059669" />
             ) : (
@@ -123,7 +126,9 @@ export default function HomeScreen() {
             )}
           </View>
           <View style={[styles.card, styles.statCard]}>
-            <View style={[styles.statIcon, { backgroundColor: "#DCFCE7" }]} />
+            <View style={[styles.statIcon, { backgroundColor: "#DCFCE7" }]}>
+              <Ionicons name="sparkles" size={20} color="#059669" />
+            </View>
             {loadingStats ? (
               <ActivityIndicator size="small" color="#059669" />
             ) : (
@@ -151,11 +156,14 @@ export default function HomeScreen() {
                         {progress.course.name}
                       </Text>
                       <Text style={styles.progressSessionCount}>
-                        {progress.sessionsCompleted}/{progress.totalSessions} buổi hoàn thành
+                        {progress.sessionsCompleted}/{progress.totalSessions}{" "}
+                        buổi hoàn thành
                       </Text>
                     </View>
                     <View style={styles.progressPercentBadge}>
-                      <Text style={styles.progressPercent}>{progressPercent}%</Text>
+                      <Text style={styles.progressPercent}>
+                        {progressPercent}%
+                      </Text>
                     </View>
                   </View>
 
@@ -183,7 +191,11 @@ export default function HomeScreen() {
 
                     <View style={styles.scoreItem}>
                       <View style={styles.scoreIconBox}>
-                        <Ionicons name="checkmark-done" size={18} color="#059669" />
+                        <Ionicons
+                          name="checkmark-done"
+                          size={18}
+                          color="#059669"
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.scoreLabel}>Điểm Quiz</Text>
@@ -337,6 +349,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#DBEAFE",
     marginBottom: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   statNumber: {
     fontSize: 22,

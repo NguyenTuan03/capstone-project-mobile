@@ -11,7 +11,7 @@ class VideoConferenceService {
       );
       return response.data.metadata;
     } catch (error) {
-      console.error("Error fetching video conference details:", error);
+       
       throw error;
     }
   }

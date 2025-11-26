@@ -32,6 +32,7 @@ const coursesStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 2,
+    flexDirection: "column",
   },
   cardImageWrapper: {
     position: "relative",
@@ -39,6 +40,7 @@ const coursesStyles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     height: 160,
+    width: "100%",
   },
   cover: {
     width: "100%",
@@ -81,6 +83,7 @@ const coursesStyles = StyleSheet.create({
   cardContent: {
     padding: 12,
     gap: 8,
+    width: "100%",
   },
   courseTitle: {
     fontSize: 15,
@@ -137,6 +140,52 @@ const coursesStyles = StyleSheet.create({
     color: "#6B7280",
     fontSize: 11,
     fontWeight: "600",
+  },
+  participantInfoSection: {
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  participantProgressContainer: {
+    gap: 8,
+  },
+  participantProgressBar: {
+    height: 6,
+    backgroundColor: "#D1FAE5",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  participantProgressFill: {
+    height: "100%",
+    backgroundColor: "#059669",
+    borderRadius: 3,
+  },
+  participantStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  participantStat: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  participantStatText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  participantStatTextSmall: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  participantDividerSmall: {
+    width: 1,
+    height: 18,
+    backgroundColor: "#D1FAE5",
   },
   searchSection: {
     flexDirection: "row",

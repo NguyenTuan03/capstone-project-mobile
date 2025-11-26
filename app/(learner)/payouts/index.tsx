@@ -69,7 +69,7 @@ export default function LearnerPayoutsScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWallet(res.data);
-      console.log("data vi", res.data);
+      
     } catch (err: any) {
       console.error(
         "❌ Lỗi khi lấy dữ liệu ví:",
@@ -106,7 +106,7 @@ export default function LearnerPayoutsScreen() {
       const res = await put(`${API_URL}/v1/wallets/${wallet.id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("✅ Cập nhật thành công:", res.data);
+      
       setWallet(res.data);
       setIsEditing(false);
 

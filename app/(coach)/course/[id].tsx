@@ -9,7 +9,12 @@ import CourseTabs from "@/components/coach/course/tabs";
 import { get, put } from "@/services/http/httpService";
 import { Course, LearningFormat, Schedule } from "@/types/course";
 import { getStatusMessage } from "@/utils/CourseIDFormat";
-import { getLevelColor, getLevelLabel, getStatusColor, getStatusLabel } from "@/utils/courseUtilFormat";
+import {
+  getLevelColor,
+  getLevelLabel,
+  getStatusColor,
+  getStatusLabel,
+} from "@/utils/courseUtilFormat";
 import { formatPrice } from "@/utils/priceFormat";
 import { formatSchedule } from "@/utils/scheduleFormat";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,7 +44,6 @@ export default function CourseDetailScreen() {
       const res = await get<Course>(`/v1/courses/${courseId}`);
       setCourse(res.data);
     } catch (error) {
-      console.error("Lỗi khi tải chi tiết khóa học:", error);
       Alert.alert("Lỗi", "Không thể tải thông tin khóa học");
     } finally {
       setLoading(false);
@@ -60,11 +64,11 @@ export default function CourseDetailScreen() {
     }
   }, [activeTab]);
 
-type CourseImagePayload = {
-  uri: string;
-  fileName?: string;
-  mimeType?: string;
-};
+  type CourseImagePayload = {
+    uri: string;
+    fileName?: string;
+    mimeType?: string;
+  };
 
   const handleUpdateCourse = async (data: {
     subjectId: number;
@@ -115,10 +119,6 @@ type CourseImagePayload = {
         },
       ]);
     } catch (error: any) {
-      console.error("Lỗi khi cập nhật khóa học:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
-
       let errorMessage = "Không thể cập nhật khóa học. Vui lòng thử lại.";
 
       if (error.response?.data) {

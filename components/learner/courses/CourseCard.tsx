@@ -37,6 +37,13 @@ const CourseCardComponent: FC<CourseCardProps> = ({
     return { label, color };
   }, [course.level]);
 
+  const participantPercentage = useMemo(() => {
+    return Math.min(
+      (course.currentParticipants / course.maxParticipants) * 100,
+      100
+    );
+  }, [course.currentParticipants, course.maxParticipants]);
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -171,21 +178,47 @@ const CourseCardComponent: FC<CourseCardProps> = ({
             </Text>
           </View>
 
-          <View style={styles.participantBadge}>
-            <Ionicons
-              name="people-outline"
-              size={12}
-              color="#6B7280"
-              style={{ marginRight: 4 }}
-            />
-            <Text style={styles.participantBadgeText}>
-              {course.currentParticipants}/{course.maxParticipants}
-            </Text>
-          </View>
-
           <Text style={styles.price}>
             {formatCoursePrice(course.pricePerParticipant)}
           </Text>
+        </View>
+
+        <View style={styles.participantInfoSection}>
+          <View style={styles.participantProgressContainer}>
+            <View style={styles.participantProgressBar}>
+              <View
+                style={[
+                  styles.participantProgressFill,
+                  { width: `${participantPercentage}%` },
+                ]}
+              />
+            </View>
+            <View style={styles.participantStatsRow}>
+              <View style={styles.participantStat}>
+                <Ionicons
+                  name="people"
+                  size={14}
+                  color="#059669"
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={styles.participantStatText}>
+                  {course.currentParticipants}/{course.maxParticipants}
+                </Text>
+              </View>
+              <View style={styles.participantDividerSmall} />
+              <View style={styles.participantStat}>
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={14}
+                  color="#6B7280"
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={styles.participantStatTextSmall}>
+                  Tối thiểu: {course.minParticipants}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
       </View>
     </TouchableOpacity>

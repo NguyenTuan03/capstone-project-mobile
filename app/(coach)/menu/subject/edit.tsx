@@ -3,11 +3,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -22,9 +22,9 @@ export default function EditSubjectScreen() {
       subjectStatus: string;
     }>();
 
-  //   console.log("Editing subject with ID:", subjectId);
-  //   console.log("Editing subject with ID:", subjectName);
-  //   console.log("Editing subject with ID:", subjectDescription);
+  //   
+  //   
+  //   
 
   const [editNameSubject, setEditNameSubject] = useState(subjectName || "");
   const [editDescription, setEditDescription] = useState(

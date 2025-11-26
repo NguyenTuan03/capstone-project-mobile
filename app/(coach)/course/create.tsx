@@ -61,7 +61,6 @@ export default function CreateCourseScreen() {
         },
       ]);
     } catch (error: any) {
-      console.error("Lỗi khi tạo khóa học:", error);
       const errorMessage =
         error.response?.data?.message ||
         "Không thể tạo khóa học. Vui lòng thử lại.";

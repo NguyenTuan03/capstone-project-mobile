@@ -1,4 +1,4 @@
-import { MonthlyResponseDto } from "../types/coach";
+import { CoachDetail, MonthlyResponseDto } from "../types/coach";
 import http from "./http/interceptor";
 
 class CoachService {
@@ -18,7 +18,7 @@ class CoachService {
       const response = await http.get(url);
       return response.data.metadata;
     } catch (error) {
-      console.error("Error fetching monthly revenue:", error);
+       
       throw error;
     }
   }
@@ -38,7 +38,7 @@ class CoachService {
       const response = await http.get(url);
       return response.data.metadata;
     } catch (error) {
-      console.error("Error fetching monthly learner count:", error);
+       
       throw error;
     }
   }
@@ -59,7 +59,7 @@ class CoachService {
       const response = await http.get(url);
       return response.data.metadata;
     } catch (error) {
-      console.error("Error fetching monthly course count:", error);
+       
       throw error;
     }
   }
@@ -71,10 +71,23 @@ class CoachService {
       const response = await http.get(`/v1/coaches/${userId}/rating/overall`);
       return response.data.metadata;
     } catch (error) {
-      console.error("Error loading rating:", error);
+       
       return null;
     }
   }
+
+  async getCoachById(coachId: number): Promise<CoachDetail> {
+    try {
+      const response = await http.get(`/v1/coaches/${coachId}`);
+      
+      return response.data.metadata || response.data;
+    } catch (error) {
+       
+      throw error;
+    }
+  }
+
+  
 }
 
 export default new CoachService();

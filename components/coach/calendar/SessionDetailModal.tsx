@@ -2,13 +2,13 @@ import { formatDate } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { default as React, useEffect, useState } from "react";
 import {
-  Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import attendanceService from "../../../services/attendanceService";
 import configurationService from "../../../services/configurationService";
@@ -193,7 +193,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           text: "Xác nhận",
           onPress: async () => {
             try {
-              console.log("Saving attendance:", attendanceMap);
+              
 
               const enrollments =
                 (sessionData.course as any)?.enrollments || [];
@@ -214,7 +214,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 attendances
               );
 
-              console.log("Attendance API response:", res);
+              
 
               // Instead of fetching the session again, reload the app/page so the
               // caller context will re-mount and fetch fresh data.

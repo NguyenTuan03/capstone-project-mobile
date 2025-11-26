@@ -97,10 +97,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if (!user || !token) {
         return;
       }
-      console.log("SOCKET TEST - User and token found, initializing socket");
+      
 
       const API_URL = process.env.EXPO_PUBLIC_SOCKET_URL;
-      console.log("Connecting to:", API_URL);
+      
 
       // Try connecting to root namespace first
       newSocket = io(API_URL!, {
@@ -115,21 +115,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       newSocket.on("connect", () => {
-        console.log("Socket connected");
+        
         setIsConnected(true);
       });
 
       newSocket.on("disconnect", () => {
-        console.log("Socket disconnected");
+        
         setIsConnected(false);
       });
 
       newSocket.on("connect_error", (err) => {
-        console.log("Socket connection error:", err);
+        
       });
 
       newSocket.on("notification.send", (notification: Notification) => {
-        console.log("Received notification:", notification);
+        
         // Add to queue instead of showing immediately
         setNotificationQueue((prev) => [...prev, notification]);
       });

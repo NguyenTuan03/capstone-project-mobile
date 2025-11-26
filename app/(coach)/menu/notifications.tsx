@@ -36,7 +36,7 @@ export default function NotificationsScreen() {
         pageNum,
         10
       );
-      console.log(res.data);
+      
       if (res?.data) {
         const newNotifications = res.data.items;
         if (shouldRefresh) {

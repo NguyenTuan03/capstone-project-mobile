@@ -16,7 +16,7 @@ export const compareVideosWithBackend = async (
 
     return response.data;
   } catch (error: any) {
-    console.error("Có một chút rắc rối từ AI, hãy thử lại nhé 🫶🏻");
+     
     throw new Error(error.message || "Đã xảy ra lỗi không xác định.");
   }
 };
@@ -30,7 +30,7 @@ export const getAiVideoComparisonResultsByUser = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching AI comparison results:", error);
+     
     throw new Error(error.message || "Failed to fetch AI comparison results.");
   }
 };

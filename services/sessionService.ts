@@ -1,6 +1,6 @@
 import {
-  CalendarSession,
-  GetSessionForWeeklyCalendarRequestDto,
+    CalendarSession,
+    GetSessionForWeeklyCalendarRequestDto,
 } from "../types/session";
 import http from "./http/interceptor";
 
@@ -35,7 +35,7 @@ class SessionService {
         return transformedSession;
       });
     } catch (error) {
-      console.error("Error fetching weekly sessions:", error);
+       
       throw error;
     }
   }
@@ -45,7 +45,7 @@ class SessionService {
       const response = await http.get(`/v1/sessions/${sessionId}`);
       return response.data;
     } catch (error) {
-      console.error("Error fetching session by ID:", error);
+       
       throw error;
     }
   }
@@ -55,7 +55,7 @@ class SessionService {
       const response = await http.get(`/v1/sessions/courses/${courseId}`);
       return response.data || [];
     } catch (error) {
-      console.error("Error fetching sessions by course ID:", error);
+       
       throw error;
     }
   }
@@ -67,7 +67,7 @@ class SessionService {
       });
       return response.data;
     } catch (error) {
-      console.error("Error updating session status:", error);
+       
       throw error;
     }
   }

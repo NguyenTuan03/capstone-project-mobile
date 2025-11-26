@@ -1,6 +1,9 @@
-import { get, post } from "@/services/http/httpService";
+import { CoachDetailModal } from "@/components/coach/CoachDetailModal";
+import coachService from "@/services/coach.service";
+import { get, patch, post } from "@/services/http/httpService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
 import videoConferenceService from "@/services/videoConference.service";
+import type { CoachDetail } from "@/types/coach";
 import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
 import { Feedback } from "@/types/feecbacks";
@@ -31,19 +34,18 @@ export default function CourseDetailScreen() {
   const courseId = id ? parseInt(id, 10) : null;
 
   const [course, setCourse] = useState<LearnerCourseDetail | null>(null);
+  const [coachDetail, setCoachDetail] = useState<CoachDetail | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCoachModal, setShowCoachModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [cancellingCourse, setCancellingCourse] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({
     comment: "",
     rating: 5,
     isAnonymous: false,
   });
-
-  const [isVCVisible, setIsVCVisible] = useState(false);
-  const [channelName, setChannelName] = useState("");
-  const [vcToken, setVcToken] = useState("");
 
   const fetchDetail = useCallback(async () => {
     if (!courseId) return;
@@ -51,26 +53,40 @@ export default function CourseDetailScreen() {
     try {
       setLoading(true);
       setFeedbacks([]);
+      setCoachDetail(null);
 
       const [courseRes, feedbacksRes] = await Promise.allSettled([
         get<LearnerCourseDetail>(`/v1/courses/${courseId}`),
-        get<Feedback[]>(`/v1/feedbacks/courses/${courseId}`),
+        get<Feedback[]>(`/v1/feedbacks/coaches/${course?.createdBy.id}`),
       ]);
 
       if (courseRes.status === "fulfilled") {
-        setCourse(courseRes.value.data ?? null);
+        const courseData = courseRes.value.data ?? null;
+        setCourse(courseData);
+
+        // Fetch coach details if course has createdBy user
+        if (courseData?.createdBy?.id) {
+          try {
+            const coachData = await coachService.getCoachById(
+              courseData.createdBy.id
+            );
+            setCoachDetail(coachData);
+          } catch (coachError) {
+             
+          }
+        }
       } else {
-        console.error("Lỗi khi tải chi tiết khóa học:", courseRes.reason);
+         
         setCourse(null);
       }
 
       if (feedbacksRes.status === "fulfilled") {
         setFeedbacks(feedbacksRes.value.data || []);
       } else {
-        console.error("Lỗi khi tải feedbacks:", feedbacksRes.reason);
+         
       }
     } catch (error) {
-      console.error("Lỗi khi tải chi tiết khóa học:", error);
+       
       Alert.alert("Lỗi", "Không thể tải chi tiết khóa học");
     } finally {
       setLoading(false);
@@ -80,6 +96,51 @@ export default function CourseDetailScreen() {
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail]);
+
+  const handleCancelCourse = async (enrollment: Enrollment) => {
+    if (!enrollment) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin đăng ký của bạn.");
+      return;
+    }
+
+    Alert.alert(
+      "Xác nhận hủy khóa học",
+      "Bạn có chắc chắn muốn hủy khóa học này? Hành động này không thể hoàn tác.",
+      [
+        { text: "Không", onPress: () => {} },
+        {
+          text: "Hủy khóa học",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCancellingCourse(true);
+              await patch(`/v1/courses/${courseId}/learners/cancel`, {});
+
+              Alert.alert(
+                "Thành công",
+                "Khóa học đã được hủy. Bạn sẽ nhận được hoàn tiền ở ví của mình.",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => router.back(),
+                  },
+                ]
+              );
+            } catch (err: any) {
+               
+              Alert.alert(
+                "Lỗi",
+                err?.response?.data?.message ||
+                  "Không thể hủy khóa học. Vui lòng thử lại."
+              );
+            } finally {
+              setCancellingCourse(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleSubmitFeedback = useCallback(async () => {
     if (!courseId) {
@@ -121,7 +182,7 @@ export default function CourseDetailScreen() {
         },
       ]);
     } catch (err: any) {
-      console.error("Failed to submit feedback:", err);
+       
       Alert.alert(
         "Lỗi",
         err?.response?.data?.message ||
@@ -229,7 +290,7 @@ export default function CourseDetailScreen() {
       case "LEARNING":
         return "Đang học";
       case "PENDING_GROUP":
-        return "Chờ ghép lớp";
+        return "Chờ đủ học viên";
       case "UNPAID":
         return "Chưa thanh toán";
       case "REFUNDED":
@@ -348,7 +409,7 @@ export default function CourseDetailScreen() {
         contentContainerStyle={styles.container}
       >
         <View style={{ gap: 16 }}>
-          {/* Course Info Card - Premium */}
+          {/* Course Info Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.courseName}>{course.name}</Text>
@@ -408,24 +469,90 @@ export default function CourseDetailScreen() {
 
             <View style={styles.divider} />
 
-            {/* Coach & Location */}
-            <View style={styles.metaSection}>
-              {course.createdBy?.fullName && (
-                <View style={styles.metaRow}>
-                  <Ionicons
-                    name="person-circle-outline"
-                    size={20}
-                    color="#6B7280"
+            {/* Participant & Schedule Info */}
+            <View style={styles.participantInfoSection}>
+              <View style={styles.participantProgressContainer}>
+                <View style={styles.participantProgressBar}>
+                  <View
+                    style={[
+                      styles.participantProgressFill,
+                      {
+                        width: `${Math.min(
+                          (course.currentParticipants /
+                            course.maxParticipants) *
+                            100,
+                          100
+                        )}%`,
+                      },
+                    ]}
                   />
-                  <Text style={styles.metaText}>
-                    HLV{" "}
-                    <Text style={styles.metaHighlight}>
-                      {course.createdBy.fullName}
+                </View>
+                <View style={styles.participantStatsRow}>
+                  <View style={styles.participantStat}>
+                    <Ionicons
+                      name="people"
+                      size={14}
+                      color="#059669"
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={styles.participantStatText}>
+                      {course.currentParticipants}/{course.maxParticipants}
                     </Text>
+                  </View>
+                  <View style={styles.participantDividerSmall} />
+                  <View style={styles.participantStat}>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={14}
+                      color="#6B7280"
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={styles.participantStatTextSmall}>
+                      Tối thiểu: {course.minParticipants}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Start & End Date */}
+            <View style={styles.dateSection}>
+              <View style={styles.dateItem}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color="#059669"
+                  style={{ marginRight: 8 }}
+                />
+                <View>
+                  <Text style={styles.dateLabel}>Ngày bắt đầu</Text>
+                  <Text style={styles.dateValue}>
+                    {formatDate(course.startDate)}
                   </Text>
                 </View>
+              </View>
+              {course.endDate && (
+                <View style={styles.dateItem}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color="#EF4444"
+                    style={{ marginRight: 8 }}
+                  />
+                  <View>
+                    <Text style={styles.dateLabel}>Ngày kết thúc</Text>
+                    <Text style={styles.dateValue}>
+                      {formatDate(course.endDate)}
+                    </Text>
+                  </View>
+                </View>
               )}
+            </View>
 
+            <View style={styles.divider} />
+            <View style={styles.metaSection}>
               {course.court && (
                 <View style={styles.locationBox}>
                   <View style={styles.metaRow}>
@@ -443,9 +570,38 @@ export default function CourseDetailScreen() {
                 </View>
               )}
             </View>
+
+            {/* Coach Info Button */}
+            {coachDetail && (
+              <>
+                <View style={styles.divider} />
+                <TouchableOpacity
+                  style={styles.coachButtonCard}
+                  onPress={() => setShowCoachModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.coachButtonContent}>
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={32}
+                      color="#059669"
+                    />
+                    <View style={styles.coachButtonText}>
+                      <Text style={styles.coachButtonName}>
+                        {coachDetail.user?.fullName}
+                      </Text>
+                      <Text style={styles.coachButtonPhone}>
+                        {coachDetail.user?.phoneNumber}
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#059669" />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
-          {/* Enrollment Info - Premium */}
+          {/* Enrollment Info */}
           {learnerEnrollment && (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Thông tin đăng ký</Text>
@@ -477,10 +633,41 @@ export default function CourseDetailScreen() {
                   </Text>
                 </View>
               </View>
+
+              {learnerEnrollment?.status !== "CANCELLED" &&
+                learnerEnrollment?.status !== "REFUNDED" &&
+                (course.status === "APPROVED" ||
+                  course.status === "READY_OPENED" ||
+                  course.status === "FULL") && (
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelCourseButton,
+                      cancellingCourse && styles.cancelCourseButtonDisabled,
+                    ]}
+                    onPress={() => handleCancelCourse(learnerEnrollment)}
+                    disabled={cancellingCourse}
+                    activeOpacity={0.8}
+                  >
+                    {cancellingCourse ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="close-circle-outline"
+                          size={18}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.cancelCourseText}>
+                          Hủy khóa học
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
             </View>
           )}
 
-          {/* Sessions List - Premium */}
+          {/* Sessions List */}
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionHeader}>
               Lịch trình học tập{" "}
@@ -596,24 +783,6 @@ export default function CourseDetailScreen() {
                           )}
                         </View>
 
-                        {/* {(session.status === "IN_PROGRESS" ||
-                          session.status === "SCHEDULED") && (
-                          <TouchableOpacity
-                            style={styles.vcButton}
-                            activeOpacity={0.8}
-                            onPress={handleJoinVideoConference}
-                          >
-                            <Text style={styles.vcButtonText}>
-                              Tham gia lớp học trực tuyến
-                            </Text>
-                            <Ionicons
-                              name="videocam"
-                              size={16}
-                              color="#FFFFFF"
-                            />
-                          </TouchableOpacity>
-                        )} */}
-
                         <TouchableOpacity
                           style={styles.accessButton}
                           activeOpacity={0.8}
@@ -649,7 +818,7 @@ export default function CourseDetailScreen() {
             )}
           </View>
 
-          {/* Feedbacks Section - Premium */}
+          {/* Feedbacks Section */}
           {course.status === CourseStatus.COMPLETED && (
             <View style={styles.sectionContainer}>
               <View style={styles.feedbackHeaderRow}>
@@ -732,7 +901,17 @@ export default function CourseDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Feedback Modal - Premium */}
+      {/* Coach Modal */}
+      <CoachDetailModal
+        visible={showCoachModal}
+        coachDetail={coachDetail}
+        feedbacks={feedbacks}
+        courseStatus={course?.status}
+        onClose={() => setShowCoachModal(false)}
+        onCredentialPress={() => {}}
+      />
+
+      {/* Feedback Modal */}
       <Modal
         visible={showFeedbackModal}
         animationType="slide"
@@ -841,6 +1020,8 @@ export default function CourseDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Credential Image Modal - Removed: Images shown directly in CoachDetailModal */}
     </View>
   );
 }
@@ -894,6 +1075,37 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 12,
     marginBottom: 8,
+  },
+  cardListHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  chevronBox: {
+    padding: 4,
+  },
+  quickInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  quickInfoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  quickInfoText: {
+    fontSize: 12,
+    color: "#4B5563",
+    fontWeight: "600",
+  },
+  quickInfoDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#D1D5DB",
   },
   courseName: {
     fontSize: 20,
@@ -1352,4 +1564,183 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+  cancelCourseButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#EF4444",
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  cancelCourseButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    opacity: 0.7,
+  },
+  cancelCourseText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  participantInfoSection: {
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  participantProgressContainer: {
+    gap: 8,
+  },
+  participantProgressBar: {
+    height: 6,
+    backgroundColor: "#D1FAE5",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  participantProgressFill: {
+    height: "100%",
+    backgroundColor: "#059669",
+    borderRadius: 3,
+  },
+  participantStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  participantStat: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  participantStatText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  participantStatTextSmall: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  participantDividerSmall: {
+    width: 1,
+    height: 18,
+    backgroundColor: "#D1FAE5",
+  },
+  dateSection: {
+    gap: 12,
+  },
+  dateItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  dateLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  dateValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  coachButtonCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 0,
+  },
+  coachButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  coachButtonText: {
+    gap: 2,
+    flex: 1,
+  },
+  coachButtonName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  coachButtonPhone: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  credentialImageOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  credentialImageContainer: {
+    width: "100%",
+    maxHeight: "85%",
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+  },
+  credentialCloseBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  credentialImageContent: {
+    flex: 1,
+    width: "100%",
+  },
+  credentialImageContentScroll: {
+    padding: 16,
+    paddingTop: 50,
+    alignItems: "center",
+    gap: 12,
+  },
+  credentialImageTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+  credentialImage: {
+    width: "100%",
+    height: 400,
+    borderRadius: 8,
+  },
+  credentialImageDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  credentialNoImage: {
+    backgroundColor: "#FFFFFF",
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    gap: 12,
+  },
+  credentialNoImageText: {
+    fontSize: 14,
+    color: "#9CA3AF",
+  },
+  /* Credential modal styles removed - Images shown directly in CoachDetailModal */
 });

@@ -6,13 +6,13 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -129,7 +129,7 @@ export default function UploadVideoScreen() {
     try {
       setSaving(true);
       setUploadProgress(0);
-      console.log("📦 Payload FormData gửi lên:", formData);
+      
 
       let response;
       if (videoId) {
@@ -147,7 +147,7 @@ export default function UploadVideoScreen() {
                 (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
               );
               setUploadProgress(progress);
-              console.log(`Đang cập nhật: ${progress}%`);
+              
             },
           }
         );
@@ -166,7 +166,7 @@ export default function UploadVideoScreen() {
                 (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
               );
               setUploadProgress(progress);
-              console.log(`Đang tải lên: ${progress}%`);
+              
             },
           }
         );

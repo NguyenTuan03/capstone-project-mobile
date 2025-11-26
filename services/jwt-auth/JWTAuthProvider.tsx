@@ -1,10 +1,10 @@
 import type { User } from "@/types/user";
 import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
+    createContext,
+    ReactNode,
+    useContext,
+    useEffect,
+    useState,
 } from "react";
 import jwtAxios, { setAuthToken, setRefreshToken } from ".";
 import storageService from "../storageService";
@@ -108,7 +108,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
           isLoading: false,
         });
       } catch (error) {
-        console.error("Failed to initialize auth user:", error);
+         
         // Clear all auth data on error
         await storageService.clearAll();
         await setAuthToken();
@@ -144,7 +144,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
       // Persist user
       await storageService.setUser(metadata.user);
     } catch (error) {
-      console.error("Login error in provider:", error);
+       
       setJwtAuthData({
         ...jwtAuthData,
         isAuthenticated: false,
@@ -211,7 +211,7 @@ const JWTAuthProvider = ({ children }: JWTAuthAuthProviderProps) => {
       // Update cached user in storage
       await storageService.setUser(data);
     } catch (error) {
-      console.error("Failed to refresh user:", error);
+       
     }
   };
 

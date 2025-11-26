@@ -2,12 +2,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAttemptQuiz } from "../../../hooks/use-attemp-quiz";
 import quizService from "../../../services/quiz.service";
@@ -92,7 +92,7 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz, onRefresh }) => {
         questionOption: Number(answers[q.id]),
       })),
     };
-    console.log("Submitting payload:", payload, quiz.id);
+    
     const res = await submitAttempt(quiz.id, payload);
     if (res) {
       setSubmitted(true);

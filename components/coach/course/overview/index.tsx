@@ -4,11 +4,11 @@ import { Feedback } from "@/types/feecbacks";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 type Props = {
   course: Course;
@@ -182,7 +182,7 @@ export const OverviewTab: React.FC<Props> = ({
     try {
       setFeedbackLoading(true);
       const res = await get(`/v1/feedbacks/courses/${course.id}`);
-      console.log("Fetched feedbacks:", res.data);
+      
       setFeedbacks((res as any).data || []);
     } catch (error) {
       console.error("Failed to fetch feedbacks:", error);

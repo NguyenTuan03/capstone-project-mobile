@@ -73,27 +73,19 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       setTimeout(() => {
         try {
           if (coachVideoRef.current) {
-            coachVideoRef.current
-              .setPositionAsync(0)
-              .catch((err) => console.log("Coach video reset error:", err));
+            coachVideoRef.current.setPositionAsync(0);
           }
           if (learnerVideoRef.current) {
-            learnerVideoRef.current
-              .setPositionAsync(0)
-              .catch((err) => console.log("Learner video reset error:", err));
+            learnerVideoRef.current.setPositionAsync(0);
           }
-        } catch (error) {
-          console.log("Video reset error:", error);
-        }
+        } catch (error) {}
       }, 100);
     } else {
       // Pause videos when modal closes to prevent background playback
       try {
         coachVideoRef.current?.pauseAsync().catch(() => {});
         learnerVideoRef.current?.pauseAsync().catch(() => {});
-      } catch (error) {
-        console.log("Pause on close error:", error);
-      }
+      } catch (error) {}
     }
   }, [visible]);
 
@@ -104,18 +96,12 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       setTimeout(() => {
         try {
           if (coachVideoRef.current && status.coach.isLoaded) {
-            coachVideoRef.current
-              .pauseAsync()
-              .catch((err) => console.log("Pause coach error:", err));
+            coachVideoRef.current.pauseAsync();
           }
           if (learnerVideoRef.current && status.learner.isLoaded) {
-            learnerVideoRef.current
-              .pauseAsync()
-              .catch((err) => console.log("Pause learner error:", err));
+            learnerVideoRef.current.pauseAsync();
           }
-        } catch (error) {
-          console.log("Overlay mode pause error:", error);
-        }
+        } catch (error) {}
       }, 200);
     }
   }, [isOverlayMode, status.coach.isLoaded, status.learner.isLoaded]);
@@ -150,12 +136,10 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
     const videoStatus = type === "coach" ? status.coach : status.learner;
 
     if (!ref) {
-      console.log(`${type} video ref is null, cannot play`);
       return;
     }
 
     if (!videoStatus.isLoaded) {
-      console.log(`${type} video not loaded yet, cannot play`);
       return;
     }
 
@@ -173,9 +157,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
           await learnerVideoRef.current?.playAsync();
         }
       }
-    } catch (error) {
-      console.log(`Play/Pause error for ${type}:`, error);
-    }
+    } catch (error) {}
   };
 
   // Seeking handler throttled to reduce rapid state updates
@@ -192,13 +174,11 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
 
     // Check if ref exists and video is loaded before seeking
     if (!ref) {
-      console.log(`${type} video ref is null, skipping seek`);
       return;
     }
 
     const videoStatus = type === "coach" ? status.coach : status.learner;
     if (!videoStatus.isLoaded) {
-      console.log(`${type} video not loaded yet, skipping seek`);
       return;
     }
 
@@ -207,9 +187,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
         toleranceMillisBefore: 100,
         toleranceMillisAfter: 100,
       });
-    } catch (error) {
-      console.log("Seek error:", error);
-    }
+    } catch (error) {}
 
     setTimeout(() => {
       setIsSeeking((prev) => ({ ...prev, [type]: false }));
@@ -238,12 +216,12 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       type === "coach" ? status.coach.position : status.learner.position;
     const sliderVal =
       type === "coach" ? sliderValues.coach : sliderValues.learner;
-    
+
     // While seeking, show the slider value
     if (isTypeSeeking) {
       return sliderVal;
     }
-    
+
     // When not seeking, always show the actual video position
     return currentPos;
   };
@@ -356,7 +334,12 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
 
               {/* Coach Label - Bottom Left - Hidden at 100% opacity */}
               {opacityDisplay < 1 && (
-                <View style={[styles.overlayCoachLabel, { opacity: 1 - opacityDisplay }]}>
+                <View
+                  style={[
+                    styles.overlayCoachLabel,
+                    { opacity: 1 - opacityDisplay },
+                  ]}
+                >
                   <Text style={styles.overlayLabelText}>HLV</Text>
                 </View>
               )}

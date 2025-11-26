@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { CoachDetailModal } from "@/components/coach/CoachDetailModal";
 import CoursesHeader from "@/components/learner/courses/CoursesHeader";
 import LocationSelectionModal from "@/components/learner/courses/LocationSelectionModal";
 import type {
@@ -8,7 +9,9 @@ import type {
   PaymentLinkResponse,
   Province,
 } from "@/components/learner/courses/types";
+import coachService from "@/services/coach.service";
 import { get, post } from "@/services/http/httpService";
+import type { CoachDetail } from "@/types/coach";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -99,6 +102,10 @@ export default function CoursesScreen() {
   );
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
+  const [showCoachModal, setShowCoachModal] = useState(false);
+  const [coachDetail, setCoachDetail] = useState<CoachDetail | null>(null);
+  const [coachFeedbacks, setCoachFeedbacks] = useState<any[]>([]);
+  const [loadingCoachDetail, setLoadingCoachDetail] = useState(false);
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [initializing, setInitializing] = useState(true);
@@ -109,7 +116,7 @@ export default function CoursesScreen() {
       setProvinces(res.data || []);
       return res.data || [];
     } catch (error) {
-      console.error("Failed to fetch provinces:", error);
+       
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -131,7 +138,7 @@ export default function CoursesScreen() {
       );
       setDistricts(res.data || []);
     } catch (error) {
-      console.error("Failed to fetch districts:", error);
+       
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -193,7 +200,7 @@ export default function CoursesScreen() {
           }
         }
       } catch (error) {
-        console.error("Failed to load user location:", error);
+         
       }
     },
     []
@@ -288,7 +295,7 @@ export default function CoursesScreen() {
 
         setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
       } catch (error) {
-        console.error("Failed to fetch coach ratings:", error);
+         
       }
     },
     [fetchCoachRating]
@@ -337,7 +344,7 @@ export default function CoursesScreen() {
           fetchCoachesRatings(userIds);
         }
       } catch (error) {
-        console.error("Failed to fetch courses:", error);
+         
         Toast.show({
           type: "error",
           text1: "Lỗi",
@@ -368,6 +375,29 @@ export default function CoursesScreen() {
       fetchCourses(page + 1, true);
     }
   }, [courses.length, fetchCourses, loadingMore, page, total]);
+
+  const loadCoachDetail = useCallback(async (coachUserId: number) => {
+    try {
+      setLoadingCoachDetail(true);
+      const coach = await coachService.getCoachById(coachUserId);
+      setCoachDetail(coach);
+      setCoachFeedbacks([]); // TODO: fetch feedbacks if needed
+    } catch (error) {
+       
+    } finally {
+      setLoadingCoachDetail(false);
+    }
+  }, []);
+
+  const handleOpenCoachModal = useCallback((course: Course) => {
+    if (course.createdBy?.id) {
+      setShowCourseDetailModal(false);
+      setTimeout(() => {
+        loadCoachDetail(course.createdBy.id);
+        setShowCoachModal(true);
+      }, 300);
+    }
+  }, [loadCoachDetail]);
 
   const handleRegister = useCallback(async (courseId: number) => {
     setProcessingPayment(courseId);
@@ -403,13 +433,13 @@ export default function CoursesScreen() {
         status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
 
       if (paid) {
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: `Mã đơn: ${orderCode || "N/A"}`,
-          position: "top",
-          visibilityTime: 4000,
-        });
+        // Toast.show({
+        //   type: "success",
+        //   text1: "Thành công",
+        //   text2: `Mã đơn: ${orderCode || "N/A"}`,
+        //   position: "top",
+        //   visibilityTime: 4000,
+        // });
       } else {
         Toast.show({
           type: "error",
@@ -803,38 +833,45 @@ export default function CoursesScreen() {
                       <Text style={styles.modalCourseTitle}>
                         {selectedCourse.name}
                       </Text>
-                      <View style={styles.modalCoachRow}>
-                        <View style={styles.coachAvatarLarge}>
-                          <Text style={styles.coachAvatarTextLarge}>
-                            {selectedCourse.createdBy?.fullName?.[0] || "C"}
-                          </Text>
-                        </View>
-                        <View>
-                          <Text style={styles.coachNameLarge}>
-                            {selectedCourse.createdBy?.fullName ||
-                              "Huấn luyện viên"}
-                          </Text>
-                          {selectedCourse.createdBy?.id &&
-                            coachRatings[selectedCourse.createdBy.id] !==
-                              undefined && (
-                              <View style={styles.ratingRow}>
-                                <Ionicons
-                                  name="star"
-                                  size={12}
-                                  color="#F59E0B"
-                                />
-                                <Text style={styles.ratingValue}>
-                                  {coachRatings[
-                                    selectedCourse.createdBy.id
-                                  ].toFixed(1)}{" "}
-                                  <Text style={styles.ratingLabel}>
-                                    đánh giá
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleOpenCoachModal(selectedCourse)
+                        }
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.modalCoachRow}>
+                          <View style={styles.coachAvatarLarge}>
+                            <Text style={styles.coachAvatarTextLarge}>
+                              {selectedCourse.createdBy?.fullName?.[0] || "C"}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={styles.coachNameLarge}>
+                              {selectedCourse.createdBy?.fullName ||
+                                "Huấn luyện viên"}
+                            </Text>
+                            {selectedCourse.createdBy?.id &&
+                              coachRatings[selectedCourse.createdBy.id] !==
+                                undefined && (
+                                <View style={styles.ratingRow}>
+                                  <Ionicons
+                                    name="star"
+                                    size={12}
+                                    color="#F59E0B"
+                                  />
+                                  <Text style={styles.ratingValue}>
+                                    {coachRatings[
+                                      selectedCourse.createdBy.id
+                                    ].toFixed(1)}{" "}
+                                    <Text style={styles.ratingLabel}>
+                                      đánh giá
+                                    </Text>
                                   </Text>
-                                </Text>
-                              </View>
-                            )}
+                                </View>
+                              )}
+                          </View>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     </View>
 
                     <View style={styles.sectionDivider} />
@@ -1048,6 +1085,16 @@ export default function CoursesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Coach Detail Modal */}
+      <CoachDetailModal
+        visible={showCoachModal}
+        coachDetail={coachDetail}
+        feedbacks={coachFeedbacks}
+        courseStatus={selectedCourse?.status}
+        onClose={() => setShowCoachModal(false)}
+        onCredentialPress={() => {}}
+      />
 
       {/* Province Modal */}
       <LocationSelectionModal
