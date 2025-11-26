@@ -1,9 +1,11 @@
+import { get } from "@/services/http/httpService";
 import type { CoachDetail } from "@/types/coach";
 import { Feedback } from "@/types/feecbacks";
 import { parseStringArray } from "@/utils/parseStringArray";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     Image,
     Modal,
     ScrollView,
@@ -16,7 +18,7 @@ import {
 type Props = {
   visible: boolean;
   coachDetail: CoachDetail | null;
-  feedbacks: Feedback[];
+  feedbacks?: Feedback[];
   courseStatus?: string;
   onClose: () => void;
   onCredentialPress: (credential: any) => void;
@@ -25,12 +27,34 @@ type Props = {
 export function CoachDetailModal({
   visible,
   coachDetail,
-  feedbacks,
   courseStatus,
   onClose,
   onCredentialPress,
 }: Props) {
   const [expandedCredential, setExpandedCredential] = useState<any>(null);
+  const [coachFeedbacks, setCoachFeedbacks] = useState<Feedback[]>([]);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+
+  // Fetch coach feedbacks when modal opens
+  useEffect(() => {
+    if (visible && coachDetail?.user?.id) {
+      fetchCoachFeedbacks(coachDetail.user.id);
+    }
+  }, [visible, coachDetail?.user?.id]);
+
+  const fetchCoachFeedbacks = async (coachUserId: number) => {
+    try {
+      setLoadingFeedbacks(true);
+      const res = await get<Feedback[]>(`/v1/feedbacks/coaches/${coachUserId}`);
+      console.log("Fetched coach feedbacks:", res.data);
+      setCoachFeedbacks((res.data as any).metadata || []);
+    } catch (error) {
+      console.error("Failed to fetch coach feedbacks:", error);
+      setCoachFeedbacks([]);
+    } finally {
+      setLoadingFeedbacks(false);
+    }
+  };
 
   if (!coachDetail) return null;
 
@@ -282,74 +306,120 @@ export function CoachDetailModal({
             </View>
 
             {/* Feedbacks Section */}
-            {feedbacks && feedbacks.length > 0 && (
+            {!loadingFeedbacks && (
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>
-                  Đánh giá{" "}
-                  <Text style={styles.countBadge}>({feedbacks.length})</Text>
+                  Đánh giá {coachFeedbacks ? coachFeedbacks.length : 0}{" "}
+                  <Text style={styles.countBadge}></Text>
                 </Text>
 
-                {feedbacks.length === 0 ? (
+                {!coachFeedbacks || coachFeedbacks.length === 0 ? (
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
                   </View>
                 ) : (
                   <View style={{ gap: 12 }}>
-                    {feedbacks.map((feedback, index) => (
-                      <View
-                        key={feedback.id || index}
-                        style={styles.feedbackCard}
-                      >
-                        <View style={styles.feedbackTop}>
-                          <View style={styles.userInfo}>
-                            <View style={styles.avatarPlaceholder}>
-                              <Text style={styles.avatarText}>
-                                {feedback.isAnonymous
-                                  ? "A"
-                                  : (feedback as any).createdBy
-                                      ?.fullName?.[0] || "U"}
-                              </Text>
-                            </View>
-                            <View>
-                              <Text style={styles.userName}>
-                                {feedback.isAnonymous
-                                  ? "Ẩn danh"
-                                  : (feedback as any).createdBy?.fullName ||
-                                    "Người dùng"}
-                              </Text>
-                              <Text style={styles.feedbackTime}>
-                                {formatDateTime(feedback.createdAt)}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.starsRow}>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Ionicons
-                                key={star}
-                                name={
-                                  star <= feedback.rating
-                                    ? "star"
-                                    : "star-outline"
-                                }
-                                size={14}
-                                color={
-                                  star <= feedback.rating
-                                    ? "#F59E0B"
-                                    : "#E5E7EB"
-                                }
-                              />
-                            ))}
-                          </View>
+                    {/* Coach Feedbacks */}
+                    {coachFeedbacks && coachFeedbacks.length > 0 && (
+                      <View>
+                        <Text style={styles.feedbackGroupTitle}>
+                          Đánh giá về huấn luyện viên
+                        </Text>
+                        <View style={{ gap: 12 }}>
+                          {coachFeedbacks.map(
+                            (feedback: Feedback, index: number) => (
+                              <View
+                                key={`coach-${feedback.id || index}`}
+                                style={styles.feedbackCard}
+                              >
+                                <View style={styles.feedbackTop}>
+                                  <View style={styles.userInfo}>
+                                    <View style={styles.avatarPlaceholder}>
+                                      <Text style={styles.avatarText}>
+                                        {feedback.isAnonymous
+                                          ? "A"
+                                          : (feedback as any).createdBy
+                                              ?.fullName?.[0] || "U"}
+                                      </Text>
+                                    </View>
+                                    <View>
+                                      <Text style={styles.userName}>
+                                        {feedback.isAnonymous
+                                          ? "Ẩn danh"
+                                          : (feedback as any).createdBy
+                                              ?.fullName || "Người dùng"}
+                                      </Text>
+                                      <Text style={styles.feedbackTime}>
+                                        {formatDateTime(feedback.createdAt)}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                  <View style={styles.starsRow}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Ionicons
+                                        key={star}
+                                        name={
+                                          star <= feedback.rating
+                                            ? "star"
+                                            : "star-outline"
+                                        }
+                                        size={14}
+                                        color={
+                                          star <= feedback.rating
+                                            ? "#F59E0B"
+                                            : "#E5E7EB"
+                                        }
+                                      />
+                                    ))}
+                                  </View>
+                                </View>
+
+                                {/* Course Info */}
+                                {(feedback as any).course && (
+                                  <View style={styles.courseInfoBox}>
+                                    <Ionicons
+                                      name="book-outline"
+                                      size={14}
+                                      color="#059669"
+                                    />
+                                    <View style={{ flex: 1 }}>
+                                      <Text style={styles.courseLabel}>
+                                        Khóa học:
+                                      </Text>
+                                      <Text
+                                        style={styles.courseNameText}
+                                        numberOfLines={1}
+                                      >
+                                        {(feedback as any).course?.name ||
+                                          "Khóa học"}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                )}
+
+                                {feedback.comment && (
+                                  <Text style={styles.commentText}>
+                                    {feedback.comment}
+                                  </Text>
+                                )}
+                              </View>
+                            )
+                          )}
                         </View>
-                        {feedback.comment && (
-                          <Text style={styles.commentText}>
-                            {feedback.comment}
-                          </Text>
-                        )}
                       </View>
-                    ))}
+                    )}
                   </View>
                 )}
+              </View>
+            )}
+
+            {/* Loading Feedbacks State */}
+            {loadingFeedbacks && (
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Đánh giá</Text>
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="small" color="#059669" />
+                </View>
               </View>
             )}
           </View>
@@ -556,6 +626,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  feedbackGroupTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#059669",
+    marginBottom: 8,
+    marginTop: 8,
+  },
 
   emptyState: {
     alignItems: "center",
@@ -620,6 +697,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#4B5563",
     lineHeight: 20,
+  },
+  courseInfoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
+  },
+  courseLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  courseNameText: {
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "700",
+    marginTop: 2,
   },
 
   expandedImageContainer: {

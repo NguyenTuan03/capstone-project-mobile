@@ -244,7 +244,12 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       onRequestClose={onClose}
       presentationStyle="fullScreen"
     >
-      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.container,
+          { paddingBottom: insets.bottom, paddingTop: insets.top },
+        ]}
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#FFFFFF" />

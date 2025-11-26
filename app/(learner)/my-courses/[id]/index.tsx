@@ -20,12 +20,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 type LearnerCourseDetail = BaseCourse & {
   sessions?: Session[];
 };
+
 
 export default function CourseDetailScreen() {
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function CourseDetailScreen() {
 
       const [courseRes, feedbacksRes] = await Promise.allSettled([
         get<LearnerCourseDetail>(`/v1/courses/${courseId}`),
-        get<Feedback[]>(`/v1/feedbacks/coaches/${course?.createdBy.id}`),
+        get<Feedback[]>(`/v1/feedbacks/courses/${courseId}`),
       ]);
 
       if (courseRes.status === "fulfilled") {
@@ -72,21 +73,21 @@ export default function CourseDetailScreen() {
             );
             setCoachDetail(coachData);
           } catch (coachError) {
-             
+            console.error("Lỗi khi tải thông tin huấn luyện viên:", coachError);
           }
         }
       } else {
-         
+        console.error("Lỗi khi tải chi tiết khóa học:", courseRes.reason);
         setCourse(null);
       }
 
       if (feedbacksRes.status === "fulfilled") {
         setFeedbacks(feedbacksRes.value.data || []);
       } else {
-         
+        console.error("Lỗi khi tải feedbacks:", feedbacksRes.reason);
       }
     } catch (error) {
-       
+      console.error("Lỗi khi tải chi tiết khóa học:", error);
       Alert.alert("Lỗi", "Không thể tải chi tiết khóa học");
     } finally {
       setLoading(false);
@@ -127,7 +128,7 @@ export default function CourseDetailScreen() {
                 ]
               );
             } catch (err: any) {
-               
+              console.error("Failed to cancel course:", err);
               Alert.alert(
                 "Lỗi",
                 err?.response?.data?.message ||
@@ -182,7 +183,7 @@ export default function CourseDetailScreen() {
         },
       ]);
     } catch (err: any) {
-       
+      console.error("Failed to submit feedback:", err);
       Alert.alert(
         "Lỗi",
         err?.response?.data?.message ||
