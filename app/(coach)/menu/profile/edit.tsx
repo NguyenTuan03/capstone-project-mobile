@@ -4,18 +4,49 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+
+const normalizePhoneNumber = (value: string): string | null => {
+  if (!value) return null;
+  const trimmed = value.replace(/\s+/g, "");
+  const digitsOnly = trimmed.startsWith("+")
+    ? trimmed.slice(1)
+    : trimmed;
+  if (!/^\d+$/.test(digitsOnly)) {
+    return null;
+  }
+
+  if (digitsOnly.startsWith("84")) {
+    const nationalNumber = digitsOnly.slice(2);
+    if (nationalNumber.length === 9) {
+      return `+84${nationalNumber}`;
+    }
+  }
+
+  if (digitsOnly.startsWith("0")) {
+    const nationalNumber = digitsOnly.slice(1);
+    if (nationalNumber.length === 9) {
+      return `+84${nationalNumber}`;
+    }
+  }
+
+  if (digitsOnly.length === 9) {
+    return `+84${digitsOnly}`;
+  }
+
+  return null;
+};
 
 export default function EditCoachProfileScreen() {
   const router = useRouter();
@@ -40,21 +71,20 @@ export default function EditCoachProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const validateForm = () => {
+const validateForm = () => {
     const errors: Record<string, string> = {};
+  const normalizedPhone = normalizePhoneNumber(phoneNumber);
 
-    if (!fullName.trim()) {
-      errors.fullName = "Họ và tên không được để trống";
-    }
+  if (!fullName.trim()) {
+    errors.fullName = "Họ và tên không được để trống";
+  }
 
-    if (!phoneNumber.trim()) {
-      errors.phoneNumber = "Số điện thoại không được để trống";
-    } else if (!/^0[0-9]{8,9}$/.test(phoneNumber.trim())) {
-      errors.phoneNumber =
-        "Số điện thoại không hợp lệ (phải bắt đầu bằng 0 và có 10 chữ số)";
-    }
+  if (!normalizedPhone) {
+    errors.phoneNumber =
+      "Số điện thoại không hợp lệ (định dạng +84 và 9 chữ số)";
+  }
 
     if (!email.trim()) {
       errors.email = "Email không được để trống";
@@ -62,25 +92,29 @@ export default function EditCoachProfileScreen() {
       errors.email = "Email không hợp lệ";
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  setFieldErrors(errors);
+  return { isValid: Object.keys(errors).length === 0, normalizedPhone };
+};
 
-  const handleSave = async () => {
-    if (!validateForm()) return;
+const handleSave = async () => {
+  const { isValid, normalizedPhone } = validateForm();
+  if (!isValid || !normalizedPhone) return;
 
     setError(null);
     setSuccess(false);
     setLoading(true);
 
-    try {
-      const payload = {
-        fullName: fullName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        email: email.trim(),
-      };
+  try {
+    const token = await storageService.getToken();
+    const payload = {
+      fullName: fullName.trim(),
+      phoneNumber: normalizedPhone,
+      email: email.trim(),
+    };
 
-      await axios.put(`${API_URL}/v1/users/profile`, payload);
+    await axios.put(`${API_URL}/v1/users/profile`, payload, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
 
       setSuccess(true);
       
@@ -175,7 +209,7 @@ export default function EditCoachProfileScreen() {
               placeholderTextColor="#9CA3AF"
               value={phoneNumber}
               onChangeText={(text) => {
-                setPhoneNumber(text);
+      setPhoneNumber(text);
                 if (fieldErrors.phoneNumber) clearFieldError("phoneNumber");
               }}
               keyboardType="phone-pad"

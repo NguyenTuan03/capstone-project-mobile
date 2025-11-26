@@ -153,6 +153,7 @@ export default function CredentialsScreen() {
       });
 
       Alert.alert("Thành công", "Chứng chỉ đã được thêm thành công");
+      await loadCredentials();
     } catch (error) {
       console.error("Failed to add credential:", error);
       Alert.alert(
@@ -174,11 +175,6 @@ export default function CredentialsScreen() {
             // Use credential ID for deletion
             await credentialService.deleteCredential(String(credentialId));
 
-            // Update local state by filtering out the deleted credential
-            setCredentials((prevCredentials) =>
-              prevCredentials.filter((cred) => cred.id !== credentialId)
-            );
-
             // Also update stored user data
             const user = await storageService.getUser();
             if (user?.coach?.[0]) {
@@ -190,6 +186,7 @@ export default function CredentialsScreen() {
             }
 
             Alert.alert("Thành công", "Chứng chỉ đã được xóa");
+            await loadCredentials();
           } catch (error) {
             console.error("Failed to delete credential:", error);
             Alert.alert(
@@ -224,9 +221,7 @@ export default function CredentialsScreen() {
         selectedImage || undefined
       );
 
-      // Reload credentials from API
-      const response = await credentialService.getCredentials();
-      setCredentials(response);
+      await loadCredentials();
 
       setDetailModalVisible(false);
       setSelectedImage(null);
