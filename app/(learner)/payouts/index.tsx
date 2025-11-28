@@ -1,18 +1,19 @@
-import { get, put } from "@/services/http/httpService";
+import { get, post, put } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,6 +28,9 @@ export default function LearnerPayoutsScreen() {
   const [bankId, setBankId] = useState<string | null>(null);
   const [accountNumber, setAccountNumber] = useState("");
   const [bankList, setBankList] = useState<{ id: string; name: string }[]>([]);
+  const [withdrawalModalVisible, setWithdrawalModalVisible] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false);
 
   useEffect(() => {
     const fetchBanks = async () => {
@@ -120,6 +124,57 @@ export default function LearnerPayoutsScreen() {
     }
   };
 
+  const handleWithdrawal = async () => {
+    if (!withdrawalAmount || parseFloat(withdrawalAmount) <= 0) {
+      Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ.");
+      return;
+    }
+
+    if (!bankId || !accountNumber) {
+      Alert.alert("Lỗi", "Vui lòng liên kết thông tin ngân hàng trước.");
+      return;
+    }
+
+    try {
+      setWithdrawalLoading(true);
+      const token = await storageService.getToken();
+      const payload = parseFloat(withdrawalAmount);
+
+      await post(`${API_URL}/v1/wallets/withdrawal`, 
+        { amount: payload },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setWithdrawalModalVisible(false);
+      setWithdrawalAmount("");
+      await fetchWalletData();
+      
+      Alert.alert(
+        "Thành công",
+        "Yêu cầu rút tiền của bạn đã thành công",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Refresh the transaction list
+              fetchWalletData();
+            },
+          },
+        ]
+      );
+    } catch (err: any) {
+      console.error("❌ Lỗi rút tiền:", err.response?.data || err.message);
+      const errorMessage =
+        err.response?.data?.message ||
+        "Không thể xử lý yêu cầu rút tiền. Vui lòng thử lại.";
+      Alert.alert("Lỗi", errorMessage);
+    } finally {
+      setWithdrawalLoading(false);
+    }
+  };
+
   const formatCurrency = (amount: any) => {
     const num = parseFloat(amount);
     if (isNaN(num)) return "0 ₫";
@@ -197,7 +252,10 @@ export default function LearnerPayoutsScreen() {
                 <Text style={styles.balanceAmount}>
                   {formatCurrency(Number(wallet?.currentBalance))}
                 </Text>
-                <TouchableOpacity style={styles.withdrawButton}>
+                <TouchableOpacity 
+                  style={styles.withdrawButton}
+                  onPress={() => setWithdrawalModalVisible(true)}
+                >
                   <Ionicons name="cash" size={18} color="#FFFFFF" />
                   <Text style={styles.withdrawButtonText}>Rút tiền</Text>
                 </TouchableOpacity>
@@ -288,6 +346,133 @@ export default function LearnerPayoutsScreen() {
           contentContainerStyle={styles.scrollContent}
         />
       )}
+
+      {/* Withdrawal Modal */}
+      <Modal
+        visible={withdrawalModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => !withdrawalLoading && setWithdrawalModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => !withdrawalLoading && setWithdrawalModalVisible(false)}
+              disabled={withdrawalLoading}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={24} color="#111827" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Rút tiền</Text>
+            <View style={{ width: 36 }} />
+          </View>
+
+          {/* Modal Content */}
+          <View style={styles.modalContent}>
+            {/* Bank Info */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Thông tin ngân hàng</Text>
+              <View style={styles.bankInfoCard}>
+                <View style={styles.bankInfoRow}>
+                  <Text style={styles.bankInfoLabel}>Ngân hàng</Text>
+                  <Text style={styles.bankInfoValue}>
+                    {wallet?.bank?.name || "Chưa liên kết"}
+                  </Text>
+                </View>
+                <View
+                  style={[styles.bankInfoRow, { borderBottomWidth: 0 }]}
+                >
+                  <Text style={styles.bankInfoLabel}>Tài khoản</Text>
+                  <Text style={styles.bankInfoValue}>
+                    {accountNumber
+                      ? `**** **** **** ${accountNumber.slice(-4)}`
+                      : "Chưa liên kết"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Current Balance */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Số dư khả dụng</Text>
+              <View style={styles.balanceDisplayCard}>
+                <Text style={styles.balanceDisplayAmount}>
+                  {formatCurrency(Number(wallet?.currentBalance || 0))}
+                </Text>
+              </View>
+            </View>
+
+            {/* Withdrawal Amount Input */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Số tiền cần rút</Text>
+              <View style={styles.amountInputContainer}>
+                <Text style={styles.amountCurrencySymbol}>₫</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  placeholder="Nhập số tiền"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="number-pad"
+                  value={withdrawalAmount}
+                  onChangeText={setWithdrawalAmount}
+                  editable={!withdrawalLoading}
+                />
+              </View>
+              <Text style={styles.amountHint}>
+                Tối thiểu: 100,000₫ | Tối đa:{" "}
+                {formatCurrency(Number(wallet?.currentBalance || 0))}
+              </Text>
+            </View>
+
+            {/* Withdrawal Fee Note */}
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={18} color="#059669" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoTitle}>Thông tin rút tiền</Text>
+                <Text style={styles.infoText}>
+                  • Phí rút tiền: 0₫{"\n"}
+                  • Thời gian xử lý: 1-3 ngày làm việc{"\n"}
+                  • Tiền sẽ được chuyển vào tài khoản đã liên kết
+                </Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setWithdrawalAmount("");
+                  setWithdrawalModalVisible(false);
+                }}
+                disabled={withdrawalLoading}
+              >
+                <Text style={styles.modalCancelButtonText}>Hủy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modalSubmitButton,
+                  withdrawalLoading && styles.modalSubmitButtonDisabled,
+                ]}
+                onPress={handleWithdrawal}
+                disabled={withdrawalLoading}
+              >
+                {withdrawalLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={16} color="#FFFFFF" />
+                    <Text style={styles.modalSubmitButtonText}>
+                      Xác nhận rút tiền
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -563,5 +748,184 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#9CA3AF",
     fontWeight: "500",
+  },
+  // Withdrawal Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  modalContent: {
+    flex: 1,
+    padding: 12,
+  },
+  modalSection: {
+    marginBottom: 16,
+  },
+  modalSectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  bankInfoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  bankInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  bankInfoLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  bankInfoValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  balanceDisplayCard: {
+    backgroundColor: "#ECFDF5",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
+    alignItems: "center",
+  },
+  balanceDisplayAmount: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#059669",
+  },
+  amountInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 12,
+    marginBottom: 6,
+  },
+  amountCurrencySymbol: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#059669",
+    marginRight: 4,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    paddingVertical: 12,
+  },
+  amountHint: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginLeft: 4,
+  },
+  infoBox: {
+    flexDirection: "row",
+    backgroundColor: "#ECFDF5",
+    borderRadius: 12,
+    padding: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
+    marginBottom: 16,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 11,
+    color: "#047857",
+    lineHeight: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  modalCancelButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  modalSubmitButton: {
+    flex: 1,
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  modalSubmitButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalSubmitButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 });

@@ -88,7 +88,7 @@ export default function CoachStudentsScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card]}
         activeOpacity={0.7}
         onPress={() => {
           router.push({

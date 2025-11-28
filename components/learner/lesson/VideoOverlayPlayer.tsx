@@ -247,7 +247,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       <View
         style={[
           styles.container,
-          { paddingBottom: insets.bottom, paddingTop: insets.top },
+          { paddingBottom: insets.bottom },
         ]}
       >
         <View style={styles.header}>

@@ -158,7 +158,7 @@ export default function CoachPayoutsScreen() {
       
       Alert.alert(
         "Thành công",
-        "Yêu cầu rút tiền của bạn đã được gửi. Vui lòng chờ xử lý trong 1-3 ngày làm việc.",
+        "Yêu cầu rút tiền của bạn đã thành công",
         [
           {
             text: "OK",

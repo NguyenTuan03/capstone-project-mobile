@@ -1,21 +1,21 @@
+import VideoOverlayPlayer from "@/components/learner/lesson/VideoOverlayPlayer";
 import { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 import React, { useEffect, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function SessionVideosScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { sessionId, sessionData, learnerVideosData } = useLocalSearchParams<{
+  const { sessionData, learnerVideosData } = useLocalSearchParams<{
     sessionId: string;
     sessionData?: string;
     learnerVideosData?: string;
@@ -26,6 +26,10 @@ export default function SessionVideosScreen() {
   const [selectedVideo, setSelectedVideo] = useState<"coach" | number | null>(
     null
   );
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [selectedCoachVideo, setSelectedCoachVideo] = useState<string | null>(null);
+  const [selectedLearnerVideo, setSelectedLearnerVideo] = useState<LearnerVideo | null>(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
 
   useEffect(() => {
     if (sessionData) {
@@ -53,9 +57,31 @@ export default function SessionVideosScreen() {
   const hasCoachVideo = coachVideo?.publicUrl;
   const hasLearnerVideos = learnerVideos.length > 0;
 
+  const getLatestAiResult = (video: LearnerVideo): any => {
+    if (
+      !video.aiVideoComparisonResults ||
+      !Array.isArray(video.aiVideoComparisonResults) ||
+      video.aiVideoComparisonResults.length === 0
+    ) {
+      return null;
+    }
+    return [...video.aiVideoComparisonResults].sort(
+      (a, b) =>
+        (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+        (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+    )[0];
+  };
+
+  const handleCompareVideos = (learnerVideo: LearnerVideo) => {
+    setSelectedCoachVideo(coachVideo?.publicUrl || null);
+    setSelectedLearnerVideo(learnerVideo);
+    setAiAnalysisResult(getLatestAiResult(learnerVideo));
+    setOverlayVisible(true);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
@@ -92,22 +118,38 @@ export default function SessionVideosScreen() {
                 />
               ) : (
                 <TouchableOpacity
-                  style={styles.videoThumbnail}
+                  style={styles.videoThumbnailContainer}
                   onPress={() => setSelectedVideo("coach")}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.thumbnailPlaceholder}>
-                    <Ionicons name="play-circle" size={48} color="#FFFFFF" />
+                  <View style={styles.thumbnailImageWrapper}>
+                    <Image
+                      source={{
+                        uri: coachVideo.thumbnailUrl || "https://via.placeholder.com/400x300?text=Video",
+                      }}
+                      style={styles.thumbnailImage}
+                      resizeMode="cover"
+                    />
+                    {coachVideo.duration && (
+                      <View style={styles.durationBadge}>
+                        <Text style={styles.durationText}>
+                          {Math.floor(coachVideo.duration / 60)}
+                          {":"}
+                          {String(Math.round(coachVideo.duration % 60)).padStart(
+                            2,
+                            "0"
+                          )}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.playIconOverlay}>
+                      <Ionicons name="play-circle" size={48} color="#FFFFFF" />
+                    </View>
                   </View>
                   <View style={styles.videoInfo}>
                     <Text style={styles.videoTitle} numberOfLines={2}>
                       {coachVideo.title || "Video bài giảng"}
                     </Text>
-                    {coachVideo.duration && (
-                      <Text style={styles.videoDuration}>
-                        {Math.round(coachVideo.duration / 60)} phút
-                      </Text>
-                    )}
                   </View>
                 </TouchableOpacity>
               )}
@@ -133,28 +175,56 @@ export default function SessionVideosScreen() {
                     onClose={() => setSelectedVideo(null)}
                   />
                 ) : (
-                  <TouchableOpacity
-                    style={styles.videoThumbnail}
-                    onPress={() => setSelectedVideo(video.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.thumbnailPlaceholder}>
-                      <Ionicons name="play-circle" size={48} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.videoInfo}>
-                      <Text style={styles.videoTitle} numberOfLines={2}>
-                        Video nộp bài {index + 1}
-                      </Text>
-                      <Text style={styles.videoMeta}>
-                        {new Date(video.createdAt).toLocaleDateString("vi-VN")}
-                      </Text>
-                      {video.duration && (
-                        <Text style={styles.videoDuration}>
-                          {Math.round(video.duration / 60)} phút
+                  <View>
+                    <TouchableOpacity
+                      style={styles.videoThumbnailContainer}
+                      onPress={() => setSelectedVideo(video.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.thumbnailImageWrapper}>
+                        <Image
+                          source={{
+                            uri: video.thumbnailUrl || "https://via.placeholder.com/400x300?text=Video",
+                          }}
+                          style={styles.thumbnailImage}
+                          resizeMode="cover"
+                        />
+                        {video.duration && (
+                          <View style={styles.durationBadge}>
+                            <Text style={styles.durationText}>
+                              {Math.floor(video.duration / 60)}
+                              {":"}
+                              {String(Math.round(video.duration % 60)).padStart(
+                                2,
+                                "0"
+                              )}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={styles.playIconOverlay}>
+                          <Ionicons name="play-circle" size={48} color="#FFFFFF" />
+                        </View>
+                      </View>
+                      <View style={styles.videoInfo}>
+                        <Text style={styles.videoTitle} numberOfLines={2}>
+                          Video nộp bài {index + 1}
                         </Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
+                        <Text style={styles.videoMeta}>
+                          {new Date(video.createdAt).toLocaleDateString("vi-VN")}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    {hasCoachVideo && (
+                      <TouchableOpacity
+                        style={styles.compareButton}
+                        onPress={() => handleCompareVideos(video)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="layers" size={16} color="#FFFFFF" />
+                        <Text style={styles.compareButtonText}>So sánh video</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
             ))}
@@ -169,6 +239,17 @@ export default function SessionVideosScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Video Overlay Player */}
+      {selectedCoachVideo && selectedLearnerVideo && (
+        <VideoOverlayPlayer
+          visible={overlayVisible}
+          onClose={() => setOverlayVisible(false)}
+          coachVideoUrl={selectedCoachVideo}
+          learnerVideoUrl={selectedLearnerVideo.publicUrl || ""}
+          aiAnalysisResult={aiAnalysisResult}
+        />
+      )}
     </View>
   );
 }
@@ -179,7 +260,11 @@ interface VideoPlayerProps {
   onClose: () => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ source, title, onClose }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  source,
+  title,
+  onClose,
+}) => {
   const player = useVideoPlayer(source, (player) => {
     player.loop = false;
     player.play();
@@ -265,18 +350,43 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  videoThumbnail: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 12,
+  videoThumbnailContainer: {
+    padding: 12,
+    gap: 10,
   },
-  thumbnailPlaceholder: {
-    width: 120,
-    height: 80,
-    backgroundColor: "#1F2937",
+  thumbnailImageWrapper: {
+    position: "relative",
+    width: "100%",
+    height: 180,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    overflow: "hidden",
+    backgroundColor: "#1F2937",
+  },
+  thumbnailImage: {
+    width: "100%",
+    height: "100%",
+  },
+  playIconOverlay: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginTop: -24,
+    marginLeft: -24,
+  },
+  durationBadge: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  durationText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
   },
   videoInfo: {
     flex: 1,
@@ -333,5 +443,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6B7280",
   },
+  compareButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 12,
+    backgroundColor: "#059669",
+    borderRadius: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  compareButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
+  },
 });
-
