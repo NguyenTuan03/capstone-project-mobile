@@ -1,3 +1,5 @@
+import HowToPlayModal from "@/components/learner/HowToPlayModal";
+import HowToPlayPreview from "@/components/learner/HowToPlayPreview";
 import { LearnerProgress } from "@/types/learner-progress";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -35,6 +37,7 @@ export default function HomeScreen() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [progresses, setProgresses] = useState<LearnerProgress[]>([]);
   const [loadingProgress, setLoadingProgress] = useState(true);
+  const [howToPlayModalVisible, setHowToPlayModalVisible] = useState(false);
 
   const loadTodaySessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -211,6 +214,9 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* How to Play Section */}
+        <HowToPlayPreview onPress={() => setHowToPlayModalVisible(true)} />
+
         {/* AI Analysis Quick */}
         {/* <View style={[styles.card, styles.aiCard]}>
           <View style={styles.aiRow}>
@@ -291,6 +297,12 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* How to Play Modal */}
+      <HowToPlayModal
+        visible={howToPlayModalVisible}
+        onClose={() => setHowToPlayModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

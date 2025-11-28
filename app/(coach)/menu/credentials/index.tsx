@@ -46,19 +46,19 @@ export default function CredentialsScreen() {
     useState<Credential | null>(null);
   const [isEditingModal, setIsEditingModal] = useState(false);
 
+  const loadCredentials = async () => {
+    try {
+      const response = await credentialService.getCredentials();
+      setCredentials(response);
+    } catch (error) {
+      console.error("Failed to load credentials:", error);
+      setCredentials([]);
+    }
+  };
+
   // Load credentials from API
   useFocusEffect(
     useCallback(() => {
-      const loadCredentials = async () => {
-        try {
-          const response = await credentialService.getCredentials();
-
-          setCredentials(response);
-        } catch (error) {
-          console.error("Failed to load credentials:", error);
-          setCredentials([]);
-        }
-      };
       loadCredentials();
     }, [])
   );

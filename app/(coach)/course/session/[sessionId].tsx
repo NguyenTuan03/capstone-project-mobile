@@ -333,8 +333,8 @@ const SessionDetailScreen: React.FC = () => {
               </View>
             )}
           </View>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Video mẫu của Coach </Text>
+          <View style={[styles.section, { paddingBottom: insets.bottom + 16 }]}>
+            <Text style={styles.sectionTitle}>Video</Text>
             {coachVideos ? (
               <CoachVideoCard
                 video={coachVideos}
@@ -344,7 +344,7 @@ const SessionDetailScreen: React.FC = () => {
               />
             ) : (
               <View style={styles.emptyCard}>
-                <Ionicons name="videocam-outline" size={36} color="#9CA3AF" />
+                <Ionicons name="videocam-outline" size={48} color="#D1D5DB" />
                 <Text style={styles.emptyText}>Chưa có video mẫu</Text>
               </View>
             )}
@@ -388,7 +388,7 @@ const SessionDetailScreen: React.FC = () => {
           setSelectedVideoUrl(null);
         }}
       >
-        <View style={(styles.videoModalContainer, { paddingTop: insets.top })}>
+        <View style={[styles.videoModalContainer, { paddingTop: insets.top }]}>
           <View style={styles.videoModalHeader}>
             <TouchableOpacity
               style={styles.videoModalCloseButton}
@@ -399,7 +399,7 @@ const SessionDetailScreen: React.FC = () => {
             >
               <Ionicons name="close" size={24} color="#111827" />
             </TouchableOpacity>
-            <Text style={styles.videoModalTitle}>Video mẫu</Text>
+            <Text style={styles.videoModalTitle}>Video</Text>
             <View style={{ width: 40 }} />
           </View>
           {videoSource && (
@@ -410,7 +410,6 @@ const SessionDetailScreen: React.FC = () => {
                 fullscreenOptions={{
                   enable: true,
                 }}
-                // allowsPictureInPicture
               />
             </View>
           )}
@@ -591,21 +590,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   backButton: {
-    padding: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     flex: 1,
-    marginHorizontal: 12,
-    fontSize: 16,
+    marginHorizontal: 10,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
+    maxWidth: 220,
   },
   loadingContainer: {
     flex: 1,
@@ -617,39 +623,40 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: "#FFFFFF",
-    padding: 16,
-    marginTop: 12,
-    marginHorizontal: 16,
-    borderRadius: 16,
+    padding: 12,
+    marginTop: 10,
+    marginHorizontal: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 16,
+    marginBottom: 10,
+    letterSpacing: 0.2,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6B7280",
     flex: 1,
-    marginRight: 12,
+    marginRight: 10,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#111827",
     flex: 1,
     textAlign: "right",
@@ -685,16 +692,16 @@ const styles = StyleSheet.create({
   // Coach Video Card Styles
   coachCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-    gap: 12,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+    gap: 8,
   },
   coachHeaderRow: {
     flexDirection: "row",
@@ -705,22 +712,22 @@ const styles = StyleSheet.create({
   coachTitleContainer: {
     flex: 1,
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   videoIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#F5F3FF",
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: "#ECFDF5",
     alignItems: "center",
     justifyContent: "center",
   },
   coachTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 22,
+    lineHeight: 18,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -733,9 +740,9 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   coachDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#4B5563",
-    lineHeight: 20,
+    lineHeight: 18,
   },
   metaTagsRow: {
     flexDirection: "row",
@@ -783,21 +790,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2563EB",
+    backgroundColor: "#059669",
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    gap: 8,
-    shadowColor: "#2563EB",
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    gap: 6,
+    shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 2,
   },
   primaryActionText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   processingBadge: {
     flex: 1,
@@ -819,10 +827,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconActionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "#F3F4F6",
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -865,15 +873,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#F9FAFB",
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderStyle: "dashed",
+    minHeight: 140,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#6B7280",
     textAlign: "center",
+    fontWeight: "500",
   },
   exerciseWrap: {
     borderWidth: 1,
@@ -942,81 +951,83 @@ const styles = StyleSheet.create({
   quizCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   quizCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
-    gap: 8,
+    marginBottom: 8,
+    gap: 6,
   },
   quizCardTitle: {
     flex: 1,
   },
   quizStepLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "600",
     color: "#6B7280",
-    marginBottom: 3,
+    marginBottom: 2,
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   quizCardTitleText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 17,
+    lineHeight: 15,
   },
   quizStatusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 5,
-    minWidth: 75,
+    minWidth: 65,
     alignItems: "center",
     fontWeight: "600",
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
   },
   quizDescriptionSection: {
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
     borderRadius: 6,
-    marginBottom: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: "#2563EB",
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#059669",
   },
   quizDescText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
     fontWeight: "400",
-    lineHeight: 15,
+    lineHeight: 14,
   },
   quickMetadataRow: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 8,
   },
   quickMetadataItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#EFF6FF",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    gap: 3,
+    backgroundColor: "#ECFDF5",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
     flex: 1,
   },
   quickMetadataTextBlue: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
-    color: "#2563EB",
+    color: "#059669",
   },
   quizActionsRow: {
     flexDirection: "row",
@@ -1052,24 +1063,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   videoModalCloseButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
   },
   videoModalTitle: {
     flex: 1,
-    marginHorizontal: 12,
-    fontSize: 16,
+    marginHorizontal: 10,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
     textAlign: "center",
