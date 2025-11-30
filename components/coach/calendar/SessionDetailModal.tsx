@@ -2,22 +2,21 @@ import { formatDate } from "@/utils/SessionFormat";
 import { Ionicons } from "@expo/vector-icons";
 import { default as React, useEffect, useState } from "react";
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import attendanceService from "../../../services/attendanceService";
 import configurationService from "../../../services/configurationService";
 import { useJWTAuth } from "../../../services/jwt-auth/JWTAuthProvider";
 import sessionService from "../../../services/sessionService";
-import videoConferenceService from "../../../services/videoConference.service";
 import { AttendanceStatus } from "../../../types/attendance";
 import { CalendarSession, SessionStatus } from "../../../types/session";
-// import VideoConference from "../../common/VideoConference";
+import GoogleMeetConference from "../../common/GoogleMeetConference";
 
 export enum EnrollmentStatus {
   PENDING_GROUP = "PENDING_GROUP",
@@ -46,8 +45,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   const [completeBeforeHours, setCompleteBeforeHours] = useState<number>(24);
   const { user } = useJWTAuth();
   const [isVCVisible, setIsVCVisible] = useState(false);
-  const [channelName, setChannelName] = useState("");
-  const [vcToken, setVcToken] = useState("");
+  const [meetLink, setMeetLink] = useState("");
 
   const [sessionData, setSessionData] = useState<CalendarSession | null>(
     session
@@ -193,8 +191,6 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           text: "Xác nhận",
           onPress: async () => {
             try {
-              
-
               const enrollments =
                 (sessionData.course as any)?.enrollments || [];
               const attendances = enrollments.map((en: any) => {
@@ -209,12 +205,10 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               });
 
               // Call session service to complete session and submit attendances
-              const res = await sessionService.completeAndCheckAttendance(
+              await sessionService.completeAndCheckAttendance(
                 sessionData.id,
                 attendances
               );
-
-              
 
               // Instead of fetching the session again, reload the app/page so the
               // caller context will re-mount and fetch fresh data.
@@ -278,13 +272,12 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
     }
 
     try {
-      const details = await videoConferenceService.getVideoConferenceDetails(
-        sessionData.courseId
-      );
-      setChannelName(details.channelName);
-      setVcToken(details.vcToken);
+      // For now, create a Google Meet URL format
+      // Backend should return meetLink in future
+      const meetUrl = `https://meet.google.com/${sessionData.course.googleMeetLink}`;
+      setMeetLink(meetUrl);
       setIsVCVisible(true);
-    } catch (error) {
+    } catch {
       Alert.alert("Lỗi", "Không thể tham gia lớp học trực tuyến");
     }
   };
@@ -332,7 +325,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </View>
 
           {/* Video Conference Button */}
-          {/* {sessionData.status !== SessionStatus.CANCELLED && (
+          {sessionData.status !== SessionStatus.CANCELLED && (
             <TouchableOpacity
               style={styles.vcButton}
               onPress={handleJoinVideoConference}
@@ -342,7 +335,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 Tham gia lớp học trực tuyến
               </Text>
             </TouchableOpacity>
-          )} */}
+          )}
 
           {/* Payment Warning */}
           <View style={styles.warningSection}>
@@ -567,13 +560,12 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </TouchableOpacity>
         </View>
       </View>
-      {/* <VideoConference
+      <GoogleMeetConference
         isVisible={isVCVisible}
         onClose={() => setIsVCVisible(false)}
-        channelName={channelName}
-        token={vcToken}
-        uid={user?.id || 0}
-      /> */}
+        meetLink={meetLink}
+        userName={user?.fullName || "Bạn"}
+      />
     </Modal>
   );
 };

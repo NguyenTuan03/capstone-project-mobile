@@ -4,11 +4,11 @@ import { Feedback } from "@/types/feecbacks";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 type Props = {
   course: Course;
@@ -143,7 +143,7 @@ const statusMap = (status: string) => {
 const levelMap = (lv?: string) => {
   const map: Record<string, string> = {
     BEGINNER: "Cơ bản",
-    INTERMEDIATE: "Trung cấp",
+    INTERMEDIATE: "Trung bình",
     ADVANCED: "Nâng cao",
   };
   return map[lv ?? ""] ?? lv ?? "";

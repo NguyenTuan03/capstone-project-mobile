@@ -24,7 +24,7 @@ const CourseCardComponent: FC<CourseCardProps> = ({
       course.level === "BEGINNER"
         ? "Cơ bản"
         : course.level === "INTERMEDIATE"
-        ? "Trung cấp"
+        ? "Trung bình"
         : "Nâng cao";
 
     const color =

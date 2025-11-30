@@ -16,17 +16,17 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -53,6 +53,7 @@ type CourseFormData = {
   schedules: Schedule[];
   court: Court | null;
   publicUrl?: string | null;
+  googleMeetLink?: string | null;
 };
 
 type SelectedCourseImage = {
@@ -105,10 +106,10 @@ export default function CreateEditCourseModal({
     initialData?.learningFormat || "GROUP"
   );
   const [minParticipants, setMinParticipants] = useState(
-    initialData?.minParticipants || ""
+    initialData?.minParticipants?.toString() || "2"
   );
   const [maxParticipants, setMaxParticipants] = useState(
-    initialData?.maxParticipants || ""
+    initialData?.maxParticipants?.toString() || "6"
   );
   const [pricePerParticipant, setPricePerParticipant] = useState(
     initialData?.pricePerParticipant || ""
@@ -137,6 +138,9 @@ export default function CreateEditCourseModal({
   const [selectedCourseImage, setSelectedCourseImage] =
     useState<SelectedCourseImage | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const [googleMeetLink, setGoogleMeetLink] = useState(
+    initialData?.googleMeetLink || ""
+  );
 
   // UI states
   const [showSubjectModal, setShowSubjectModal] = useState(false);
@@ -207,24 +211,28 @@ export default function CreateEditCourseModal({
         // Reset form with initial data
         setSelectedSubjectId(initialData.subjectId || null);
         setLearningFormat(initialData.learningFormat || "GROUP");
-        setMinParticipants(initialData.minParticipants || "");
-        setMaxParticipants(initialData.maxParticipants || "");
-        setPricePerParticipant(initialData.pricePerParticipant || "");
+        setMinParticipants(initialData.minParticipants?.toString() || "2");
+        setMaxParticipants(initialData.maxParticipants?.toString() || "6");
+        setPricePerParticipant(
+          initialData.pricePerParticipant?.toString() || ""
+        );
         setStartDate(initialData.startDate || "");
         setSelectedProvince(initialData.province || null);
         setSelectedDistrict(initialData.district || null);
         setSchedules(initialData.schedules || []);
+        setGoogleMeetLink(initialData.googleMeetLink || "");
       } else {
         // Reset form for create mode
         setSelectedSubjectId(null);
         setLearningFormat("GROUP");
-        setMinParticipants("");
-        setMaxParticipants("");
+        setMinParticipants("2");
+        setMaxParticipants("6");
         setPricePerParticipant("");
         setStartDate("");
         setSelectedProvince(null);
         setSelectedDistrict(null);
         setSchedules([]);
+        setGoogleMeetLink("");
         // Load user location as default for create mode
         loadUserLocation();
       }
@@ -513,8 +521,8 @@ export default function CreateEditCourseModal({
       setSubmitting(true);
 
       // Ensure minParticipants and maxParticipants are valid numbers
-      const minVal = parseInt(minParticipants) || 1;
-      const maxVal = parseInt(maxParticipants) || 10;
+      const minVal = parseInt(minParticipants) || 2;
+      const maxVal = parseInt(maxParticipants) || 6;
       const priceVal = parseInt(pricePerParticipant.replace(/,/g, "")) || 0;
 
       const payload = {
@@ -527,9 +535,8 @@ export default function CreateEditCourseModal({
         court: selectedCourt ? selectedCourt.id : undefined,
         schedules: schedules.length > 0 ? schedules : undefined,
         courseImage: selectedCourseImage || undefined,
+        googleMeetLink: googleMeetLink || undefined,
       };
-
-      
 
       await onSubmit(payload);
       onClose();
@@ -875,6 +882,26 @@ export default function CreateEditCourseModal({
               </View>
             )}
 
+            {/* Google Meet Link */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Link Google Meet</Text>
+              <View style={styles.googleMeetInputContainer}>
+                <Text style={styles.googleMeetPrefix}>
+                  https://meet.google.com/
+                </Text>
+                <TextInput
+                  style={styles.googleMeetInput}
+                  placeholder="abc-defg-xyz"
+                  value={googleMeetLink}
+                  onChangeText={setGoogleMeetLink}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              <Text style={styles.hintText}>
+                Nhập mã cuộc họp Google Meet (ví dụ: abc-defg-xyz)
+              </Text>
+            </View>
+
             {/* Price */}
             <View style={styles.section}>
               <Text style={styles.label}>
@@ -981,7 +1008,7 @@ export default function CreateEditCourseModal({
                             // Calculate minimum allowed date
                             const minAllowedDate = new Date(
                               new Date().getTime() +
-                                (courseStartDateAfterDaysFromNow || 0) *
+                                (courseStartDateAfterDaysFromNow + 1 || 0) *
                                   24 *
                                   60 *
                                   60 *
@@ -2147,5 +2174,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  googleMeetInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 0,
+    marginBottom: 6,
+  },
+  googleMeetPrefix: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+    backgroundColor: "#F9FAFB",
+    borderRightWidth: 1,
+    borderRightColor: "#E5E7EB",
+  },
+  googleMeetInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: "#111827",
   },
 });

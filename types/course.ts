@@ -21,6 +21,7 @@ export type Schedule = {
   startTime: string;
   endTime: string;
   totalSessions?: number;
+  course?: Course;
 };
 export type Course = {
   id: number;
@@ -32,6 +33,7 @@ export type Course = {
   minParticipants: number;
   maxParticipants: number;
   pricePerParticipant: string;
+  googleMeetLink?: string | null;
   currentParticipants: number;
   totalSessions: number;
   totalEarnings: string;

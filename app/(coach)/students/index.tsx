@@ -50,7 +50,7 @@ export default function CoachStudentsScreen() {
       case PickleballLevel.BEGINNER:
         return "Cơ bản";
       case PickleballLevel.INTERMEDIATE:
-        return "Trung cấp";
+        return "Trung bình";
       case PickleballLevel.ADVANCED:
         return "Nâng cao";
       default:

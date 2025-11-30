@@ -1,8 +1,8 @@
 import { CoachDetailModal } from "@/components/coach/CoachDetailModal";
+import GoogleMeetConference from "@/components/common/GoogleMeetConference";
 import coachService from "@/services/coach.service";
 import { get, patch, post } from "@/services/http/httpService";
 import { useJWTAuth } from "@/services/jwt-auth/JWTAuthProvider";
-import videoConferenceService from "@/services/videoConference.service";
 import type { CoachDetail } from "@/types/coach";
 import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
@@ -20,13 +20,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 type LearnerCourseDetail = BaseCourse & {
   sessions?: Session[];
 };
-
 
 export default function CourseDetailScreen() {
   const router = useRouter();
@@ -42,6 +41,8 @@ export default function CourseDetailScreen() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [cancellingCourse, setCancellingCourse] = useState(false);
+  const [isVCVisible, setIsVCVisible] = useState(false);
+  const [meetLink, setMeetLink] = useState("");
   const [feedbackForm, setFeedbackForm] = useState({
     comment: "",
     rating: 5,
@@ -201,13 +202,15 @@ export default function CourseDetailScreen() {
     }
 
     try {
-      const details = await videoConferenceService.getVideoConferenceDetails(
-        courseId
-      );
-      setChannelName(details.channelName);
-      setVcToken(details.vcToken);
+      // For now, create a Google Meet URL format
+      // Backend should return meetLink in future
+      const meetUrl = `https://meet.google.com/xpe-hawn-qoi`;
+      console.log("[handleJoinVideoConference] Setting meetLink:", meetUrl);
+      setMeetLink(meetUrl);
+      console.log("[handleJoinVideoConference] Setting isVCVisible to true");
       setIsVCVisible(true);
     } catch (error) {
+      console.error("[handleJoinVideoConference] Error:", error);
       Alert.alert("Lỗi", "Không thể tham gia lớp học trực tuyến");
     }
   };
@@ -360,7 +363,6 @@ export default function CourseDetailScreen() {
   const sessions = (course.sessions ?? []).sort(
     (a, b) => (a.sessionNumber || 0) - (b.sessionNumber || 0)
   );
-  const schedules = course.schedules ?? [];
 
   // Kiểm tra xem user hiện tại đã viết feedback chưa
   const hasUserFeedback = feedbacks.some((feedback) => {
@@ -597,6 +599,19 @@ export default function CourseDetailScreen() {
                     </View>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color="#059669" />
+                </TouchableOpacity>
+
+                {/* Video Conference Button */}
+                <View style={styles.divider} />
+                <TouchableOpacity
+                  style={styles.videoConferenceButton}
+                  onPress={handleJoinVideoConference}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="videocam" size={20} color="#FFFFFF" />
+                  <Text style={styles.videoConferenceButtonText}>
+                    Tham gia lớp học trực tuyến
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -1023,6 +1038,14 @@ export default function CourseDetailScreen() {
       </Modal>
 
       {/* Credential Image Modal - Removed: Images shown directly in CoachDetailModal */}
+
+      {/* Video Conference Modal */}
+      <GoogleMeetConference
+        isVisible={isVCVisible}
+        onClose={() => setIsVCVisible(false)}
+        meetLink={meetLink}
+        userName={user?.fullName || "Bạn"}
+      />
     </View>
   );
 }
@@ -1742,6 +1765,24 @@ const styles = StyleSheet.create({
   credentialNoImageText: {
     fontSize: 14,
     color: "#9CA3AF",
+  },
+  /* Video Conference Button */
+  videoConferenceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginVertical: 8,
+  },
+  videoConferenceButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   /* Credential modal styles removed - Images shown directly in CoachDetailModal */
 });

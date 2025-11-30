@@ -58,7 +58,7 @@ export const getStatusColor = (status: string) => {
 export const getLevelLabel = (level?: string) => {
   const levelMap: Record<string, string> = {
     BEGINNER: "Cơ bản",
-    INTERMEDIATE: "Trung cấp",
+    INTERMEDIATE: "Trung bình",
     ADVANCED: "Nâng cao",
   };
   return levelMap[level ?? ""] ?? level ?? "";

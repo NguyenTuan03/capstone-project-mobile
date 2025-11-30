@@ -25,13 +25,13 @@ type Props = {
 
 const SKILL_LEVELS = [
   { value: PickleballLevel.BEGINNER, label: "Người mới" },
-  { value: PickleballLevel.INTERMEDIATE, label: "Trung cấp" },
+  { value: PickleballLevel.INTERMEDIATE, label: "Trung bình" },
   { value: PickleballLevel.ADVANCED, label: "Nâng cao" },
 ];
 
 const LEARNING_GOALS = [
   { value: PickleballLevel.BEGINNER, label: "Cơ bản" },
-  { value: PickleballLevel.INTERMEDIATE, label: "Trung cấp" },
+  { value: PickleballLevel.INTERMEDIATE, label: "Trung bình" },
   { value: PickleballLevel.ADVANCED, label: "Chuyên nghiệp" },
 ];
 
