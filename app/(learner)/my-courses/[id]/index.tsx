@@ -385,26 +385,6 @@ export default function CourseDetailScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           Chi tiết khóa học
         </Text>
-        <TouchableOpacity
-          onPress={() => {
-            if (learnerEnrollment) {
-              router.push(`/(learner)/my-courses/${learnerEnrollment.id}/info`);
-            } else {
-              Alert.alert(
-                "Thông báo",
-                "Không tìm thấy thông tin đăng ký của bạn."
-              );
-            }
-          }}
-          activeOpacity={0.7}
-          style={styles.infoButton}
-        >
-          <Ionicons
-            name="information-circle-outline"
-            size={24}
-            color="#059669"
-          />
-        </TouchableOpacity>
       </View>
 
       <ScrollView
