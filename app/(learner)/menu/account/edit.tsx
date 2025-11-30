@@ -6,50 +6,19 @@ import axios from "axios";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
-
-const normalizePhoneNumber = (value: string): string | null => {
-  if (!value) return null;
-
-  const trimmed = value.replace(/\s+/g, "");
-  const digitsOnly = trimmed.startsWith("+") ? trimmed.slice(1) : trimmed;
-
-  if (!/^\d+$/.test(digitsOnly)) {
-    return null;
-  }
-
-  if (digitsOnly.startsWith("84")) {
-    const nationalNumber = digitsOnly.slice(2);
-    if (nationalNumber.length === 9) {
-      return `+84${nationalNumber}`;
-    }
-  }
-
-  if (digitsOnly.startsWith("0")) {
-    const nationalNumber = digitsOnly.slice(1);
-    if (nationalNumber.length === 9) {
-      return `+84${nationalNumber}`;
-    }
-  }
-
-  if (digitsOnly.length === 9) {
-    return `+84${digitsOnly}`;
-  }
-
-  return null;
-};
 
 export default function EditLearnerAccountScreen() {
   const router = useRouter();
@@ -199,31 +168,19 @@ export default function EditLearnerAccountScreen() {
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    const normalizedPhone = normalizePhoneNumber(phoneNumber);
 
     if (!fullName.trim()) {
       errors.fullName = "Họ và tên không được để trống";
     }
 
-    if (!email.trim()) {
-      errors.email = "Email không được để trống";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errors.email = "Email không hợp lệ";
-    }
-
-    if (!normalizedPhone) {
-      errors.phoneNumber =
-        "Số điện thoại không hợp lệ (định dạng +84 và 9 chữ số)";
-    }
-
     setFieldErrors(errors);
 
-    return { isValid: Object.keys(errors).length === 0, normalizedPhone };
+    return { isValid: Object.keys(errors).length === 0 };
   };
 
   const handleSave = async () => {
-    const { isValid, normalizedPhone } = validateForm();
-    if (!isValid || !normalizedPhone) return;
+    const { isValid } = validateForm();
+    if (!isValid) return;
 
     setLoading(true);
     setError(null);
@@ -233,8 +190,6 @@ export default function EditLearnerAccountScreen() {
       const token = await storageService.getToken();
       const requestPayload: Record<string, any> = {
         fullName: fullName.trim(),
-        email: email.trim(),
-        phoneNumber: normalizedPhone,
       };
 
       if (provinceId) {
@@ -252,8 +207,6 @@ export default function EditLearnerAccountScreen() {
       const updatedUser = {
         ...user,
         fullName: requestPayload.fullName,
-        email: requestPayload.email,
-        phoneNumber: requestPayload.phoneNumber,
         province: provinceId
           ? {
               id: Number(provinceId),
@@ -339,47 +292,16 @@ export default function EditLearnerAccountScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[
-                styles.input,
-                fieldErrors.email ? styles.inputError : undefined,
-              ]}
-              placeholder="Nhập email"
-              placeholderTextColor="#94A3B8"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (fieldErrors.email) clearFieldError("email");
-              }}
-              editable={!loading}
-              autoCapitalize="none"
-            />
-            {fieldErrors.email ? (
-              <Text style={styles.fieldError}>{fieldErrors.email}</Text>
-            ) : null}
+            <View style={[styles.input, styles.readOnlyInput]}>
+              <Text style={styles.readOnlyText}>{email}</Text>
+            </View>
           </View>
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Số điện thoại</Text>
-            <TextInput
-              style={[
-                styles.input,
-                fieldErrors.phoneNumber ? styles.inputError : undefined,
-              ]}
-              placeholder="Nhập số điện thoại"
-              placeholderTextColor="#94A3B8"
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={(text) => {
-                setPhoneNumber(text);
-                if (fieldErrors.phoneNumber) clearFieldError("phoneNumber");
-              }}
-              editable={!loading}
-            />
-            {fieldErrors.phoneNumber ? (
-              <Text style={styles.fieldError}>{fieldErrors.phoneNumber}</Text>
-            ) : null}
+            <View style={[styles.input, styles.readOnlyInput]}>
+              <Text style={styles.readOnlyText}>{phoneNumber}</Text>
+            </View>
           </View>
 
           <View style={styles.formGroup}>
@@ -701,6 +623,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#0F172A",
     backgroundColor: "#FFFFFF",
+  },
+  readOnlyInput: {
+    backgroundColor: "#F1F5F9",
+    borderColor: "#E2E8F0",
+  },
+  readOnlyText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748B",
   },
   inputError: {
     borderColor: "#F87171",

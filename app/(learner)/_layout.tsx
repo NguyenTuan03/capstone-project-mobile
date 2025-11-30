@@ -74,6 +74,12 @@ export default function LearnerTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="achievements/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="menu"
         options={{
           href: null,

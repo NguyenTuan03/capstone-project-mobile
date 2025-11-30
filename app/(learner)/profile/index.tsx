@@ -97,7 +97,7 @@ export default function ProfileScreen() {
       key: "achievements",
       icon: "trophy",
       label: "Thành tựu",
-      to: "/(learner)/profile",
+      to: "/(learner)/achievements",
     },
   ];
 
@@ -201,7 +201,7 @@ export default function ProfileScreen() {
           )}
 
           {/* Stats Row */}
-          <View style={styles.statsRow}>
+          {/* <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>4</Text>
               <Text style={styles.statLabel}>Khóa học</Text>
@@ -216,11 +216,11 @@ export default function ProfileScreen() {
               <Text style={styles.statValue}>12</Text>
               <Text style={styles.statLabel}>Thành tựu</Text>
             </View>
-          </View>
+          </View> */}
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.sectionHeader}>
+        {/* <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Truy cập nhanh</Text>
         </View>
 
@@ -247,7 +247,7 @@ export default function ProfileScreen() {
               <Text style={styles.quickActionLabel}>{action.label}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </View> */}
 
         {/* Menu Section */}
         <View style={styles.sectionHeader}>
