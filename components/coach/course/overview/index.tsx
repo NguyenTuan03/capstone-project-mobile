@@ -143,7 +143,7 @@ const statusMap = (status: string) => {
 const levelMap = (lv?: string) => {
   const map: Record<string, string> = {
     BEGINNER: "Cơ bản",
-    INTERMEDIATE: "Trung cấp",
+    INTERMEDIATE: "Trung bình",
     ADVANCED: "Nâng cao",
   };
   return map[lv ?? ""] ?? lv ?? "";
@@ -182,7 +182,7 @@ export const OverviewTab: React.FC<Props> = ({
     try {
       setFeedbackLoading(true);
       const res = await get(`/v1/feedbacks/courses/${course.id}`);
-      console.log("Fetched feedbacks:", res.data);
+      
       setFeedbacks((res as any).data || []);
     } catch (error) {
       console.error("Failed to fetch feedbacks:", error);

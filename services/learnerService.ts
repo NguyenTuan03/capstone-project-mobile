@@ -1,26 +1,13 @@
 import http from "@/services/http/interceptor";
-
-interface LearnerProgress {
-  id: number;
-  sessionsCompleted: number;
-  totalSessions: number;
-  avgAiAnalysisScore: number;
-  avgQuizScore: number;
-  status: string;
-  course: {
-    id: number;
-    name: string;
-  };
-}
+import { LearnerProgress } from "@/types/learner-progress";
 
 class LearnerService {
   async getTotalCourses(): Promise<number> {
     try {
       const response = await http.get("/v1/learners/total-courses");
-      console.log("Total courses response:", response);
       return response.data || 0;
     } catch (error) {
-      console.error("Failed to fetch total courses:", error);
+       
       throw error;
     }
   }
@@ -30,7 +17,7 @@ class LearnerService {
       const response = await http.get("/v1/learners/total-ai-feedbacks");
       return response.data || 0;
     } catch (error) {
-      console.error("Failed to fetch total AI feedbacks:", error);
+       
       throw error;
     }
   }
@@ -40,7 +27,7 @@ class LearnerService {
       const response = await http.get("/v1/learners/current-progresses");
       return response.data || [];
     } catch (error) {
-      console.error("Failed to fetch learner progresses:", error);
+       
       throw error;
     }
   }

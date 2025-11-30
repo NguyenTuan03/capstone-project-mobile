@@ -25,7 +25,7 @@ export default function QuizDetailScreen() {
     lessonId: string;
   }>();
 
-  console.log("quiID", quizId);
+  
 
   const [quiz, setQuiz] = useState<QuizType | null>(null);
   const [loading, setLoading] = useState(false);

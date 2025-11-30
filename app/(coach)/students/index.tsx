@@ -50,7 +50,7 @@ export default function CoachStudentsScreen() {
       case PickleballLevel.BEGINNER:
         return "Cơ bản";
       case PickleballLevel.INTERMEDIATE:
-        return "Trung cấp";
+        return "Trung bình";
       case PickleballLevel.ADVANCED:
         return "Nâng cao";
       default:
@@ -88,7 +88,7 @@ export default function CoachStudentsScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card]}
         activeOpacity={0.7}
         onPress={() => {
           router.push({

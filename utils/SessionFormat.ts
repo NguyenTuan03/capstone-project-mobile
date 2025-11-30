@@ -11,6 +11,17 @@ export const formatDate = (date?: string | null) => {
   return new Date(date).toLocaleDateString("vi-VN");
 };
 
+export const formatDateTime = (date?: string | null) => {
+  if (!date) return "—";
+  const dateObj = new Date(date);
+  const formattedDate = dateObj.toLocaleDateString("vi-VN");
+  const formattedTime = dateObj.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${formattedDate} ${formattedTime}`;
+};
+
 export const extractSessionPayload = (payload: any): Session | null => {
   if (!payload || typeof payload !== "object") return null;
   if ("id" in payload && "sessionNumber" in payload) {

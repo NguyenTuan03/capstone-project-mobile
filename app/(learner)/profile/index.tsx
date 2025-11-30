@@ -99,12 +99,6 @@ export default function ProfileScreen() {
       label: "Thành tựu",
       to: "/(learner)/profile",
     },
-    {
-      key: "settings",
-      icon: "settings",
-      label: "Cài đặt",
-      to: "/(learner)/profile",
-    },
   ];
 
   const quickActions = [

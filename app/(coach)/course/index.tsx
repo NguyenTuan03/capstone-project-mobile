@@ -46,7 +46,6 @@ export default function CoachCourseScreen() {
 
         const user = await storageService.getUser();
         if (!user?.id) {
-          console.error("User ID không tồn tại");
           return;
         }
 
@@ -62,7 +61,6 @@ export default function CoachCourseScreen() {
         setTotal(res.data.total || 0);
         setPage(res.data.page || 1);
       } catch (error) {
-        console.error("Lỗi khi tải danh sách khóa học:", error);
         if (append) {
           setLoadingMore(false);
         } else {
@@ -70,7 +68,7 @@ export default function CoachCourseScreen() {
         }
       } finally {
         if (!append) {
-        setLoading(false);
+          setLoading(false);
         }
         setLoadingMore(false);
       }
@@ -85,7 +83,6 @@ export default function CoachCourseScreen() {
       );
       setPlatformFee(parseFloat(res?.value || "0"));
     } catch (error) {
-      console.error("Lỗi khi tải phí nền tảng:", error);
     }
   };
 

@@ -41,7 +41,6 @@ export default function ContentScreen() {
         };
       }>(`/v1/coaches/${coachId}/rating/overall`);
       if (res?.data?.metadata !== undefined) {
-        console.log(res.data.metadata);
         setRating(res.data.metadata.overall);
       }
     } catch (error) {
@@ -83,7 +82,6 @@ export default function ContentScreen() {
             await logout();
             router.replace("/(auth)");
           } catch (error) {
-            console.error("Logout error:", error);
           } finally {
             setLoading(false);
           }

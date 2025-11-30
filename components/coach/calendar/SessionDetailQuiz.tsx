@@ -2,12 +2,12 @@ import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { QuestionType } from "../../../types/question";
 import { QuestionOptionType } from "../../../types/question-option";
@@ -37,7 +37,7 @@ const SessionDetailQuiz: React.FC<Props> = ({ session, course, styles }) => {
     }, 300);
   };
 
-  console.log("Quizzes in SessionDetailQuiz:", quiz?.questions);
+  
 
   if (!quiz) return null;
 

@@ -6,13 +6,13 @@ import { Session } from "@/types/session";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import LearnerVideoModal from "./LearnerVideoModal";
 import QuizAttemptModal from "./QuizAttemptModal";
@@ -92,9 +92,9 @@ export default function LearnerProgressModal({
         quizId,
         learner.user.id
       );
-      console.log("Quiz attempts raw response:", attempts);
+      
       const attemptsArray = attempts.metadata || attempts || [];
-      console.log("Quiz attempts array:", attemptsArray);
+      
 
       setSelectedQuizAttempts(attemptsArray);
       setSelectedQuizTitle(quizTitle);

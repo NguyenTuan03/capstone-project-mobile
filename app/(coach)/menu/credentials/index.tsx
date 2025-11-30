@@ -19,7 +19,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 export default function CredentialsScreen() {
@@ -42,25 +42,26 @@ export default function CredentialsScreen() {
     expiresAt: "",
   });
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
+  const [selectedCredential, setSelectedCredential] =
+    useState<Credential | null>(null);
   const [isEditingModal, setIsEditingModal] = useState(false);
 
-const loadCredentials = useCallback(async () => {
-  try {
-    const response = await credentialService.getCredentials();
-    setCredentials(response);
-  } catch (error) {
-    console.error("Failed to load credentials:", error);
-    setCredentials([]);
-  }
-}, []);
+  const loadCredentials = async () => {
+    try {
+      const response = await credentialService.getCredentials();
+      setCredentials(response);
+    } catch (error) {
+      console.error("Failed to load credentials:", error);
+      setCredentials([]);
+    }
+  };
 
-// Load credentials from API
-useFocusEffect(
-  useCallback(() => {
-    loadCredentials();
-  }, [loadCredentials])
-);
+  // Load credentials from API
+  useFocusEffect(
+    useCallback(() => {
+      loadCredentials();
+    }, [])
+  );
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -135,7 +136,11 @@ useFocusEffect(
         selectedImage || undefined
       );
 
-      console.log("✅ Created credential from API:", createdCredential);
+      
+
+      // Refetch credentials to show the new one
+      const updatedCredentials = await credentialService.getCredentials();
+      setCredentials(updatedCredentials);
 
       setShowAddForm(false);
       setSelectedImage(null);
@@ -221,6 +226,7 @@ useFocusEffect(
       setDetailModalVisible(false);
       setSelectedImage(null);
       setSelectedCredential(null);
+      setIsEditingModal(false);
 
       Alert.alert("Thành công", "Chứng chỉ đã được cập nhật");
     } catch (error) {
@@ -429,7 +435,8 @@ useFocusEffect(
               {selectedImage ? (
                 <View style={styles.imageUploadSelected}>
                   <Text style={styles.imageUploadSelectedText}>
-                    📷 Hình ảnh đã chọn
+                    <Ionicons name="camera" size={16} color="#059669" /> Hình
+                    ảnh đã chọn
                   </Text>
                   <Text style={styles.imageUploadSelectedSubtext}>
                     Nhấn để thay đổi
@@ -459,7 +466,7 @@ useFocusEffect(
                   placeholderTextColor="#6B7280"
                   value={formData.name}
                   onChangeText={(text) => {
-                    console.log("Name input changed:", text);
+                    
                     setFormData({ ...formData, name: text });
                   }}
                 />
@@ -652,143 +659,378 @@ useFocusEffect(
             {selectedCredential && (
               <>
                 {/* Image Container */}
-                <View style={styles.modalImageContainer}>
-                  {selectedCredential.publicUrl ? (
-                    <Image
-                      source={{ uri: selectedCredential.publicUrl }}
-                      style={styles.modalImage}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <View style={styles.modalImagePlaceholder}>
-                      <Ionicons
-                        name={getCredentialIcon(selectedCredential.type) as any}
-                        size={80}
-                        color={getCredentialColor(selectedCredential.type)}
+                {!isEditingModal && (
+                  <View style={styles.modalImageContainer}>
+                    {selectedCredential.publicUrl ? (
+                      <Image
+                        source={{ uri: selectedCredential.publicUrl }}
+                        style={styles.modalImage}
+                        resizeMode="contain"
                       />
-                    </View>
-                  )}
-                </View>
-
-                {/* Credential Details */}
-                <View style={styles.modalContent}>
-                  {/* Title and Type */}
-                  <View style={styles.modalTitleSection}>
-                    <Text style={styles.modalTitle}>
-                      {selectedCredential.name}
-                    </Text>
-                    <View
-                      style={[
-                        styles.modalBadge,
-                        {
-                          backgroundColor:
-                            getCredentialColor(selectedCredential.type) + "20",
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.modalBadgeText,
-                          {
-                            color: getCredentialColor(selectedCredential.type),
-                          },
-                        ]}
-                      >
-                        {getCredentialTypeText(selectedCredential.type)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Description */}
-                  {selectedCredential.description && (
-                    <View style={styles.modalSection}>
-                      <Text style={styles.modalSectionTitle}>Mô tả</Text>
-                      <Text style={styles.modalDescription}>
-                        {selectedCredential.description}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Dates */}
-                  <View style={styles.modalDatesSection}>
-                    {selectedCredential.issuedAt && (
-                      <View style={styles.modalDateItem}>
+                    ) : (
+                      <View style={styles.modalImagePlaceholder}>
                         <Ionicons
-                          name="calendar"
-                          size={18}
-                          color="#059669"
+                          name={
+                            getCredentialIcon(selectedCredential.type) as any
+                          }
+                          size={80}
+                          color={getCredentialColor(selectedCredential.type)}
                         />
-                        <View style={styles.modalDateInfo}>
-                          <Text style={styles.modalDateLabel}>Ngày cấp</Text>
-                          <Text style={styles.modalDateValue}>
-                            {new Date(
-                              selectedCredential.issuedAt
-                            ).toLocaleDateString("vi-VN", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-
-                    {selectedCredential.expiresAt && (
-                      <View style={styles.modalDateItem}>
-                        <Ionicons name="calendar" size={18} color="#EF4444" />
-                        <View style={styles.modalDateInfo}>
-                          <Text style={styles.modalDateLabel}>Hết hạn</Text>
-                          <Text style={styles.modalDateValue}>
-                            {new Date(
-                              selectedCredential.expiresAt
-                            ).toLocaleDateString("vi-VN", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })}
-                          </Text>
-                        </View>
                       </View>
                     )}
                   </View>
+                )}
 
-                  {isEditingModal && (
+                {/* Credential Details / Edit Form */}
+                <View style={styles.modalContent}>
+                  {!isEditingModal ? (
                     <>
-                      {/* Edit Image Section */}
-                      <View style={styles.modalSection}>
-                        <Text style={styles.modalSectionTitle}>Thay đổi hình ảnh</Text>
-                        <Pressable
+                      {/* Display Mode */}
+                      <View style={styles.modalTitleSection}>
+                        <Text style={styles.modalTitle}>
+                          {selectedCredential.name}
+                        </Text>
+                        <View
                           style={[
-                            styles.imageUpload,
-                            selectedImage && styles.imageUploadActive,
+                            styles.modalBadge,
+                            {
+                              backgroundColor:
+                                getCredentialColor(selectedCredential.type) +
+                                "20",
+                            },
                           ]}
-                          onPress={pickImage}
                         >
-                          {selectedImage ? (
-                            <View style={styles.imageUploadSelected}>
-                              <Text style={styles.imageUploadSelectedText}>
-                                📷 Hình ảnh đã chọn
+                          <Text
+                            style={[
+                              styles.modalBadgeText,
+                              {
+                                color: getCredentialColor(
+                                  selectedCredential.type
+                                ),
+                              },
+                            ]}
+                          >
+                            {getCredentialTypeText(selectedCredential.type)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Description */}
+                      {selectedCredential.description && (
+                        <View style={styles.modalSection}>
+                          <Text style={styles.modalSectionTitle}>Mô tả</Text>
+                          <Text style={styles.modalDescription}>
+                            {selectedCredential.description}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Dates */}
+                      <View style={styles.modalDatesSection}>
+                        {selectedCredential.issuedAt && (
+                          <View style={styles.modalDateItem}>
+                            <Ionicons
+                              name="calendar"
+                              size={18}
+                              color="#059669"
+                            />
+                            <View style={styles.modalDateInfo}>
+                              <Text style={styles.modalDateLabel}>
+                                Ngày cấp
                               </Text>
-                              <Text style={styles.imageUploadSelectedSubtext}>
-                                Nhấn để thay đổi
+                              <Text style={styles.modalDateValue}>
+                                {new Date(
+                                  selectedCredential.issuedAt
+                                ).toLocaleDateString("vi-VN", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
                               </Text>
                             </View>
-                          ) : (
-                            <View style={styles.imageUploadEmpty}>
-                              <Ionicons
-                                name="cloud-upload"
-                                size={40}
-                                color="#059669"
-                              />
-                              <Text style={styles.imageUploadText}>
-                                Tải lên hình ảnh mới
-                              </Text>
-                              <Text style={styles.imageUploadSubtext}>
-                                JPG, PNG (Tối đa 5MB)
+                          </View>
+                        )}
+
+                        {selectedCredential.expiresAt && (
+                          <View style={styles.modalDateItem}>
+                            <Ionicons
+                              name="calendar"
+                              size={18}
+                              color="#EF4444"
+                            />
+                            <View style={styles.modalDateInfo}>
+                              <Text style={styles.modalDateLabel}>Hết hạn</Text>
+                              <Text style={styles.modalDateValue}>
+                                {new Date(
+                                  selectedCredential.expiresAt
+                                ).toLocaleDateString("vi-VN", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
                               </Text>
                             </View>
+                          </View>
+                        )}
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      {/* Edit Mode */}
+                      <View style={styles.editFormSection}>
+                        {/* Credential Name */}
+                        <View style={styles.editFormGroup}>
+                          <Text style={styles.editLabel}>Tên chứng chỉ</Text>
+                          <View style={styles.editInputWrapper}>
+                            <Ionicons
+                              name="document"
+                              size={18}
+                              color="#6B7280"
+                            />
+                            <TextInput
+                              style={styles.editInput}
+                              placeholder="Tên chứng chỉ"
+                              placeholderTextColor="#6B7280"
+                              value={selectedCredential.name}
+                              onChangeText={(text) =>
+                                setSelectedCredential({
+                                  ...selectedCredential,
+                                  name: text,
+                                })
+                              }
+                            />
+                          </View>
+                        </View>
+
+                        {/* Type Selector */}
+                        <View style={styles.editFormGroup}>
+                          <Text style={styles.editLabel}>Loại chứng chỉ</Text>
+                          <View style={styles.editTypeSelector}>
+                            {["CERTIFICATE", "PRIZE", "ACHIEVEMENT"].map(
+                              (type) => (
+                                <Pressable
+                                  key={type}
+                                  style={[
+                                    styles.editTypeOption,
+                                    selectedCredential.type === type &&
+                                      styles.editTypeOptionActive,
+                                  ]}
+                                  onPress={() =>
+                                    setSelectedCredential({
+                                      ...selectedCredential,
+                                      type: type as any,
+                                    })
+                                  }
+                                >
+                                  <Ionicons
+                                    name={getCredentialIcon(type) as any}
+                                    size={16}
+                                    color={
+                                      selectedCredential.type === type
+                                        ? "#FFFFFF"
+                                        : getCredentialColor(type)
+                                    }
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.editTypeOptionText,
+                                      selectedCredential.type === type &&
+                                        styles.editTypeOptionTextActive,
+                                    ]}
+                                  >
+                                    {getCredentialTypeText(type)}
+                                  </Text>
+                                </Pressable>
+                              )
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Description */}
+                        <View style={styles.editFormGroup}>
+                          <Text style={styles.editLabel}>Mô tả</Text>
+                          <View
+                            style={[
+                              styles.editInputWrapper,
+                              styles.editInputLargeWrapper,
+                            ]}
+                          >
+                            <TextInput
+                              style={[styles.editInput, styles.editInputLarge]}
+                              placeholder="Mô tả chi tiết về chứng chỉ"
+                              placeholderTextColor="#6B7280"
+                              value={selectedCredential.description || ""}
+                              onChangeText={(text) =>
+                                setSelectedCredential({
+                                  ...selectedCredential,
+                                  description: text,
+                                })
+                              }
+                              multiline={true}
+                              numberOfLines={4}
+                            />
+                          </View>
+                        </View>
+
+                        {/* Issued Date */}
+                        <View style={styles.editFormGroup}>
+                          <Text style={styles.editLabel}>Ngày cấp</Text>
+                          <TouchableOpacity
+                            style={styles.editInputWrapper}
+                            onPress={() => {
+                              setDatePickerType("issuedAt");
+                              setShowDatePicker(true);
+                            }}
+                          >
+                            <Ionicons
+                              name="calendar"
+                              size={18}
+                              color="#111827"
+                            />
+                            <Text
+                              style={[
+                                styles.editInput,
+                                !selectedCredential.issuedAt &&
+                                  styles.inputPlaceholder,
+                              ]}
+                            >
+                              {selectedCredential.issuedAt
+                                ? new Date(
+                                    selectedCredential.issuedAt
+                                  ).toLocaleDateString("vi-VN")
+                                : "Chọn ngày"}
+                            </Text>
+                          </TouchableOpacity>
+                          {showDatePicker && datePickerType === "issuedAt" && (
+                            <DateTimePicker
+                              value={
+                                selectedCredential.issuedAt
+                                  ? new Date(selectedCredential.issuedAt)
+                                  : selectedDate
+                              }
+                              mode="date"
+                              display={
+                                Platform.OS === "ios" ? "inline" : "default"
+                              }
+                              onChange={(event, date) => {
+                                if (Platform.OS === "android") {
+                                  setShowDatePicker(false);
+                                }
+                                if (date) {
+                                  // Keep issuedAt as a Date object to match the Credential type
+                                  setSelectedCredential({
+                                    ...selectedCredential,
+                                    issuedAt: date,
+                                  });
+                                }
+                              }}
+                              textColor="#111827"
+                              accentColor="#059669"
+                              themeVariant="light"
+                            />
                           )}
-                        </Pressable>
+                        </View>
+
+                        {/* Expiry Date */}
+                        <View style={styles.editFormGroup}>
+                          <Text style={styles.editLabel}>Ngày hết hạn</Text>
+                          <TouchableOpacity
+                            style={styles.editInputWrapper}
+                            onPress={() => {
+                              setDatePickerType("expiresAt");
+                              setShowDatePicker(true);
+                            }}
+                          >
+                            <Ionicons
+                              name="calendar"
+                              size={18}
+                              color="#111827"
+                            />
+                            <Text
+                              style={[
+                                styles.editInput,
+                                !selectedCredential.expiresAt &&
+                                  styles.inputPlaceholder,
+                              ]}
+                            >
+                              {selectedCredential.expiresAt
+                                ? new Date(
+                                    selectedCredential.expiresAt
+                                  ).toLocaleDateString("vi-VN")
+                                : "Chọn ngày"}
+                            </Text>
+                          </TouchableOpacity>
+                          {showDatePicker && datePickerType === "expiresAt" && (
+                            <DateTimePicker
+                              value={
+                                selectedCredential.expiresAt
+                                  ? new Date(selectedCredential.expiresAt)
+                                  : selectedDate
+                              }
+                              mode="date"
+                              display={
+                                Platform.OS === "ios" ? "inline" : "default"
+                              }
+                              onChange={(event, date) => {
+                                if (Platform.OS === "android") {
+                                  setShowDatePicker(false);
+                                }
+                                if (date) {
+                                  // Keep expiresAt as a Date object to match the Credential type
+                                  setSelectedCredential({
+                                    ...selectedCredential,
+                                    expiresAt: date,
+                                  });
+                                }
+                              }}
+                              textColor="#111827"
+                              accentColor="#059669"
+                              themeVariant="light"
+                            />
+                          )}
+                        </View>
+
+                        {/* Image Upload */}
+                        <View style={styles.editFormGroup}>
+                          <Text style={styles.editLabel}>Hình ảnh</Text>
+                          <Pressable
+                            style={[
+                              styles.imageUpload,
+                              selectedImage && styles.imageUploadActive,
+                            ]}
+                            onPress={pickImage}
+                          >
+                            {selectedImage ? (
+                              <View style={styles.imageUploadSelected}>
+                                <Text style={styles.imageUploadSelectedText}>
+                                  <Ionicons
+                                    name="camera"
+                                    size={16}
+                                    color="#059669"
+                                  />{" "}
+                                  Hình ảnh đã chọn
+                                </Text>
+                                <Text style={styles.imageUploadSelectedSubtext}>
+                                  Nhấn để thay đổi
+                                </Text>
+                              </View>
+                            ) : (
+                              <View style={styles.imageUploadEmpty}>
+                                <Ionicons
+                                  name="cloud-upload"
+                                  size={40}
+                                  color="#059669"
+                                />
+                                <Text style={styles.imageUploadText}>
+                                  Tải lên hình ảnh mới
+                                </Text>
+                                <Text style={styles.imageUploadSubtext}>
+                                  JPG, PNG (Tối đa 5MB)
+                                </Text>
+                              </View>
+                            )}
+                          </Pressable>
+                        </View>
                       </View>
                     </>
                   )}
@@ -816,9 +1058,7 @@ useFocusEffect(
                           }}
                         >
                           <Ionicons name="trash" size={18} color="#FFFFFF" />
-                          <Text style={styles.modalDeleteButtonText}>
-                            Xóa
-                          </Text>
+                          <Text style={styles.modalDeleteButtonText}>Xóa</Text>
                         </TouchableOpacity>
                       </>
                     ) : (
@@ -828,6 +1068,15 @@ useFocusEffect(
                           onPress={() => {
                             setIsEditingModal(false);
                             setSelectedImage(null);
+                            // Reload credential to discard changes
+                            if (credentials.length > 0) {
+                              const updatedCred = credentials.find(
+                                (c) => c.id === selectedCredential.id
+                              );
+                              if (updatedCred) {
+                                setSelectedCredential(updatedCred);
+                              }
+                            }
                           }}
                         >
                           <Text style={styles.modalCancelButtonText}>Hủy</Text>
@@ -883,23 +1132,28 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+    gap: 12,
   },
   backButton: {
     width: 36,
     height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F0FDF4",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#111827",
     flex: 1,
     textAlign: "center",
-    marginHorizontal: 12,
+    letterSpacing: 0.3,
   },
 
   /* Empty State */
@@ -910,18 +1164,20 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
-    gap: 16,
+    gap: 18,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 22,
+    fontWeight: "800",
     color: "#111827",
+    letterSpacing: 0.3,
   },
   emptySubtitle: {
     fontSize: 14,
     color: "#6B7280",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: "400",
   },
 
   /* List Content */
@@ -939,85 +1195,60 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: "#059669",
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
-  },
-  imageContainer: {
-    backgroundColor: "#F3F4F6",
-    height: 160,
-    justifyContent: "center",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  imagePlaceholder: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#6B7280",
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   cardContent: {
-    padding: 12,
-    gap: 10,
+    padding: 16,
+    gap: 12,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 10,
+    gap: 12,
   },
   typeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
   cardTitle: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   credentialName: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#111827",
+    letterSpacing: 0.3,
   },
   credentialType: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#6B7280",
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   credentialDescription: {
     fontSize: 12,
     color: "#6B7280",
-    lineHeight: 16,
+    lineHeight: 18,
+    fontWeight: "400",
   },
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   dateText: {
-    fontSize: 11,
-    color: "#6B7280",
-  },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    backgroundColor: "#FEE2E2",
-    alignSelf: "flex-start",
-  },
-  deleteButtonText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#EF4444",
+    color: "#6B7280",
+    fontWeight: "400",
   },
 
   /* Add Button */
@@ -1027,20 +1258,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#059669",
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 10,
     shadowColor: "#059669",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
     shadowRadius: 4,
     elevation: 3,
-    marginTop: 16,
+    marginTop: 18,
   },
   addButtonText: {
     fontSize: 14,
     fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
 
   /* Form Overlay */
@@ -1066,12 +1298,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
   formTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#111827",
+    letterSpacing: 0.3,
   },
 
   /* Image Upload */
@@ -1079,11 +1315,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E5E7EB",
     borderRadius: 12,
-    paddingVertical: 32,
+    paddingVertical: 40,
     paddingHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 24,
     alignItems: "center",
-    gap: 8,
+    gap: 12,
   },
   imageUploadActive: {
     borderColor: "#059669",
@@ -1091,16 +1327,18 @@ const styles = StyleSheet.create({
   },
   imageUploadEmpty: {
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   imageUploadText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#111827",
+    letterSpacing: 0.3,
   },
   imageUploadSubtext: {
     fontSize: 12,
     color: "#6B7280",
+    fontWeight: "400",
   },
   imageUploadSelected: {
     alignItems: "center",
@@ -1110,33 +1348,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#059669",
+    letterSpacing: 0.2,
   },
   imageUploadSelectedSubtext: {
     fontSize: 12,
     color: "#6B7280",
+    fontWeight: "400",
   },
 
   /* Form Group */
   formGroup: {
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 20,
+    gap: 10,
   },
   label: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "800",
     color: "#111827",
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   textInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     backgroundColor: "#FFFFFF",
   },
   textInputLargeWrapper: {
@@ -1147,26 +1387,26 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: "#111827",
     paddingVertical: 0,
   },
   textInputLarge: {
-    minHeight: 80,
-    paddingTop: 10,
+    minHeight: 100,
+    paddingTop: 11,
     paddingHorizontal: 0,
     textAlignVertical: "top",
   },
   inputPlaceholder: {
     flex: 1,
-    fontSize: 13,
-    color: "#374151",
+    fontSize: 14,
+    color: "#6B7280",
   },
 
   /* Type Selector */
   typeSelector: {
     flexDirection: "row",
-    gap: 8,
+    gap: 9,
   },
   typeOption: {
     flex: 1,
@@ -1174,11 +1414,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: "#FFFFFF",
   },
   typeOptionActive: {
@@ -1187,7 +1427,7 @@ const styles = StyleSheet.create({
   },
   typeOptionText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#6B7280",
   },
   typeOptionTextActive: {
@@ -1197,44 +1437,46 @@ const styles = StyleSheet.create({
   /* Form Actions */
   formActions: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 16,
-    marginBottom: 24,
+    gap: 10,
+    marginTop: 20,
+    marginBottom: 32,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: "#D1D5DB",
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   cancelButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#6B7280",
+    letterSpacing: 0.2,
   },
   submitButton: {
     flex: 1,
     flexDirection: "row",
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     backgroundColor: "#059669",
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
   },
   submitButtonDisabled: {
     backgroundColor: "#9CA3AF",
     opacity: 0.7,
   },
   submitButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
 
   /* Detail Modal */
@@ -1250,77 +1492,83 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   modalCloseButton: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: "#F3F4F6",
+    borderRadius: 10,
+    backgroundColor: "#F0FDF4",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
   },
   modalImageContainer: {
     backgroundColor: "#F9FAFB",
-    paddingVertical: 32,
+    paddingVertical: 40,
     paddingHorizontal: 16,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 240,
+    minHeight: 280,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
   modalImage: {
     width: "100%",
-    height: 240,
+    height: 260,
   },
   modalImagePlaceholder: {
     width: 160,
     height: 160,
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    gap: 20,
+    paddingVertical: 24,
+    gap: 24,
   },
   modalTitleSection: {
-    gap: 12,
+    gap: 14,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: "#111827",
+    letterSpacing: 0.3,
   },
   modalBadge: {
     alignSelf: "flex-start",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: 8,
   },
   modalBadgeText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   modalSection: {
-    gap: 8,
+    gap: 10,
   },
   modalSectionTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "800",
     color: "#111827",
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   modalDescription: {
     fontSize: 14,
     color: "#6B7280",
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: "400",
   },
   modalDatesSection: {
     gap: 12,
@@ -1328,75 +1576,155 @@ const styles = StyleSheet.create({
   modalDateItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    gap: 13,
+    paddingVertical: 12,
+    paddingHorizontal: 13,
     backgroundColor: "#F9FAFB",
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
   modalDateInfo: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   modalDateLabel: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#6B7280",
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   modalDateValue: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#111827",
+    letterSpacing: 0.2,
   },
-  modalDeleteButton: {
+
+  /* Edit Form Section */
+  editFormSection: {
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 24,
+    gap: 20,
+  },
+  editFormGroup: {
+    gap: 10,
+  },
+  editLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#111827",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  editInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: "#FFFFFF",
+  },
+  editInputLargeWrapper: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    paddingLeft: 12,
+    alignItems: "flex-start",
+  },
+  editInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#111827",
+    paddingVertical: 0,
+  },
+  editInputLarge: {
+    minHeight: 100,
+    paddingTop: 11,
+    paddingHorizontal: 0,
+    textAlignVertical: "top",
+  },
+  editTypeSelector: {
+    flexDirection: "row",
+    gap: 9,
+  },
+  editTypeOption: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#EF4444",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    marginBottom: 24,
+    gap: 6,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
   },
-  modalDeleteButtonText: {
-    fontSize: 14,
+  editTypeOptionActive: {
+    backgroundColor: "#059669",
+    borderColor: "#059669",
+  },
+  editTypeOptionText: {
+    fontSize: 12,
     fontWeight: "700",
+    color: "#6B7280",
+  },
+  editTypeOptionTextActive: {
     color: "#FFFFFF",
   },
 
   /* Modal Action Buttons */
   modalActionsContainer: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 16,
-    marginBottom: 24,
+    gap: 10,
+    marginTop: 20,
+    marginBottom: 32,
   },
   modalEditButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#059669",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
     borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 20,
   },
   modalEditButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.2,
+  },
+  modalDeleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#EF4444",
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  modalDeleteButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
   modalCancelButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: "#D1D5DB",
     borderRadius: 8,
@@ -1404,19 +1732,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modalCancelButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#6B7280",
+    letterSpacing: 0.2,
   },
   modalSaveButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#059669",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
     borderRadius: 8,
   },
   modalSaveButtonDisabled: {
@@ -1424,8 +1753,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   modalSaveButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
 });

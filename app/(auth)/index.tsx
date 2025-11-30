@@ -31,7 +31,6 @@ export default function AuthScreen() {
         router.push("/(learner)/home" as Href);
       }
     } catch (err: any) {
-      console.error("Login error:", err);
       Alert.alert(
         "Đăng nhập thất bại",
         "Vui lòng kiểm tra lại sdt và mật khẩu của bạn.",

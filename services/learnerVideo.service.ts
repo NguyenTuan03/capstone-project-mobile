@@ -53,7 +53,7 @@ export class LearnerVideoService {
     coachNote: string
   ) {
     try {
-      console.log(learnerVideoId);
+      
       const response = await http.post(
         `/v1/learner-videos/${learnerVideoId}/ai-feedback`,
         {

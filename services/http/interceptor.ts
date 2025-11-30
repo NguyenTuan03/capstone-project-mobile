@@ -28,7 +28,7 @@ http.interceptors.request.use(async (config) => {
 
     config.transformRequest = [(data) => data];
 
-    console.log("🔧 FormData detected - Content-Type removed");
+    
   }
 
   // Add ngrok header if using ngrok URL
@@ -60,7 +60,7 @@ const onRefreshed = (newToken: string) => {
 
 http.interceptors.response.use(
   (response) => {
-    console.log("✅ Response:", response.status, response.config.url);
+    
     return response;
   },
   async (error) => {

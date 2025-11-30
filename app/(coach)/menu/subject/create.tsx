@@ -3,15 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -42,7 +42,7 @@ export default function CreateSubjectScreen() {
         description: description || undefined,
       };
 
-      console.log("📤 Creating subject...");
+      
 
       await http.post("/v1/subjects", payload, {
         headers: {
@@ -50,7 +50,7 @@ export default function CreateSubjectScreen() {
         },
       });
 
-      console.log("✅ Create successful!");
+      
 
       Toast.show({
         type: "success",

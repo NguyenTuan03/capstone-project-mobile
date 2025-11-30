@@ -21,6 +21,7 @@ export type Coach = {
   verificationReason?: string | null;
   verificationStatus: CoachVerificationStatus;
   credentials?: Credential[];
+  user: User;
 };
 
 export enum CourseCredentialType {

@@ -7,7 +7,7 @@ class StorageService {
     try {
       await AsyncStorage.setItem("token", token);
     } catch (error) {
-      console.error("Error setting token:", error);
+       
     }
   }
 
@@ -15,7 +15,7 @@ class StorageService {
     try {
       return await AsyncStorage.getItem("token");
     } catch (error) {
-      console.error("Error getting token:", error);
+       
       return null;
     }
   }
@@ -24,7 +24,7 @@ class StorageService {
     try {
       await AsyncStorage.removeItem("token");
     } catch (error) {
-      console.error("Error removing token:", error);
+       
     }
   }
 
@@ -33,7 +33,7 @@ class StorageService {
     try {
       await AsyncStorage.setItem("refreshToken", refreshToken);
     } catch (error) {
-      console.error("Error setting refresh token:", error);
+       
     }
   }
 
@@ -41,7 +41,7 @@ class StorageService {
     try {
       return await AsyncStorage.getItem("refreshToken");
     } catch (error) {
-      console.error("Error getting refresh token:", error);
+       
       return null;
     }
   }
@@ -50,7 +50,7 @@ class StorageService {
     try {
       await AsyncStorage.removeItem("refreshToken");
     } catch (error) {
-      console.error("Error removing refresh token:", error);
+       
     }
   }
 
@@ -59,7 +59,7 @@ class StorageService {
     try {
       await AsyncStorage.setItem("user", JSON.stringify(user));
     } catch (error) {
-      console.error("Error setting user:", error);
+       
     }
   }
 
@@ -68,7 +68,7 @@ class StorageService {
       const userString = await AsyncStorage.getItem("user");
       return userString ? JSON.parse(userString) : null;
     } catch (error) {
-      console.error("Error getting user:", error);
+       
       return null;
     }
   }
@@ -77,7 +77,7 @@ class StorageService {
     try {
       await AsyncStorage.removeItem("user");
     } catch (error) {
-      console.error("Error removing user:", error);
+       
     }
   }
 
@@ -86,7 +86,7 @@ class StorageService {
     try {
       await AsyncStorage.multiRemove(["token", "refreshToken", "user"]);
     } catch (error) {
-      console.error("Error clearing storage:", error);
+       
     }
   }
 }

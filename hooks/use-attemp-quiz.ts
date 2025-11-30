@@ -26,7 +26,7 @@ export function useAttemptQuiz() {
       try {
         const doPost = async (path: string) => {
           const res = await post(path, payload);
-          console.log("🚀 ~ submitAttempt ~ res:", res.data);
+          
           return res.data.metadata;
         };
 

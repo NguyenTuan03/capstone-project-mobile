@@ -16,7 +16,7 @@ class ConfigurationService {
       // If the response already is the configuration object, return it.
       return data as ConfigurationType;
     } catch (error) {
-      console.error("Error fetching configuration:", error);
+       
       return null;
     }
   }

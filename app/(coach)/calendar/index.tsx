@@ -4,7 +4,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomWeeklyCalendar from "../../../components/coach/calendar/CustomWeeklyCalendar";
@@ -30,7 +30,6 @@ export default function CoachCalendarScreen() {
 
         setSessions(data);
       } catch (error) {
-        console.error("❌ Failed to load sessions:", error);
       } finally {
         setLoading(false);
       }

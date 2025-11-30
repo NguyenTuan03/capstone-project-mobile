@@ -1,5 +1,5 @@
-import { Course } from "@/types/course";
 import { DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
+import { Course } from "@/types/course";
 
 export const formatPrice = (price: string) => {
   const numPrice = parseFloat(price);
@@ -39,6 +39,7 @@ export const getStatusLabel = (status: string) => {
     ON_GOING: "Đang diễn ra",
     CANCELLED: "Đã hủy",
     FULL: "Đủ học viên",
+    READY_OPENED: "Sắp khai giảng",
   };
   return statusMap[status] || status;
 };
@@ -47,6 +48,7 @@ export const getStatusColor = (status: string) => {
   const colorMap: Record<string, { bg: string; text: string }> = {
     APPROVED: { bg: "#D1FAE5", text: "#059669" },
     PENDING_APPROVAL: { bg: "#FEF3C7", text: "#D97706" },
+    READY_OPENED: { bg: "#DBEAFE", text: "#1E40AF" },
     REJECTED: { bg: "#FEE2E2", text: "#DC2626" },
     COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
   };
@@ -56,7 +58,7 @@ export const getStatusColor = (status: string) => {
 export const getLevelLabel = (level?: string) => {
   const levelMap: Record<string, string> = {
     BEGINNER: "Cơ bản",
-    INTERMEDIATE: "Trung cấp",
+    INTERMEDIATE: "Trung bình",
     ADVANCED: "Nâng cao",
   };
   return levelMap[level ?? ""] ?? level ?? "";

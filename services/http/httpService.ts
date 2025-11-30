@@ -1,5 +1,5 @@
-import { AxiosRequestConfig, AxiosResponse } from "axios";
 import http from "@/services/http/interceptor";
+import { AxiosRequestConfig, AxiosResponse } from "axios";
 
 export const get = async <T = unknown>(
   url: string,
@@ -25,7 +25,6 @@ export const post = async <T = any>(
     const res: AxiosResponse<T> = await http.post(url, data, option);
     return res;
   } catch (err) {
-    console.error("Error in post():", err);
     throw err;
   }
 };
@@ -56,7 +55,6 @@ export const patch = async <T = unknown>(
     const res: AxiosResponse<T> = await http.patch(url, data, option);
     return res;
   } catch (err) {
-    console.error("Error in patch():", err);
     throw err;
   }
 };

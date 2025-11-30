@@ -10,8 +10,8 @@ export default function StudentsStackLayout() {
         headerShown: false,
         contentStyle: {
           backgroundColor: "#FFFFFF",
+          paddingBottom: insets.bottom + 20,
           paddingTop: insets.top,
-          paddingBottom: insets.bottom+20,
         },
       }}
     />

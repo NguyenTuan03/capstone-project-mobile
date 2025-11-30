@@ -18,7 +18,7 @@ class QuizService {
       );
       return response.data;
     } catch (error) {
-      console.error("Error fetching quiz attempts by user:", error);
+       
       throw error;
     }
   }

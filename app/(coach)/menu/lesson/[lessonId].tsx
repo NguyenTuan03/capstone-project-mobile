@@ -75,7 +75,6 @@ export default function LessonDetailScreen() {
       );
       setQuiz(response.data);
     } catch (error) {
-      console.error("Lỗi khi tải  quiz:", error);
       setQuiz(undefined);
     } finally {
       setLoading(false);
@@ -91,7 +90,6 @@ export default function LessonDetailScreen() {
       const video = response.data;
       setVideo(video);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách videos:", error);
       setVideo(undefined);
     } finally {
       setLoading(false);
@@ -114,7 +112,6 @@ export default function LessonDetailScreen() {
           visibilityTime: 3000,
         });
       } catch (error) {
-        console.error("Lỗi khi xóa video:", error);
         Toast.show({
           type: "error",
           text1: "Lỗi",
@@ -203,7 +200,7 @@ export default function LessonDetailScreen() {
         visibilityTime: 3000,
       });
     } catch (error) {
-      console.error("Lỗi khi xóa quiz:", error);
+       
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -265,7 +262,7 @@ export default function LessonDetailScreen() {
         await fetchQuizByLesson();
       }
     } catch (error: any) {
-      console.error("Error adding question:", error);
+       
       const errorMessage =
         error.response?.data?.message || "Không thể thêm câu hỏi";
       alert(errorMessage);
@@ -445,7 +442,7 @@ export default function LessonDetailScreen() {
         await fetchQuizByLesson();
       }
     } catch (error: any) {
-      console.error("Error updating question:", error);
+       
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật câu hỏi";
       alert(errorMessage);
@@ -475,7 +472,7 @@ export default function LessonDetailScreen() {
                 await fetchQuizByLesson();
               }
             } catch (error: any) {
-              console.error("Error deleting question:", error);
+               
               const errorMessage =
                 error.response?.data?.message || "Không thể xóa câu hỏi";
               alert(errorMessage);

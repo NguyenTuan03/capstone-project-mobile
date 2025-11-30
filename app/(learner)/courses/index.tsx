@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CoachDetailModal } from "@/components/coach/CoachDetailModal";
 import CoursesHeader from "@/components/learner/courses/CoursesHeader";
 import LocationSelectionModal from "@/components/learner/courses/LocationSelectionModal";
 import type {
@@ -8,7 +9,9 @@ import type {
   PaymentLinkResponse,
   Province,
 } from "@/components/learner/courses/types";
+import coachService from "@/services/coach.service";
 import { get, post } from "@/services/http/httpService";
+import type { CoachDetail } from "@/types/coach";
 import { Course } from "@/types/course";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -49,7 +52,7 @@ const getLevelInVietnamese = (level: string) => {
     case "BEGINNER":
       return "Cơ bản";
     case "INTERMEDIATE":
-      return "Trung cấp";
+      return "Trung bình";
     case "ADVANCED":
       return "Nâng cao";
     default:
@@ -80,6 +83,7 @@ export default function CoursesScreen() {
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
@@ -99,9 +103,21 @@ export default function CoursesScreen() {
   );
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showCourseDetailModal, setShowCourseDetailModal] = useState(false);
+  const [showCoachModal, setShowCoachModal] = useState(false);
+  const [coachDetail, setCoachDetail] = useState<CoachDetail | null>(null);
+  const [coachFeedbacks, setCoachFeedbacks] = useState<any[]>([]);
+  const [loadingCoachDetail, setLoadingCoachDetail] = useState(false);
   const [coachRatings, setCoachRatings] = useState<Record<number, number>>({});
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [showLevelModal, setShowLevelModal] = useState(false);
+
+  const LEVEL_OPTIONS = [
+    { label: "Cơ bản", value: "BEGINNER" },
+    { label: "Trung bình", value: "INTERMEDIATE" },
+    { label: "Nâng cao", value: "ADVANCED" },
+  ];
   const fetchProvinces = useCallback(async () => {
     try {
       setLoadingProvinces(true);
@@ -109,7 +125,6 @@ export default function CoursesScreen() {
       setProvinces(res.data || []);
       return res.data || [];
     } catch (error) {
-      console.error("Failed to fetch provinces:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -131,7 +146,6 @@ export default function CoursesScreen() {
       );
       setDistricts(res.data || []);
     } catch (error) {
-      console.error("Failed to fetch districts:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -192,9 +206,7 @@ export default function CoursesScreen() {
             }
           }
         }
-      } catch (error) {
-        console.error("Failed to load user location:", error);
-      }
+      } catch (error) {}
     },
     []
   );
@@ -287,9 +299,7 @@ export default function CoursesScreen() {
         });
 
         setCoachRatings((prev) => ({ ...prev, ...ratingsMap }));
-      } catch (error) {
-        console.error("Failed to fetch coach ratings:", error);
-      }
+      } catch (error) {}
     },
     [fetchCoachRating]
   );
@@ -312,6 +322,12 @@ export default function CoursesScreen() {
         }
         if (selectedDistrict) {
           params.append("district", String(selectedDistrict.id));
+        }
+        if (searchKeyword) {
+          params.append("name", searchKeyword);
+        }
+        if (selectedLevel) {
+          params.append("level", selectedLevel);
         }
 
         const url = `/v1/courses/available?${params.toString()}`;
@@ -337,7 +353,6 @@ export default function CoursesScreen() {
           fetchCoachesRatings(userIds);
         }
       } catch (error) {
-        console.error("Failed to fetch courses:", error);
         Toast.show({
           type: "error",
           text1: "Lỗi",
@@ -350,7 +365,14 @@ export default function CoursesScreen() {
         setLoadingMore(false);
       }
     },
-    [fetchCoachesRatings, pageSize, selectedDistrict, selectedProvince]
+    [
+      fetchCoachesRatings,
+      pageSize,
+      selectedDistrict,
+      selectedProvince,
+      searchKeyword,
+      selectedLevel,
+    ]
   );
 
   // Fetch lần đầu khi mount hoặc khi quay lại màn hình
@@ -360,7 +382,7 @@ export default function CoursesScreen() {
         fetchCourses(1, false);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedProvince, selectedDistrict, currentUserId, initializing])
+    }, [selectedProvince, selectedDistrict, currentUserId, initializing, selectedLevel, searchKeyword])
   );
 
   const loadMore = useCallback(() => {
@@ -368,6 +390,31 @@ export default function CoursesScreen() {
       fetchCourses(page + 1, true);
     }
   }, [courses.length, fetchCourses, loadingMore, page, total]);
+
+  const loadCoachDetail = useCallback(async (coachUserId: number) => {
+    try {
+      setLoadingCoachDetail(true);
+      const coach = await coachService.getCoachById(coachUserId);
+      setCoachDetail(coach);
+      setCoachFeedbacks([]); // TODO: fetch feedbacks if needed
+    } catch (error) {
+    } finally {
+      setLoadingCoachDetail(false);
+    }
+  }, []);
+
+  const handleOpenCoachModal = useCallback(
+    (course: Course) => {
+      if (course.createdBy?.id) {
+        setShowCourseDetailModal(false);
+        setTimeout(() => {
+          loadCoachDetail(course.createdBy.id);
+          setShowCoachModal(true);
+        }, 300);
+      }
+    },
+    [loadCoachDetail]
+  );
 
   const handleRegister = useCallback(async (courseId: number) => {
     setProcessingPayment(courseId);
@@ -403,13 +450,13 @@ export default function CoursesScreen() {
         status.toUpperCase() === "PAID" && cancel.toLowerCase() !== "true";
 
       if (paid) {
-        Toast.show({
-          type: "success",
-          text1: "Thành công",
-          text2: `Mã đơn: ${orderCode || "N/A"}`,
-          position: "top",
-          visibilityTime: 4000,
-        });
+        // Toast.show({
+        //   type: "success",
+        //   text1: "Thành công",
+        //   text2: `Mã đơn: ${orderCode || "N/A"}`,
+        //   position: "top",
+        //   visibilityTime: 4000,
+        // });
       } else {
         Toast.show({
           type: "error",
@@ -453,12 +500,50 @@ export default function CoursesScreen() {
               placeholder="Tìm khóa học theo tên..."
               placeholderTextColor="#9CA3AF"
               style={styles.searchInput}
+              value={searchKeyword}
+              onChangeText={(text) => {
+                setSearchKeyword(text);
+
+                // Clear existing debounce timer
+                if (debounceTimerRef.current) {
+                  clearTimeout(debounceTimerRef.current);
+                }
+
+                // Set new debounce timer
+                debounceTimerRef.current = setTimeout(() => {
+                  setPage(1);
+                  fetchCourses(1, false);
+                }, 500);
+              }}
             />
           </View>
-          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
-            <Ionicons name="funnel" size={20} color="#FFFFFF" />
+          <TouchableOpacity
+            style={styles.filterBtn}
+            onPress={() => setShowLevelModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="filter" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
+
+        {/* Level Filter Tag */}
+        {selectedLevel && (
+          <View style={styles.activeFilterTag}>
+            <Text style={styles.activeFilterText}>
+              {LEVEL_OPTIONS.find((opt) => opt.value === selectedLevel)?.label}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedLevel(null);
+                setPage(1);
+                fetchCourses(1, false);
+              }}
+              style={styles.clearTag}
+            >
+              <Ionicons name="close" size={14} color="#059669" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Location Filter */}
         <View style={styles.filterSection}>
@@ -536,7 +621,7 @@ export default function CoursesScreen() {
                 c.level === "BEGINNER"
                   ? "Cơ bản"
                   : c.level === "INTERMEDIATE"
-                  ? "Trung cấp"
+                  ? "Trung bình"
                   : "Nâng cao";
 
               return (
@@ -803,38 +888,43 @@ export default function CoursesScreen() {
                       <Text style={styles.modalCourseTitle}>
                         {selectedCourse.name}
                       </Text>
-                      <View style={styles.modalCoachRow}>
-                        <View style={styles.coachAvatarLarge}>
-                          <Text style={styles.coachAvatarTextLarge}>
-                            {selectedCourse.createdBy?.fullName?.[0] || "C"}
-                          </Text>
-                        </View>
-                        <View>
-                          <Text style={styles.coachNameLarge}>
-                            {selectedCourse.createdBy?.fullName ||
-                              "Huấn luyện viên"}
-                          </Text>
-                          {selectedCourse.createdBy?.id &&
-                            coachRatings[selectedCourse.createdBy.id] !==
-                              undefined && (
-                              <View style={styles.ratingRow}>
-                                <Ionicons
-                                  name="star"
-                                  size={12}
-                                  color="#F59E0B"
-                                />
-                                <Text style={styles.ratingValue}>
-                                  {coachRatings[
-                                    selectedCourse.createdBy.id
-                                  ].toFixed(1)}{" "}
-                                  <Text style={styles.ratingLabel}>
-                                    đánh giá
+                      <TouchableOpacity
+                        onPress={() => handleOpenCoachModal(selectedCourse)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.modalCoachRow}>
+                          <View style={styles.coachAvatarLarge}>
+                            <Text style={styles.coachAvatarTextLarge}>
+                              {selectedCourse.createdBy?.fullName?.[0] || "C"}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={styles.coachNameLarge}>
+                              {selectedCourse.createdBy?.fullName ||
+                                "Huấn luyện viên"}
+                            </Text>
+                            {selectedCourse.createdBy?.id &&
+                              coachRatings[selectedCourse.createdBy.id] !==
+                                undefined && (
+                                <View style={styles.ratingRow}>
+                                  <Ionicons
+                                    name="star"
+                                    size={12}
+                                    color="#F59E0B"
+                                  />
+                                  <Text style={styles.ratingValue}>
+                                    {coachRatings[
+                                      selectedCourse.createdBy.id
+                                    ].toFixed(1)}{" "}
+                                    <Text style={styles.ratingLabel}>
+                                      đánh giá
+                                    </Text>
                                   </Text>
-                                </Text>
-                              </View>
-                            )}
+                                </View>
+                              )}
+                          </View>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     </View>
 
                     <View style={styles.sectionDivider} />
@@ -950,6 +1040,86 @@ export default function CoursesScreen() {
                         </View>
                       )}
 
+                    {/* Sessions */}
+                    {selectedCourse.sessions &&
+                      selectedCourse.sessions.length > 0 && (
+                        <View style={styles.contentSection}>
+                          <Text style={styles.sectionHeader}>Các buổi học</Text>
+                          <View style={styles.sessionContainer}>
+                            {selectedCourse.sessions.map((session, idx) => (
+                              <View key={session.id} style={styles.sessionCard}>
+                                <View style={styles.sessionHeader}>
+                                  <View style={styles.sessionNumber}>
+                                    <Text style={styles.sessionNumberText}>
+                                      Buổi {session.sessionNumber}
+                                    </Text>
+                                  </View>
+                                  {/* <View style={styles.sessionStatus}>
+                                    <Text style={styles.sessionStatusText}>
+                                      {session.status === "SCHEDULED"
+                                        ? "Lên lịch"
+                                        : session.status === "IN_PROGRESS"
+                                        ? "Đang diễn ra"
+                                        : session.status === "COMPLETED"
+                                        ? "Hoàn thành"
+                                        : "Hủy"}
+                                    </Text>
+                                  </View> */}
+                                </View>
+
+                                {session.name && (
+                                  <View style={styles.sessionTitleRow}>
+                                    <Ionicons
+                                      name="document-text-outline"
+                                      size={14}
+                                      color="#059669"
+                                    />
+                                    <Text style={styles.sessionTitle}>
+                                      {session.name}
+                                    </Text>
+                                  </View>
+                                )}
+
+                                {session.description && (
+                                  <Text style={styles.sessionDescription}>
+                                    {session.description}
+                                  </Text>
+                                )}
+
+                                <View style={styles.sessionInfoRow}>
+                                  <View style={styles.sessionInfoItem}>
+                                    <Ionicons
+                                      name="calendar-outline"
+                                      size={14}
+                                      color="#6B7280"
+                                    />
+                                    <Text style={styles.sessionInfoText}>
+                                      {new Date(
+                                        session.scheduleDate
+                                      ).toLocaleDateString("vi-VN", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.sessionInfoItem}>
+                                    <Ionicons
+                                      name="time-outline"
+                                      size={14}
+                                      color="#6B7280"
+                                    />
+                                    <Text style={styles.sessionInfoText}>
+                                      {session.startTime} - {session.endTime}
+                                    </Text>
+                                  </View>
+                                </View>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
                     {/* Location Detail */}
                     {selectedCourse.court && (
                       <View style={styles.contentSection}>
@@ -1049,6 +1219,16 @@ export default function CoursesScreen() {
         </View>
       </Modal>
 
+      {/* Coach Detail Modal */}
+      <CoachDetailModal
+        visible={showCoachModal}
+        coachDetail={coachDetail}
+        feedbacks={coachFeedbacks}
+        courseStatus={selectedCourse?.status}
+        onClose={() => setShowCoachModal(false)}
+        onCredentialPress={() => {}}
+      />
+
       {/* Province Modal */}
       <LocationSelectionModal
         title="Chọn tỉnh/thành phố"
@@ -1078,6 +1258,63 @@ export default function CoursesScreen() {
         onClose={() => setShowDistrictModal(false)}
         bottomInset={insets.bottom}
       />
+
+      {/* Level Selection Modal */}
+      <Modal
+        visible={showLevelModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowLevelModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn trình độ</Text>
+              <TouchableOpacity
+                onPress={() => setShowLevelModal(false)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {LEVEL_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.modalItem,
+                    selectedLevel === option.value && styles.modalItemActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedLevel(option.value);
+                    setShowLevelModal(false);
+                    setPage(1);
+                    fetchCourses(1, false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.modalItemText,
+                      selectedLevel === option.value &&
+                        styles.modalItemTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  {selectedLevel === option.value && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#059669"
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1286,6 +1523,31 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
+  },
+  activeFilterTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
+    marginBottom: 8,
+  },
+  activeFilterText: {
+    color: "#059669",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  clearTag: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#D1FAE5",
+    alignItems: "center",
+    justifyContent: "center",
   },
   filterSection: { gap: 12, marginBottom: 12 },
   filterSectionHeader: {
@@ -1741,5 +2003,80 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#D97706",
+  },
+  sessionContainer: {
+    gap: 12,
+  },
+  sessionCard: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    gap: 10,
+  },
+  sessionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sessionNumber: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  sessionNumberText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  sessionStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#DBEAFE",
+  },
+  sessionStatusText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#0284C7",
+  },
+  sessionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sessionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+    flex: 1,
+  },
+  sessionDescription: {
+    fontSize: 12,
+    color: "#6B7280",
+    lineHeight: 18,
+  },
+  sessionInfoRow: {
+    flexDirection: "row",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  sessionInfoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  sessionInfoText: {
+    fontSize: 12,
+    color: "#4B5563",
+    fontWeight: "500",
   },
 });

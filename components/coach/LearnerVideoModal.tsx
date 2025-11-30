@@ -5,15 +5,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { ResizeMode, Video } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 interface LearnerVideoModalProps {
@@ -74,7 +74,7 @@ export default function LearnerVideoModal({
   };
 
   const handleGenerateAI = async () => {
-    console.log("Selected Video:", selectedVideo.video);
+    
     if (!selectedVideo?.publicUrl || !selectedVideo?.video?.publicUrl) {
       Alert.alert("Lỗi", "Không tìm thấy video để phân tích");
       return;

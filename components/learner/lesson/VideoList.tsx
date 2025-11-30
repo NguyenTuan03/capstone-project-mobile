@@ -59,7 +59,7 @@ const VideoList: React.FC<VideoListProps> = ({
   const [showCoachVideosModal, setShowCoachVideosModal] = useState(false);
   const [showOverlayPlayer, setShowOverlayPlayer] = useState(false);
 
-  console.log(video?.duration, submittedVideo?.status);
+  
 
   return (
     <>

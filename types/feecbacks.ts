@@ -1,3 +1,5 @@
+import { Course } from "./course";
+
 export type Feedback = {
   id?: number;
   comment: string;
@@ -10,4 +12,5 @@ export type Feedback = {
     email: string;
   };
   createdAt: string;
+  course: Course;
 };
