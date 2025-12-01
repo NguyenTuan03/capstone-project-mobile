@@ -246,7 +246,7 @@ export default function ProfileScreen() {
           )}
 
           {/* Stats Row */}
-          <View style={styles.statsRow}>
+          {/* <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{ongoingCoursesCount}</Text>
               <Text style={styles.statLabel}>Khóa học</Text>
@@ -261,7 +261,7 @@ export default function ProfileScreen() {
               <Text style={styles.statValue}>{totalEarned}</Text>
               <Text style={styles.statLabel}>Thành tựu</Text>
             </View>
-          </View>
+          </View> */}
         </View>
 
         {/* Menu Section */}

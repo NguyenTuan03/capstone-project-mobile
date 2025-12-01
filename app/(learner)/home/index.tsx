@@ -113,6 +113,14 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* How to Play Modal */}
+                <HowToPlayPreview onPress={() => setHowToPlayModalVisible(true)} />
+
+        <HowToPlayModal
+          visible={howToPlayModalVisible}
+          onClose={() => setHowToPlayModalVisible(false)}
+        />
+
         {/* Quick Stats */}
         <View style={styles.statsRow}>
           <View style={[styles.card, styles.statCard]}>
@@ -215,7 +223,6 @@ export default function HomeScreen() {
         )}
 
         {/* How to Play Section */}
-        <HowToPlayPreview onPress={() => setHowToPlayModalVisible(true)} />
 
         {/* AI Analysis Quick */}
         {/* <View style={[styles.card, styles.aiCard]}>
@@ -297,12 +304,6 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* How to Play Modal */}
-      <HowToPlayModal
-        visible={howToPlayModalVisible}
-        onClose={() => setHowToPlayModalVisible(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -315,13 +316,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    padding: 16,
+    padding: 12,
   },
   welcomeCard: {
     backgroundColor: "#059669",
     borderColor: "#059669",
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
   },
   welcomeRow: {
     flexDirection: "row",
@@ -351,30 +352,30 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 18,
+    paddingVertical: 14,
     backgroundColor: "#F9FAFB",
     borderColor: "#E5E7EB",
   },
   statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: "#DBEAFE",
-    marginBottom: 10,
+    marginBottom: 8,
     justifyContent: "center",
     alignItems: "center",
   },
   statNumber: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
     color: "#111827",
     letterSpacing: 0.3,
   },
   statLabel: {
     color: "#6B7280",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
-    marginTop: 4,
+    marginTop: 3,
   },
   aiCard: { backgroundColor: "#F3E8FF", borderColor: "#E9D5FF" },
   aiRow: { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -399,21 +400,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#F9FAFB",
     borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   sessionTitle: {
     color: "#111827",
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13,
   },
   sessionCoach: {
     color: "#6B7280",
-    fontSize: 12,
-    marginTop: 3,
+    fontSize: 11,
+    marginTop: 2,
     fontWeight: "500",
   },
   sessionMetaRow: {
@@ -476,8 +477,8 @@ const styles = StyleSheet.create({
   progressItem: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    padding: 11,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#059669",
@@ -490,40 +491,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   progressTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
     letterSpacing: 0.2,
   },
   progressSessionCount: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: "400",
   },
   progressPercentBadge: {
     backgroundColor: "#ECFDF5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#A7F3D0",
   },
   progressPercent: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "800",
     color: "#059669",
     letterSpacing: 0.3,
   },
   progressBarContainer: {
-    height: 10,
+    height: 8,
     backgroundColor: "#E5E7EB",
-    borderRadius: 5,
+    borderRadius: 4,
     overflow: "hidden",
-    marginBottom: 14,
+    marginBottom: 10,
   },
   progressBar: {
     height: "100%",
@@ -538,11 +539,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     backgroundColor: "#F9FAFB",
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 11,
+    paddingVertical: 10,
+    paddingHorizontal: 9,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
