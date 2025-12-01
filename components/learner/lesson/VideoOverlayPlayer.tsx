@@ -28,6 +28,7 @@ interface VideoOverlayPlayerProps {
   coachVideoUrl: string;
   learnerVideoUrl: string;
   aiAnalysisResult: AiVideoCompareResult | null;
+  isPaddingTopEnabled?: boolean;
 }
 
 const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
@@ -36,6 +37,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   coachVideoUrl,
   learnerVideoUrl,
   aiAnalysisResult,
+  isPaddingTopEnabled = false,
 }) => {
   const insets = useSafeAreaInsets();
   const [opacityDisplay, setOpacityDisplay] = useState(0.5);
@@ -247,7 +249,10 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
       <View
         style={[
           styles.container,
-          { paddingBottom: insets.bottom },
+          {
+            paddingBottom: insets.bottom,
+            paddingTop: isPaddingTopEnabled ? insets.top : 0,
+          },
         ]}
       >
         <View style={styles.header}>

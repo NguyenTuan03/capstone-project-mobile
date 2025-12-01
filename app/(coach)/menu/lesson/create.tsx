@@ -3,16 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -46,7 +46,6 @@ export default function CreateLessonScreen() {
         description: description.trim(),
         duration: durNum,
       };
-      
 
       await post(`${API_URL}/v1/lessons/subjects/${subjectId}`, payload);
 
@@ -54,7 +53,7 @@ export default function CreateLessonScreen() {
         {
           text: "OK",
           onPress: () => {
-            router.back();
+            router.replace("/(coach)/menu/subject");
           },
         },
       ]);
@@ -185,10 +184,7 @@ export default function CreateLessonScreen() {
           <TouchableOpacity
             onPress={handleCreate}
             disabled={saving}
-            style={[
-              styles.createButton,
-              saving && styles.createButtonDisabled,
-            ]}
+            style={[styles.createButton, saving && styles.createButtonDisabled]}
             activeOpacity={0.7}
           >
             {saving ? (
