@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CoachDetailModal } from "@/components/coach/CoachDetailModal";
+import CourseSkeleton from "@/components/learner/courses/CourseSkeleton";
 import CoursesHeader from "@/components/learner/courses/CoursesHeader";
 import LocationSelectionModal from "@/components/learner/courses/LocationSelectionModal";
 import type {
@@ -605,8 +606,10 @@ export default function CoursesScreen() {
 
         {/* Course Cards */}
         {loading ? (
-          <View style={{ padding: 40, alignItems: "center" }}>
-            <ActivityIndicator size="large" color="#059669" />
+          <View style={{ gap: 10, paddingHorizontal: 16 }}>
+            <CourseSkeleton />
+            <CourseSkeleton />
+            <CourseSkeleton />
           </View>
         ) : courses.length === 0 ? (
           <View style={{ padding: 40, alignItems: "center" }}>
@@ -1054,17 +1057,6 @@ export default function CoursesScreen() {
                                       Buổi {session.sessionNumber}
                                     </Text>
                                   </View>
-                                  {/* <View style={styles.sessionStatus}>
-                                    <Text style={styles.sessionStatusText}>
-                                      {session.status === "SCHEDULED"
-                                        ? "Lên lịch"
-                                        : session.status === "IN_PROGRESS"
-                                        ? "Đang diễn ra"
-                                        : session.status === "COMPLETED"
-                                        ? "Hoàn thành"
-                                        : "Hủy"}
-                                    </Text>
-                                  </View> */}
                                 </View>
 
                                 {session.name && (

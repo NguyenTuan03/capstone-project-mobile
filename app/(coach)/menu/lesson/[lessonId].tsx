@@ -1116,7 +1116,6 @@ export default function LessonDetailScreen() {
                     activeOpacity={0.7}
                   >
                     <Ionicons name="pencil" size={18} color="#FFFFFF" />
-                    <Text style={styles.addQuizButtonText}>Sửa quiz</Text>
                   </TouchableOpacity>
                 </View>
 

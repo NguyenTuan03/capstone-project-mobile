@@ -10,7 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -210,6 +210,7 @@ export default function AIScreen() {
           coachVideoUrl={selectedResult.video?.publicUrl || ""}
           learnerVideoUrl={selectedResult.learnerVideo?.publicUrl || ""}
           aiAnalysisResult={selectedResult}
+          isPaddingTopEnabled={true}
         />
       )}
     </View>
