@@ -1,5 +1,8 @@
+import { get } from "@/services/http/httpService";
 import { useJWTAuthActions } from "@/services/jwt-auth/JWTAuthProvider";
 import storageService from "@/services/storageService";
+import type { CoursesResponse } from "@/types/course";
+import type { LearnerProgress } from "@/types/learner-progress";
 import { PickleballLevel, User } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -17,6 +20,9 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { logout } = useJWTAuthActions();
   const [user, setUser] = useState<User | null>(null);
+  const [ongoingCoursesCount, setOngoingCoursesCount] = useState<number>(0);
+  const [totalEarned, setTotalEarned] = useState<number>(0);
+  const [completionRate, setCompletionRate] = useState<number>(0);
 
   const loadUserData = useCallback(async () => {
     try {
@@ -29,10 +35,67 @@ export default function ProfileScreen() {
     }
   }, []);
 
+  const fetchOngoingCoursesCount = useCallback(async () => {
+    try {
+      const res = await get<CoursesResponse>("/v1/courses/learner");
+      const { items = [] } = res.data ?? {};
+      setOngoingCoursesCount(items.length);
+    } catch (error) {
+      console.error("Error fetching ongoing courses count:", error);
+      setOngoingCoursesCount(0);
+    }
+  }, []);
+
+  const fetchAchievementStats = useCallback(async () => {
+    try {
+      const token = await storageService.getToken();
+      const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+      const res = await get<{ totalEarned: number; totalInProgress: number; completionRate: number }>(
+        `${API_URL}/v1/achievements/my-stats`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }
+      );
+      setTotalEarned(res.data.totalEarned || 0);
+    } catch (error) {
+      console.error("Error fetching achievement stats:", error);
+      setTotalEarned(0);
+    }
+  }, []);
+
+  const fetchCompletionRate = useCallback(async () => {
+    try {
+      const res = await get<LearnerProgress[]>("/v1/learners/current-progresses");
+      const progresses = res.data || [];
+      
+      if (progresses.length === 0) {
+        setCompletionRate(0);
+        return;
+      }
+      const progressPcts = progresses
+        .map((progress) => progress.course?.progressPct)
+        .filter((pct) => pct !== undefined && pct !== null) as number[];
+
+      if (progressPcts.length === 0) {
+        setCompletionRate(0);
+        return;
+      }
+
+      const averageProgress = progressPcts.reduce((sum, pct) => sum + pct, 0) / progressPcts.length;
+      setCompletionRate(Math.round(averageProgress));
+    } catch (error) {
+      console.error("Error fetching completion rate:", error);
+      setCompletionRate(0);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadUserData();
-    }, [loadUserData])
+      fetchOngoingCoursesCount();
+      fetchAchievementStats();
+      fetchCompletionRate();
+    }, [loadUserData, fetchOngoingCoursesCount, fetchAchievementStats, fetchCompletionRate])
   );
 
   const handleLogout = () => {
@@ -97,27 +160,9 @@ export default function ProfileScreen() {
       key: "achievements",
       icon: "trophy",
       label: "Thành tựu",
-      to: "/(learner)/achievements",
+      to: "/(learner)/profile/achievements",
     },
   ];
-
-  const quickActions = [
-    {
-      key: "schedule",
-      icon: "calendar",
-      label: "Lịch học",
-      color: "#3B82F6",
-      to: "/(learner)/profile",
-    },
-    {
-      key: "achievements",
-      icon: "star",
-      label: "Thành tựu",
-      color: "#F59E0B",
-      to: "/(learner)/profile",
-    },
-  ];
-
   return (
     <View style={[styles.safe]}>
       <ScrollView
@@ -203,51 +248,21 @@ export default function ProfileScreen() {
           {/* Stats Row */}
           {/* <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>4</Text>
+              <Text style={styles.statValue}>{ongoingCoursesCount}</Text>
               <Text style={styles.statLabel}>Khóa học</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>68%</Text>
+              <Text style={styles.statValue}>{completionRate}%</Text>
               <Text style={styles.statLabel}>Hoàn thành</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>12</Text>
+              <Text style={styles.statValue}>{totalEarned}</Text>
               <Text style={styles.statLabel}>Thành tựu</Text>
             </View>
           </View> */}
         </View>
-
-        {/* Quick Actions */}
-        {/* <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Truy cập nhanh</Text>
-        </View>
-
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.key}
-              style={styles.quickActionCard}
-              activeOpacity={0.85}
-              onPress={() => router.push(action.to as any)}
-            >
-              <View
-                style={[
-                  styles.quickActionIconBg,
-                  { backgroundColor: action.color + "15" },
-                ]}
-              >
-                <Ionicons
-                  name={action.icon as any}
-                  size={24}
-                  color={action.color}
-                />
-              </View>
-              <Text style={styles.quickActionLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View> */}
 
         {/* Menu Section */}
         <View style={styles.sectionHeader}>

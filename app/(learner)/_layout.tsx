@@ -47,7 +47,7 @@ export default function LearnerTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile/index"
+        name="profile"
         options={{
           title: "Cá nhân",
           tabBarIcon: ({ color, size }) => (
