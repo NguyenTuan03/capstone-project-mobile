@@ -204,6 +204,8 @@ export default function EnrollmentInfoScreen() {
                   ? "Đã xác nhận"
                   : enrollment.status === "UNPAID"
                   ? "Chưa thanh toán"
+                  : enrollment.status === "DONE"
+                  ? "Đã hoàn thành"
                   : "Đã hủy"}
               </Text>
             </View>

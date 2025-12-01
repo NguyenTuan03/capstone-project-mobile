@@ -151,7 +151,11 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
               </View>
             ) : (
               <View style={styles.submitButtonContent}>
-                <MaterialCommunityIcons name="upload" size={16} color="#FFFFFF" />
+                <MaterialCommunityIcons
+                  name="upload"
+                  size={16}
+                  color="#FFFFFF"
+                />
                 <Text style={styles.submitButtonText}>Nộp bài</Text>
               </View>
             )}

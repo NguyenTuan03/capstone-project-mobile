@@ -129,6 +129,7 @@ const statusMap = (status: string) => {
     REJECTED: { text: "Từ chối", color: "#DC2626" },
     ON_GOING: { text: "Đang diễn ra", color: "#16A34A" },
     COMPLETED: { text: "Hoàn thành", color: "#16A34A" },
+    PENDING_APPROVAL: { text: "Chờ duyệt", color: "#F59E0B" },
   };
   const found = map[status] || { text: status, color: "#6B7280" };
   return (
