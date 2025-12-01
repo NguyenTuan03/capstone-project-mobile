@@ -32,12 +32,14 @@ interface SessionDetailModalProps {
   session: CalendarSession | null;
   isVisible: boolean;
   onClose: () => void;
+  onAttendanceSaved?: () => void;
 }
 
 const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
   session,
   isVisible,
   onClose,
+  onAttendanceSaved,
 }) => {
   const [attendanceMap, setAttendanceMap] = useState<Record<number, boolean>>(
     {}
@@ -210,13 +212,11 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
                 attendances
               );
 
-              // Instead of fetching the session again, reload the app/page so the
-              // caller context will re-mount and fetch fresh data.
-              // try {
-              //   await reloadApp();
-              // } catch (reloadErr) {
-              //   console.warn("Failed to reload app after save:", reloadErr);
-              // }
+              // Trigger refresh callback if provided
+              if (onAttendanceSaved) {
+                onAttendanceSaved();
+              }
+
               onClose();
               Alert.alert("Thành công", "Đã lưu điểm danh thành công!");
             } catch (error: any) {
@@ -325,17 +325,18 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
           </View>
 
           {/* Video Conference Button */}
-          {sessionData.status !== SessionStatus.CANCELLED && (
-            <TouchableOpacity
-              style={styles.vcButton}
-              onPress={handleJoinVideoConference}
-            >
-              <Ionicons name="videocam" size={20} color="#FFFFFF" />
-              <Text style={styles.vcButtonText}>
-                Tham gia lớp học trực tuyến
-              </Text>
-            </TouchableOpacity>
-          )}
+          {sessionData.status !== SessionStatus.CANCELLED &&
+            sessionData.status !== SessionStatus.COMPLETED && (
+              <TouchableOpacity
+                style={styles.vcButton}
+                onPress={handleJoinVideoConference}
+              >
+                <Ionicons name="videocam" size={20} color="#FFFFFF" />
+                <Text style={styles.vcButtonText}>
+                  Tham gia lớp học trực tuyến
+                </Text>
+              </TouchableOpacity>
+            )}
 
           {/* Payment Warning */}
           <View style={styles.warningSection}>

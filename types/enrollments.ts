@@ -5,9 +5,9 @@ export type EnrollmentStatus =
   | "PENDING_GROUP"
   | "CONFIRMED"
   | "LEARNING"
-  | "REFUNDED"
   | "UNPAID"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "DONE";
 
 export type EnrollmentPaymentStatus =
   | "PENDING"

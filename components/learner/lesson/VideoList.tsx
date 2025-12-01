@@ -129,6 +129,7 @@ const VideoList: React.FC<VideoListProps> = ({
           coachVideoUrl={video.publicUrl}
           learnerVideoUrl={submittedVideo.publicUrl}
           aiAnalysisResult={aiAnalysisResult}
+          isPaddingTopEnabled={true}
         />
       )}
     </>

@@ -97,10 +97,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if (!user || !token) {
         return;
       }
-      
 
       const API_URL = process.env.EXPO_PUBLIC_SOCKET_URL;
-      
 
       // Try connecting to root namespace first
       newSocket = io(API_URL!, {
@@ -115,21 +113,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       newSocket.on("connect", () => {
-        
         setIsConnected(true);
       });
 
       newSocket.on("disconnect", () => {
-        
         setIsConnected(false);
       });
 
-      newSocket.on("connect_error", (err) => {
-        
-      });
+      newSocket.on("connect_error", (err) => {});
 
       newSocket.on("notification.send", (notification: Notification) => {
-        
         // Add to queue instead of showing immediately
         setNotificationQueue((prev) => [...prev, notification]);
       });

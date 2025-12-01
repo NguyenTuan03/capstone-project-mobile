@@ -29,7 +29,8 @@ export default function CoachCalendarScreen() {
         });
 
         setSessions(data);
-      } catch (error) {
+      } catch {
+        // Handle error silently
       } finally {
         setLoading(false);
       }
@@ -77,6 +78,7 @@ export default function CoachCalendarScreen() {
           initialStartDate={currentWeek.start}
           initialEndDate={currentWeek.end}
           onWeekChange={handleWeekChange}
+          onRefresh={() => loadSessions(currentWeek.start, currentWeek.end)}
         />
       )}
     </View>

@@ -7,7 +7,7 @@ import type { CoachDetail } from "@/types/coach";
 import { CourseStatus, type Course as BaseCourse } from "@/types/course";
 import type { Enrollment } from "@/types/enrollments";
 import { Feedback } from "@/types/feecbacks";
-import type { Session } from "@/types/session";
+import { SessionStatus, type Session } from "@/types/session";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -297,8 +297,8 @@ export default function CourseDetailScreen() {
         return "Chờ đủ học viên";
       case "UNPAID":
         return "Chưa thanh toán";
-      case "REFUNDED":
-        return "Đã hoàn tiền";
+      case "DONE":
+        return "Đã hoàn thành";
       case "CANCELLED":
         return "Đã hủy";
       default:
@@ -314,6 +314,8 @@ export default function CourseDetailScreen() {
       case "PENDING_GROUP":
       case "UNPAID":
         return { color: "#F59E0B" };
+      case "DONE":
+        return { color: "#3B82F6" };
       default:
         return { color: "#EF4444" };
     }
@@ -631,7 +633,6 @@ export default function CourseDetailScreen() {
               </View>
 
               {learnerEnrollment?.status !== "CANCELLED" &&
-                learnerEnrollment?.status !== "REFUNDED" &&
                 (course.status === "APPROVED" ||
                   course.status === "READY_OPENED" ||
                   course.status === "FULL") && (
@@ -779,33 +780,35 @@ export default function CourseDetailScreen() {
                           )}
                         </View>
 
-                        <TouchableOpacity
-                          style={styles.accessButton}
-                          activeOpacity={0.8}
-                          onPress={() =>
-                            router.push({
-                              pathname:
-                                "/(learner)/my-courses/[id]/lesson/[lessonId]",
-                              params: {
-                                id: courseId?.toString() ?? "",
-                                lessonId: session.id.toString(),
-                                lessonName:
-                                  session.name ||
-                                  `Buổi ${session.sessionNumber}`,
-                                sessionId: session.id.toString(),
-                              },
-                            })
-                          }
-                        >
-                          <Text style={styles.accessButtonText}>
-                            Vào học ngay
-                          </Text>
-                          <Ionicons
-                            name="arrow-forward"
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </TouchableOpacity>
+                        {session.status === SessionStatus.COMPLETED && (
+                          <TouchableOpacity
+                            style={styles.accessButton}
+                            activeOpacity={0.8}
+                            onPress={() =>
+                              router.push({
+                                pathname:
+                                  "/(learner)/my-courses/[id]/lesson/[lessonId]",
+                                params: {
+                                  id: courseId?.toString() ?? "",
+                                  lessonId: session.id.toString(),
+                                  lessonName:
+                                    session.name ||
+                                    `Buổi ${session.sessionNumber}`,
+                                  sessionId: session.id.toString(),
+                                },
+                              })
+                            }
+                          >
+                            <Text style={styles.accessButtonText}>
+                              Vào học ngay
+                            </Text>
+                            <Ionicons
+                              name="arrow-forward"
+                              size={16}
+                              color="#FFFFFF"
+                            />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   </View>

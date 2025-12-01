@@ -1008,7 +1008,7 @@ export default function CreateEditCourseModal({
                             // Calculate minimum allowed date
                             const minAllowedDate = new Date(
                               new Date().getTime() +
-                                (courseStartDateAfterDaysFromNow + 1 || 0) *
+                                (courseStartDateAfterDaysFromNow || 0) *
                                   24 *
                                   60 *
                                   60 *

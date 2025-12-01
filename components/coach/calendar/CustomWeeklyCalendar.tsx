@@ -47,6 +47,7 @@ interface CustomWeeklyCalendarProps {
   onSessionPress?: (session: CalendarSession) => void;
   onDatePress?: (date: string) => void;
   onWeekChange?: (startDate: string, endDate: string) => void;
+  onRefresh?: () => void;
 }
 
 const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
@@ -56,6 +57,7 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
   onSessionPress,
   onDatePress,
   onWeekChange,
+  onRefresh,
 }) => {
   const [currentDate, setCurrentDate] = useState(() => {
     // Use initialStartDate if provided, otherwise use current date
@@ -618,6 +620,7 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           session={selectedSession}
           isVisible={isModalVisible}
           onClose={closeModal}
+          onAttendanceSaved={onRefresh}
         />
 
         {/* Edit Session Modal */}
