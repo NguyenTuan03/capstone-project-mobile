@@ -24,6 +24,7 @@ export class LearnerVideoService {
   /**
    * Submit AI feedback with coach note
    * @param learnerVideoId - The ID of the learner video
+   * @param videoId - The ID of the video (optional)
    * @param aiData - The AI analysis result data
    * @param coachNote - Coach's note (required)
    * @returns Promise with the response data
@@ -33,27 +34,26 @@ export class LearnerVideoService {
     aiData: {
       summary: string;
       learnerScore: number;
-      keyDifferents: Array<{
+      keyDifferents: {
         aspect: string;
         learnerTechnique: string;
         impact: string;
-      }>;
-      details: Array<{
+      }[];
+      details: {
         type: string;
         advanced: string;
         strengths: string[];
         weaknesses: string[];
-      }>;
-      recommendationDrills: Array<{
+      }[];
+      recommendationDrills: {
         name: string;
         description: string;
         practiceSets: string;
-      }>;
+      }[];
     },
     coachNote: string
   ) {
     try {
-      
       const response = await http.post(
         `/v1/learner-videos/${learnerVideoId}/ai-feedback`,
         {

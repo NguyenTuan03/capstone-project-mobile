@@ -255,7 +255,7 @@ const CoachSubjectScreen = () => {
                       {subject.status === "DRAFT"
                         ? "● Bản nháp"
                         : subject.status === "PUBLISHED"
-                        ? "● Đã xuất bản"
+                        ? "● Công khai"
                         : "● " + subject.status}
                     </Text>
                     <View style={styles.lessonBadge}>
@@ -341,7 +341,7 @@ const CoachSubjectScreen = () => {
                   {selectedSubject.status === "DRAFT"
                     ? "● Bản nháp"
                     : selectedSubject.status === "PUBLISHED"
-                    ? "● Đã xuất bản"
+                    ? "● Công khai"
                     : "● " + selectedSubject.status}
                 </Text>
               </View>

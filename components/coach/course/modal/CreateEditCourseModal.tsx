@@ -621,7 +621,7 @@ export default function CreateEditCourseModal({
               </Text>
               <Text style={styles.hintText}>
                 Chỉ những tài liệu{" "}
-                <Text style={styles.highlightedText}>ĐÃ XUẤT BẢN</Text> mới có
+                <Text style={styles.highlightedText}>Công khai</Text> mới có
                 thể sử dụng
               </Text>
               <TouchableOpacity
