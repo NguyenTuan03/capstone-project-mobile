@@ -60,15 +60,15 @@ const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
                   styles.statusBadgeText,
                   submittedVideo.status === "PROCESSING" &&
                     styles.statusProcessingText,
-                  submittedVideo.status === "COMPLETED" &&
+                  submittedVideo.status === "READY" &&
                     styles.statusCompletedText,
                   submittedVideo.status === "FAILED" && styles.statusFailedText,
                 ]}
               >
                 {submittedVideo.status === "PROCESSING" && "Đang xử lý"}
-                {submittedVideo.status === "COMPLETED" && "Hoàn thành"}
+                {submittedVideo.status === "READY" && ""}
                 {submittedVideo.status === "FAILED" && "Thất bại"}
-                {!["PROCESSING", "COMPLETED", "FAILED"].includes(
+                {!["PROCESSING", "READY", "FAILED"].includes(
                   submittedVideo.status
                 ) && submittedVideo.status}
               </Text>

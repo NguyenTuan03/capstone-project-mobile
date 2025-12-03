@@ -170,7 +170,7 @@ export default function CoachCourseScreen() {
       <TouchableOpacity
         style={{
           position: "absolute",
-          bottom: 44,
+          bottom: 55,
           right: 16,
           width: 56,
           height: 56,

@@ -86,15 +86,16 @@ const CourseList: FC<CourseListProps> = ({
   }
 
   return (
-    <View style={{ paddingHorizontal: 12, paddingBottom: 20 }}>
-      {courses?.length > 0 && courses?.map((course) => (
-        <CourseCard
-          key={course.id}
-          course={course}
-          platformFee={platformFee}
-          onPress={() => onPressCourse(course)}
-        />
-      ))}
+    <View style={{ paddingHorizontal: 12, paddingBottom: 70 }}>
+      {courses?.length > 0 &&
+        courses?.map((course) => (
+          <CourseCard
+            key={course.id}
+            course={course}
+            platformFee={platformFee}
+            onPress={() => onPressCourse(course)}
+          />
+        ))}
 
       {hasMore && (
         <View style={{ paddingVertical: 16, alignItems: "center" }}>
@@ -130,4 +131,3 @@ const CourseList: FC<CourseListProps> = ({
 };
 
 export default CourseList;
-

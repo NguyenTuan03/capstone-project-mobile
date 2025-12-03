@@ -621,8 +621,8 @@ export default function CreateEditCourseModal({
               </Text>
               <Text style={styles.hintText}>
                 Chỉ những tài liệu{" "}
-                <Text style={styles.highlightedText}>Công khai</Text> mới có
-                thể sử dụng
+                <Text style={styles.highlightedText}>Công khai</Text> mới có thể
+                sử dụng
               </Text>
               <TouchableOpacity
                 style={styles.selectButton}
@@ -947,6 +947,57 @@ export default function CreateEditCourseModal({
               </View>
             </View>
 
+            {/* Schedules */}
+            <View style={styles.section}>
+              <View style={styles.scheduleHeader}>
+                <Text style={styles.label}>
+                  Lịch học <Text style={styles.required}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={handleAddSchedule}
+                >
+                  <Ionicons name="add" size={20} color="#059669" />
+                  <Text style={styles.addButtonText}>Thêm lịch</Text>
+                </TouchableOpacity>
+              </View>
+
+              {schedules.map((schedule, index) => {
+                const dayIndex = DAYS_OF_WEEK.indexOf(schedule.dayOfWeek);
+                const dayName =
+                  dayIndex >= 0
+                    ? DAYS_OF_WEEK_VI[dayIndex]
+                    : schedule.dayOfWeek;
+                return (
+                  <View key={index} style={styles.scheduleItem}>
+                    <View style={styles.scheduleInfo}>
+                      <Text style={styles.scheduleText}>
+                        {dayName}: {schedule.startTime} - {schedule.endTime}
+                      </Text>
+                    </View>
+                    <View style={styles.scheduleActions}>
+                      <TouchableOpacity
+                        onPress={() => handleEditSchedule(index)}
+                        style={styles.scheduleActionButton}
+                      >
+                        <Ionicons name="pencil" size={18} color="#059669" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteSchedule(index)}
+                        style={styles.scheduleActionButton}
+                      >
+                        <Ionicons name="trash" size={18} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {schedules.length === 0 && (
+                <Text style={styles.hint}>Chưa có lịch học nào được thêm</Text>
+              )}
+            </View>
+
             {/* Start Date */}
             <View style={styles.section}>
               <Text style={styles.label}>
@@ -1088,57 +1139,6 @@ export default function CreateEditCourseModal({
                     )
                   }
                 />
-              )}
-            </View>
-
-            {/* Schedules */}
-            <View style={styles.section}>
-              <View style={styles.scheduleHeader}>
-                <Text style={styles.label}>
-                  Lịch học <Text style={styles.required}>*</Text>
-                </Text>
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={handleAddSchedule}
-                >
-                  <Ionicons name="add" size={20} color="#059669" />
-                  <Text style={styles.addButtonText}>Thêm lịch</Text>
-                </TouchableOpacity>
-              </View>
-
-              {schedules.map((schedule, index) => {
-                const dayIndex = DAYS_OF_WEEK.indexOf(schedule.dayOfWeek);
-                const dayName =
-                  dayIndex >= 0
-                    ? DAYS_OF_WEEK_VI[dayIndex]
-                    : schedule.dayOfWeek;
-                return (
-                  <View key={index} style={styles.scheduleItem}>
-                    <View style={styles.scheduleInfo}>
-                      <Text style={styles.scheduleText}>
-                        {dayName}: {schedule.startTime} - {schedule.endTime}
-                      </Text>
-                    </View>
-                    <View style={styles.scheduleActions}>
-                      <TouchableOpacity
-                        onPress={() => handleEditSchedule(index)}
-                        style={styles.scheduleActionButton}
-                      >
-                        <Ionicons name="pencil" size={18} color="#059669" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteSchedule(index)}
-                        style={styles.scheduleActionButton}
-                      >
-                        <Ionicons name="trash" size={18} color="#EF4444" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })}
-
-              {schedules.length === 0 && (
-                <Text style={styles.hint}>Chưa có lịch học nào được thêm</Text>
               )}
             </View>
           </ScrollView>
