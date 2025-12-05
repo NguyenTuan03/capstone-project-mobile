@@ -136,8 +136,6 @@ export default function CredentialsScreen() {
         selectedImage || undefined
       );
 
-      
-
       // Refetch credentials to show the new one
       const updatedCredentials = await credentialService.getCredentials();
       setCredentials(updatedCredentials);
@@ -207,9 +205,9 @@ export default function CredentialsScreen() {
       setIsSaving(true);
 
       const credentialData = {
-        name: selectedCredential.name,
-        description: selectedCredential.description,
-        type: selectedCredential.type,
+        name: selectedCredential.baseCredential.name,
+        description: selectedCredential.baseCredential.description,
+        type: selectedCredential.baseCredential.type,
         issuedAt: selectedCredential.issuedAt,
         expiresAt: selectedCredential.expiresAt,
       };
@@ -299,25 +297,32 @@ export default function CredentialsScreen() {
           <View
             style={[
               styles.typeIcon,
-              { backgroundColor: getCredentialColor(item.type) + "20" },
+              {
+                backgroundColor:
+                  getCredentialColor(item.baseCredential.type) + "20",
+              },
             ]}
           >
             <Ionicons
-              name={getCredentialIcon(item.type) as any}
+              name={getCredentialIcon(item.baseCredential.type) as any}
               size={20}
-              color={getCredentialColor(item.type)}
+              color={getCredentialColor(item.baseCredential.type)}
             />
           </View>
           <View style={styles.cardTitle}>
-            <Text style={styles.credentialName}>{item.name}</Text>
+            <Text style={styles.credentialName}>
+              {item.baseCredential.name}
+            </Text>
             <Text style={styles.credentialType}>
-              {getCredentialTypeText(item.type)}
+              {getCredentialTypeText(item.baseCredential.type)}
             </Text>
           </View>
         </View>
 
-        {item.description && (
-          <Text style={styles.credentialDescription}>{item.description}</Text>
+        {item.baseCredential.description && (
+          <Text style={styles.credentialDescription}>
+            {item.baseCredential.description}
+          </Text>
         )}
 
         {item.issuedAt && (
@@ -380,7 +385,7 @@ export default function CredentialsScreen() {
         <FlatList
           data={credentials}
           renderItem={renderCredentialCard}
-          keyExtractor={(item, index) => `${item.name}-${index}`}
+          keyExtractor={(item, index) => `${item.baseCredential.name}-${index}`}
           contentContainerStyle={styles.listContent}
           ListFooterComponent={
             !showAddForm ? (
@@ -466,7 +471,6 @@ export default function CredentialsScreen() {
                   placeholderTextColor="#6B7280"
                   value={formData.name}
                   onChangeText={(text) => {
-                    
                     setFormData({ ...formData, name: text });
                   }}
                 />
@@ -661,9 +665,11 @@ export default function CredentialsScreen() {
                 {/* Image Container */}
                 {!isEditingModal && (
                   <View style={styles.modalImageContainer}>
-                    {selectedCredential.publicUrl ? (
+                    {selectedCredential.baseCredential.publicUrl ? (
                       <Image
-                        source={{ uri: selectedCredential.publicUrl }}
+                        source={{
+                          uri: selectedCredential.baseCredential.publicUrl,
+                        }}
                         style={styles.modalImage}
                         resizeMode="contain"
                       />
@@ -671,10 +677,14 @@ export default function CredentialsScreen() {
                       <View style={styles.modalImagePlaceholder}>
                         <Ionicons
                           name={
-                            getCredentialIcon(selectedCredential.type) as any
+                            getCredentialIcon(
+                              selectedCredential.baseCredential.type
+                            ) as any
                           }
                           size={80}
-                          color={getCredentialColor(selectedCredential.type)}
+                          color={getCredentialColor(
+                            selectedCredential.baseCredential.type
+                          )}
                         />
                       </View>
                     )}
@@ -688,15 +698,16 @@ export default function CredentialsScreen() {
                       {/* Display Mode */}
                       <View style={styles.modalTitleSection}>
                         <Text style={styles.modalTitle}>
-                          {selectedCredential.name}
+                          {selectedCredential.baseCredential.name}
                         </Text>
                         <View
                           style={[
                             styles.modalBadge,
                             {
                               backgroundColor:
-                                getCredentialColor(selectedCredential.type) +
-                                "20",
+                                getCredentialColor(
+                                  selectedCredential.baseCredential.type
+                                ) + "20",
                             },
                           ]}
                         >
@@ -705,22 +716,24 @@ export default function CredentialsScreen() {
                               styles.modalBadgeText,
                               {
                                 color: getCredentialColor(
-                                  selectedCredential.type
+                                  selectedCredential.baseCredential.type
                                 ),
                               },
                             ]}
                           >
-                            {getCredentialTypeText(selectedCredential.type)}
+                            {getCredentialTypeText(
+                              selectedCredential.baseCredential.type
+                            )}
                           </Text>
                         </View>
                       </View>
 
                       {/* Description */}
-                      {selectedCredential.description && (
+                      {selectedCredential.baseCredential.description && (
                         <View style={styles.modalSection}>
                           <Text style={styles.modalSectionTitle}>Mô tả</Text>
                           <Text style={styles.modalDescription}>
-                            {selectedCredential.description}
+                            {selectedCredential.baseCredential.description}
                           </Text>
                         </View>
                       )}
@@ -791,11 +804,14 @@ export default function CredentialsScreen() {
                               style={styles.editInput}
                               placeholder="Tên chứng chỉ"
                               placeholderTextColor="#6B7280"
-                              value={selectedCredential.name}
+                              value={selectedCredential.baseCredential.name}
                               onChangeText={(text) =>
                                 setSelectedCredential({
                                   ...selectedCredential,
-                                  name: text,
+                                  baseCredential: {
+                                    ...selectedCredential.baseCredential,
+                                    name: text,
+                                  },
                                 })
                               }
                             />
@@ -812,13 +828,16 @@ export default function CredentialsScreen() {
                                   key={type}
                                   style={[
                                     styles.editTypeOption,
-                                    selectedCredential.type === type &&
-                                      styles.editTypeOptionActive,
+                                    selectedCredential.baseCredential.type ===
+                                      type && styles.editTypeOptionActive,
                                   ]}
                                   onPress={() =>
                                     setSelectedCredential({
                                       ...selectedCredential,
-                                      type: type as any,
+                                      baseCredential: {
+                                        ...selectedCredential.baseCredential,
+                                        type: type as any,
+                                      },
                                     })
                                   }
                                 >
@@ -826,7 +845,8 @@ export default function CredentialsScreen() {
                                     name={getCredentialIcon(type) as any}
                                     size={16}
                                     color={
-                                      selectedCredential.type === type
+                                      selectedCredential.baseCredential.type ===
+                                      type
                                         ? "#FFFFFF"
                                         : getCredentialColor(type)
                                     }
@@ -834,8 +854,8 @@ export default function CredentialsScreen() {
                                   <Text
                                     style={[
                                       styles.editTypeOptionText,
-                                      selectedCredential.type === type &&
-                                        styles.editTypeOptionTextActive,
+                                      selectedCredential.baseCredential.type ===
+                                        type && styles.editTypeOptionTextActive,
                                     ]}
                                   >
                                     {getCredentialTypeText(type)}
@@ -859,11 +879,17 @@ export default function CredentialsScreen() {
                               style={[styles.editInput, styles.editInputLarge]}
                               placeholder="Mô tả chi tiết về chứng chỉ"
                               placeholderTextColor="#6B7280"
-                              value={selectedCredential.description || ""}
+                              value={
+                                selectedCredential.baseCredential.description ||
+                                ""
+                              }
                               onChangeText={(text) =>
                                 setSelectedCredential({
                                   ...selectedCredential,
-                                  description: text,
+                                  baseCredential: {
+                                    ...selectedCredential.baseCredential,
+                                    description: text,
+                                  },
                                 })
                               }
                               multiline={true}
@@ -1053,7 +1079,7 @@ export default function CredentialsScreen() {
                           onPress={() => {
                             setDetailModalVisible(false);
                             handleDeleteCredential(
-                              selectedCredential.id || selectedCredential.name
+                              selectedCredential.id || selectedCredential.baseCredential.name
                             );
                           }}
                         >
@@ -1088,7 +1114,7 @@ export default function CredentialsScreen() {
                           ]}
                           onPress={() =>
                             handleUpdateCredential(
-                              selectedCredential.id || selectedCredential.name
+                              selectedCredential.id || selectedCredential.baseCredential.name
                             )
                           }
                           disabled={isSaving}

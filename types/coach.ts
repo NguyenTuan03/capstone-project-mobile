@@ -23,12 +23,9 @@ export type CoachDetail = {
   verificationStatus: "UNVERIFIED" | "PENDING" | "REJECTED" | "VERIFIED";
   credentials?: {
     id: number;
-    name: string;
-    description?: string;
-    type: "CERTIFICATE" | "PRIZE" | "ACHIEVEMENT";
-    publicUrl?: string;
     issuedAt?: string;
     expiresAt?: string;
+    baseCredential: BaseCredential;
   }[];
   user: {
     id: number;
@@ -37,4 +34,12 @@ export type CoachDetail = {
     phoneNumber: string;
     profilePicture: string | null;
   };
+};
+
+export type BaseCredential = {
+  id: number;
+  name: string;
+  description?: string;
+  type: "CERTIFICATE" | "PRIZE" | "ACHIEVEMENT";
+  publicUrl?: string;
 };

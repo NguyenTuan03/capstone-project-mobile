@@ -2,6 +2,7 @@ import { Credential } from "@/types/user";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import type * as ImagePicker from "expo-image-picker";
+import { get } from "./http/httpService";
 
 interface CreateCredentialPayload {
   name: string;
@@ -58,18 +59,12 @@ class CredentialService {
 
       // Add file if provided
       if (file) {
-        
         formData.append("credential_image", {
           uri: file.uri,
           type: file.mimeType || "image/jpeg",
           name: file.fileName || "credential-image.jpg",
         } as any);
       }
-
-      
-      
-      
-      
 
       // Get token and make request with axios
       const token = await AsyncStorage.getItem("token");
@@ -86,16 +81,9 @@ class CredentialService {
         }
       );
 
-      
-
       return response.data?.data || response.data;
     } catch (error: any) {
-       
-
       if (error.response) {
-         
-         
-         
       }
 
       throw error;
@@ -115,15 +103,12 @@ class CredentialService {
       const token = await AsyncStorage.getItem("token");
       const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
-      const response = await axios.get(
-        `${API_URL}/v1/coaches/credentials`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-    
+      const response = await axios.get(`${API_URL}/v1/coaches/credentials`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       // Handle different response shapes
       if (Array.isArray(response.data)) {
         return response.data;
@@ -134,10 +119,9 @@ class CredentialService {
       if (response.data?.items && Array.isArray(response.data.items)) {
         return response.data.items;
       }
-      
+
       return [];
     } catch (error) {
-       
       throw error;
     }
   }
@@ -153,7 +137,6 @@ class CredentialService {
         },
       });
     } catch (error) {
-       
       throw error;
     }
   }
@@ -191,17 +174,12 @@ class CredentialService {
 
       // Add file if provided
       if (file) {
-        
         formData.append("credential_image", {
           uri: file.uri,
           type: file.mimeType || "image/jpeg",
           name: file.fileName || "credential-image.jpg",
         } as any);
       }
-
-      
-      
-      
 
       // Get token and make request with axios
       const token = await AsyncStorage.getItem("token");
@@ -218,18 +196,21 @@ class CredentialService {
         }
       );
 
-      
-
       return response.data?.data || response.data;
     } catch (error: any) {
-       
-
       if (error.response) {
-         
-         
-         
       }
 
+      throw error;
+    }
+  }
+
+  async getBaseCredentials(): Promise<any[]> {
+    try {
+      const response = await get(`/v1/base-credentials`);
+
+      return response.data?.items || [];
+    } catch (error) {
       throw error;
     }
   }

@@ -1,27 +1,36 @@
+import { CredentialSelector } from "@/components/auth/CredentialSelector";
 import { formStyles } from "@/components/common/formStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+type SelectedCredential = {
+  baseCredential: number;
+  issuedAt?: string;
+  expiredAt?: string;
+};
 
 type Props = {
   bio: string;
   yearsOfExperience: string;
   specialties: string;
   teachingMethods: string;
+  credentials: SelectedCredential[];
   fieldErrors: Record<string, string>;
   submitting: boolean;
   onBioChange: (value: string) => void;
   onYearsChange: (value: string) => void;
   onSpecialtiesChange: (value: string) => void;
   onTeachingMethodsChange: (value: string) => void;
+  onCredentialsChange: (credentials: SelectedCredential[]) => void;
   onClearError: (field: string) => void;
   onBack: () => void;
   onSubmit: () => void;
@@ -32,12 +41,14 @@ export const RegistrationStep2Coach = ({
   yearsOfExperience,
   specialties,
   teachingMethods,
+  credentials,
   fieldErrors,
   submitting,
   onBioChange,
   onYearsChange,
   onSpecialtiesChange,
   onTeachingMethodsChange,
+  onCredentialsChange,
   onClearError,
   onBack,
   onSubmit,
@@ -174,6 +185,14 @@ export const RegistrationStep2Coach = ({
           </Text>
         ) : null}
       </View>
+
+      {/* Credentials Selector */}
+      <CredentialSelector
+        selectedCredentials={credentials}
+        onCredentialsChange={onCredentialsChange}
+        fieldErrors={fieldErrors}
+        onClearError={onClearError}
+      />
 
       {/* Buttons */}
       <View style={formStyles.buttonRow}>

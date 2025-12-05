@@ -152,6 +152,7 @@ export default function CreateEditCourseModal({
   const [editingScheduleIndex, setEditingScheduleIndex] = useState<
     number | null
   >(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [tempSchedule, setTempSchedule] = useState<Schedule>({
     dayOfWeek: "Monday",
     startTime: "09:00",
@@ -451,8 +452,36 @@ export default function CreateEditCourseModal({
     setShowScheduleModal(true);
   };
 
+  const getDayNameInVietnamese = (dayName: string): string => {
+    const dayIndex = DAYS_OF_WEEK.indexOf(dayName);
+    return dayIndex >= 0 ? DAYS_OF_WEEK_VI[dayIndex] : dayName;
+  };
+
   const handleSaveSchedule = () => {
+    setScheduleError(null);
+
     if (!tempSchedule.startTime || !tempSchedule.endTime) {
+      setScheduleError("Vui lòng chọn giờ bắt đầu và giờ kết thúc");
+      return;
+    }
+
+    // Validate time format
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(tempSchedule.startTime)) {
+      setScheduleError("Giờ bắt đầu không hợp lệ");
+      return;
+    }
+
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(tempSchedule.endTime)) {
+      setScheduleError("Giờ kết thúc không hợp lệ");
+      return;
+    }
+
+    // Compare times
+    const startHourMin = tempSchedule.startTime.substring(0, 5);
+    const endHourMin = tempSchedule.endTime.substring(0, 5);
+
+    if (startHourMin >= endHourMin) {
+      setScheduleError("Giờ kết thúc phải sau giờ bắt đầu");
       return;
     }
 
@@ -468,6 +497,59 @@ export default function CreateEditCourseModal({
       totalSessions: tempSchedule.totalSessions ?? 1,
     };
 
+    // Check for duplicate schedule
+    let isDuplicate = false;
+    let duplicateMessage = "";
+
+    if (editingScheduleIndex !== null) {
+      // When editing, check if the new schedule conflicts with existing ones (excluding the current one)
+      isDuplicate = schedules.some((schedule, index) => {
+        if (index === editingScheduleIndex) return false; // Skip the current schedule being edited
+        return (
+          schedule.dayOfWeek === newSchedule.dayOfWeek &&
+          schedule.startTime === newSchedule.startTime &&
+          schedule.endTime === newSchedule.endTime
+        );
+      });
+      if (isDuplicate) {
+        const vietnameseDayName = getDayNameInVietnamese(newSchedule.dayOfWeek);
+        duplicateMessage = `Lịch ${vietnameseDayName} ${newSchedule.startTime} - ${newSchedule.endTime} đã tồn tại`;
+      }
+    } else {
+      // When adding, check if the schedule already exists
+      isDuplicate = schedules.some(
+        (schedule) =>
+          schedule.dayOfWeek === newSchedule.dayOfWeek &&
+          schedule.startTime === newSchedule.startTime &&
+          schedule.endTime === newSchedule.endTime
+      );
+      if (isDuplicate) {
+        const vietnameseDayName = getDayNameInVietnamese(newSchedule.dayOfWeek);
+        duplicateMessage = `Lịch ${vietnameseDayName} ${newSchedule.startTime} - ${newSchedule.endTime} đã tồn tại`;
+      }
+    }
+
+    if (isDuplicate) {
+      setScheduleError(duplicateMessage);
+      return;
+    }
+
+    // Check if the schedule is available in coach's available schedules
+    const isAvailable = availableSchedules.some(
+      (schedule) =>
+        schedule.dayOfWeek === newSchedule.dayOfWeek &&
+        schedule.startTime === newSchedule.startTime &&
+        schedule.endTime === newSchedule.endTime
+    );
+
+    if (isAvailable) {
+      const vietnameseDayName = getDayNameInVietnamese(newSchedule.dayOfWeek);
+      setScheduleError(
+        `Lịch ${vietnameseDayName} ${newSchedule.startTime} - ${newSchedule.endTime} không khả dụng trong lịch của bạn`
+      );
+      return;
+    }
+
     if (editingScheduleIndex !== null) {
       const updated = [...schedules];
       updated[editingScheduleIndex] = newSchedule;
@@ -476,6 +558,7 @@ export default function CreateEditCourseModal({
       setSchedules([...schedules, newSchedule]);
     }
     setShowScheduleModal(false);
+    setScheduleError(null);
   };
 
   const handleDeleteSchedule = (index: number) => {
@@ -1178,7 +1261,10 @@ export default function CreateEditCourseModal({
             visible={showScheduleModal}
             transparent
             animationType="slide"
-            onRequestClose={() => setShowScheduleModal(false)}
+            onRequestClose={() => {
+              setShowScheduleModal(false);
+              setScheduleError(null);
+            }}
           >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
@@ -1189,12 +1275,21 @@ export default function CreateEditCourseModal({
                       : "Thêm lịch học"}
                   </Text>
                   <TouchableOpacity
-                    onPress={() => setShowScheduleModal(false)}
+                    onPress={() => {
+                      setShowScheduleModal(false);
+                      setScheduleError(null);
+                    }}
                     style={styles.modalCloseButton}
                   >
                     <Ionicons name="close" size={24} color="#111827" />
                   </TouchableOpacity>
                 </View>
+                {scheduleError && (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color="#DC2626" />
+                    <Text style={styles.errorText}>{scheduleError}</Text>
+                  </View>
+                )}
                 <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
                   <View style={styles.section}>
                     <Text style={styles.label}>Thứ trong tuần</Text>
@@ -2201,5 +2296,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 13,
     color: "#111827",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    borderLeftWidth: 4,
+    borderLeftColor: "#DC2626",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 12,
+    marginVertical: 8,
+    borderRadius: 6,
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#991B1B",
+    fontWeight: "500",
+    lineHeight: 18,
   },
 });
