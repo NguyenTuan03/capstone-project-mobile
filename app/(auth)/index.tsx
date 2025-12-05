@@ -1,9 +1,9 @@
-import AppForm from "@/components/common/AppForm";
+import {Alert, Image, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { useRouter, Href } from "expo-router";
 import { useJWTAuthActions } from "@/services/jwt-auth/JWTAuthProvider";
 import storageService from "@/services/storageService";
-import { Href, useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import AppForm from "@/components/common/AppForm";
 
 export default function AuthScreen() {
   const [submitting, setSubmitting] = useState(false);
@@ -42,55 +42,101 @@ export default function AuthScreen() {
   };
 
   return (
-    <AppForm
-      title="Chào mừng trở lại 👋"
-      subtitle="Đăng nhập để tiếp tục hành trình tập luyện của bạn."
-      items={[
-        {
-          name: "phoneNumber",
-          label: "Số điện thoại",
-          placeholder: "0123456789",
-          keyboardType: "phone-pad",
-        },
-        {
-          name: "password",
-          label: "Mật khẩu",
-          placeholder: "••••••••",
-          secureTextEntry: true,
-        },
-      ]}
-      onSubmit={handleLogin}
-      submitting={submitting}
-      submitText="Đăng nhập"
-      footer={
-        <View style={{ gap: 6, alignItems: "center" }}>
-          <Pressable
-            onPress={() => router.push("/(auth)/forgot-password" as Href)}
-          >
-            <Text
-              style={{
-                color: "#6b7280",
-                fontSize: 13,
-                textDecorationLine: "underline",
-              }}
+    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <Image
+        source={require("@/assets/images/login.jpg")}
+        style={{
+          width: "100%",
+          height: 240,
+          resizeMode: "cover",
+        }}
+      />
+      <View
+        style={{
+          backgroundColor: "#f8fafc",
+          marginTop: -30,
+          borderTopLeftRadius: 32,
+          borderTopRightRadius: 32,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 30,
+            fontWeight: "700",
+            textAlign: "center",
+            marginTop: 20,
+            marginBottom: 16,
+          }}
+        >
+          Đăng nhập
+        </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            textAlign: "center",
+            color: "#6b7280",
+          }}
+        >
+          Đăng nhập để tiếp tục hành trình tập luyện của bạn.
+        </Text>
+      </View>
+      <AppForm
+        title="Chào mừng trở lại 👋"
+        items={[
+          {
+            name: "phoneNumber",
+            label: "Số điện thoại",
+            placeholder: "0123456789",
+            keyboardType: "phone-pad",
+          },
+          {
+            name: "password",
+            label: "Mật khẩu",
+            placeholder: "••••••••",
+            secureTextEntry: true,
+          },
+        ]}
+        onSubmit={handleLogin}
+        submitting={submitting}
+        submitText="Đăng nhập"
+        footer={
+          <View style={{ gap: 6, alignItems: "center" }}>
+            <Pressable
+              onPress={() => router.push("/(auth)/forgot-password" as Href)}
             >
-              Quên mật khẩu?
-            </Text>
-          </Pressable>
-          <View style={{ flexDirection: "row", gap: 6 }}>
-            <Text style={{ color: "#6b7280", fontSize: 13 }}>
-              Chưa có tài khoản?
-            </Text>
-            <Pressable onPress={() => router.push("/(auth)/register" as Href)}>
               <Text
-                style={{ color: "#059669", fontWeight: "700", fontSize: 13 }}
+                style={{
+                  color: "#6b7280",
+                  fontSize: 13,
+                  textDecorationLine: "underline",
+                }}
               >
-                Đăng ký
+                Quên mật khẩu?
               </Text>
             </Pressable>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              <Text style={{ color: "#6b7280", fontSize: 13 }}>
+                Chưa có tài khoản?
+              </Text>
+              <Pressable
+                onPress={() => router.push("/(auth)/register" as Href)}
+              >
+
+                <Text
+                  style={{
+                    color: "#059669",
+                    fontWeight: "700",
+                    fontSize: 13,
+                  }}
+                >
+ 
+                  Đăng ký
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      }
-    />
+        }
+      />
+    </View>
   );
 }
