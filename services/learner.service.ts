@@ -1,8 +1,8 @@
 import { get } from "@/services/http/httpService";
 import { CourseStatus } from "@/types/course";
 import {
-    LearnerProgress,
-    LearnerProgressDetails,
+  LearnerProgress,
+  LearnerProgressDetails,
 } from "@/types/learner-progress";
 
 export const getAllCoachLearnerProgress = async (
@@ -14,7 +14,6 @@ export const getAllCoachLearnerProgress = async (
     );
     return (res.data as any).metadata || [];
   } catch (error) {
-     
     return [];
   }
 };
@@ -27,10 +26,9 @@ export const getLearnerProgressDetails = async (
     const res = await get<LearnerProgressDetails>(
       `/v1/learner-progresses/coaches/details?userId=${userId}&courseId=${courseId}`
     );
-    
+
     return res.data;
   } catch (error) {
-     
     return null;
   }
 };

@@ -6,11 +6,11 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import type { Course } from "@/types/course";
 import {
-    formatSchedule,
-    getLevelColor,
-    getLevelLabel,
-    getStatusColor,
-    getStatusLabel,
+  formatSchedule,
+  getLevelColor,
+  getLevelLabel,
+  getStatusColor,
+  getStatusLabel,
 } from "@/utils/courseUtilFormat";
 
 import RevenueTooltip from "./RevenueTooltip";
@@ -137,7 +137,6 @@ const CourseCardComponent: FC<CourseCardProps> = ({
       </View>
 
       <View>
-        <DetailRow icon="book-outline" text={course?.subject?.name} />
         <DetailRow
           icon="time-outline"
           text={formatSchedule(course.schedules)}

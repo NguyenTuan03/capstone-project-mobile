@@ -1,19 +1,20 @@
 import { compareVideosWithBackend } from "@/services/ai/geminiService";
+import learnerVideoService from "@/services/learnerVideo.service";
 import { AiVideoComparisonDetailsType } from "@/types/ai";
 import { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import { ResizeMode, Video } from "expo-av";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface LearnerVideoModalProps {
@@ -74,7 +75,6 @@ export default function LearnerVideoModal({
   };
 
   const handleGenerateAI = async () => {
-    
     if (!selectedVideo?.publicUrl || !selectedVideo?.video?.publicUrl) {
       Alert.alert("Lỗi", "Không tìm thấy video để phân tích");
       return;
@@ -115,10 +115,6 @@ export default function LearnerVideoModal({
 
     try {
       setIsSubmitting(true);
-      const { default: learnerVideoService } = await import(
-        "@/services/learnerVideo.service"
-      );
-
       const aiData = {
         summary: aiResult.summary || "",
         learnerScore: aiResult.learnerScore || 0,

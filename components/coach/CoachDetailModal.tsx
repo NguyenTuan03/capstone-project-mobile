@@ -5,14 +5,14 @@ import { parseStringArray } from "@/utils/parseStringArray";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
@@ -228,7 +228,7 @@ export function CoachDetailModal({
                           <TouchableOpacity
                             style={styles.credentialItem}
                             onPress={() => {
-                              if (credential.publicUrl) {
+                              if (credential.baseCredential.publicUrl) {
                                 setExpandedCredential(
                                   expandedCredential?.id === credential.id
                                     ? null
@@ -236,14 +236,17 @@ export function CoachDetailModal({
                                 );
                               }
                             }}
-                            activeOpacity={credential.publicUrl ? 0.7 : 1}
+                            activeOpacity={
+                              credential.baseCredential.publicUrl ? 0.7 : 1
+                            }
                           >
                             <View style={styles.credentialIcon}>
                               <Ionicons
                                 name={
-                                  credential.type === "CERTIFICATE"
+                                  credential.baseCredential.type ===
+                                  "CERTIFICATE"
                                     ? "document-text-outline"
-                                    : credential.type === "PRIZE"
+                                    : credential.baseCredential.type === "PRIZE"
                                     ? "trophy-outline"
                                     : "ribbon-outline"
                                 }
@@ -253,11 +256,11 @@ export function CoachDetailModal({
                             </View>
                             <View style={styles.credentialContent}>
                               <Text style={styles.credentialName}>
-                                {credential.name}
+                                {credential.baseCredential.name}
                               </Text>
-                              {credential.description && (
+                              {credential.baseCredential.description && (
                                 <Text style={styles.credentialDescription}>
-                                  {credential.description}
+                                  {credential.baseCredential.description}
                                 </Text>
                               )}
                               {(credential.issuedAt ||
@@ -274,7 +277,7 @@ export function CoachDetailModal({
                                 </Text>
                               )}
                             </View>
-                            {credential.publicUrl && (
+                            {credential.baseCredential.publicUrl && (
                               <Ionicons
                                 name={
                                   expandedCredential?.id === credential.id
@@ -289,10 +292,12 @@ export function CoachDetailModal({
 
                           {/* Expanded Image View */}
                           {expandedCredential?.id === credential.id &&
-                            credential.publicUrl && (
+                            credential.baseCredential.publicUrl && (
                               <View style={styles.expandedImageContainer}>
                                 <Image
-                                  source={{ uri: credential.publicUrl }}
+                                  source={{
+                                    uri: credential.baseCredential.publicUrl,
+                                  }}
                                   style={styles.credentialImage}
                                   resizeMode="contain"
                                 />

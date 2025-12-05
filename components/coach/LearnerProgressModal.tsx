@@ -3,6 +3,7 @@ import quizService from "@/services/quiz.service";
 import sessionService from "@/services/sessionService";
 import { LearnerProgress } from "@/types/learner-progress";
 import { Session } from "@/types/session";
+import { LearnerVideo } from "@/types/video";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
@@ -39,7 +40,7 @@ export default function LearnerProgressModal({
   const [selectedQuizTitle, setSelectedQuizTitle] = useState("");
 
   // Learner video state
-  const [learnerVideos, setLearnerVideos] = useState<any[]>([]);
+  const [learnerVideos, setLearnerVideos] = useState<LearnerVideo[]>([]);
   const [selectedLearnerVideo, setSelectedLearnerVideo] = useState<any>(null);
   const [learnerVideoModalVisible, setLearnerVideoModalVisible] =
     useState(false);

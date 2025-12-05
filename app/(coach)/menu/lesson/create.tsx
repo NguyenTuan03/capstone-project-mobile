@@ -25,7 +25,6 @@ export default function CreateLessonScreen() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   const handleCreate = async () => {
@@ -33,18 +32,11 @@ export default function CreateLessonScreen() {
       Alert.alert("Lỗi", "Vui lòng nhập tên bài học.");
       return;
     }
-    const durNum = Number(duration);
-    if (!duration.trim() || Number.isNaN(durNum) || durNum <= 0) {
-      Alert.alert("Lỗi", "Vui lòng nhập thời lượng (phút) hợp lệ.");
-      return;
-    }
-
     try {
       setSaving(true);
       const payload: any = {
         name: name.trim(),
         description: description.trim(),
-        duration: durNum,
       };
 
       await post(`${API_URL}/v1/lessons/subjects/${subjectId}`, payload);
@@ -129,54 +121,6 @@ export default function CreateLessonScreen() {
                 style={styles.textAreaInput}
                 placeholderTextColor="#6B7280"
               />
-            </View>
-
-            {/* Duration */}
-            <View style={styles.fieldGroup}>
-              <View style={styles.durationHeader}>
-                <Text style={styles.fieldLabel}>Thời lượng</Text>
-                <Text style={styles.durationUnit}>(phút)</Text>
-              </View>
-              <View style={styles.durationControl}>
-                <TouchableOpacity
-                  onPress={() =>
-                    setDuration((prev) => {
-                      const num = parseInt(prev || "0", 10);
-                      return num > 0 ? String(num - 1) : "0";
-                    })
-                  }
-                  disabled={saving}
-                  style={styles.durationButton}
-                >
-                  <Ionicons name="remove" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                <TextInput
-                  value={duration}
-                  onChangeText={(text) => {
-                    const sanitized = text.replace(/[^0-9]/g, "");
-                    setDuration(sanitized);
-                  }}
-                  placeholder="0"
-                  placeholderTextColor="#6B7280"
-                  keyboardType="numeric"
-                  editable={!saving}
-                  style={styles.durationInput}
-                />
-
-                <TouchableOpacity
-                  onPress={() =>
-                    setDuration((prev) => {
-                      const num = parseInt(prev || "0", 10);
-                      return String(num + 1);
-                    })
-                  }
-                  disabled={saving}
-                  style={[styles.durationButton, styles.durationButtonAdd]}
-                >
-                  <Ionicons name="add" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
 
@@ -309,43 +253,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlignVertical: "top",
     minHeight: 100,
-  },
-  durationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  durationUnit: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  durationControl: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 10,
-    gap: 1,
-    overflow: "hidden",
-  },
-  durationButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: "#059669",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  durationButtonAdd: {
-    backgroundColor: "#059669",
-  },
-  durationInput: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
   },
   createButton: {
     flexDirection: "row",

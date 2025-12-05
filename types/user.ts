@@ -44,12 +44,15 @@ export type Learner = {
 
 export type Credential = {
   id?: string | number;
-  name: string;
-  description?: string;
-  type: CourseCredentialType;
-  publicUrl?: string;
   issuedAt?: Date;
   expiresAt?: Date;
+  baseCredential: {
+    id: number;
+    name: string;
+    description?: string;
+    type: CourseCredentialType;
+    publicUrl?: string;
+  };
 };
 export type UserMetadata = {
   metadata: {

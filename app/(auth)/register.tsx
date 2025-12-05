@@ -21,6 +21,12 @@ const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 type Step = 1 | 2;
 
+type SelectedCredential = {
+  baseCredential: number;
+  issuedAt?: string;
+  expiredAt?: string;
+};
+
 const Register = () => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -43,6 +49,7 @@ const Register = () => {
   const [yearsOfExperience, setYearsOfExperience] = useState("");
   const [specialties, setSpecialties] = useState("");
   const [teachingMethods, setTeachingMethods] = useState("");
+  const [credentials, setCredentials] = useState<SelectedCredential[]>([]);
 
   // Step 2: Learner Info
   const [skillLevel, setSkillLevel] = useState<PickleballLevel>(
@@ -174,6 +181,7 @@ const Register = () => {
               .split(",")
               .map((m) => m.trim())
               .filter((m) => m),
+            credentials: credentials.length > 0 ? credentials : undefined,
           },
         };
 
@@ -303,12 +311,14 @@ const Register = () => {
               yearsOfExperience={yearsOfExperience}
               specialties={specialties}
               teachingMethods={teachingMethods}
+              credentials={credentials}
               fieldErrors={fieldErrors}
               submitting={submitting}
               onBioChange={setCoachBio}
               onYearsChange={setYearsOfExperience}
               onSpecialtiesChange={setSpecialties}
               onTeachingMethodsChange={setTeachingMethods}
+              onCredentialsChange={setCredentials}
               onClearError={clearFieldError}
               onBack={handleBack}
               onSubmit={handleRegister}

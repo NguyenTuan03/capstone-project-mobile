@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StatusBar, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CoursesResponse = {
   items: Course[];
@@ -82,8 +83,7 @@ export default function CoachCourseScreen() {
         "platform_fee_per_percentage"
       );
       setPlatformFee(parseFloat(res?.value || "0"));
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const loadMore = useCallback(() => {
@@ -111,6 +111,8 @@ export default function CoachCourseScreen() {
 
   const hasMore = courses.length < total;
 
+  const insets = useSafeAreaInsets();
+
   return (
     <View
       style={{
@@ -122,12 +124,12 @@ export default function CoachCourseScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
         scrollIndicatorInsets={{ right: 1 }}
         onScroll={(e) => {
           const { layoutMeasurement, contentOffset, contentSize } =
             e.nativeEvent;
-          const paddingToBottom = 20;
+          const paddingToBottom = insets.bottom;
           if (
             layoutMeasurement.height + contentOffset.y >=
             contentSize.height - paddingToBottom
@@ -168,7 +170,7 @@ export default function CoachCourseScreen() {
       <TouchableOpacity
         style={{
           position: "absolute",
-          bottom: 44,
+          bottom: 55,
           right: 16,
           width: 56,
           height: 56,
