@@ -80,7 +80,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             uri: asset.uri,
             name: asset.fileName || "Video của bạn",
             duration: asset.duration
-              ? Math.round(asset.duration / 60)
+              ? Math.round(asset.duration / 1000)
               : undefined,
             uploaded: false,
           });
