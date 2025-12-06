@@ -235,12 +235,18 @@ export default function MyCoursesScreen() {
                 >
                   {/* Top: Image & Status */}
                   <View style={styles.cardImageContainer}>
-                    <Image
-                      source={{
-                        uri: course.publicUrl,
-                      }}
-                      style={styles.cardImage}
-                    />
+                    {course.publicUrl ? (
+                      <Image
+                        source={{
+                          uri: course.publicUrl,
+                        }}
+                        style={styles.cardImage}
+                      />
+                    ) : (
+                      <View style={styles.cardImagePlaceholder}>
+                        <Ionicons name="image-outline" size={48} color="#9CA3AF" />
+                      </View>
+                    )}
                     <View
                       style={[
                         styles.statusBadge,
@@ -516,6 +522,13 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     backgroundColor: "#E5E7EB",
+  },
+  cardImagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
   },
   statusBadge: {
     position: "absolute",
