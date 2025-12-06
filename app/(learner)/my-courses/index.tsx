@@ -80,7 +80,7 @@ export default function MyCoursesScreen() {
       setCourses(items);
       setPagination({ page, pageSize, total });
     } catch (error) {
- "Lỗi khi tải danh sách khóa học đã đăng ký:", error);
+      console.error("Lỗi khi tải danh sách khóa học đã đăng ký:", error);
     } finally {
       setLoading(false);
     }
@@ -236,12 +236,12 @@ export default function MyCoursesScreen() {
                   {/* Top: Image & Status */}
                   <View style={styles.cardImageContainer}>
                     {course.publicUrl ? (
-                      <Image
-                        source={{
-                          uri: course.publicUrl,
-                        }}
-                        style={styles.cardImage}
-                      />
+                    <Image
+                      source={{
+                        uri: course.publicUrl,
+                      }}
+                      style={styles.cardImage}
+                    />
                     ) : (
                       <View style={styles.cardImagePlaceholder}>
                         <Ionicons name="image-outline" size={48} color="#9CA3AF" />
