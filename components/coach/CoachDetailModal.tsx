@@ -46,10 +46,8 @@ export function CoachDetailModal({
     try {
       setLoadingFeedbacks(true);
       const res = await get<Feedback[]>(`/v1/feedbacks/coaches/${coachUserId}`);
-      console.log("Fetched coach feedbacks:", res.data);
       setCoachFeedbacks((res.data as any).metadata || []);
     } catch (error) {
-      console.error("Failed to fetch coach feedbacks:", error);
       setCoachFeedbacks([]);
     } finally {
       setLoadingFeedbacks(false);

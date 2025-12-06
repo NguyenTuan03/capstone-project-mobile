@@ -111,17 +111,17 @@ export default function UploadVideoScreen() {
         return;
       }
       formData.append("duration", String(duration));
-      
+
       // Ensure URI has file:// prefix for Android compatibility
       const videoUri = video.uri.startsWith("file://")
         ? video.uri
         : `file://${video.uri}`;
-      
+
       // Ensure filename ends with proper extension
       const videoName = video.fileName?.endsWith(".mp4")
         ? video.fileName
         : `${video.fileName || "video"}.mp4`;
-      
+
       formData.append("video", {
         uri: videoUri,
         type: "video/mp4", // Explicit MIME type for Android
@@ -136,39 +136,28 @@ export default function UploadVideoScreen() {
     try {
       setSaving(true);
       setUploadProgress(0);
-      
 
       let response;
       if (videoId) {
         // UPDATE mode
-        response = await http.put(
-          `/v1/videos/${videoId}`,
-          formData,
-          {
-            onUploadProgress: (progressEvent) => {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-              );
-              setUploadProgress(progress);
-              
-            },
-          }
-        );
+        response = await http.put(`/v1/videos/${videoId}`, formData, {
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+            );
+            setUploadProgress(progress);
+          },
+        });
       } else {
         // CREATE mode
-        response = await http.post(
-          `/v1/videos/lessons/${lessonId}`,
-          formData,
-          {
-            onUploadProgress: (progressEvent) => {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-              );
-              setUploadProgress(progress);
-              
-            },
-          }
-        );
+        response = await http.post(`/v1/videos/lessons/${lessonId}`, formData, {
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+            );
+            setUploadProgress(progress);
+          },
+        });
       }
 
       if (response.status === 200 || response.status === 201) {
@@ -180,10 +169,8 @@ export default function UploadVideoScreen() {
         ]);
       } else {
         Alert.alert("Lỗi", "Máy chủ phản hồi không hợp lệ.");
-        console.error("Server response:", response.data);
       }
     } catch (err: any) {
-      console.error("❌ Lỗi:", err.message);
       Alert.alert(
         "Lỗi",
         err.response?.data?.message || "Không thể lưu video. Vui lòng thử lại."

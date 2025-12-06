@@ -80,7 +80,7 @@ export default function MyCoursesScreen() {
       setCourses(items);
       setPagination({ page, pageSize, total });
     } catch (error) {
-      console.error("Lỗi khi tải danh sách khóa học đã đăng ký:", error);
+ "Lỗi khi tải danh sách khóa học đã đăng ký:", error);
     } finally {
       setLoading(false);
     }

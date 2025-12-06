@@ -47,7 +47,8 @@ export const CredentialSelector = ({
   const [baseCredentials, setBaseCredentials] = useState<BaseCredential[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedForEdit, setSelectedForEdit] = useState<SelectedCredential | null>(null);
+  const [selectedForEdit, setSelectedForEdit] =
+    useState<SelectedCredential | null>(null);
   const [issuedAtDate, setIssuedAtDate] = useState<Date | null>(null);
   const [expiredAtDate, setExpiredAtDate] = useState<Date | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -61,7 +62,6 @@ export const CredentialSelector = ({
       const data = await credentialService.getBaseCredentials();
       setBaseCredentials(data);
     } catch (error) {
-      console.error("Failed to load base credentials:", error);
     } finally {
       setLoading(false);
     }
@@ -84,8 +84,12 @@ export const CredentialSelector = ({
     if (!selectedForEdit) return;
 
     const updated = [...selectedCredentials];
-    const issuedAtStr = issuedAtDate ? formatDateToString(issuedAtDate) : undefined;
-    const expiredAtStr = expiredAtDate ? formatDateToString(expiredAtDate) : undefined;
+    const issuedAtStr = issuedAtDate
+      ? formatDateToString(issuedAtDate)
+      : undefined;
+    const expiredAtStr = expiredAtDate
+      ? formatDateToString(expiredAtDate)
+      : undefined;
 
     if (editingIndex !== null) {
       // Edit existing
@@ -110,9 +114,7 @@ export const CredentialSelector = ({
   };
 
   const handleRemoveCredential = (index: number) => {
-    onCredentialsChange(
-      selectedCredentials.filter((_, i) => i !== index)
-    );
+    onCredentialsChange(selectedCredentials.filter((_, i) => i !== index));
   };
 
   const getCredentialName = (baseCredentialId: number): string => {
@@ -131,7 +133,7 @@ export const CredentialSelector = ({
     <View style={styles.container}>
       <View style={formStyles.fieldContainer}>
         <Text style={formStyles.label}>Chứng chỉ (Tùy chọn)</Text>
-        
+
         {/* Selected Credentials List */}
         {selectedCredentials.length > 0 && (
           <View style={styles.selectedList}>
@@ -241,7 +243,9 @@ export const CredentialSelector = ({
                           setExpiredAtDate(null);
                           // Auto-scroll to show the details form
                           setTimeout(() => {
-                            scrollViewRef.current?.scrollToEnd({ animated: true });
+                            scrollViewRef.current?.scrollToEnd({
+                              animated: true,
+                            });
                           }, 100);
                         }}
                         style={[
@@ -431,9 +435,7 @@ export const CredentialSelector = ({
                 textColor="#111827"
               />
               <View style={styles.datePickerActions}>
-                <TouchableOpacity
-                  onPress={() => setShowIssuedCalendar(false)}
-                >
+                <TouchableOpacity onPress={() => setShowIssuedCalendar(false)}>
                   <Text style={styles.datePickerActionText}>Xong</Text>
                 </TouchableOpacity>
               </View>
@@ -489,9 +491,7 @@ export const CredentialSelector = ({
                 textColor="#111827"
               />
               <View style={styles.datePickerActions}>
-                <TouchableOpacity
-                  onPress={() => setShowExpiredCalendar(false)}
-                >
+                <TouchableOpacity onPress={() => setShowExpiredCalendar(false)}>
                   <Text style={styles.datePickerActionText}>Xong</Text>
                 </TouchableOpacity>
               </View>

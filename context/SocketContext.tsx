@@ -51,8 +51,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setIsProcessingQueue(true);
       const notification = notificationQueue[0];
 
-      console.log("Processing notification:", notification);
-
       Toast.show({
         type: notification.type.toLowerCase() as "success" | "error" | "info",
         text1: notification.title,
@@ -102,12 +100,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       const token = await storageService.getToken();
 
       if (!user || !token) {
-        console.log("No user or token found, cannot initialize socket");
         return;
       }
 
       const API_URL = process.env.EXPO_PUBLIC_SOCKET_URL;
-      console.log("Initializing socket connection to:", API_URL);
 
       // Try connecting to root namespace first
       newSocket = io(API_URL!, {
@@ -122,21 +118,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       newSocket.on("connect", () => {
-        console.log("Socket connected successfully");
         setIsConnected(true);
       });
 
       newSocket.on("disconnect", () => {
-        console.log("Socket disconnected");
         setIsConnected(false);
       });
 
-      newSocket.on("connect_error", (err) => {
-        console.error("Socket connection error:", err);
-      });
+      newSocket.on("connect_error", (err) => {});
 
       newSocket.on("notification.send", (notification: Notification) => {
-        console.log("Notification received:", notification);
         // Add to queue instead of showing immediately
         setNotificationQueue((prev) => [...prev, notification]);
       });
@@ -148,7 +139,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       if (newSocket) {
-        console.log("Cleaning up socket connection");
         newSocket.disconnect();
       }
     };

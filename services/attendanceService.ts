@@ -3,7 +3,7 @@ import http from "./http/interceptor";
 class AttendanceService {
   async getLearnerAttendance(sessionId: number, learnerId: number) {
     try {
-      console.log("Attendance Service - API Request:", {
+ "Attendance Service - API Request:", {
         url: `/v1/attendances/sessions/${sessionId}/learners/${learnerId}`,
         method: "GET",
       });

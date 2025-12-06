@@ -122,7 +122,7 @@ const CourseTabs: React.FC<Props> = ({ course, activeTab, onChangeTab }) => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.tab, activeTab === "edit" && styles.tabActive]}
             onPress={() => onChangeTab("edit")}
           >
@@ -139,7 +139,7 @@ const CourseTabs: React.FC<Props> = ({ course, activeTab, onChangeTab }) => {
             >
               Chỉnh sửa
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </ScrollView>
 
         {showLeftArrow ? (

@@ -148,7 +148,7 @@ Alert.alert("Lỗi kết nối", "Không thể kết nối tới lớp học tr�
 Alert.alert("Lỗi", "Không thể khởi tạo video conference")
 
 // All errors logged to console for debugging
-console.error("Failed to initialize Agora:", error)
+ "Failed to initialize Agora:", error)
 ```
 
 ## Console Logging

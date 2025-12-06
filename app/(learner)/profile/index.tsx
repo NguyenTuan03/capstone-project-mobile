@@ -30,9 +30,7 @@ export default function ProfileScreen() {
       if (userData) {
         setUser(userData);
       }
-    } catch (err) {
-      console.error("Error loading user data:", err);
-    }
+    } catch (err) {}
   }, []);
 
   const fetchOngoingCoursesCount = useCallback(async () => {
@@ -41,7 +39,6 @@ export default function ProfileScreen() {
       const { items = [] } = res.data ?? {};
       setOngoingCoursesCount(items.length);
     } catch (error) {
-      console.error("Error fetching ongoing courses count:", error);
       setOngoingCoursesCount(0);
     }
   }, []);
@@ -50,24 +47,26 @@ export default function ProfileScreen() {
     try {
       const token = await storageService.getToken();
       const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
-      const res = await get<{ totalEarned: number; totalInProgress: number; completionRate: number }>(
-        `${API_URL}/v1/achievements/my-stats`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        }
-      );
+      const res = await get<{
+        totalEarned: number;
+        totalInProgress: number;
+        completionRate: number;
+      }>(`${API_URL}/v1/achievements/my-stats`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       setTotalEarned(res.data.totalEarned || 0);
     } catch (error) {
-      console.error("Error fetching achievement stats:", error);
       setTotalEarned(0);
     }
   }, []);
 
   const fetchCompletionRate = useCallback(async () => {
     try {
-      const res = await get<LearnerProgress[]>("/v1/learners/current-progresses");
+      const res = await get<LearnerProgress[]>(
+        "/v1/learners/current-progresses"
+      );
       const progresses = res.data || [];
-      
+
       if (progresses.length === 0) {
         setCompletionRate(0);
         return;
@@ -81,10 +80,10 @@ export default function ProfileScreen() {
         return;
       }
 
-      const averageProgress = progressPcts.reduce((sum, pct) => sum + pct, 0) / progressPcts.length;
+      const averageProgress =
+        progressPcts.reduce((sum, pct) => sum + pct, 0) / progressPcts.length;
       setCompletionRate(Math.round(averageProgress));
     } catch (error) {
-      console.error("Error fetching completion rate:", error);
       setCompletionRate(0);
     }
   }, []);
@@ -95,7 +94,12 @@ export default function ProfileScreen() {
       fetchOngoingCoursesCount();
       fetchAchievementStats();
       fetchCompletionRate();
-    }, [loadUserData, fetchOngoingCoursesCount, fetchAchievementStats, fetchCompletionRate])
+    }, [
+      loadUserData,
+      fetchOngoingCoursesCount,
+      fetchAchievementStats,
+      fetchCompletionRate,
+    ])
   );
 
   const handleLogout = () => {

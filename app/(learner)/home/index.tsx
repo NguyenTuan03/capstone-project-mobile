@@ -49,7 +49,6 @@ export default function HomeScreen() {
       });
       setSessions(data);
     } catch (error) {
-      console.error("❌ Failed to load today's sessions:", error);
     } finally {
       setLoadingSessions(false);
     }
@@ -65,7 +64,6 @@ export default function HomeScreen() {
       setTotalCourses(courses);
       setTotalAiFeedbacks(feedbacks);
     } catch (error) {
-      console.error("❌ Failed to load stats:", error);
     } finally {
       setLoadingStats(false);
     }
@@ -77,7 +75,6 @@ export default function HomeScreen() {
       const data = await learnerService.getLearnerProgresses();
       setProgresses(data);
     } catch (error) {
-      console.error("❌ Failed to load progress:", error);
     } finally {
       setLoadingProgress(false);
     }
@@ -93,7 +90,7 @@ export default function HomeScreen() {
     <SafeAreaView
       style={[
         styles.safe,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 50 },
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
       <ScrollView contentContainerStyle={styles.container}>
@@ -114,7 +111,7 @@ export default function HomeScreen() {
         </View>
 
         {/* How to Play Modal */}
-                <HowToPlayPreview onPress={() => setHowToPlayModalVisible(true)} />
+        <HowToPlayPreview onPress={() => setHowToPlayModalVisible(true)} />
 
         <HowToPlayModal
           visible={howToPlayModalVisible}
