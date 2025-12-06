@@ -3,14 +3,14 @@ import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -40,8 +40,8 @@ const VerifyPhone = () => {
       return;
     }
 
-    if (otp.length < 4) {
-      setError("Mã OTP phải có ít nhất 4 chữ số");
+    if (otp.length < 6) {
+      setError("Mã OTP phải có ít nhất 6 chữ số");
       return;
     }
 
@@ -138,7 +138,7 @@ const VerifyPhone = () => {
                   styles.input,
                   error ? styles.inputError : undefined,
                 ]}
-                placeholder="Nhập mã OTP (4 chữ số)"
+                placeholder="Nhập mã OTP (6 chữ số)"
                 placeholderTextColor="#9CA3AF"
                 value={otp}
                 onChangeText={(text) => {
