@@ -44,11 +44,17 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
 }) => {
   const [showCapture, setShowCapture] = useState(false);
 
+  // Format duration from seconds to MM:SS
+  const formatDuration = (seconds: number | undefined): string => {
+    if (!seconds) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   const handleVideoCapture = (uri: string, name: string, duration: number) => {
     // Pass captured video back to parent component with duration in seconds
-    // Convert to minutes for consistency with picked videos
-    const durationInMinutes = Math.round(duration / 60);
-    onVideoCapture?.({ uri, name, duration: durationInMinutes });
+    onVideoCapture?.({ uri, name, duration });
     setShowCapture(false);
   };
 
@@ -110,68 +116,71 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
   // Show video preview and upload button if local video exists
   return (
     <>
-      <View style={[styles.resourceCard, { backgroundColor: "#F0F9FF" }]}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.resourceTitle}>{videoToDisplay.name}</Text>
-            <Text style={styles.metaText}>Từ thiết bị của bạn</Text>
+      <View style={styles.resourceCard}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerContent}>
+            <Text style={styles.resourceTitle} numberOfLines={1}>
+              {videoToDisplay.name}
+            </Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaText}>Từ thiết bị</Text>
+              {localVideo?.duration && (
+                <>
+                  <Text style={styles.metaDivider}>•</Text>
+                  <Text style={styles.metaText}>
+                    {formatDuration(localVideo.duration)}
+                  </Text>
+                </>
+              )}
+            </View>
           </View>
           {localVideo?.uploaded && (
             <View style={styles.uploadedBadge}>
-              <Text style={styles.uploadedBadgeText}>✓ Đã upload</Text>
+              <MaterialCommunityIcons name="check-circle" size={14} color="#059669" />
+              <Text style={styles.uploadedBadgeText}>Đã nộp</Text>
             </View>
           )}
         </View>
-        {localVideo?.duration && (
-          <Text style={{ ...styles.metaText, marginTop: 5 }}>
-            ⏱ {localVideo.duration} phút
-          </Text>
-        )}
+
         <LessonVideoPlayer source={videoToDisplay.uri} />
+
         {!localVideo?.uploaded && hasCoachVideo && coachVideoId && (
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              isUploading && styles.submitButtonDisabled,
-            ]}
-            onPress={() => onUploadVideo(coachVideoId)}
-            disabled={isUploading}
-            activeOpacity={0.85}
-          >
-            {isUploading ? (
-              <View style={styles.submitButtonContent}>
-                <ActivityIndicator size="small" color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Đang upload...</Text>
-              </View>
-            ) : (
-              <View style={styles.submitButtonContent}>
-                <MaterialCommunityIcons
-                  name="upload"
-                  size={16}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.submitButtonText}>Nộp bài</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
-        {!localVideo?.uploaded && hasCoachVideo && coachVideoId && (
-          <TouchableOpacity
-            style={styles.recaptureButton}
-            onPress={handleRecapture}
-            activeOpacity={0.85}
-          >
-            <View style={styles.recaptureButtonContent}>
-              <MaterialCommunityIcons name="camera" size={16} color="#059669" />
-              <Text style={styles.recaptureButtonText}>Quay lại video</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                isUploading && styles.submitButtonDisabled,
+              ]}
+              onPress={() => onUploadVideo(coachVideoId)}
+              disabled={isUploading}
+              activeOpacity={0.7}
+            >
+              {isUploading ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.submitButtonText}>Đang upload...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    name="upload"
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.submitButtonText}>Nộp bài</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.recaptureButton}
+              onPress={handleRecapture}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="camera-retake" size={18} color="#059669" />
+              <Text style={styles.recaptureButtonText}>Quay lại</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -193,149 +202,165 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Initial state buttons
   captureButtonCard: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     borderRadius: 8,
     backgroundColor: "#059669",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 3,
     marginBottom: 10,
   },
   captureButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   captureButtonSubtext: {
-    fontSize: 10,
-    color: "#E0F2FE",
+    fontSize: 12,
+    color: "#FFFFFF",
     fontWeight: "500",
+    opacity: 0.9,
   },
   uploadButton: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     paddingVertical: 11,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#059669",
-    borderStyle: "dashed",
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
     flexDirection: "row",
     gap: 6,
-    marginBottom: 10,
   },
   uploadButtonText: {
     color: "#059669",
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0.15,
-  },
-  resourceCard: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: "#F0F9FF",
-    borderWidth: 1,
-    borderColor: "#CFF0F5",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0.5 },
-    shadowOpacity: 0.03,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  resourceTitle: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#0369A1",
-    marginBottom: 2,
-  },
-  metaText: {
-    fontSize: 10,
-    color: "#0891B2",
-    fontWeight: "500",
-  },
-  uploadedBadge: {
-    backgroundColor: "#DCFCE7",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-    marginTop: 4,
-    borderWidth: 0.5,
-    borderColor: "#34D399",
-  },
-  uploadedBadgeText: {
-    color: "#047857",
-    fontSize: 10,
     fontWeight: "600",
-  },
-  submitButton: {
-    backgroundColor: "#059669",
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  submitButtonDisabled: {
-    backgroundColor: "#9CA3AF",
-    opacity: 0.75,
-    shadowOpacity: 0.08,
-  },
-  submitButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  submitButtonText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
     letterSpacing: 0.2,
   },
-  recaptureButton: {
-    backgroundColor: "transparent",
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#059669",
-    shadowColor: "#059669",
+
+  // Video preview card
+  resourceCard: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 10,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
-  recaptureButtonContent: {
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  headerContent: {
+    flex: 1,
+    gap: 3,
+  },
+  resourceTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    lineHeight: 20,
+  },
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
+  metaText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  metaDivider: {
+    fontSize: 12,
+    color: "#D1D5DB",
+    fontWeight: "500",
+  },
+  uploadedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+  },
+  uploadedBadgeText: {
+    color: "#059669",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+
+  // Action buttons
+  actionButtons: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 2,
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: "#059669",
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  submitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  recaptureButton: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
   recaptureButtonText: {
     color: "#059669",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.2,
   },

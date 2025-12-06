@@ -46,7 +46,7 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
     const initializeAgoraEngine = async () => {
       try {
         setLoading(true);
-        console.log("[VideoConference] Initializing Agora with appId:", agoraAppId?.substring(0, 8) + "...");
+ "[VideoConference] Initializing Agora with appId:", agoraAppId?.substring(0, 8) + "...");
 
         // Create RTC Engine instance
         const engine = createAgoraRtcEngine();
@@ -60,12 +60,12 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
             level: 0,
           },
         });
-        console.log("[VideoConference] Agora engine initialized");
+ "[VideoConference] Agora engine initialized");
 
         // Register event handler using registerEventHandler
         engine.registerEventHandler({
           onUserJoined: (connection: any, remoteUid: number) => {
-            console.log(`[VideoConference] User ${remoteUid} joined`);
+ `[VideoConference] User ${remoteUid} joined`);
             setRemoteUsers((prev) => {
               if (!prev.includes(remoteUid)) {
                 return [...prev, remoteUid];
@@ -74,37 +74,37 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
             });
           },
           onUserOffline: (connection: any, remoteUid: number, reason: number) => {
-            console.log(`[VideoConference] User ${remoteUid} offline, reason: ${reason}`);
+ `[VideoConference] User ${remoteUid} offline, reason: ${reason}`);
             setRemoteUsers((prev) => prev.filter((id) => id !== remoteUid));
           },
           onJoinChannelSuccess: (connection: any, elapsed: number) => {
-            console.log(`[VideoConference] Joined channel ${channelName} after ${elapsed}ms`);
-            console.log(`[VideoConference] Audio enabled: ${isAudioEnabled}, Video enabled: ${isVideoEnabled}`);
+ `[VideoConference] Joined channel ${channelName} after ${elapsed}ms`);
+ `[VideoConference] Audio enabled: ${isAudioEnabled}, Video enabled: ${isVideoEnabled}`);
             setLoading(false);
           },
           onError: (errorCode: number, errorMsg: string) => {
-            console.error(`[VideoConference] Agora error: ${errorCode} - ${errorMsg}`);
+ `[VideoConference] Agora error: ${errorCode} - ${errorMsg}`);
             Alert.alert(
               "Lỗi kết nối",
               `Không thể kết nối: ${errorMsg}`
             );
           },
           onConnectionLost: (connection: any) => {
-            console.log("[VideoConference] Connection lost");
+ "[VideoConference] Connection lost");
           },
           onConnectionInterrupted: (connection: any) => {
-            console.log("[VideoConference] Connection interrupted");
+ "[VideoConference] Connection interrupted");
           },
         });
-        console.log("[VideoConference] Event handlers registered");
+ "[VideoConference] Event handlers registered");
 
         // Enable audio
-        console.log("[VideoConference] Enabling audio...");
+ "[VideoConference] Enabling audio...");
         engine.enableAudio();
         engine.enableLocalAudio(true);
 
         // Enable video
-        console.log("[VideoConference] Enabling video...");
+ "[VideoConference] Enabling video...");
         engine.enableVideo();
 
         // Set video encoder configuration
@@ -118,21 +118,21 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
           orientationMode: 0,
           mirrorMode: 0,
         });
-        console.log("[VideoConference] Video configuration set");
+ "[VideoConference] Video configuration set");
 
         // Set client role (0 = Audience, 1 = Broadcaster)
         engine.setClientRole(1);
-        console.log("[VideoConference] Client role set to Broadcaster");
+ "[VideoConference] Client role set to Broadcaster");
 
         // Join channel
-        console.log("[VideoConference] Joining channel:", channelName);
+ "[VideoConference] Joining channel:", channelName);
         engine.joinChannel(token, channelName, uid, {
           autoSubscribeAudio: true,
           autoSubscribeVideo: true,
         });
-        console.log("[VideoConference] Join channel request sent");
+ "[VideoConference] Join channel request sent");
       } catch (error) {
-        console.error("[VideoConference] Failed to initialize Agora:", error);
+ "[VideoConference] Failed to initialize Agora:", error);
         Alert.alert("Lỗi", `Không thể khởi tạo video conference: ${String(error).substring(0, 100)}`);
         handleCloseCallback();
       }
@@ -147,7 +147,7 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
           rtcEngineRef.current.leaveChannel();
           rtcEngineRef.current.release();
         } catch (e) {
-          console.error("Error during cleanup:", e);
+ "Error during cleanup:", e);
         }
       }
     };
@@ -159,9 +159,9 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
       const newState = !isAudioEnabled;
       rtcEngineRef.current.muteLocalAudioStream(!newState);
       setIsAudioEnabled(newState);
-      console.log(`Audio ${newState ? "enabled" : "disabled"}`);
+ `Audio ${newState ? "enabled" : "disabled"}`);
     } catch (error) {
-      console.error("Failed to toggle audio:", error);
+ "Failed to toggle audio:", error);
     }
   };
 
@@ -171,9 +171,9 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
       const newState = !isVideoEnabled;
       rtcEngineRef.current.muteLocalVideoStream(!newState);
       setIsVideoEnabled(newState);
-      console.log(`Video ${newState ? "enabled" : "disabled"}`);
+ `Video ${newState ? "enabled" : "disabled"}`);
     } catch (error) {
-      console.error("Failed to toggle video:", error);
+ "Failed to toggle video:", error);
     }
   };
 
@@ -183,7 +183,7 @@ const VideoConference: React.FC<VideoConferenceProps> = ({
       rtcEngineRef.current.leaveChannel();
       handleCloseCallback();
     } catch (error) {
-      console.error("Failed to leave channel:", error);
+ "Failed to leave channel:", error);
     }
   };
 

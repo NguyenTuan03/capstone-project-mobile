@@ -80,13 +80,12 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             uri: asset.uri,
             name: asset.fileName || "Video của bạn",
             duration: asset.duration
-              ? Math.round(asset.duration / 60)
+              ? Math.round(asset.duration / 1000)
               : undefined,
             uploaded: false,
           });
         }
       } catch (err) {
-        console.error("Lỗi khi chọn video:", err);
         Alert.alert("Lỗi", "Không thể chọn video. Vui lòng thử lại.");
       }
     };
@@ -116,7 +115,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       try {
         const user = await storageService.getUser();
         if (!user?.id) {
-          console.warn("❌ User not found, cannot load learner video");
           setSubmittedVideo(null);
           setOverlayVideoUrl(null);
           return;
@@ -166,7 +164,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
           setOverlayVideoUrl(null);
         }
       } catch (err) {
-        console.error("❌ Failed to load learner video:", err);
         setSubmittedVideo(null);
         setOverlayVideoUrl(null);
       }
@@ -217,7 +214,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         await loadSubmittedVideo();
         setLocalVideo(null);
       } catch (err: any) {
-        console.error("Upload error:", err?.response?.data || err);
         Alert.alert(
           "Lỗi",
           err?.response?.data?.message ?? "Không thể upload video"
@@ -257,7 +253,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
           setAiAnalysisResult(null);
         }
       } catch (err) {
-        console.error("Failed to load AI analysis result:", err);
         setAiAnalysisResult(null);
       } finally {
         setLoadingAnalysis(false);
@@ -326,7 +321,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                     try {
                       await refresh();
                     } catch (err) {
-                      console.error("Error refreshing resources:", err);
                     } finally {
                       setTabLoading(false);
                     }

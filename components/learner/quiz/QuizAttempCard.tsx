@@ -71,7 +71,7 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz, onRefresh }) => {
         const attemptsList = Array.isArray(data) ? data : data?.data || [];
         setPreviousAttempts(attemptsList);
       } catch (err) {
-        console.error("Failed to load quiz attempts:", err);
+ "Failed to load quiz attempts:", err);
       }
     };
 

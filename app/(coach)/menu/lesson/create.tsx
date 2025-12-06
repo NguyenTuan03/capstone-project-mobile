@@ -50,7 +50,6 @@ export default function CreateLessonScreen() {
         },
       ]);
     } catch (error) {
-      console.error("Lỗi khi tạo bài học:", error);
       Alert.alert("Lỗi", "Không thể tạo bài học. Vui lòng thử lại.");
     } finally {
       setSaving(false);

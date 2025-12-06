@@ -200,9 +200,7 @@ export default function CreateEditCourseModal({
           }
         }
       }
-    } catch (error) {
-      console.error("Failed to load user location:", error);
-    }
+    } catch (error) {}
   }, [provinces]);
 
   useEffect(() => {
@@ -212,7 +210,7 @@ export default function CreateEditCourseModal({
       if (initialData) {
         // Set initialization flag to prevent clearing district
         isInitializingRef.current = true;
-        
+
         // Reset form with initial data
         setSelectedSubjectId(initialData.subjectId || null);
         setLearningFormat(initialData.learningFormat || "GROUP");
@@ -226,12 +224,13 @@ export default function CreateEditCourseModal({
         setSelectedDistrict(initialData.district || null);
         setSchedules(initialData.schedules || []);
         setGoogleMeetLink(initialData.googleMeetLink || "");
-        
+        setSelectedCourt(initialData.court || null);
+
         // Fetch districts if province exists but districts not loaded
         if (initialData.province && districts.length === 0) {
           fetchDistricts(initialData.province.id);
         }
-        
+
         // Reset flag after a short delay to allow state updates
         setTimeout(() => {
           isInitializingRef.current = false;
@@ -274,8 +273,8 @@ export default function CreateEditCourseModal({
   }, [selectedProvince]);
 
   useEffect(() => {
-    // Clear court when district changes
-    if (selectedDistrict) {
+    // Clear court when district changes (but not during initialization)
+    if (selectedDistrict && !isInitializingRef.current) {
       setSelectedCourt(null);
     }
   }, [selectedDistrict]);
@@ -350,10 +349,6 @@ export default function CreateEditCourseModal({
         }
         setMaxParticipantsLimit(maxParticipants);
       } catch (err) {
-        console.warn(
-          "Failed to load configuration course_start_date_after_days_from_now",
-          err
-        );
         setCourseStartDateAfterDaysFromNow(7);
         setMaxParticipantsLimit(12);
       }
@@ -372,7 +367,6 @@ export default function CreateEditCourseModal({
       const res = await get<{ items: Subject[] }>(url);
       setSubjects(res.data.items || []);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách môn học:", error);
     } finally {
       setLoadingSubjects(false);
     }
@@ -384,7 +378,6 @@ export default function CreateEditCourseModal({
       const res = await get<Province[]>("/v1/provinces");
       setProvinces(res.data || []);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách tỉnh/thành phố:", error);
     } finally {
       setLoadingProvinces(false);
     }
@@ -398,7 +391,6 @@ export default function CreateEditCourseModal({
       );
       setDistricts(res.data || []);
     } catch (error) {
-      console.error("Lỗi khi tải danh sách quận/huyện:", error);
     } finally {
       setLoadingDistricts(false);
     }
@@ -424,7 +416,6 @@ export default function CreateEditCourseModal({
           setSelectedCourt(res[0]);
         }
       } catch (error) {
-        console.error("Lỗi khi tải danh sách sân:", error);
       } finally {
         setLoadingCourts(false);
       }
@@ -440,10 +431,6 @@ export default function CreateEditCourseModal({
       );
       setAvailableSchedules(res.data?.metadata || []);
     } catch (error) {
-      console.error(
-        "Lỗi khi tải lịch trình có sẵn của huấn luyện viên:",
-        error
-      );
     } finally {
       setLoadingAvailableSchedules(false);
     }
@@ -461,9 +448,6 @@ export default function CreateEditCourseModal({
       );
     } else {
       setCourts([]);
-    }
-    // Clear court when district changes (only in edit mode to preserve existing selection)
-    if (initialData) {
       setSelectedCourt(null);
     }
   }, [selectedProvince, selectedDistrict, fetchCourtsByLocation, initialData]);
@@ -690,8 +674,6 @@ export default function CreateEditCourseModal({
       await onSubmit(payload);
       onClose();
     } catch (error) {
-      console.error("Error submitting form:", error);
-      // Không cần throw lại vì parent component đã xử lý error
     } finally {
       setSubmitting(false);
     }
@@ -728,7 +710,6 @@ export default function CreateEditCourseModal({
         setExistingImageUrl(null);
       }
     } catch (error) {
-      console.error("Không thể chọn ảnh khóa học:", error);
       Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
     }
   };
@@ -1225,7 +1206,10 @@ export default function CreateEditCourseModal({
                             }
 
                             // Validate selected date matches schedule days
-                            if (schedules.length > 0 && !isDateValidForSchedules(selectedDate)) {
+                            if (
+                              schedules.length > 0 &&
+                              !isDateValidForSchedules(selectedDate)
+                            ) {
                               const scheduleDays = getScheduleDaysOfWeek()
                                 .map((day) => getDayNameInVietnamese(day))
                                 .join(", ");
@@ -1249,7 +1233,8 @@ export default function CreateEditCourseModal({
                           }
                           style={[
                             styles.datePickerConfirmButton,
-                            schedules.length > 0 && !isDateValidForSchedules(selectedDate)
+                            schedules.length > 0 &&
+                            !isDateValidForSchedules(selectedDate)
                               ? styles.datePickerConfirmButtonDisabled
                               : null,
                           ]}
@@ -1257,7 +1242,8 @@ export default function CreateEditCourseModal({
                           <Text
                             style={[
                               styles.datePickerConfirmText,
-                              schedules.length > 0 && !isDateValidForSchedules(selectedDate)
+                              schedules.length > 0 &&
+                              !isDateValidForSchedules(selectedDate)
                                 ? styles.datePickerConfirmTextDisabled
                                 : null,
                             ]}
@@ -1321,7 +1307,10 @@ export default function CreateEditCourseModal({
                       }
 
                       // Validate selected date matches schedule days
-                      if (schedules.length > 0 && !isDateValidForSchedules(date)) {
+                      if (
+                        schedules.length > 0 &&
+                        !isDateValidForSchedules(date)
+                      ) {
                         const scheduleDays = getScheduleDaysOfWeek()
                           .map((day) => getDayNameInVietnamese(day))
                           .join(", ");
@@ -1351,7 +1340,11 @@ export default function CreateEditCourseModal({
               )}
               {showDatePicker && schedules.length > 0 && (
                 <View style={styles.dateValidationHint}>
-                  <Ionicons name="information-circle-outline" size={16} color="#059669" />
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={16}
+                    color="#059669"
+                  />
                   <Text style={styles.dateValidationHintText}>
                     Ngày bắt đầu phải là:{" "}
                     {getScheduleDaysOfWeek()

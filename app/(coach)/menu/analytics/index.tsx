@@ -82,7 +82,7 @@ export default function CoachAnalyticsScreen() {
       setLearnerData(totalLearners);
       setCourseData(totalCourses);
     } catch (error) {
-      console.error("❌ Failed to load analytics data:", error);
+ "❌ Failed to load analytics data:", error);
     } finally {
       setLoading(false);
     }

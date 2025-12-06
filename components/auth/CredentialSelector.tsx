@@ -2,18 +2,19 @@ import { formStyles } from "@/components/common/formStyles";
 import credentialService from "@/services/credentialService";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type BaseCredential = {
@@ -21,6 +22,7 @@ type BaseCredential = {
   name: string;
   description?: string;
   type: string;
+  publicUrl?: string;
 };
 
 type SelectedCredential = {
@@ -45,12 +47,14 @@ export const CredentialSelector = ({
   const [baseCredentials, setBaseCredentials] = useState<BaseCredential[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedForEdit, setSelectedForEdit] = useState<SelectedCredential | null>(null);
+  const [selectedForEdit, setSelectedForEdit] =
+    useState<SelectedCredential | null>(null);
   const [issuedAtDate, setIssuedAtDate] = useState<Date | null>(null);
   const [expiredAtDate, setExpiredAtDate] = useState<Date | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showIssuedCalendar, setShowIssuedCalendar] = useState(false);
   const [showExpiredCalendar, setShowExpiredCalendar] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const loadBaseCredentials = useCallback(async () => {
     setLoading(true);
@@ -58,7 +62,6 @@ export const CredentialSelector = ({
       const data = await credentialService.getBaseCredentials();
       setBaseCredentials(data);
     } catch (error) {
-      console.error("Failed to load base credentials:", error);
     } finally {
       setLoading(false);
     }
@@ -81,8 +84,12 @@ export const CredentialSelector = ({
     if (!selectedForEdit) return;
 
     const updated = [...selectedCredentials];
-    const issuedAtStr = issuedAtDate ? formatDateToString(issuedAtDate) : undefined;
-    const expiredAtStr = expiredAtDate ? formatDateToString(expiredAtDate) : undefined;
+    const issuedAtStr = issuedAtDate
+      ? formatDateToString(issuedAtDate)
+      : undefined;
+    const expiredAtStr = expiredAtDate
+      ? formatDateToString(expiredAtDate)
+      : undefined;
 
     if (editingIndex !== null) {
       // Edit existing
@@ -107,9 +114,7 @@ export const CredentialSelector = ({
   };
 
   const handleRemoveCredential = (index: number) => {
-    onCredentialsChange(
-      selectedCredentials.filter((_, i) => i !== index)
-    );
+    onCredentialsChange(selectedCredentials.filter((_, i) => i !== index));
   };
 
   const getCredentialName = (baseCredentialId: number): string => {
@@ -128,7 +133,7 @@ export const CredentialSelector = ({
     <View style={styles.container}>
       <View style={formStyles.fieldContainer}>
         <Text style={formStyles.label}>Chứng chỉ (Tùy chọn)</Text>
-        
+
         {/* Selected Credentials List */}
         {selectedCredentials.length > 0 && (
           <View style={styles.selectedList}>
@@ -201,6 +206,7 @@ export const CredentialSelector = ({
           </View>
 
           <ScrollView
+            ref={scrollViewRef}
             contentContainerStyle={styles.modalContent}
             showsVerticalScrollIndicator={false}
           >
@@ -235,11 +241,34 @@ export const CredentialSelector = ({
                           });
                           setIssuedAtDate(null);
                           setExpiredAtDate(null);
+                          // Auto-scroll to show the details form
+                          setTimeout(() => {
+                            scrollViewRef.current?.scrollToEnd({
+                              animated: true,
+                            });
+                          }, 100);
                         }}
-                        style={styles.credentialSelectItem}
+                        style={[
+                          styles.credentialSelectItem,
+                          selectedForEdit?.baseCredential === item.id &&
+                            styles.credentialSelectItemSelected,
+                        ]}
                       >
-                        <View>
-                          <Text style={styles.credentialSelectName}>
+                        {item.publicUrl && (
+                          <Image
+                            source={{ uri: item.publicUrl }}
+                            style={styles.credentialImage}
+                            resizeMode="cover"
+                          />
+                        )}
+                        <View style={styles.credentialTextContainer}>
+                          <Text
+                            style={[
+                              styles.credentialSelectName,
+                              selectedForEdit?.baseCredential === item.id &&
+                                styles.credentialSelectNameSelected,
+                            ]}
+                          >
                             {item.name}
                           </Text>
                           {item.description && (
@@ -249,9 +278,17 @@ export const CredentialSelector = ({
                           )}
                         </View>
                         <Ionicons
-                          name="chevron-forward"
+                          name={
+                            selectedForEdit?.baseCredential === item.id
+                              ? "checkmark-circle"
+                              : "chevron-forward"
+                          }
                           size={20}
-                          color="#9CA3AF"
+                          color={
+                            selectedForEdit?.baseCredential === item.id
+                              ? "#059669"
+                              : "#9CA3AF"
+                          }
                         />
                       </TouchableOpacity>
                     )}
@@ -366,94 +403,116 @@ export const CredentialSelector = ({
       </Modal>
 
       {/* Issued At Calendar Picker Modal */}
-      <Modal
-        visible={showIssuedCalendar}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowIssuedCalendar(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => setShowIssuedCalendar(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Chọn ngày cấp</Text>
-            <View style={{ width: 36 }} />
-          </View>
-          <View style={styles.calendarContainer}>
-            <DateTimePicker
-              value={issuedAtDate || new Date()}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event: any, date: any) => {
-                if (Platform.OS === "android") {
-                  setShowIssuedCalendar(false);
-                }
-                if (date) {
-                  setIssuedAtDate(date);
-                }
-              }}
-            />
-            {Platform.OS === "ios" && (
+      {Platform.OS === "ios" ? (
+        <Modal
+          visible={showIssuedCalendar}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowIssuedCalendar(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                onPress={() => setShowIssuedCalendar(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Chọn ngày cấp</Text>
+              <View style={{ width: 36 }} />
+            </View>
+            <View style={styles.calendarContainer}>
+              <DateTimePicker
+                value={issuedAtDate || new Date()}
+                mode="date"
+                display="spinner"
+                onChange={(event: any, date: any) => {
+                  if (date) {
+                    setIssuedAtDate(date);
+                  }
+                }}
+                style={styles.datePickerStyle}
+                textColor="#111827"
+              />
               <View style={styles.datePickerActions}>
-                <TouchableOpacity
-                  onPress={() => setShowIssuedCalendar(false)}
-                >
+                <TouchableOpacity onPress={() => setShowIssuedCalendar(false)}>
                   <Text style={styles.datePickerActionText}>Xong</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      ) : (
+        showIssuedCalendar && (
+          <DateTimePicker
+            value={issuedAtDate || new Date()}
+            mode="date"
+            display="default"
+            onChange={(event: any, date: any) => {
+              setShowIssuedCalendar(false);
+              if (event.type === "set" && date) {
+                setIssuedAtDate(date);
+              }
+            }}
+          />
+        )
+      )}
 
       {/* Expired At Calendar Picker Modal */}
-      <Modal
-        visible={showExpiredCalendar}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowExpiredCalendar(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => setShowExpiredCalendar(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Chọn ngày hết hạn</Text>
-            <View style={{ width: 36 }} />
-          </View>
-          <View style={styles.calendarContainer}>
-            <DateTimePicker
-              value={expiredAtDate || new Date()}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event: any, date: any) => {
-                if (Platform.OS === "android") {
-                  setShowExpiredCalendar(false);
-                }
-                if (date) {
-                  setExpiredAtDate(date);
-                }
-              }}
-            />
-            {Platform.OS === "ios" && (
+      {Platform.OS === "ios" ? (
+        <Modal
+          visible={showExpiredCalendar}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowExpiredCalendar(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                onPress={() => setShowExpiredCalendar(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Chọn ngày hết hạn</Text>
+              <View style={{ width: 36 }} />
+            </View>
+            <View style={styles.calendarContainer}>
+              <DateTimePicker
+                value={expiredAtDate || new Date()}
+                mode="date"
+                display="spinner"
+                onChange={(event: any, date: any) => {
+                  if (date) {
+                    setExpiredAtDate(date);
+                  }
+                }}
+                style={styles.datePickerStyle}
+                textColor="#111827"
+              />
               <View style={styles.datePickerActions}>
-                <TouchableOpacity
-                  onPress={() => setShowExpiredCalendar(false)}
-                >
+                <TouchableOpacity onPress={() => setShowExpiredCalendar(false)}>
                   <Text style={styles.datePickerActionText}>Xong</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      ) : (
+        showExpiredCalendar && (
+          <DateTimePicker
+            value={expiredAtDate || new Date()}
+            mode="date"
+            display="default"
+            onChange={(event: any, date: any) => {
+              setShowExpiredCalendar(false);
+              if (event.type === "set" && date) {
+                setExpiredAtDate(date);
+              }
+            }}
+          />
+        )
+      )}
     </View>
   );
 };
@@ -546,9 +605,10 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   calendarContainer: {
-    flex: 1,
+    minHeight: 400,
     padding: 16,
     backgroundColor: "#FFFFFF",
+    justifyContent: "center",
   },
   sectionTitle: {
     fontSize: 14,
@@ -564,11 +624,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    gap: 12,
+  },
+  credentialImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+  },
+  credentialTextContainer: {
+    flex: 1,
+  },
+  credentialSelectItemSelected: {
+    backgroundColor: "#ECFDF5",
+    borderBottomColor: "#059669",
   },
   credentialSelectName: {
     fontSize: 14,
     fontWeight: "600",
     color: "#111827",
+  },
+  credentialSelectNameSelected: {
+    color: "#059669",
   },
   credentialSelectDesc: {
     fontSize: 12,
@@ -657,5 +735,9 @@ const styles = StyleSheet.create({
     color: "#059669",
     paddingVertical: 8,
     paddingHorizontal: 12,
+  },
+  datePickerStyle: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
   },
 });

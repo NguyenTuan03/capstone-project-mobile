@@ -84,7 +84,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
         }
         setCompleteBeforeHours(hours);
       } catch (err) {
-        console.warn(
+ 
           "Failed to load configuration complete_session_before_hours",
           err
         );
@@ -137,7 +137,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               return { enrollmentId: en.id, present: isStatusPresent(status) };
             } catch (err) {
               // if API fails for a learner, default to absent
-              console.warn(
+ 
                 `Failed to load attendance for learner ${learnerId}:`,
                 err
               );
@@ -220,7 +220,7 @@ const SessionDetailModal: React.FC<SessionDetailModalProps> = ({
               onClose();
               Alert.alert("Thành công", "Đã lưu điểm danh thành công!");
             } catch (error: any) {
-              console.error("Failed to save attendance:", error);
+ "Failed to save attendance:", error);
               if (error?.response?.data) {
                 Alert.alert(
                   "Lỗi",

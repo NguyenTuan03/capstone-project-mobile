@@ -5,12 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Href, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
         setHasMore(newNotifications.length === 10);
       }
     } catch (error) {
-      console.error("Failed to fetch notifications:", error);
+ "Failed to fetch notifications:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -89,12 +89,12 @@ export default function NotificationsScreen() {
           )
         );
       } catch (error) {
-        console.error("Failed to mark notification as read:", error);
+ "Failed to mark notification as read:", error);
       }
     }
 
     if (notification.navigateTo) {
-      router.push(notification.navigateTo as Href);
+      router.replace(notification.navigateTo as Href);
     }
   };
 
@@ -108,7 +108,7 @@ export default function NotificationsScreen() {
         text2: "Đã đánh dấu tất cả là đã đọc",
       });
     } catch (error) {
-      console.error("Failed to mark all as read:", error);
+ "Failed to mark all as read:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",

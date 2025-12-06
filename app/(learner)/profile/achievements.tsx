@@ -58,7 +58,7 @@ export default function AchievementsScreen() {
       );
       setStats(response.data);
     } catch (err: any) {
-      console.error("Error fetching stats:", err);
+ "Error fetching stats:", err);
     }
   }, []);
 
@@ -80,7 +80,7 @@ export default function AchievementsScreen() {
         setEarnedPage(response.data.page);
         setEarnedTotalPages(response.data.totalPages);
       } catch (err: any) {
-        console.error("Error fetching earned achievements:", err);
+ "Error fetching earned achievements:", err);
         if (!append) {
           setEarnedAchievements([]);
         }
@@ -107,7 +107,7 @@ export default function AchievementsScreen() {
         setPage(response.data.page);
         setTotalPages(response.data.totalPages);
       } catch (err: any) {
-        console.error("Error fetching all achievements:", err);
+ "Error fetching all achievements:", err);
         setError("Không thể tải thành tựu. Vui lòng thử lại.");
       }
     },
@@ -139,7 +139,7 @@ export default function AchievementsScreen() {
         setProgressPage(response.data.page);
         setProgressTotalPages(response.data.totalPages);
       } catch (err: any) {
-        console.error("Error fetching progress achievements:", err);
+ "Error fetching progress achievements:", err);
         if (!append) {
           setProgressAchievements([]);
         }
@@ -205,7 +205,7 @@ export default function AchievementsScreen() {
     try {
       await fetchEarnedAchievements(earnedPage + 1, true);
     } catch (err) {
-      console.error("Error loading more earned:", err);
+ "Error loading more earned:", err);
     } finally {
       setLoadingMoreEarned(false);
     }
@@ -223,7 +223,7 @@ export default function AchievementsScreen() {
     try {
       await fetchAllAchievements(page + 1, true);
     } catch (err) {
-      console.error("Error loading more:", err);
+ "Error loading more:", err);
     } finally {
       setLoadingMore(false);
     }
@@ -240,7 +240,7 @@ export default function AchievementsScreen() {
     try {
       await fetchProgressAchievements(progressPage + 1, true);
     } catch (err) {
-      console.error("Error loading more progress:", err);
+ "Error loading more progress:", err);
     } finally {
       setLoadingMoreProgress(false);
     }

@@ -12,36 +12,29 @@ http.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  // Detect FormData
   const isFormData =
-    config.data && typeof config.data === "object" && "_parts" in config.data;
+    config.data &&
+    typeof config.data === "object" &&
+    typeof config.data._parts !== "undefined";
 
   if (isFormData) {
-    delete config.headers["Content-Type"];
+    // ⭐ Android requires Content-Type: multipart/form-data
+    config.headers["Content-Type"] = "multipart/form-data";
 
-    if (config.headers.common) {
-      delete config.headers.common["Content-Type"];
-    }
+    // Prevent Axios from transforming formData
+    config.transformRequest = (data) => data;
 
-    if (config.headers.post) {
-      delete config.headers.post["Content-Type"];
-    }
-
-    config.transformRequest = [(data) => data];
-
-    
+    // Cleanup inherited headers so Android doesn’t override Content-Type
+    if (config.headers.common) delete config.headers.common["Content-Type"];
+    if (config.headers.post) delete config.headers.post["Content-Type"];
+    if (config.headers.put) delete config.headers.put["Content-Type"];
   }
 
-  // Add ngrok header if using ngrok URL
+  // Allow ngrok tunneling
   if (config.baseURL?.includes("ngrok")) {
     config.headers["ngrok-skip-browser-warning"] = "true";
   }
-
-  console.log("🚀 Request:", {
-    method: config.method?.toUpperCase(),
-    url: config.url,
-    isFormData,
-    headers: config.headers,
-  });
 
   return config;
 });
@@ -60,19 +53,12 @@ const onRefreshed = (newToken: string) => {
 
 http.interceptors.response.use(
   (response) => {
-    
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
 
     // Log error details
-    console.error("❌ Response Error:", {
-      status: error.response?.status,
-      message: error.message,
-      url: originalRequest?.url,
-      response: error.request?._response,
-    });
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

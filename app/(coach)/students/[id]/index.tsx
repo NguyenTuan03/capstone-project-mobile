@@ -47,7 +47,7 @@ export default function CoachStudentDetailScreen() {
         const parsed = JSON.parse(learnerData);
         setLearner(parsed);
       } catch (e) {
-        console.error("Failed to parse learner data:", e);
+ "Failed to parse learner data:", e);
       }
     }
   }, [learnerData]);
@@ -79,7 +79,7 @@ export default function CoachStudentDetailScreen() {
           [sessionId]: learnerVideos,
         }));
       } catch (error) {
-        console.error("Failed to fetch learner videos for session:", error);
+ "Failed to fetch learner videos for session:", error);
       }
     },
     [learner?.user?.id, sessionLearnerVideos]
@@ -101,7 +101,7 @@ export default function CoachStudentDetailScreen() {
       const data = await getLearnerProgressDetails(userId, courseId);
       setLearnerDetails(data);
     } catch (error) {
-      console.error("Failed to fetch learner progress details:", error);
+ "Failed to fetch learner progress details:", error);
     } finally {
       setLoading(false);
     }
