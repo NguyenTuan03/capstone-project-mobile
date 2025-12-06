@@ -5,12 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Href, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -94,7 +94,7 @@ export default function NotificationsScreen() {
     }
 
     if (notification.navigateTo) {
-      router.push(notification.navigateTo as Href);
+      router.replace(notification.navigateTo as Href);
     }
   };
 
