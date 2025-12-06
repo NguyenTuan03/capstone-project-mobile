@@ -518,7 +518,7 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {/* Coach Note - Moved to top */}
                   {aiAnalysisResult.coachNote && (
                     <View style={styles.coachNoteContainer}>
-                      <Text style={styles.sectionTitle}>Ghi chú từ Coach</Text>
+                      <Text style={styles.sectionTitle}>Ghi chú từ HLV</Text>
                       <Text style={styles.coachNoteText}>
                         {aiAnalysisResult.coachNote}
                       </Text>

@@ -114,7 +114,9 @@ export default function ContentScreen() {
             ) : (
               <Image
                 source={{
-                  uri: "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
+                  uri:
+                    user?.profilePicture ||
+                    "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
                 }}
                 style={styles.profileImage}
               />
@@ -126,7 +128,7 @@ export default function ContentScreen() {
             <Text style={styles.profileName} numberOfLines={1}>
               {user?.fullName || "Coach"}
             </Text>
-            
+
             <View style={styles.badgesRow}>
               {user?.coach && user.coach.length > 0 && (
                 <View
@@ -138,7 +140,9 @@ export default function ContentScreen() {
                   <Ionicons
                     name={getVerificationIcon(user.coach[0].verificationStatus)}
                     size={12}
-                    color={getVerificationColor(user.coach[0].verificationStatus)}
+                    color={getVerificationColor(
+                      user.coach[0].verificationStatus
+                    )}
                   />
                   <Text
                     style={[
@@ -154,7 +158,7 @@ export default function ContentScreen() {
                   </Text>
                 </View>
               )}
-              
+
               {rating !== null && (
                 <View style={styles.ratingContainer}>
                   <Ionicons name="star" size={12} color="#FBBF24" />
@@ -167,14 +171,24 @@ export default function ContentScreen() {
             <View style={styles.contactInfoContainer}>
               {user?.phoneNumber && (
                 <View style={styles.contactItem}>
-                  <Ionicons name="call-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+                  <Ionicons
+                    name="call-outline"
+                    size={12}
+                    color="rgba(255, 255, 255, 0.8)"
+                  />
                   <Text style={styles.contactText}>{user.phoneNumber}</Text>
                 </View>
               )}
               {user?.email && (
                 <View style={styles.contactItem}>
-                  <Ionicons name="mail-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
-                  <Text style={styles.contactText} numberOfLines={1}>{user.email}</Text>
+                  <Ionicons
+                    name="mail-outline"
+                    size={12}
+                    color="rgba(255, 255, 255, 0.8)"
+                  />
+                  <Text style={styles.contactText} numberOfLines={1}>
+                    {user.email}
+                  </Text>
                 </View>
               )}
             </View>

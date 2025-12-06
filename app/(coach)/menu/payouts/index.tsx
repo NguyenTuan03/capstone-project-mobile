@@ -589,7 +589,7 @@ export default function CoachPayoutsScreen() {
                 />
               </View>
               <Text style={styles.amountHint}>
-                Tối thiểu: 100,000₫ | Tối đa:{" "}
+                Tối thiểu: 1,000₫ | Tối đa:{" "}
                 {formatCurrency(Number(wallet?.currentBalance || 0))}
               </Text>
             </View>

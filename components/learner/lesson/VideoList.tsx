@@ -102,7 +102,7 @@ const VideoList: React.FC<VideoListProps> = ({
               <View style={styles.iconContainer}>
                 <Ionicons name="videocam" size={20} color="#059669" />
               </View>
-              <Text style={styles.sectionTitle}>Video từ Coach</Text>
+              <Text style={styles.sectionTitle}>Video từ HLV</Text>
             </View>
           </View>
 

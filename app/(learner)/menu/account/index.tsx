@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -73,11 +74,12 @@ export default function AccountInfoScreen() {
         {/* Profile Section */}
         <View style={styles.section}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {getInitials(user?.fullName || "User")}
-              </Text>
-            </View>
+            <Image
+              source={{
+                uri: user?.profilePicture || "https://via.placeholder.com/100",
+              }}
+              style={styles.avatar}
+            />
             <TouchableOpacity style={styles.editAvatarButton}>
               <Ionicons name="camera" size={16} color="#FFFFFF" />
             </TouchableOpacity>
@@ -279,9 +281,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#059669",
-    alignItems: "center",
-    justifyContent: "center",
     borderWidth: 4,
     borderColor: "#FFFFFF",
     shadowColor: "#000",
@@ -289,11 +288,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
     elevation: 3,
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "700",
   },
   editAvatarButton: {
     position: "absolute",
