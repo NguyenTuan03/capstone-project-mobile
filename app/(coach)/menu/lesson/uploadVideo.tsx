@@ -1,6 +1,5 @@
-import storageService from "@/services/storageService";
+import http from "@/services/http/interceptor";
 import { Ionicons, Octicons } from "@expo/vector-icons";
-import axios from "axios";
 import { Video } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,8 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function UploadVideoScreen() {
   const {
@@ -89,7 +86,6 @@ export default function UploadVideoScreen() {
   };
 
   const handleUploadVideo = async () => {
-    const token = await storageService.getToken();
     if (!title.trim()) {
       Alert.alert("Lỗi", "Vui lòng nhập tiêu đề video.");
       return;
@@ -145,14 +141,10 @@ export default function UploadVideoScreen() {
       let response;
       if (videoId) {
         // UPDATE mode
-        response = await axios.put(
-          `${API_URL}/v1/videos/${videoId}`,
+        response = await http.put(
+          `/v1/videos/${videoId}`,
           formData,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              // Don't set Content-Type manually - let axios set it with boundary
-            },
             onUploadProgress: (progressEvent) => {
               const progress = Math.round(
                 (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
@@ -164,14 +156,10 @@ export default function UploadVideoScreen() {
         );
       } else {
         // CREATE mode
-        response = await axios.post(
-          `${API_URL}/v1/videos/lessons/${lessonId}`,
+        response = await http.post(
+          `/v1/videos/lessons/${lessonId}`,
           formData,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              // Don't set Content-Type manually - let axios set it with boundary
-            },
             onUploadProgress: (progressEvent) => {
               const progress = Math.round(
                 (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
