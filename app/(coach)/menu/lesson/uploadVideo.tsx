@@ -6,13 +6,13 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -115,10 +115,21 @@ export default function UploadVideoScreen() {
         return;
       }
       formData.append("duration", String(duration));
+      
+      // Ensure URI has file:// prefix for Android compatibility
+      const videoUri = video.uri.startsWith("file://")
+        ? video.uri
+        : `file://${video.uri}`;
+      
+      // Ensure filename ends with proper extension
+      const videoName = video.fileName?.endsWith(".mp4")
+        ? video.fileName
+        : `${video.fileName || "video"}.mp4`;
+      
       formData.append("video", {
-        uri: video.uri,
-        type: video.type,
-        name: video.fileName,
+        uri: videoUri,
+        type: "video/mp4", // Explicit MIME type for Android
+        name: videoName,
       } as any);
     }
 
@@ -140,7 +151,7 @@ export default function UploadVideoScreen() {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
+              // Don't set Content-Type manually - let axios set it with boundary
             },
             onUploadProgress: (progressEvent) => {
               const progress = Math.round(
@@ -159,7 +170,7 @@ export default function UploadVideoScreen() {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
+              // Don't set Content-Type manually - let axios set it with boundary
             },
             onUploadProgress: (progressEvent) => {
               const progress = Math.round(

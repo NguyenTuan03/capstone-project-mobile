@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -164,6 +164,7 @@ export default function CreateEditCourseModal({
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [selectedStartTime, setSelectedStartTime] = useState<Date>(new Date());
   const [selectedEndTime, setSelectedEndTime] = useState<Date>(new Date());
+  const isInitializingRef = useRef(false);
 
   const loadUserLocation = useCallback(async () => {
     try {
@@ -209,6 +210,9 @@ export default function CreateEditCourseModal({
       fetchSubjects();
       fetchProvinces();
       if (initialData) {
+        // Set initialization flag to prevent clearing district
+        isInitializingRef.current = true;
+        
         // Reset form with initial data
         setSelectedSubjectId(initialData.subjectId || null);
         setLearningFormat(initialData.learningFormat || "GROUP");
@@ -222,8 +226,19 @@ export default function CreateEditCourseModal({
         setSelectedDistrict(initialData.district || null);
         setSchedules(initialData.schedules || []);
         setGoogleMeetLink(initialData.googleMeetLink || "");
+        
+        // Fetch districts if province exists but districts not loaded
+        if (initialData.province && districts.length === 0) {
+          fetchDistricts(initialData.province.id);
+        }
+        
+        // Reset flag after a short delay to allow state updates
+        setTimeout(() => {
+          isInitializingRef.current = false;
+        }, 100);
       } else {
         // Reset form for create mode
+        isInitializingRef.current = false;
         setSelectedSubjectId(null);
         setLearningFormat("GROUP");
         setMinParticipants("2");
@@ -244,13 +259,17 @@ export default function CreateEditCourseModal({
   useEffect(() => {
     if (selectedProvince) {
       fetchDistricts(selectedProvince.id);
-      // Clear district and court when province changes
-      setSelectedDistrict(null);
-      setSelectedCourt(null);
+      // Only clear district and court when province changes if not initializing
+      if (!isInitializingRef.current) {
+        setSelectedDistrict(null);
+        setSelectedCourt(null);
+      }
     } else {
       setDistricts([]);
-      setSelectedDistrict(null);
-      setSelectedCourt(null);
+      if (!isInitializingRef.current) {
+        setSelectedDistrict(null);
+        setSelectedCourt(null);
+      }
     }
   }, [selectedProvince]);
 
@@ -265,8 +284,15 @@ export default function CreateEditCourseModal({
     if (learningFormat === "INDIVIDUAL") {
       setMinParticipants("1");
       setMaxParticipants("1");
+    } else if (learningFormat === "GROUP") {
+      // Restore default GROUP values when switching back from INDIVIDUAL
+      // Only restore if both are "1" (which indicates we just switched from INDIVIDUAL)
+      if (minParticipants === "1" && maxParticipants === "1") {
+        setMinParticipants("2");
+        setMaxParticipants("6");
+      }
     }
-  }, [learningFormat]);
+  }, [learningFormat, minParticipants, maxParticipants]);
 
   useEffect(() => {
     fetchCoachAvailableSchedules();

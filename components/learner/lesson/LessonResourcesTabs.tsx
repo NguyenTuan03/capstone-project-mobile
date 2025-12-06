@@ -209,7 +209,7 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         }
 
         await http.post("/v1/learner-videos", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
+          // Don't set Content-Type manually - let axios set it with boundary
         });
 
         Alert.alert("Thành công", "Video đã được upload thành công!");

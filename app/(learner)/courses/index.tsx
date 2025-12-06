@@ -383,7 +383,14 @@ export default function CoursesScreen() {
         fetchCourses(1, false);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedProvince, selectedDistrict, currentUserId, initializing, selectedLevel, searchKeyword])
+    }, [
+      selectedProvince,
+      selectedDistrict,
+      currentUserId,
+      initializing,
+      selectedLevel,
+      searchKeyword,
+    ])
   );
 
   const loadMore = useCallback(() => {
