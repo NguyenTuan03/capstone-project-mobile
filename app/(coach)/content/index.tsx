@@ -101,7 +101,7 @@ export default function ContentScreen() {
             onPress={() => router.push("/(coach)/menu/notifications" as any)}
             style={styles.notificationButton}
           >
-            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
+            <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
         <View style={styles.profileCard}>
@@ -121,70 +121,63 @@ export default function ContentScreen() {
             )}
           </View>
 
-          {/* Full Name with Verification Badge */}
-          <View style={styles.nameWithBadgeContainer}>
-            <Text style={styles.profileName}>{user?.fullName || "Coach"}</Text>
-            {user?.coach && user.coach.length > 0 && (
-              <View
-                style={[
-                  styles.verificationBadge,
-                  getVerificationBadgeStyle(user.coach[0].verificationStatus),
-                ]}
-              >
-                <Ionicons
-                  name={getVerificationIcon(user.coach[0].verificationStatus)}
-                  size={14}
-                  color={getVerificationColor(user.coach[0].verificationStatus)}
-                />
-                <Text
+          {/* Profile Info Column */}
+          <View style={styles.profileInfoColumn}>
+            <Text style={styles.profileName} numberOfLines={1}>
+              {user?.fullName || "Coach"}
+            </Text>
+            
+            <View style={styles.badgesRow}>
+              {user?.coach && user.coach.length > 0 && (
+                <View
                   style={[
-                    styles.verificationBadgeText,
-                    {
-                      color: getVerificationColor(
-                        user.coach[0].verificationStatus
-                      ),
-                    },
+                    styles.verificationBadge,
+                    getVerificationBadgeStyle(user.coach[0].verificationStatus),
                   ]}
                 >
-                  {getVerificationLabel(user.coach[0].verificationStatus)}
-                </Text>
-              </View>
-            )}
-            {/* Rating Display */}
-            {rating !== null && (
-              <View style={styles.ratingContainer}>
-                <View style={styles.ratingStars}>
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const roundedRating = Math.round(rating);
-                    const isFilled = star <= roundedRating;
-                    return (
-                      <Ionicons
-                        key={star}
-                        name={isFilled ? "star" : "star-outline"}
-                        size={16}
-                        color={isFilled ? "#FBBF24" : "#D1D5DB"}
-                      />
-                    );
-                  })}
+                  <Ionicons
+                    name={getVerificationIcon(user.coach[0].verificationStatus)}
+                    size={12}
+                    color={getVerificationColor(user.coach[0].verificationStatus)}
+                  />
+                  <Text
+                    style={[
+                      styles.verificationBadgeText,
+                      {
+                        color: getVerificationColor(
+                          user.coach[0].verificationStatus
+                        ),
+                      },
+                    ]}
+                  >
+                    {getVerificationLabel(user.coach[0].verificationStatus)}
+                  </Text>
                 </View>
-              </View>
-            )}
-          </View>
+              )}
+              
+              {rating !== null && (
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={12} color="#FBBF24" />
+                  <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+                </View>
+              )}
+            </View>
 
-          {/* Contact Info */}
-          <View style={styles.contactInfoContainer}>
-            {user?.phoneNumber && (
-              <View style={styles.contactItem}>
-                <Ionicons name="call-outline" size={14} color="#FFFFFF" />
-                <Text style={styles.contactText}>{user.phoneNumber}</Text>
-              </View>
-            )}
-            {user?.email && (
-              <View style={styles.contactItem}>
-                <Ionicons name="mail-outline" size={14} color="#FFFFFF" />
-                <Text style={styles.contactText}>{user.email}</Text>
-              </View>
-            )}
+            {/* Contact Info */}
+            <View style={styles.contactInfoContainer}>
+              {user?.phoneNumber && (
+                <View style={styles.contactItem}>
+                  <Ionicons name="call-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+                  <Text style={styles.contactText}>{user.phoneNumber}</Text>
+                </View>
+              )}
+              {user?.email && (
+                <View style={styles.contactItem}>
+                  <Ionicons name="mail-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+                  <Text style={styles.contactText} numberOfLines={1}>{user.email}</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -324,100 +317,119 @@ const styles = StyleSheet.create({
   headerSection: {
     backgroundColor: "#059669",
     paddingHorizontal: 16,
-    paddingVertical: 24,
-    paddingBottom: 32,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   headerTopRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginBottom: 10,
+    marginBottom: 4,
   },
   notificationButton: {
-    padding: 8,
+    padding: 6,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 20,
+    borderRadius: 16,
   },
   profileCard: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 16,
   },
   profileImageContainer: {
     backgroundColor: "#D1F7C4",
-    borderRadius: 60,
-    width: 100,
-    height: 100,
+    borderRadius: 40,
+    width: 80,
+    height: 80,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   profileImage: {
-    width: 70,
-    height: 70,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
-  nameWithBadgeContainer: {
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
+  profileInfoColumn: {
+    flex: 1,
+    justifyContent: "center",
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
+    marginBottom: 6,
+  },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+    flexWrap: "wrap",
   },
   verificationBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.9)",
   },
   verificationBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
   ratingContainer: {
-    marginTop: 4,
-  },
-  ratingStars: {
     flexDirection: "row",
-    gap: 2,
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0,0,0,0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
   contactInfoContainer: {
-    gap: 8,
+    gap: 4,
   },
   contactItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   contactText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "rgba(255, 255, 255, 0.9)",
     fontWeight: "500",
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
   sectionContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
-    paddingBottom: 8,
+    gap: 8,
+    marginBottom: 10,
+    paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#059669",
     textTransform: "uppercase",
@@ -428,23 +440,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F3F4F6",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
     gap: 12,
   },
   menuIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: "#F0FDF4",
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -452,15 +464,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 2,
   },
   menuDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
-    fontWeight: "500",
+    fontWeight: "400",
   },
   logoutCard: {
     borderColor: "#FEE2E2",
@@ -470,13 +482,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEE2E2",
   },
   logoutTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "600",
     color: "#DC2626",
   },
   logoutDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#991B1B",
-    fontWeight: "500",
+    fontWeight: "400",
   },
 });

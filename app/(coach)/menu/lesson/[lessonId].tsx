@@ -200,7 +200,6 @@ export default function LessonDetailScreen() {
         visibilityTime: 3000,
       });
     } catch (error) {
-       
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -262,7 +261,6 @@ export default function LessonDetailScreen() {
         await fetchQuizByLesson();
       }
     } catch (error: any) {
-       
       const errorMessage =
         error.response?.data?.message || "Không thể thêm câu hỏi";
       alert(errorMessage);
@@ -442,7 +440,6 @@ export default function LessonDetailScreen() {
         await fetchQuizByLesson();
       }
     } catch (error: any) {
-       
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật câu hỏi";
       alert(errorMessage);
@@ -472,7 +469,6 @@ export default function LessonDetailScreen() {
                 await fetchQuizByLesson();
               }
             } catch (error: any) {
-               
               const errorMessage =
                 error.response?.data?.message || "Không thể xóa câu hỏi";
               alert(errorMessage);
@@ -653,307 +649,262 @@ export default function LessonDetailScreen() {
                   <Text style={styles.videosHeaderTitle}>Video bài giảng</Text>
                 </View>
                 {video && (
-                  <TouchableOpacity
-                    key={video.id}
-                    style={styles.videoCard}
-                    activeOpacity={0.7}
-                    onPress={() => setSelectedVideo(video)}
-                  >
-                    {/* Video Thumbnail */}
-                    <View style={styles.videoThumbnail}>
-                      {video.thumbnailUrl ? (
-                        <Image
-                          source={{
-                            uri: video.thumbnailUrl,
-                          }}
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      ) : (
-                        <View style={styles.videoThumbnailPlaceholder}>
-                          <Ionicons name="film" size={40} color="#FFFFFF" />
-                        </View>
-                      )}
-                      <View style={styles.videoPlayButtonOverlay}>
-                        <Ionicons
-                          name="play-circle"
-                          size={48}
-                          color="#FFFFFF"
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.videoCardHeader}>
-                      <View style={styles.videoCardTitle}>
-                        <Text style={styles.videoStepLabel}>Video</Text>
-                        <Text style={styles.videoTitle} numberOfLines={2}>
-                          {video.title}
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.videoStatusBadge,
-                          {
-                            backgroundColor:
-                              video.status === "READY"
-                                ? "#D1FAE5"
-                                : video.status === "ANALYZING"
-                                ? "#FEF3C7"
-                                : "#FEE2E2",
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.videoStatusText,
-                            {
-                              color:
-                                video.status === "READY"
-                                  ? "#059669"
-                                  : video.status === "ANALYZING"
-                                  ? "#D97706"
-                                  : "#DC2626",
-                            },
-                          ]}
-                        >
-                          {video.status === "READY"
-                            ? "Sẵn sàng"
-                            : video.status === "ANALYZING"
-                            ? "Đang phân tích"
-                            : "Lỗi"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Video Actions */}
-                    <View style={styles.videoActionsRow}>
+                  <View style={styles.videoCard}>
+                    <View style={{ flexDirection: "row", gap: 12 }}>
+                      {/* Thumbnail - Left Side */}
                       <TouchableOpacity
-                        style={styles.videoActionButton}
-                        onPress={() => updateVideo(video.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="pencil" size={14} color="#FFFFFF" />
-                        <Text style={styles.videoActionButtonText}>
-                          Chỉnh sửa
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.videoActionButton,
-                          styles.videoActionButtonDelete,
-                        ]}
-                        onPress={() => {
-                          Alert.alert(
-                            "Xác nhận xóa",
-                            `Bạn có chắc chắn muốn xóa video "${video.title}" không?`,
-                            [
-                              { text: "Hủy", style: "cancel" },
-                              {
-                                text: "Xóa",
-                                style: "destructive",
-                                onPress: () =>
-                                  deleteVideo(video.id, video.title),
-                              },
-                            ]
-                          );
+                        style={{
+                          width: 120,
+                          height: 90,
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          backgroundColor: "#E5E7EB",
+                          position: "relative",
                         }}
                         activeOpacity={0.7}
+                        onPress={() => setSelectedVideo(video)}
                       >
-                        <Ionicons name="trash" size={14} color="#FFFFFF" />
-                        <Text style={styles.videoActionButtonText}>Xóa</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {video.description && (
-                      <View style={styles.videoDescriptionSection}>
-                        <Text style={styles.videoDescription}>
-                          {video.description}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Quick Metadata Row */}
-                    <View style={styles.quickMetadataRow}>
-                      <View style={styles.quickMetadataItem}>
-                        <Ionicons name="time" size={14} color="#059669" />
-                        <Text style={styles.quickMetadataText}>
-                          {Math.floor(video.duration / 60)}:
-                          {String(video.duration % 60).padStart(2, "0")}
-                        </Text>
-                      </View>
-                      {video.drillPracticeSets && (
-                        <View style={styles.quickMetadataItem}>
-                          <Ionicons name="fitness" size={14} color="#059669" />
-                          <Text style={styles.quickMetadataText}>
-                            {video.drillPracticeSets} bộ
-                          </Text>
+                        {video.thumbnailUrl ? (
+                          <Image
+                            source={{ uri: video.thumbnailUrl }}
+                            style={{ width: "100%", height: "100%" }}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View style={styles.videoThumbnailPlaceholder}>
+                            <Ionicons name="film" size={32} color="#FFFFFF" />
+                          </View>
+                        )}
+                        <View style={styles.videoPlayButtonOverlay}>
+                          <Ionicons
+                            name="play-circle"
+                            size={36}
+                            color="#FFFFFF"
+                          />
                         </View>
-                      )}
+                      </TouchableOpacity>
+
+                      {/* Content - Right Side */}
+                      <View style={{ flex: 1, justifyContent: "space-between" }}>
+                        <View>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: 8,
+                            }}
+                          >
+                            <Text
+                              style={[styles.videoTitle, { flex: 1 }]}
+                              numberOfLines={2}
+                            >
+                              {video.title}
+                            </Text>
+                            <View
+                              style={[
+                                styles.videoStatusBadge,
+                                {
+                                  paddingHorizontal: 6,
+                                  paddingVertical: 2,
+                                  minWidth: 0,
+                                  backgroundColor:
+                                    video.status === "READY"
+                                      ? "#D1FAE5"
+                                      : video.status === "ANALYZING"
+                                      ? "#FEF3C7"
+                                      : "#FEE2E2",
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.videoStatusText,
+                                  {
+                                    fontSize: 10,
+                                    color:
+                                      video.status === "READY"
+                                        ? "#059669"
+                                        : video.status === "ANALYZING"
+                                        ? "#D97706"
+                                        : "#DC2626",
+                                  },
+                                ]}
+                              >
+                                {video.status === "READY"
+                                  ? "Sẵn sàng"
+                                  : video.status === "ANALYZING"
+                                  ? "Đang xử lý"
+                                  : "Lỗi"}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 4,
+                              marginTop: 6,
+                            }}
+                          >
+                            <Ionicons
+                              name="time-outline"
+                              size={14}
+                              color="#6B7280"
+                            />
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: "#6B7280",
+                                fontWeight: "500",
+                              }}
+                            >
+                              {Math.floor(video.duration / 60)}:
+                              {String(video.duration % 60).padStart(2, "0")}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Actions */}
+                        <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                          <TouchableOpacity
+                            style={[
+                              styles.videoActionButton,
+                              { paddingVertical: 4, paddingHorizontal: 8, flex: 0 },
+                            ]}
+                            onPress={() => updateVideo(video.id)}
+                          >
+                            <Ionicons name="pencil" size={12} color="#FFFFFF" />
+                            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "600" }}>
+                              Sửa
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={[
+                              styles.videoActionButton,
+                              styles.videoActionButtonDelete,
+                              { paddingVertical: 4, paddingHorizontal: 8, flex: 0 },
+                            ]}
+                            onPress={() => {
+                              Alert.alert(
+                                "Xác nhận xóa",
+                                `Bạn có chắc chắn muốn xóa video "${video.title}" không?`,
+                                [
+                                  { text: "Hủy", style: "cancel" },
+                                  {
+                                    text: "Xóa",
+                                    style: "destructive",
+                                    onPress: () =>
+                                      deleteVideo(video.id, video.title),
+                                  },
+                                ]
+                              );
+                            }}
+                          >
+                            <Ionicons name="trash" size={12} color="#FFFFFF" />
+                            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "600" }}>
+                              Xóa
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                     </View>
 
-                    {/* Drill Information - Expandable Section */}
-                    {(video.drillName ||
+                    {/* Description & Drill Info (Collapsible) */}
+                    {(video.description ||
+                      video.drillName ||
                       video.drillDescription ||
                       video.drillPracticeSets) && (
-                      <View style={styles.drillInfoSection}>
+                      <View style={{ marginTop: 12 }}>
                         <TouchableOpacity
-                          style={styles.drillInfoHeader}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            backgroundColor: "#F9FAFB",
+                            padding: 8,
+                            borderRadius: 6,
+                          }}
                           onPress={() =>
                             setExpandedDrill(
                               expandedDrill === video.id ? null : video.id
                             )
                           }
-                          activeOpacity={0.7}
                         >
-                          <View style={styles.drillInfoTitleContainer}>
-                            <Ionicons
-                              name="barbell"
-                              size={16}
-                              color="#FFFFFF"
-                              style={{ marginRight: 8 }}
-                            />
-                            <Text style={styles.drillInfoTitle}>
-                              Thông tin bài tập
-                            </Text>
-                          </View>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "600",
+                              color: "#4B5563",
+                            }}
+                          >
+                            Thông tin chi tiết
+                          </Text>
                           <Ionicons
                             name={
                               expandedDrill === video.id
                                 ? "chevron-up"
                                 : "chevron-down"
                             }
-                            size={20}
-                            color="#FFFFFF"
+                            size={16}
+                            color="#6B7280"
                           />
                         </TouchableOpacity>
 
                         {expandedDrill === video.id && (
-                          <View style={styles.drillInfoContent}>
-                            {video.drillName && (
-                              <View style={styles.drillInfoItem}>
-                                <View style={styles.drillInfoItemIcon}>
-                                  <Ionicons
-                                    name="bookmark"
-                                    size={14}
-                                    color="#059669"
-                                  />
-                                </View>
-                                <View style={styles.drillInfoItemText}>
-                                  <Text style={styles.drillInfoLabel}>
-                                    Tên bài tập
-                                  </Text>
-                                  <Text style={styles.drillInfoValue}>
-                                    {video.drillName}
-                                  </Text>
-                                </View>
-                              </View>
+                          <View style={{ marginTop: 8, gap: 8 }}>
+                            {video.description && (
+                              <Text style={styles.videoDescription}>
+                                {video.description}
+                              </Text>
                             )}
-
-                            {video.drillDescription && (
-                              <View style={styles.drillInfoItem}>
-                                <View style={styles.drillInfoItemIcon}>
-                                  <Ionicons
-                                    name="document-text"
-                                    size={14}
-                                    color="#059669"
-                                  />
+                            
+                            {(video.drillName || video.drillPracticeSets) && (
+                                <View style={styles.drillInfoSection}>
+                                    <View style={styles.drillInfoHeader}>
+                                        <View style={styles.drillInfoTitleContainer}>
+                                            <Ionicons name="fitness" size={16} color="#FFFFFF" />
+                                            <Text style={[styles.drillInfoTitle, { marginLeft: 6 }]}>
+                                                {video.drillName || "Bài tập"}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.drillInfoContent}>
+                                        {video.drillPracticeSets && (
+                                            <View style={styles.drillInfoItem}>
+                                                <View style={styles.drillInfoItemIcon}>
+                                                    <Ionicons name="repeat" size={14} color="#059669" />
+                                                </View>
+                                                <View style={styles.drillInfoItemText}>
+                                                    <Text style={styles.drillInfoLabel}>Số bộ tập</Text>
+                                                    <Text style={styles.drillInfoValue}>{video.drillPracticeSets} bộ</Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                        {video.drillDescription && (
+                                            <View style={styles.drillInfoItem}>
+                                                <View style={styles.drillInfoItemIcon}>
+                                                    <Ionicons name="information-circle" size={14} color="#059669" />
+                                                </View>
+                                                <View style={styles.drillInfoItemText}>
+                                                    <Text style={styles.drillInfoLabel}>Mô tả bài tập</Text>
+                                                    <Text style={styles.drillInfoDescValue}>{video.drillDescription}</Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
-                                <View style={styles.drillInfoItemText}>
-                                  <Text style={styles.drillInfoLabel}>
-                                    Mô tả chi tiết
-                                  </Text>
-                                  <Text style={styles.drillInfoDescValue}>
-                                    {video.drillDescription}
-                                  </Text>
-                                </View>
-                              </View>
-                            )}
-
-                            {video.drillPracticeSets && (
-                              <View style={styles.drillInfoItem}>
-                                <View style={styles.drillInfoItemIcon}>
-                                  <Ionicons
-                                    name="repeat"
-                                    size={14}
-                                    color="#059669"
-                                  />
-                                </View>
-                                <View style={styles.drillInfoItemText}>
-                                  <Text style={styles.drillInfoLabel}>
-                                    Số bộ tập luyện
-                                  </Text>
-                                  <Text style={styles.drillInfoValue}>
-                                    {video.drillPracticeSets} bộ
-                                  </Text>
-                                </View>
-                              </View>
-                            )}
-
-                            {video.duration && (
-                              <View style={styles.drillInfoItem}>
-                                <View style={styles.drillInfoItemIcon}>
-                                  <Ionicons
-                                    name="time"
-                                    size={14}
-                                    color="#059669"
-                                  />
-                                </View>
-                                <View style={styles.drillInfoItemText}>
-                                  <Text style={styles.drillInfoLabel}>
-                                    Thời lượng video
-                                  </Text>
-                                  <Text style={styles.drillInfoValue}>
-                                    {Math.floor(video.duration / 60)} phút{" "}
-                                    {video.duration % 60} giây
-                                  </Text>
-                                </View>
-                              </View>
-                            )}
-
-                            {video.status && (
-                              <View style={styles.drillInfoItem}>
-                                <View style={styles.drillInfoItemIcon}>
-                                  <Ionicons
-                                    name={
-                                      video.status === "READY"
-                                        ? "checkmark-circle"
-                                        : video.status === "ANALYZING"
-                                        ? "hourglass"
-                                        : "alert-circle"
-                                    }
-                                    size={14}
-                                    color={
-                                      video.status === "READY"
-                                        ? "#059669"
-                                        : video.status === "ANALYZING"
-                                        ? "#D97706"
-                                        : "#DC2626"
-                                    }
-                                  />
-                                </View>
-                                <View style={styles.drillInfoItemText}>
-                                  <Text style={styles.drillInfoLabel}>
-                                    Trạng thái
-                                  </Text>
-                                  <Text style={styles.drillInfoValue}>
-                                    {video.status === "READY"
-                                      ? "Sẵn sàng"
-                                      : video.status === "ANALYZING"
-                                      ? "Đang phân tích"
-                                      : "Lỗi"}
-                                  </Text>
-                                </View>
-                              </View>
                             )}
                           </View>
                         )}
                       </View>
                     )}
-                  </TouchableOpacity>
+                  </View>
                 )}
               </View>
             )}
-
           </View>
         ) : (
           <>
@@ -1115,24 +1066,36 @@ export default function LessonDetailScreen() {
                     onPress={handleOpenEditQuiz}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="pencil" size={18} color="#FFFFFF" />
+                    <Ionicons name="pencil" size={14} color="#FFFFFF" />
+                    <Text style={styles.addQuizButtonText}>Sửa</Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Quiz Info */}
-                <View style={styles.quizInfoSection}>
-                  <View style={styles.quizInfoCard}>
-                    <View style={styles.quizInfoIcon}>
-                      <Ionicons name="help-circle" size={24} color="#059669" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.quizInfoLabel}>Tổng câu hỏi</Text>
-                      <Text style={styles.quizInfoValue}>
-                        {quiz.questions?.length || 0} câu
-                      </Text>
-                    </View>
-                  </View>
-                </View>
+                {/* Add Question Button */}
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#059669",
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    gap: 8,
+                    shadowColor: "#059669",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                  onPress={() => setShowCreateQuestion(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>
+                    Thêm câu hỏi mới
+                  </Text>
+                </TouchableOpacity>
 
                 {/* Questions List */}
                 {quiz.questions && quiz.questions.length > 0 ? (
@@ -1240,7 +1203,7 @@ export default function LessonDetailScreen() {
                             style={styles.questionActionButton}
                             onPress={() => handleOpenEditQuestion(question)}
                           >
-                            <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                            <Ionicons name="pencil" size={14} color="#FFFFFF" />
                             <Text style={styles.questionActionButtonText}>
                               Sửa
                             </Text>
@@ -1252,7 +1215,7 @@ export default function LessonDetailScreen() {
                             ]}
                             onPress={() => handleDeleteQuestion(question.id)}
                           >
-                            <Ionicons name="trash" size={16} color="#FFFFFF" />
+                            <Ionicons name="trash" size={14} color="#FFFFFF" />
                             <Text style={styles.questionActionButtonText}>
                               Xóa
                             </Text>
@@ -1275,30 +1238,6 @@ export default function LessonDetailScreen() {
                     </Text>
                   </View>
                 )}
-
-                {/* Create Question FAB */}
-                <TouchableOpacity
-                  style={{
-                    position: "absolute",
-                    bottom: 24,
-                    right: 16,
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
-                    backgroundColor: "#059669",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#059669",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 6,
-                    zIndex: 10,
-                  }}
-                  onPress={() => setShowCreateQuestion(true)}
-                >
-                  <Ionicons name="add" size={28} color="#FFFFFF" />
-                </TouchableOpacity>
               </>
             )}
           </>
@@ -1709,7 +1648,7 @@ export default function LessonDetailScreen() {
         presentationStyle="fullScreen"
         onRequestClose={() => setSelectedVideo(null)}
       >
-        <View style={{ flex: 1, backgroundColor: "#000" ,paddingTop:40}}>
+        <View style={{ flex: 1, backgroundColor: "#000", paddingTop: 40 }}>
           <View
             style={{
               flexDirection: "row",
@@ -1785,13 +1724,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#059669",
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 20,
+    paddingVertical: 12,
+    paddingTop: 12,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
@@ -1801,13 +1740,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
     color: "rgba(255, 255, 255, 0.8)",
   },
@@ -1819,31 +1758,31 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F3F4F6",
   },
   descriptionText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "500",
     color: "#374151",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 20,
   },
   tabContainer: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   tabWrapper: {
     flexDirection: "row",
     backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    padding: 4,
+    borderRadius: 8,
+    padding: 3,
     gap: 4,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -1852,10 +1791,10 @@ const styles = StyleSheet.create({
   tabButtonActive: {
     backgroundColor: "#059669",
     shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tabActiveIndicator: {
     position: "absolute",
@@ -1866,7 +1805,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   tabButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: "#6B7280",
     textAlign: "center",
@@ -1880,14 +1819,14 @@ const styles = StyleSheet.create({
   },
   contentContainerPadding: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   addVideoButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#059669",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
     gap: 6,
@@ -1900,7 +1839,7 @@ const styles = StyleSheet.create({
   },
   addVideoButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.2,
   },
@@ -1908,14 +1847,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   stepLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#6B7280",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   videoContainer: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOpacity: 0.05,
@@ -1929,25 +1868,25 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: "#F0FDF4",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: "center",
   },
   emptyDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
-    marginBottom: 24,
+    marginBottom: 20,
     textAlign: "center",
     lineHeight: 18,
   },
@@ -1956,9 +1895,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#059669",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     gap: 8,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
@@ -1968,7 +1907,7 @@ const styles = StyleSheet.create({
   },
   emptyCreateButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
   },
   quizHeader: {
@@ -1976,25 +1915,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   quizHeaderTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
   },
   quizCount: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
     marginTop: 2,
     fontWeight: "500",
@@ -2003,39 +1942,39 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#059669",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    gap: 4,
     shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   addQuizButtonText: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   quizCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 12,
+    gap: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   quizIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     backgroundColor: "#F0FDF4",
     justifyContent: "center",
     alignItems: "center",
@@ -2044,14 +1983,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   quizTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
   },
   quizDesc: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: "500",
   },
   quizActions: {
@@ -2064,8 +2003,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#059669",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     borderRadius: 6,
     gap: 4,
   },
@@ -2074,40 +2013,40 @@ const styles = StyleSheet.create({
   },
   quizActionButtonText: {
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
   // Video Styles
   videosHeader: {
-    marginBottom: 10,
-    paddingBottom: 8,
+    marginBottom: 8,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   videosHeaderTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
   },
   videoCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
-    padding: 10,
+    padding: 8,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
     overflow: "hidden",
   },
   videoCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: 8,
     gap: 8,
   },
   videoCardTitle: {
@@ -2117,98 +2056,97 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     color: "#6B7280",
-    marginBottom: 3,
+    marginBottom: 2,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   videoTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 17,
+    lineHeight: 16,
   },
   videoDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    marginTop: 3,
+    marginTop: 2,
     fontWeight: "400",
-    lineHeight: 15,
+    lineHeight: 14,
   },
   videoDescriptionSection: {
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 6,
-    marginBottom: 10,
+    marginBottom: 8,
     borderLeftWidth: 2,
     borderLeftColor: "#059669",
   },
   videoMetadataSection: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
     backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 6,
   },
   metadataColumn: {
     flex: 1,
-    gap: 12,
+    gap: 8,
   },
   metadataItem: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     alignItems: "flex-start",
   },
   metadataLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   metadataValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    marginTop: 2,
+    marginTop: 1,
   },
   videoDrillLabel: {
     fontWeight: "700",
     color: "#059669",
   },
   videoStatusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
-    minWidth: 75,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    minWidth: 60,
     alignItems: "center",
-    fontWeight: "600",
   },
   videoStatusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
   },
   videoCardInfo: {
-    gap: 8,
+    gap: 6,
   },
   videoInfoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   videoInfoText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
     fontWeight: "500",
   },
   /* Video Thumbnail Styles */
   videoThumbnail: {
     width: "100%",
-    height: 140,
+    height: 120, // Reduced from 140
     backgroundColor: "#E5E7EB",
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 6,
+    marginBottom: 8,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -2249,8 +2187,8 @@ const styles = StyleSheet.create({
     right: 10,
     top: 10,
     zIndex: 10,
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
@@ -2283,20 +2221,20 @@ const styles = StyleSheet.create({
   quickMetadataRow: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   quickMetadataItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     backgroundColor: "#F0FDF4",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
     flex: 1,
   },
   quickMetadataText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     color: "#059669",
   },
@@ -2305,7 +2243,7 @@ const styles = StyleSheet.create({
   videoActionsRow: {
     flexDirection: "row",
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   videoActionButton: {
     flex: 1,
@@ -2336,7 +2274,7 @@ const styles = StyleSheet.create({
   /* Drill Information Section */
   drillInfoSection: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    borderRadius: 6,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -2346,7 +2284,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#059669",
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     gap: 6,
   },
@@ -2356,29 +2294,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   drillInfoTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#FFFFFF",
   },
   drillInfoContent: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 10,
-    gap: 10,
+    gap: 8,
   },
   drillInfoItem: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     alignItems: "flex-start",
   },
   drillInfoItemIcon: {
-    width: 18,
+    width: 16,
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 2,
   },
   drillInfoItemText: {
     flex: 1,
-    gap: 3,
+    gap: 2,
   },
   drillInfoLabel: {
     fontSize: 10,
@@ -2393,37 +2331,37 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   drillInfoDescValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
     color: "#374151",
-    lineHeight: 16,
+    lineHeight: 15,
   },
 
   /* Skeleton Loading Styles */
   videoCardSkeleton: {
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
-    padding: 10,
+    padding: 8,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
     overflow: "hidden",
   },
   videoThumbnailSkeleton: {
     width: "100%",
-    height: 140,
+    height: 120,
     backgroundColor: "#E5E7EB",
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 6,
+    marginBottom: 8,
     opacity: 0.6,
   },
   skeletonBar: {
-    height: 12,
+    height: 10,
     backgroundColor: "#E5E7EB",
     borderRadius: 4,
     opacity: 0.6,
@@ -2433,58 +2371,58 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
   },
   quizCardSkeleton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F0FDF4",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 10,
     borderWidth: 1,
     borderColor: "#DCFCE7",
   },
   questionCardSkeleton: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
 
   // Quiz Info Styles (from quizId.tsx)
   quizInfoSection: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
   quizInfoCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F0FDF4",
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 10,
     borderWidth: 1,
     borderColor: "#DCFCE7",
   },
@@ -2493,12 +2431,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   quizInfoLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
     fontWeight: "600",
   },
   quizInfoValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
     color: "#059669",
     marginTop: 2,
@@ -2507,26 +2445,26 @@ const styles = StyleSheet.create({
   // Question Card Styles
   questionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
   },
   questionHeader: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 12,
   },
   questionNumberBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#ECFDF5",
     justifyContent: "center",
     alignItems: "center",
@@ -2535,46 +2473,46 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   questionNumber: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800",
     color: "#059669",
   },
   questionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
     marginBottom: 4,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   questionExplanation: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    lineHeight: 16,
+    lineHeight: 15,
   },
 
   // Options Styles
   optionsContainer: {
-    gap: 10,
+    gap: 8,
   },
   optionButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    gap: 12,
+    gap: 10,
   },
   optionCorrect: {
     backgroundColor: "#F0FDF4",
     borderColor: "#DCFCE7",
   },
   optionLetter: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
@@ -2584,12 +2522,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#10B981",
   },
   optionLetterText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "800",
     color: "#FFFFFF",
   },
   optionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#1A1A1A",
     fontWeight: "500",
     flex: 1,
@@ -2598,13 +2536,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F3F4F6",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
     gap: 8,
   },
   emptyOptionsText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#9CA3AF",
     fontWeight: "600",
   },
@@ -2612,16 +2550,16 @@ const styles = StyleSheet.create({
   // Question Actions
   questionActions: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 16,
+    gap: 8,
+    marginTop: 12,
   },
   questionActionButton: {
     flex: 1,
     flexDirection: "row",
     backgroundColor: "#059669",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
@@ -2631,7 +2569,7 @@ const styles = StyleSheet.create({
   },
   questionActionButtonText: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
 
@@ -2651,39 +2589,39 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
   },
   modalCloseButton: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     backgroundColor: "#F3F4F6",
     justifyContent: "center",
     alignItems: "center",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
     flex: 1,
     textAlign: "center",
   },
   formSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   formLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   textInput: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     fontSize: 14,
     color: "#111827",
-    minHeight: 44,
+    minHeight: 40,
   },
   optionInputCard: {
     flexDirection: "row",
@@ -2691,17 +2629,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 10,
-    gap: 10,
-    minHeight: 48,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginBottom: 8,
+    gap: 8,
+    minHeight: 44,
   },
   optionLabelBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#ECFDF5",
     justifyContent: "center",
     alignItems: "center",
@@ -2710,7 +2648,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   optionLabelText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800",
     color: "#059669",
   },
@@ -2718,14 +2656,14 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
   },
   optionTextInputRaw: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#111827",
     minHeight: 20,
     padding: 0,
@@ -2735,8 +2673,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#059669",
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
     gap: 8,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
@@ -2750,7 +2688,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     letterSpacing: 0.3,
   },
