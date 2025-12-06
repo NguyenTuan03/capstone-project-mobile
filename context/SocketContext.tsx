@@ -51,14 +51,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       setIsProcessingQueue(true);
       const notification = notificationQueue[0];
 
+      console.log("Processing notification:", notification);
+
       Toast.show({
-        type: notification.type.toLowerCase(),
+        type: notification.type.toLowerCase() as "success" | "error" | "info",
         text1: notification.title,
         text2: notification.body,
         onPress: () => {
           if (notification.navigateTo) {
-            socket?.emit("notification.read", notification.id);
-            router.push(notification.navigateTo as Href);
+            // Use replace to force remount and data refresh
+            router.replace(notification.navigateTo as Href);
+            // Alternatively, you can use push with a timestamp to force refresh
+            // router.push(`${notification.navigateTo}?refresh=${Date.now()}` as Href);
           }
         },
         visibilityTime: 3000,
@@ -72,7 +76,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     processNextNotification();
-  }, [notificationQueue, isProcessingQueue, socket, isAuthenticated]);
+  }, [notificationQueue, isProcessingQueue, socket, isAuthenticated, segments]);
 
   useEffect(() => {
     let newSocket: Socket | null = null;
@@ -83,11 +87,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         setNotificationQueue([]);
         setIsProcessingQueue(false);
 
-        if (socket) {
-          socket.disconnect();
-          setSocket(null);
-          setIsConnected(false);
-        }
+        // Disconnect will be handled by cleanup function
+        setSocket((prevSocket) => {
+          if (prevSocket) {
+            prevSocket.disconnect();
+          }
+          return null;
+        });
+        setIsConnected(false);
         return;
       }
 
@@ -95,10 +102,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       const token = await storageService.getToken();
 
       if (!user || !token) {
+        console.log("No user or token found, cannot initialize socket");
         return;
       }
 
       const API_URL = process.env.EXPO_PUBLIC_SOCKET_URL;
+      console.log("Initializing socket connection to:", API_URL);
 
       // Try connecting to root namespace first
       newSocket = io(API_URL!, {
@@ -113,16 +122,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       newSocket.on("connect", () => {
+        console.log("Socket connected successfully");
         setIsConnected(true);
       });
 
       newSocket.on("disconnect", () => {
+        console.log("Socket disconnected");
         setIsConnected(false);
       });
 
-      newSocket.on("connect_error", (err) => {});
+      newSocket.on("connect_error", (err) => {
+        console.error("Socket connection error:", err);
+      });
 
       newSocket.on("notification.send", (notification: Notification) => {
+        console.log("Notification received:", notification);
         // Add to queue instead of showing immediately
         setNotificationQueue((prev) => [...prev, notification]);
       });
@@ -134,6 +148,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       if (newSocket) {
+        console.log("Cleaning up socket connection");
         newSocket.disconnect();
       }
     };
