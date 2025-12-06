@@ -76,7 +76,7 @@ const CoachSubjectScreen = () => {
               });
               setModalVisible(false);
             } catch (error) {
- "Lỗi khi xóa tài liệu:", error);
+      console.error("Lỗi khi xóa tài liệu:", error);
               Alert.alert(
                 "Lỗi",
                 "Không thể xóa tài liệu. Vui lòng thử lại sau."
@@ -99,7 +99,7 @@ const CoachSubjectScreen = () => {
 
       const user = await storageService.getUser();
       if (!user) {
- "Không tìm thấy thông tin người dùng");
+        console.error("Không tìm thấy thông tin người dùng");
         return;
       }
       const userId = user.id;
@@ -133,7 +133,7 @@ const CoachSubjectScreen = () => {
         setHasMore(newItems.length < newTotal);
       }
     } catch (error) {
- "Lỗi khi tải danh sách tài liệu:", error);
+      console.error("Lỗi khi tải danh sách tài liệu:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);

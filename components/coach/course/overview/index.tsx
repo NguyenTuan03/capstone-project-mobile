@@ -186,7 +186,7 @@ export const OverviewTab: React.FC<Props> = ({
       
       setFeedbacks((res as any).data || []);
     } catch (error) {
- "Failed to fetch feedbacks:", error);
+      console.error("Failed to fetch feedbacks:", error);
       setFeedbacks([]);
     } finally {
       setFeedbackLoading(false);

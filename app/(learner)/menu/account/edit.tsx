@@ -50,7 +50,7 @@ export default function EditLearnerAccountScreen() {
       const data = await locationService.getProvinces();
       setProvinces(data);
     } catch (fetchError) {
- "Failed to fetch provinces", fetchError);
+      console.error("Failed to fetch provinces", fetchError);
     } finally {
       setLoadingProvinces(false);
     }
@@ -69,7 +69,7 @@ export default function EditLearnerAccountScreen() {
       );
       setDistricts(data);
     } catch (fetchError) {
- "Failed to fetch districts", fetchError);
+      console.error("Failed to fetch districts", fetchError);
     } finally {
       setLoadingDistricts(false);
     }

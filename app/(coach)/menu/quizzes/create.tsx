@@ -180,7 +180,7 @@ export default function CreateQuizScreen() {
       router.back();
     } catch (error: any) {
  
-        "Lỗi, không thể tạo bài quiz",
+        console.error("Lỗi, không thể tạo bài quiz",
         error.response?.data || error
       );
       Alert.alert("Lỗi không thể tạo bài quiz");

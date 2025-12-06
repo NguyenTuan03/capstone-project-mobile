@@ -164,7 +164,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
         onQuizUpdated();
       }
     } catch (error: any) {
- "Error updating question:", error);
+      console.error("Error updating question:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật câu hỏi";
       alert(errorMessage);
@@ -193,7 +193,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                 onQuizUpdated();
               }
             } catch (error: any) {
- "Error deleting question:", error);
+              console.error("Error deleting question:", error);
               const errorMessage =
                 error.response?.data?.message || "Không thể xóa câu hỏi";
               alert(errorMessage);
@@ -379,7 +379,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                               onClose();
                               await onDelete(quiz.id, quiz.title);
                             } catch (error) {
- "Error deleting quiz:", error);
+                              console.error("Error deleting quiz:", error);
                             }
                           },
                         },
@@ -480,7 +480,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                       onQuizUpdated();
                     }
                   } catch (error: any) {
- "Error updating quiz:", error);
+                    console.error("Error updating quiz:", error);
                     Toast.show({
                       type: "error",
                       text1: "Lỗi",

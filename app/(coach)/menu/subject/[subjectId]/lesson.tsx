@@ -59,7 +59,7 @@ const CoachLessonScreen = () => {
               );
               setMenuVisible(false);
             } catch (error) {
- "Lỗi khi xóa bài học:", error);
+      console.error("Lỗi khi xóa bài học:", error);
             }
           },
         },

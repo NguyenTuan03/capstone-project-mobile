@@ -55,7 +55,7 @@ export default function AchievementIcon({
         style={styles.icon}
         resizeMode="cover"
         onError={() => {
- "Failed to load achievement icon:", imageUrl);
+          console.error("Failed to load achievement icon:", imageUrl);
           setImageError(true);
         }}
       />

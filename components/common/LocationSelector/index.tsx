@@ -59,7 +59,7 @@ export const LocationSelector = ({
       const data = await locationService.getProvinces();
       setProvinces(data);
     } catch (error) {
- "Error fetching provinces:", error);
+      console.error("Error fetching provinces:", error);
     } finally {
       setLoadingProvinces(false);
     }
@@ -71,7 +71,7 @@ export const LocationSelector = ({
       const data = await locationService.getDistrictsByProvince(provinceIdNum);
       setDistricts(data);
     } catch (error) {
- "Error fetching districts:", error);
+      console.error("Error fetching districts:", error);
     } finally {
       setLoadingDistricts(false);
     }

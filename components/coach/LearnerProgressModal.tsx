@@ -63,7 +63,7 @@ export default function LearnerProgressModal({
       const data = await sessionService.getSessionsByCourseId(courseId);
       setSessions(data.metadata || data || []);
     } catch (error) {
- "Failed to fetch sessions:", error);
+      console.error("Failed to fetch sessions:", error);
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export default function LearnerProgressModal({
     try {
       setLoadingQuizAttempts(true);
  
-        "Fetching quiz attempts for quizId:",
+        console.error("Fetching quiz attempts for quizId:",
         quizId,
         "userId:",
         learner.user.id
@@ -112,7 +112,7 @@ export default function LearnerProgressModal({
 
       setQuizAttemptModalVisible(true);
     } catch (error) {
- "Failed to fetch quiz attempts:", error);
+      console.error("Failed to fetch quiz attempts:", error);
       alert("Không thể tải dữ liệu bài làm quiz");
       setSelectedQuizAttempts([]);
     } finally {
@@ -152,7 +152,7 @@ export default function LearnerProgressModal({
         alert("Học viên chưa nộp video cho bài này");
       }
     } catch (error) {
- "Error fetching learner videos:", error);
+      console.error("Error fetching learner videos:", error);
       alert("Không thể tải dữ liệu video");
     } finally {
       setLoadingVideos(false);

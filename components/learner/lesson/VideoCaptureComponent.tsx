@@ -86,7 +86,7 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
           setPreviewVideoName(fileName);
         }
       } catch (error) {
- "Error saving video:", error);
+        console.error("Error saving video:", error);
         // Keep preview with original path if save fails
       }
     },
@@ -109,11 +109,11 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
           handleRecordingError();
         }
       }).catch((error: any) => {
- "Recording error:", error);
+        console.error("Recording error:", error);
         handleRecordingError();
       });
     } catch (error) {
- "Error starting recording:", error);
+      console.error("Error starting recording:", error);
       handleRecordingError();
     }
   }, [duration, handleRecordingComplete, handleRecordingError]);
@@ -124,7 +124,7 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
         await cameraRef.current.stopRecording();
       }
     } catch (error) {
- "Error stopping recording:", error);
+      console.error("Error stopping recording:", error);
       handleRecordingError();
     }
   }, [handleRecordingError]);
@@ -176,7 +176,7 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
       try {
         cameraRef.current?.stopRecording();
       } catch (error) {
- "Error cancelling recording:", error);
+        console.error("Error cancelling recording:", error);
       }
     }
     setCaptureState("idle");

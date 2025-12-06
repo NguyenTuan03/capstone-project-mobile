@@ -62,7 +62,7 @@ export default function CreateSubjectScreen() {
 
       router.back();
     } catch (error: any) {
- "❌ Error creating subject:", {
+      console.error("❌ Error creating subject:", {
         message: error.message,
         error: error,
       });

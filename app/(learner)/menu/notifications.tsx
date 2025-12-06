@@ -5,12 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Href, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -87,7 +87,7 @@ export default function NotificationsScreen() {
           )
         );
       } catch (error) {
- "Failed to mark notification as read:", error);
+        console.error("Failed to mark notification as read:", error);
       }
     }
 
@@ -106,7 +106,7 @@ export default function NotificationsScreen() {
         text2: "Đã đánh dấu tất cả là đã đọc",
       });
     } catch (error) {
- "Failed to mark all as read:", error);
+      console.error("Failed to mark all as read:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",

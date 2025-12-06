@@ -1,3 +1,4 @@
+
 import LearnerProgressModal from "@/components/coach/LearnerProgressModal";
 import { getAllCoachLearnerProgress } from "@/services/learner.service";
 import { CourseStatus } from "@/types/course";
@@ -32,7 +33,7 @@ export default function CoachStudentsScreen() {
       const data = await getAllCoachLearnerProgress(status);
       setLearners(data);
     } catch (error) {
- "Failed to fetch learners:", error);
+      console.error("Failed to fetch learners:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
