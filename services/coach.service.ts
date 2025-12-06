@@ -18,7 +18,6 @@ class CoachService {
       const response = await http.get(url);
       return response.data.metadata;
     } catch (error) {
-       
       throw error;
     }
   }
@@ -38,7 +37,6 @@ class CoachService {
       const response = await http.get(url);
       return response.data.metadata;
     } catch (error) {
-       
       throw error;
     }
   }
@@ -59,7 +57,6 @@ class CoachService {
       const response = await http.get(url);
       return response.data.metadata;
     } catch (error) {
-       
       throw error;
     }
   }
@@ -71,23 +68,24 @@ class CoachService {
       const response = await http.get(`/v1/coaches/${userId}/rating/overall`);
       return response.data.metadata;
     } catch (error) {
-       
       return null;
     }
   }
 
-  async getCoachById(coachId: number): Promise<CoachDetail> {
+  async getCoachById(
+    coachId: number,
+    isUser: boolean = true
+  ): Promise<CoachDetail> {
     try {
-      const response = await http.get(`/v1/coaches/${coachId}`);
-      
+      const response = await http.get(
+        `/v1/coaches/${coachId}?isUser=${isUser}`
+      );
+
       return response.data.metadata || response.data;
     } catch (error) {
-       
       throw error;
     }
   }
-
-  
 }
 
 export default new CoachService();
