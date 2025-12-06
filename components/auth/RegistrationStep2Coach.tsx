@@ -12,6 +12,27 @@ import {
   View,
 } from "react-native";
 
+const SPECIALTIES_LIST = [
+  "Kỹ thuật cơ bản",
+  "Kỹ thuật nâng cao",
+  "Đánh đơn",
+  "Đánh đôi",
+  "Thể lực & Di chuyển",
+  "Tâm lý thi đấu",
+  "Sửa lỗi kỹ thuật",
+  "Pickleball cho trẻ em",
+];
+
+const TEACHING_METHODS_LIST = [
+  "Thực hành trên sân",
+  "Phân tích video",
+  "Bài tập tình huống",
+  "Thi đấu tập",
+  "Lý thuyết & Chiến thuật",
+  "Cá nhân hóa",
+  "Nhóm nhỏ",
+];
+
 type SelectedCredential = {
   baseCredential: number;
   issuedAt?: string;
@@ -53,6 +74,55 @@ export const RegistrationStep2Coach = ({
   onBack,
   onSubmit,
 }: Props) => {
+  const toggleSelection = (
+    currentValue: string,
+    item: string,
+    onChange: (val: string) => void
+  ) => {
+    const items = currentValue
+      ? currentValue.split(",").map((i) => i.trim())
+      : [];
+
+    if (items.includes(item)) {
+      const newItems = items.filter((i) => i !== item);
+      onChange(newItems.join(", "));
+    } else {
+      const newItems = [...items, item];
+      onChange(newItems.join(", "));
+    }
+  };
+
+  const renderChips = (
+    list: string[],
+    currentValue: string,
+    onChange: (val: string) => void
+  ) => {
+    const currentItems = currentValue
+      ? currentValue.split(",").map((i) => i.trim())
+      : [];
+
+    return (
+      <View style={styles.chipContainer}>
+        {list.map((item) => {
+          const isSelected = currentItems.includes(item);
+          return (
+            <TouchableOpacity
+              key={item}
+              style={[styles.chip, isSelected && styles.chipSelected]}
+              onPress={() => toggleSelection(currentValue, item, onChange)}
+            >
+              <Text
+                style={[styles.chipText, isSelected && styles.chipTextSelected]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
     <>
       {/* Bio */}
@@ -125,8 +195,14 @@ export const RegistrationStep2Coach = ({
       {/* Specialties */}
       <View style={formStyles.fieldContainer}>
         <Text style={formStyles.label}>
-          Chuyên môn (phân cách bằng dấu phẩy)
+          Chuyên môn (chọn hoặc nhập thêm)
         </Text>
+        {renderChips(SPECIALTIES_LIST, specialties, (val) => {
+          onSpecialtiesChange(val);
+          if (fieldErrors.specialties) {
+            onClearError("specialties");
+          }
+        })}
         <View
           style={[
             formStyles.inputWrapper,
@@ -136,7 +212,7 @@ export const RegistrationStep2Coach = ({
           <Ionicons name="trophy-outline" size={18} color="#6B7280" />
           <TextInput
             style={formStyles.input}
-            placeholder="Kỹ thuật cơ bản, Chiến thuật, Thể lực"
+            placeholder="Nhập thêm chuyên môn khác..."
             value={specialties}
             onChangeText={(text) => {
               onSpecialtiesChange(text);
@@ -157,8 +233,14 @@ export const RegistrationStep2Coach = ({
       {/* Teaching Methods */}
       <View style={formStyles.fieldContainer}>
         <Text style={formStyles.label}>
-          Phương pháp giảng dạy (phân cách bằng dấu phẩy)
+          Phương pháp giảng dạy (chọn hoặc nhập thêm)
         </Text>
+        {renderChips(TEACHING_METHODS_LIST, teachingMethods, (val) => {
+          onTeachingMethodsChange(val);
+          if (fieldErrors.teachingMethods) {
+            onClearError("teachingMethods");
+          }
+        })}
         <View
           style={[
             formStyles.inputWrapper,
@@ -168,7 +250,7 @@ export const RegistrationStep2Coach = ({
           <Ionicons name="book-outline" size={18} color="#6B7280" />
           <TextInput
             style={formStyles.input}
-            placeholder="Thực hành, Lý thuyết, Video"
+            placeholder="Nhập thêm phương pháp khác..."
             value={teachingMethods}
             onChangeText={(text) => {
               onTeachingMethodsChange(text);
@@ -231,5 +313,31 @@ const styles = StyleSheet.create({
   },
   submitButtonWrapper: {
     flex: 1,
+  },
+  chipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  chipSelected: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#059669",
+  },
+  chipText: {
+    fontSize: 13,
+    color: "#4B5563",
+  },
+  chipTextSelected: {
+    color: "#059669",
+    fontWeight: "600",
   },
 });
