@@ -4,12 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function AccountInfoScreen() {
@@ -20,12 +20,9 @@ export default function AccountInfoScreen() {
     try {
       const userData = await storageService.getUser();
       if (userData) {
-        
         setUser(userData);
       }
-    } catch (err) {
-      console.error("Error loading user data:", err);
-    }
+    } catch (err) {}
   }, []);
 
   useFocusEffect(

@@ -47,7 +47,7 @@ export default function LearnerPayoutsScreen() {
           setBankList([]);
         }
       } catch (err) {
-        console.error("Lỗi lấy danh sách ngân hàng:", err);
+ "Lỗi lấy danh sách ngân hàng:", err);
       }
     };
     fetchBanks();
@@ -59,7 +59,7 @@ export default function LearnerPayoutsScreen() {
         const user = await storageService.getUser();
         setUserName(user?.fullName || "");
       } catch (err) {
-        console.error("Lỗi lấy tên người dùng:", err);
+ "Lỗi lấy tên người dùng:", err);
       }
     };
     fetchUserName();
@@ -75,7 +75,7 @@ export default function LearnerPayoutsScreen() {
       setWallet(res.data);
       
     } catch (err: any) {
-      console.error(
+ 
         "❌ Lỗi khi lấy dữ liệu ví:",
         err.response?.data || err.message
       );
@@ -119,7 +119,7 @@ export default function LearnerPayoutsScreen() {
 
       Alert.alert("Thành công", "Cập nhật thông tin ngân hàng thành công!");
     } catch (err: any) {
-      console.error("❌ Lỗi cập nhật ví:", err.response?.data || err.message);
+ "❌ Lỗi cập nhật ví:", err.response?.data || err.message);
       Alert.alert("Lỗi", "Không thể cập nhật thông tin. Vui lòng thử lại.");
     }
   };
@@ -165,7 +165,7 @@ export default function LearnerPayoutsScreen() {
         ]
       );
     } catch (err: any) {
-      console.error("❌ Lỗi rút tiền:", err.response?.data || err.message);
+ "❌ Lỗi rút tiền:", err.response?.data || err.message);
       const errorMessage =
         err.response?.data?.message ||
         "Không thể xử lý yêu cầu rút tiền. Vui lòng thử lại.";

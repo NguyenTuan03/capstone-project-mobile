@@ -127,7 +127,6 @@ export default function CoachHomeScreen() {
         setRating(ratingData);
       }
     } catch (error) {
-      console.error("❌ Failed to load data:", error);
     } finally {
       setLoadingSessions(false);
     }

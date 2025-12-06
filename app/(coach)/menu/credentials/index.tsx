@@ -51,7 +51,6 @@ export default function CredentialsScreen() {
       const response = await credentialService.getCredentials();
       setCredentials(response);
     } catch (error) {
-      console.error("Failed to load credentials:", error);
       setCredentials([]);
     }
   };
@@ -153,7 +152,6 @@ export default function CredentialsScreen() {
       Alert.alert("Thành công", "Chứng chỉ đã được thêm thành công");
       await loadCredentials();
     } catch (error) {
-      console.error("Failed to add credential:", error);
       Alert.alert(
         "Lỗi",
         error instanceof Error ? error.message : "Không thể thêm chứng chỉ"
@@ -186,7 +184,6 @@ export default function CredentialsScreen() {
             Alert.alert("Thành công", "Chứng chỉ đã được xóa");
             await loadCredentials();
           } catch (error) {
-            console.error("Failed to delete credential:", error);
             Alert.alert(
               "Lỗi",
               error instanceof Error ? error.message : "Không thể xóa chứng chỉ"
@@ -228,7 +225,6 @@ export default function CredentialsScreen() {
 
       Alert.alert("Thành công", "Chứng chỉ đã được cập nhật");
     } catch (error) {
-      console.error("Failed to update credential:", error);
       Alert.alert(
         "Lỗi",
         error instanceof Error ? error.message : "Không thể cập nhật chứng chỉ"

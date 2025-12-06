@@ -36,13 +36,6 @@ http.interceptors.request.use(async (config) => {
     config.headers["ngrok-skip-browser-warning"] = "true";
   }
 
-  console.log("📤 Request:", {
-    method: config.method?.toUpperCase(),
-    url: config.url,
-    isFormData,
-    headers: config.headers,
-  });
-
   return config;
 });
 
@@ -66,12 +59,6 @@ http.interceptors.response.use(
     const originalRequest = error.config;
 
     // Log error details
-    console.error("❌ Response Error:", {
-      status: error.response?.status,
-      message: error.message,
-      url: originalRequest?.url,
-      response: error.request?._response,
-    });
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

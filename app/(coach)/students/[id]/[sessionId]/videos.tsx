@@ -37,7 +37,7 @@ export default function SessionVideosScreen() {
         const parsed = JSON.parse(sessionData);
         setSession(parsed);
       } catch (e) {
-        console.error("Failed to parse session data:", e);
+ "Failed to parse session data:", e);
       }
     }
   }, [sessionData]);
@@ -48,7 +48,7 @@ export default function SessionVideosScreen() {
         const parsed = JSON.parse(learnerVideosData);
         setLearnerVideos(Array.isArray(parsed) ? parsed : []);
       } catch (e) {
-        console.error("Failed to parse learner videos data:", e);
+ "Failed to parse learner videos data:", e);
       }
     }
   }, [learnerVideosData]);

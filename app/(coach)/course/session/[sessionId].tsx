@@ -142,7 +142,6 @@ const SessionDetailScreen: React.FC = () => {
       });
       fetchSession();
     } catch (error) {
-      console.error("Lỗi khi xóa quiz:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -165,7 +164,6 @@ const SessionDetailScreen: React.FC = () => {
       });
       fetchSession();
     } catch (error) {
-      console.error("Lỗi khi xóa video:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -369,9 +367,7 @@ const SessionDetailScreen: React.FC = () => {
               try {
                 const res = await get<Session>(`/v1/sessions/${sessionId}`);
                 setSession(res.data);
-              } catch (error) {
-                console.error("Error refreshing session:", error);
-              }
+              } catch (error) {}
             };
             fetchSession();
           }

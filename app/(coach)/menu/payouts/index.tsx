@@ -15,7 +15,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -50,9 +50,7 @@ export default function CoachPayoutsScreen() {
         } else {
           setBankList([]);
         }
-      } catch (err) {
-        console.error("Lỗi lấy danh sách ngân hàng:", err);
-      }
+      } catch (err) {}
     };
     fetchBanks();
   }, []);
@@ -62,9 +60,7 @@ export default function CoachPayoutsScreen() {
       try {
         const user = await storageService.getUser();
         setUserName(user?.fullName || "");
-      } catch (err) {
-        console.error("Lỗi lấy tên người dùng:", err);
-      }
+      } catch (err) {}
     };
     fetchUserName();
   }, []);
@@ -78,10 +74,6 @@ export default function CoachPayoutsScreen() {
       });
       setWallet(res.data);
     } catch (err: any) {
-      console.error(
-        "❌ Lỗi khi lấy dữ liệu ví:",
-        err.response?.data || err.message
-      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -124,7 +116,6 @@ export default function CoachPayoutsScreen() {
       await fetchWalletData();
       Alert.alert("Thành công", "Cập nhật thông tin ngân hàng thành công!");
     } catch (err: any) {
-      console.error("❌ Lỗi cập nhật ví:", err.response?.data || err.message);
       Alert.alert("Lỗi", "Không thể cập nhật thông tin. Vui lòng thử lại.");
     }
   };
@@ -145,7 +136,8 @@ export default function CoachPayoutsScreen() {
       const token = await storageService.getToken();
       const payload = parseFloat(withdrawalAmount);
 
-      await post(`${API_URL}/v1/wallets/withdrawal`, 
+      await post(
+        `${API_URL}/v1/wallets/withdrawal`,
         { amount: payload },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -155,22 +147,17 @@ export default function CoachPayoutsScreen() {
       setWithdrawalModalVisible(false);
       setWithdrawalAmount("");
       await fetchWalletData();
-      
-      Alert.alert(
-        "Thành công",
-        "Yêu cầu rút tiền của bạn đã thành công",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Refresh the transaction list
-              fetchWalletData();
-            },
+
+      Alert.alert("Thành công", "Yêu cầu rút tiền của bạn đã thành công", [
+        {
+          text: "OK",
+          onPress: () => {
+            // Refresh the transaction list
+            fetchWalletData();
           },
-        ]
-      );
+        },
+      ]);
     } catch (err: any) {
-      console.error("❌ Lỗi rút tiền:", err.response?.data || err.message);
       const errorMessage =
         err.response?.data?.message ||
         "Không thể xử lý yêu cầu rút tiền. Vui lòng thử lại.";
@@ -522,13 +509,17 @@ export default function CoachPayoutsScreen() {
         visible={withdrawalModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => !withdrawalLoading && setWithdrawalModalVisible(false)}
+        onRequestClose={() =>
+          !withdrawalLoading && setWithdrawalModalVisible(false)
+        }
       >
         <View style={styles.modalContainer}>
           {/* Modal Header */}
           <View style={styles.modalHeader}>
             <TouchableOpacity
-              onPress={() => !withdrawalLoading && setWithdrawalModalVisible(false)}
+              onPress={() =>
+                !withdrawalLoading && setWithdrawalModalVisible(false)
+              }
               disabled={withdrawalLoading}
               style={styles.modalCloseButton}
             >
@@ -550,9 +541,7 @@ export default function CoachPayoutsScreen() {
                     {wallet?.bank?.name || "Chưa liên kết"}
                   </Text>
                 </View>
-                <View
-                  style={[styles.bankInfoRow, { borderBottomWidth: 0 }]}
-                >
+                <View style={[styles.bankInfoRow, { borderBottomWidth: 0 }]}>
                   <Text style={styles.bankInfoLabel}>Tài khoản</Text>
                   <Text style={styles.bankInfoValue}>
                     {accountNumber
@@ -600,9 +589,8 @@ export default function CoachPayoutsScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoTitle}>Thông tin rút tiền</Text>
                 <Text style={styles.infoText}>
-                  • Phí rút tiền: 0₫{"\n"}
-                  • Thời gian xử lý: 1-3 ngày làm việc{"\n"}
-                  • Tiền sẽ được chuyển vào tài khoản đã liên kết
+                  • Phí rút tiền: 0₫{"\n"}• Thời gian xử lý: 1-3 ngày làm việc
+                  {"\n"}• Tiền sẽ được chuyển vào tài khoản đã liên kết
                 </Text>
               </View>
             </View>

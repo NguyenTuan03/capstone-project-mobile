@@ -47,7 +47,7 @@ export default function NotificationsScreen() {
         setHasMore(newNotifications.length === 10);
       }
     } catch (error) {
-      console.error("Failed to fetch notifications:", error);
+ "Failed to fetch notifications:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -89,7 +89,7 @@ export default function NotificationsScreen() {
           )
         );
       } catch (error) {
-        console.error("Failed to mark notification as read:", error);
+ "Failed to mark notification as read:", error);
       }
     }
 
@@ -108,7 +108,7 @@ export default function NotificationsScreen() {
         text2: "Đã đánh dấu tất cả là đã đọc",
       });
     } catch (error) {
-      console.error("Failed to mark all as read:", error);
+ "Failed to mark all as read:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",

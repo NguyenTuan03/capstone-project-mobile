@@ -73,22 +73,17 @@ export default function CourseDetailScreen() {
               courseData.createdBy.id
             );
             setCoachDetail(coachData);
-          } catch (coachError) {
-            console.error("Lỗi khi tải thông tin huấn luyện viên:", coachError);
-          }
+          } catch (coachError) {}
         }
       } else {
-        console.error("Lỗi khi tải chi tiết khóa học:", courseRes.reason);
         setCourse(null);
       }
 
       if (feedbacksRes.status === "fulfilled") {
         setFeedbacks(feedbacksRes.value.data || []);
       } else {
-        console.error("Lỗi khi tải feedbacks:", feedbacksRes.reason);
       }
     } catch (error) {
-      console.error("Lỗi khi tải chi tiết khóa học:", error);
       Alert.alert("Lỗi", "Không thể tải chi tiết khóa học");
     } finally {
       setLoading(false);
@@ -129,7 +124,6 @@ export default function CourseDetailScreen() {
                 ]
               );
             } catch (err: any) {
-              console.error("Failed to cancel course:", err);
               Alert.alert(
                 "Lỗi",
                 err?.response?.data?.message ||
@@ -184,7 +178,6 @@ export default function CourseDetailScreen() {
         },
       ]);
     } catch (err: any) {
-      console.error("Failed to submit feedback:", err);
       Alert.alert(
         "Lỗi",
         err?.response?.data?.message ||
@@ -205,12 +198,9 @@ export default function CourseDetailScreen() {
       // For now, create a Google Meet URL format
       // Backend should return meetLink in future
       const meetUrl = `https://meet.google.com/xpe-hawn-qoi`;
-      console.log("[handleJoinVideoConference] Setting meetLink:", meetUrl);
       setMeetLink(meetUrl);
-      console.log("[handleJoinVideoConference] Setting isVCVisible to true");
       setIsVCVisible(true);
     } catch (error) {
-      console.error("[handleJoinVideoConference] Error:", error);
       Alert.alert("Lỗi", "Không thể tham gia lớp học trực tuyến");
     }
   };
