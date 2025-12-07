@@ -80,7 +80,6 @@ export default function MyCoursesScreen() {
       setCourses(items);
       setPagination({ page, pageSize, total });
     } catch (error) {
-      console.error("Lỗi khi tải danh sách khóa học đã đăng ký:", error);
     } finally {
       setLoading(false);
     }
@@ -280,9 +279,7 @@ export default function MyCoursesScreen() {
                           color="#6B7280"
                         />
                         <Text style={styles.tagText}>
-                          {getLearningFormatInVietnamese(
-                            course.learningFormat
-                          )}
+                          {getLearningFormatInVietnamese(course.learningFormat)}
                         </Text>
                       </View>
                     </View>
@@ -323,61 +320,61 @@ export default function MyCoursesScreen() {
                     </View>
 
                     {/* Participants & Sessions */}
-                      <View style={styles.infoBar}>
-                        <View style={styles.infoItem}>
-                          <Ionicons
-                            name="people"
-                            size={13}
-                            color="#059669"
-                            style={{ marginRight: 3 }}
-                          />
-                          <Text style={styles.infoText}>
-                            {course.currentParticipants}/{course.maxParticipants}
-                          </Text>
-                        </View>
-                        <View style={styles.infoDivider} />
-                        <View style={styles.infoItem}>
-                          <Ionicons
-                            name="time-outline"
-                            size={13}
-                            color="#6B7280"
-                            style={{ marginRight: 3 }}
-                          />
-                          <Text style={styles.infoText} numberOfLines={1}>
-                            {course.totalSessions} buổi
-                          </Text>
-                        </View>
+                    <View style={styles.infoBar}>
+                      <View style={styles.infoItem}>
+                        <Ionicons
+                          name="people"
+                          size={13}
+                          color="#059669"
+                          style={{ marginRight: 3 }}
+                        />
+                        <Text style={styles.infoText}>
+                          {course.currentParticipants}/{course.maxParticipants}
+                        </Text>
                       </View>
-
-                      {/* Footer: Start & End Date */}
-                      <View style={styles.cardFooter}>
-                        <View style={styles.footerItem}>
-                          <Ionicons
-                            name="play-circle-outline"
-                            size={12}
-                            color="#059669"
-                          />
-                          <Text style={styles.footerText}>
-                            {formatDate(course.startDate)}
-                          </Text>
-                        </View>
-                        {course.endDate && (
-                          <>
-                            <View style={styles.footerDivider} />
-                            <View style={styles.footerItem}>
-                              <Ionicons
-                                name="stop-circle-outline"
-                                size={12}
-                                color="#EF4444"
-                              />
-                              <Text style={styles.footerText}>
-                                {formatDate(course.endDate)}
-                              </Text>
-                            </View>
-                          </>
-                        )}
+                      <View style={styles.infoDivider} />
+                      <View style={styles.infoItem}>
+                        <Ionicons
+                          name="time-outline"
+                          size={13}
+                          color="#6B7280"
+                          style={{ marginRight: 3 }}
+                        />
+                        <Text style={styles.infoText} numberOfLines={1}>
+                          {course.totalSessions} buổi
+                        </Text>
                       </View>
                     </View>
+
+                    {/* Footer: Start & End Date */}
+                    <View style={styles.cardFooter}>
+                      <View style={styles.footerItem}>
+                        <Ionicons
+                          name="play-circle-outline"
+                          size={12}
+                          color="#059669"
+                        />
+                        <Text style={styles.footerText}>
+                          {formatDate(course.startDate)}
+                        </Text>
+                      </View>
+                      {course.endDate && (
+                        <>
+                          <View style={styles.footerDivider} />
+                          <View style={styles.footerItem}>
+                            <Ionicons
+                              name="stop-circle-outline"
+                              size={12}
+                              color="#EF4444"
+                            />
+                            <Text style={styles.footerText}>
+                              {formatDate(course.endDate)}
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  </View>
                 </TouchableOpacity>
               );
             })}

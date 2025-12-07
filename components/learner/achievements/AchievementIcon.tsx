@@ -44,18 +44,12 @@ export default function AchievementIcon({
   const imageUrl = getImageUrl(achievement.iconUrl);
 
   return (
-    <View
-      style={[
-        styles.iconWrapper,
-        isEarned && styles.iconWrapperEarned,
-      ]}
-    >
+    <View style={[styles.iconWrapper, isEarned && styles.iconWrapperEarned]}>
       <Image
         source={{ uri: imageUrl }}
         style={styles.icon}
         resizeMode="cover"
         onError={() => {
-          console.error("Failed to load achievement icon:", imageUrl);
           setImageError(true);
         }}
       />
@@ -102,4 +96,3 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 });
-

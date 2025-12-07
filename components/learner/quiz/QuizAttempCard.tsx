@@ -2,12 +2,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useAttemptQuiz } from "../../../hooks/use-attemp-quiz";
 import quizService from "../../../services/quiz.service";
@@ -70,9 +70,7 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz, onRefresh }) => {
         const data = await quizService.getQuizAttempts(quiz.id);
         const attemptsList = Array.isArray(data) ? data : data?.data || [];
         setPreviousAttempts(attemptsList);
-      } catch (err) {
-        console.error("Failed to load quiz attempts:", err);
-      }
+      } catch (err) {}
     };
 
     loadAttempts();
@@ -92,7 +90,7 @@ const QuizAttemptCard: React.FC<Props> = ({ quiz, onRefresh }) => {
         questionOption: Number(answers[q.id]),
       })),
     };
-    
+
     const res = await submitAttempt(quiz.id, payload);
     if (res) {
       setSubmitted(true);

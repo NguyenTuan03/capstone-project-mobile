@@ -33,7 +33,6 @@ export default function AIScreen() {
           const data = await getAiVideoComparisonResultsByUser(user.id);
           setRecords(data || []);
         } catch (error) {
-      console.error("Failed to fetch AI results:", error);
           setError("Không thể tải dữ liệu phân tích. Vui lòng thử lại.");
           setRecords([]);
         } finally {
@@ -59,8 +58,6 @@ export default function AIScreen() {
       setSelectedResult(result);
       setModalVisible(true);
     } else {
-      // Handle case where videos are missing if necessary
-      console.error("Missing video URLs for comparison");
     }
   };
 

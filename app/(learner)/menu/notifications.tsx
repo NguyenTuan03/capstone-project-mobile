@@ -86,9 +86,7 @@ export default function NotificationsScreen() {
             n.id === notification.id ? { ...n, isRead: true } : n
           )
         );
-      } catch (error) {
-        console.error("Failed to mark notification as read:", error);
-      }
+      } catch (error) {}
     }
 
     if (notification.navigateTo) {
@@ -106,7 +104,6 @@ export default function NotificationsScreen() {
         text2: "Đã đánh dấu tất cả là đã đọc",
       });
     } catch (error) {
-      console.error("Failed to mark all as read:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",

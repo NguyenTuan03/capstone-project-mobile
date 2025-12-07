@@ -58,9 +58,7 @@ const CoachLessonScreen = () => {
                 prev.filter((item) => item.id !== lesson.id)
               );
               setMenuVisible(false);
-            } catch (error) {
-      console.error("Lỗi khi xóa bài học:", error);
-            }
+            } catch (error) {}
           },
         },
       ],
@@ -86,7 +84,10 @@ const CoachLessonScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -139,20 +140,19 @@ const CoachLessonScreen = () => {
             }
           >
             <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.emptyCreateButtonText}>Tạo bài học đầu tiên</Text>
+            <Text style={styles.emptyCreateButtonText}>
+              Tạo bài học đầu tiên
+            </Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView 
+        <ScrollView
           style={styles.listContainer}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         >
           {lessons.map((lesson, index) => (
-            <View
-              key={lesson.id}
-              style={styles.lessonCardWrapper}
-            >
+            <View key={lesson.id} style={styles.lessonCardWrapper}>
               <TouchableOpacity
                 style={styles.lessonCard}
                 onPress={() =>
@@ -179,7 +179,9 @@ const CoachLessonScreen = () => {
                   {lesson.duration && (
                     <View style={styles.durationTag}>
                       <Ionicons name="time-outline" size={12} color="#059669" />
-                      <Text style={styles.durationText}>{lesson.duration} phút</Text>
+                      <Text style={styles.durationText}>
+                        {lesson.duration} phút
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -189,7 +191,11 @@ const CoachLessonScreen = () => {
                   onPress={() => handleOpenMenu(lesson)}
                   hitSlop={8}
                 >
-                  <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+                  <Ionicons
+                    name="ellipsis-vertical"
+                    size={20}
+                    color="#6B7280"
+                  />
                 </TouchableOpacity>
               </TouchableOpacity>
 
@@ -307,7 +313,9 @@ const CoachLessonScreen = () => {
               style={[styles.actionButton, styles.deleteButton]}
               activeOpacity={0.7}
             >
-              <View style={[styles.actionButtonIcon, styles.deleteIconContainer]}>
+              <View
+                style={[styles.actionButtonIcon, styles.deleteIconContainer]}
+              >
                 <Ionicons name="trash" size={20} color="#EF4444" />
               </View>
               <View style={{ flex: 1 }}>

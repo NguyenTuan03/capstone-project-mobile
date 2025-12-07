@@ -3,15 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -42,15 +42,11 @@ export default function CreateSubjectScreen() {
         description: description || undefined,
       };
 
-      
-
       await http.post("/v1/subjects", payload, {
         headers: {
           "Content-Type": "application/json",
         },
       });
-
-      
 
       Toast.show({
         type: "success",
@@ -62,11 +58,6 @@ export default function CreateSubjectScreen() {
 
       router.back();
     } catch (error: any) {
-      console.error("❌ Error creating subject:", {
-        message: error.message,
-        error: error,
-      });
-
       let errorMessage = "Không thể tạo tài liệu. Vui lòng thử lại.";
 
       if (error.response?.data?.message) {

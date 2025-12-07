@@ -3,14 +3,14 @@ import { District, Province } from "@/types/court";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type LocationSelectorProps = {
@@ -59,7 +59,6 @@ export const LocationSelector = ({
       const data = await locationService.getProvinces();
       setProvinces(data);
     } catch (error) {
-      console.error("Error fetching provinces:", error);
     } finally {
       setLoadingProvinces(false);
     }
@@ -71,7 +70,6 @@ export const LocationSelector = ({
       const data = await locationService.getDistrictsByProvince(provinceIdNum);
       setDistricts(data);
     } catch (error) {
-      console.error("Error fetching districts:", error);
     } finally {
       setLoadingDistricts(false);
     }
@@ -107,19 +105,11 @@ export const LocationSelector = ({
           </View>
         ) : (
           <TouchableOpacity
-            style={[
-              styles.inputWrapper,
-              provinceError && styles.inputError,
-            ]}
+            style={[styles.inputWrapper, provinceError && styles.inputError]}
             onPress={() => setShowProvinceModal(true)}
           >
             <Ionicons name="location-outline" size={18} color="#6B7280" />
-            <Text
-              style={[
-                styles.input,
-                !provinceId && styles.placeholderText,
-              ]}
-            >
+            <Text style={[styles.input, !provinceId && styles.placeholderText]}>
               {provinceId ? getProvinceName() : "Chọn tỉnh/thành phố"}
             </Text>
             <Ionicons name="chevron-down-outline" size={18} color="#6B7280" />
@@ -147,19 +137,11 @@ export const LocationSelector = ({
           </View>
         ) : (
           <TouchableOpacity
-            style={[
-              styles.inputWrapper,
-              districtError && styles.inputError,
-            ]}
+            style={[styles.inputWrapper, districtError && styles.inputError]}
             onPress={() => setShowDistrictModal(true)}
           >
             <Ionicons name="map-outline" size={18} color="#6B7280" />
-            <Text
-              style={[
-                styles.input,
-                !districtId && styles.placeholderText,
-              ]}
-            >
+            <Text style={[styles.input, !districtId && styles.placeholderText]}>
               {districtId ? getDistrictName() : "Chọn quận/huyện"}
             </Text>
             <Ionicons name="chevron-down-outline" size={18} color="#6B7280" />
@@ -223,7 +205,8 @@ export const LocationSelector = ({
                 <Text
                   style={[
                     styles.modalItemText,
-                    provinceId === String(prov.id) && styles.modalItemTextActive,
+                    provinceId === String(prov.id) &&
+                      styles.modalItemTextActive,
                   ]}
                 >
                   {prov.name}
@@ -297,7 +280,8 @@ export const LocationSelector = ({
                 <Text
                   style={[
                     styles.modalItemText,
-                    districtId === String(dist.id) && styles.modalItemTextActive,
+                    districtId === String(dist.id) &&
+                      styles.modalItemTextActive,
                   ]}
                 >
                   {dist.name}

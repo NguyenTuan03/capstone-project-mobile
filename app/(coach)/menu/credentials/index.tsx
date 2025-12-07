@@ -25,6 +25,7 @@ import {
 export default function CredentialsScreen() {
   const router = useRouter();
   const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [baseCredentials, setBaseCredentials] = useState<any[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedImage, setSelectedImage] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -35,6 +36,7 @@ export default function CredentialsScreen() {
   >("issuedAt");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [formData, setFormData] = useState({
+    baseCredentialId: null as number | null,
     name: "",
     description: "",
     type: "CERTIFICATE" as const,
@@ -45,6 +47,7 @@ export default function CredentialsScreen() {
   const [selectedCredential, setSelectedCredential] =
     useState<Credential | null>(null);
   const [isEditingModal, setIsEditingModal] = useState(false);
+  const [showCredentialSelector, setShowCredentialSelector] = useState(false);
 
   const loadCredentials = async () => {
     try {
@@ -55,10 +58,20 @@ export default function CredentialsScreen() {
     }
   };
 
+  const loadBaseCredentials = async () => {
+    try {
+      const data = await credentialService.getBaseCredentials();
+      setBaseCredentials(data);
+    } catch (error) {
+      setBaseCredentials([]);
+    }
+  };
+
   // Load credentials from API
   useFocusEffect(
     useCallback(() => {
       loadCredentials();
+      loadBaseCredentials();
     }, [])
   );
 
@@ -96,13 +109,8 @@ export default function CredentialsScreen() {
 
   const handleAddCredential = async () => {
     // Validate required fields
-    if (!formData.name || !formData.name.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên chứng chỉ");
-      return;
-    }
-
-    if (!formData.type || !formData.type.trim()) {
-      Alert.alert("Lỗi", "Vui lòng chọn loại chứng chỉ");
+    if (!formData.baseCredentialId) {
+      Alert.alert("Lỗi", "Vui lòng chọn chứng chỉ");
       return;
     }
 
@@ -122,16 +130,14 @@ export default function CredentialsScreen() {
       setIsSaving(true);
 
       const credentialData = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || undefined,
-        type: formData.type.trim(),
+        baseCredentialId: formData.baseCredentialId,
         issuedAt: dateToISOString(formData.issuedAt),
         expiresAt: dateToISOString(formData.expiresAt),
       };
 
       // Save to backend - pass the ImagePickerAsset directly (not in credentialData)
       const createdCredential = await credentialService.createCredential(
-        credentialData,
+        credentialData as any,
         selectedImage || undefined
       );
 
@@ -142,6 +148,7 @@ export default function CredentialsScreen() {
       setShowAddForm(false);
       setSelectedImage(null);
       setFormData({
+        baseCredentialId: null,
         name: "",
         description: "",
         type: "CERTIFICATE",
@@ -413,6 +420,7 @@ export default function CredentialsScreen() {
                   setShowAddForm(false);
                   setSelectedImage(null);
                   setFormData({
+                    baseCredentialId: null,
                     name: "",
                     description: "",
                     type: "CERTIFICATE",
@@ -456,72 +464,119 @@ export default function CredentialsScreen() {
               )}
             </Pressable>
 
-            {/* Form Fields */}
+            {/* Form Fields - Base Credential Selector */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Tên chứng chỉ *</Text>
-              <View style={styles.textInputWrapper}>
+              <Text style={styles.label}>Chọn chứng chỉ *</Text>
+              <TouchableOpacity
+                style={styles.textInputWrapper}
+                onPress={() => setShowCredentialSelector(true)}
+              >
                 <Ionicons name="document" size={18} color="#6B7280" />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ví dụ: Pickleball Chuyên nghiệp"
-                  placeholderTextColor="#6B7280"
-                  value={formData.name}
-                  onChangeText={(text) => {
-                    setFormData({ ...formData, name: text });
-                  }}
-                />
-              </View>
+                <Text
+                  style={[
+                    styles.textInput,
+                    !formData.baseCredentialId && styles.inputPlaceholder,
+                  ]}
+                >
+                  {formData.name || "Chọn từ danh sách"}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Loại chứng chỉ</Text>
-              <View style={styles.typeSelector}>
-                {["CERTIFICATE", "PRIZE", "ACHIEVEMENT"].map((type) => (
-                  <Pressable
-                    key={type}
-                    style={[
-                      styles.typeOption,
-                      formData.type === type && styles.typeOptionActive,
-                    ]}
-                    onPress={() =>
-                      setFormData({ ...formData, type: type as any })
-                    }
+            {/* Base Credential Selector Modal */}
+            <Modal
+              visible={showCredentialSelector}
+              animationType="slide"
+              presentationStyle="pageSheet"
+              onRequestClose={() => setShowCredentialSelector(false)}
+            >
+              <View style={styles.selectorModal}>
+                <View style={styles.selectorHeader}>
+                  <TouchableOpacity
+                    onPress={() => setShowCredentialSelector(false)}
+                    style={styles.selectorCloseButton}
                   >
-                    <Ionicons
-                      name={getCredentialIcon(type) as any}
-                      size={16}
-                      color={
-                        formData.type === type
-                          ? "#FFFFFF"
-                          : getCredentialColor(type)
-                      }
-                    />
-                    <Text
+                    <Ionicons name="close" size={24} color="#111827" />
+                  </TouchableOpacity>
+                  <Text style={styles.selectorTitle}>Chọn chứng chỉ</Text>
+                  <View style={{ width: 24 }} />
+                </View>
+                <ScrollView style={styles.selectorList}>
+                  {baseCredentials.map((baseCredential) => (
+                    <TouchableOpacity
+                      key={baseCredential.id}
                       style={[
-                        styles.typeOptionText,
-                        formData.type === type && styles.typeOptionTextActive,
+                        styles.selectorItem,
+                        formData.baseCredentialId === baseCredential.id &&
+                          styles.selectorItemSelected,
                       ]}
+                      onPress={() => {
+                        setFormData({
+                          ...formData,
+                          baseCredentialId: baseCredential.id,
+                          name: baseCredential.name,
+                          description: baseCredential.description || "",
+                          type: baseCredential.type,
+                        });
+                        setShowCredentialSelector(false);
+                      }}
                     >
-                      {getCredentialTypeText(type)}
-                    </Text>
-                  </Pressable>
-                ))}
+                      <View
+                        style={[
+                          styles.selectorItemIcon,
+                          {
+                            backgroundColor:
+                              getCredentialColor(baseCredential.type) + "20",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={getCredentialIcon(baseCredential.type) as any}
+                          size={20}
+                          color={getCredentialColor(baseCredential.type)}
+                        />
+                      </View>
+                      <View style={styles.selectorItemContent}>
+                        <Text style={styles.selectorItemName}>
+                          {baseCredential.name}
+                        </Text>
+                        <Text style={styles.selectorItemType}>
+                          {getCredentialTypeText(baseCredential.type)}
+                        </Text>
+                        {baseCredential.description && (
+                          <Text style={styles.selectorItemDescription}>
+                            {baseCredential.description}
+                          </Text>
+                        )}
+                      </View>
+                      {formData.baseCredentialId === baseCredential.id && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={24}
+                          color="#059669"
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
-            </View>
+            </Modal>
+
+            {/* Remove manual name/type/description inputs and type selector */}
+            {/* The description will come from the selected base credential */}
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Mô tả (Tùy chọn)</Text>
+              <Text style={styles.label}>Mô tả</Text>
               <View
                 style={[styles.textInputWrapper, styles.textInputLargeWrapper]}
               >
                 <TextInput
                   style={[styles.textInput, styles.textInputLarge]}
-                  placeholder="Thêm mô tả chi tiết về chứng chỉ"
+                  placeholder="Mô tả tự động từ chứng chỉ đã chọn"
                   placeholderTextColor="#6B7280"
                   value={formData.description}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, description: text })
-                  }
+                  editable={false}
                   multiline={true}
                   numberOfLines={4}
                 />
@@ -602,6 +657,7 @@ export default function CredentialsScreen() {
                   setShowAddForm(false);
                   setSelectedImage(null);
                   setFormData({
+                    baseCredentialId: null,
                     name: "",
                     description: "",
                     type: "CERTIFICATE",
@@ -1075,7 +1131,8 @@ export default function CredentialsScreen() {
                           onPress={() => {
                             setDetailModalVisible(false);
                             handleDeleteCredential(
-                              selectedCredential.id || selectedCredential.baseCredential.name
+                              selectedCredential.id ||
+                                selectedCredential.baseCredential.name
                             );
                           }}
                         >
@@ -1110,7 +1167,8 @@ export default function CredentialsScreen() {
                           ]}
                           onPress={() =>
                             handleUpdateCredential(
-                              selectedCredential.id || selectedCredential.baseCredential.name
+                              selectedCredential.id ||
+                                selectedCredential.baseCredential.name
                             )
                           }
                           disabled={isSaving}
@@ -1779,5 +1837,79 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     letterSpacing: 0.2,
+  },
+
+  /* Credential Selector Modal */
+  selectorModal: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  selectorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  selectorCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectorTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  selectorList: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  selectorItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    marginBottom: 10,
+    gap: 12,
+  },
+  selectorItemSelected: {
+    borderColor: "#059669",
+    backgroundColor: "#F0FDF4",
+  },
+  selectorItemIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectorItemContent: {
+    flex: 1,
+    gap: 3,
+  },
+  selectorItemName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  selectorItemType: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#6B7280",
+  },
+  selectorItemDescription: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    marginTop: 2,
   },
 });

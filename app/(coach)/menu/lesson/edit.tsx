@@ -39,7 +39,6 @@ export default function EditSubjectScreen() {
         },
       ]);
     } catch (error) {
-      console.error("Lỗi khi lưu chỉnh sửa bài học:", error);
       Alert.alert("Lỗi", "Không thể lưu thay đổi.");
     } finally {
       setSaving(false);

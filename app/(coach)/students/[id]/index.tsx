@@ -46,9 +46,7 @@ export default function CoachStudentDetailScreen() {
       try {
         const parsed = JSON.parse(learnerData);
         setLearner(parsed);
-      } catch (e) {
-        console.error("Failed to parse learner data:", e);
-      }
+      } catch (e) {}
     }
   }, [learnerData]);
 
@@ -78,9 +76,7 @@ export default function CoachStudentDetailScreen() {
           ...prev,
           [sessionId]: learnerVideos,
         }));
-      } catch (error) {
-        console.error("Failed to fetch learner videos for session:", error);
-      }
+      } catch (error) {}
     },
     [learner?.user?.id, sessionLearnerVideos]
   );
@@ -101,7 +97,6 @@ export default function CoachStudentDetailScreen() {
       const data = await getLearnerProgressDetails(userId, courseId);
       setLearnerDetails(data);
     } catch (error) {
-      console.error("Failed to fetch learner progress details:", error);
     } finally {
       setLoading(false);
     }
@@ -180,9 +175,7 @@ export default function CoachStudentDetailScreen() {
             {sessionLearnerVideos[session.id] &&
               sessionLearnerVideos[session.id].length > 0 && (
                 <View style={styles.sectionBlock}>
-                  <Text style={styles.sectionTitle}>
-                    Video nộp bài
-                  </Text>
+                  <Text style={styles.sectionTitle}>Video nộp bài</Text>
                   <TouchableOpacity
                     style={styles.videoItem}
                     onPress={() => {
@@ -203,7 +196,8 @@ export default function CoachStudentDetailScreen() {
                     <Ionicons name="videocam" size={20} color="#F59E0B" />
                     <View style={styles.videoInfo}>
                       <Text style={styles.videoTitle} numberOfLines={1}>
-                        Xem {sessionLearnerVideos[session.id].length} video nộp bài
+                        Xem {sessionLearnerVideos[session.id].length} video nộp
+                        bài
                       </Text>
                       <Text style={styles.videoMeta}>
                         Nhấn để xem tất cả video
@@ -289,7 +283,10 @@ export default function CoachStudentDetailScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chi tiết học tập</Text>
@@ -305,7 +302,10 @@ export default function CoachStudentDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
@@ -319,18 +319,11 @@ export default function CoachStudentDetailScreen() {
           <ActivityIndicator size="large" color="#059669" />
         </View>
       ) : (
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.courseName}>
-            {learnerDetails?.course?.name}
-          </Text>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.courseName}>{learnerDetails?.course?.name}</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {learner.avgAiAnalysisScore}
-              </Text>
+              <Text style={styles.statValue}>{learner.avgAiAnalysisScore}</Text>
               <Text style={styles.statLabel}>AI Score</Text>
             </View>
             <View style={styles.statDivider} />
