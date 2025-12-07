@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { VideoType } from "../../../types/video";
 import LessonVideoPlayer from "./LessonVideoPlayer";
 
@@ -9,22 +9,49 @@ interface CoachVideoCardProps {
 }
 
 const CoachVideoCard: React.FC<CoachVideoCardProps> = ({ video }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const hasDetails = video.drillName || video.drillDescription || video.drillPracticeSets;
+
   return (
     <View style={styles.resourceCard}>
       {/* Header Section */}
       <View style={styles.headerSection}>
-        <Text style={styles.resourceTitle}>{video.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.resourceTitle}>{video.title}</Text>
+          {hasDetails && (
+            <TouchableOpacity
+              onPress={() => setIsExpanded(!isExpanded)}
+              style={styles.toggleButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#059669"
+              />
+            </TouchableOpacity>
+          )}
+        </View>
         {video.description && (
-          <Text style={styles.resourceDescription}>{video.description}</Text>
+          <Text style={styles.resourceDescription} numberOfLines={2}>
+            {video.description}
+          </Text>
+        )}
+        {video.duration != null && (
+          <View style={styles.durationBadge}>
+            <Ionicons name="time-outline" size={12} color="#6B7280" />
+            <Text style={styles.durationText}>{video.duration}s</Text>
+          </View>
         )}
       </View>
 
-      {/* Drill Info Section */}
-      {(video.drillName || video.drillDescription) && (
-        <View style={styles.drillSection}>
+      {/* Expandable Drill Info Section */}
+      {isExpanded && hasDetails && (
+        <View style={styles.detailsSection}>
           {video.drillName && (
             <View style={styles.drillHeader}>
-              <Ionicons name="fitness" size={16} color="#059669" />
+              <Ionicons name="fitness" size={14} color="#059669" />
               <Text style={styles.drillName}>{video.drillName}</Text>
             </View>
           )}
@@ -33,26 +60,16 @@ const CoachVideoCard: React.FC<CoachVideoCardProps> = ({ video }) => {
               {video.drillDescription}
             </Text>
           )}
+          {video.drillPracticeSets && (
+            <View style={styles.metaItem}>
+              <Ionicons name="bar-chart-outline" size={12} color="#6B7280" />
+              <Text style={styles.metaText}>
+                {video.drillPracticeSets} hiệp tập
+              </Text>
+            </View>
+          )}
         </View>
       )}
-
-      {/* Meta Info Row */}
-      <View style={styles.metaRow}>
-        {video.duration != null && (
-          <View style={styles.metaItem}>
-            <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>{video.duration} phút</Text>
-          </View>
-        )}
-        {video.drillPracticeSets && (
-          <View style={styles.metaItem}>
-            <Ionicons name="bar-chart-outline" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>
-              {video.drillPracticeSets} hiệp tập
-            </Text>
-          </View>
-        )}
-      </View>
 
       {/* Video Player Section */}
       <View style={styles.videoContainer}>
@@ -72,91 +89,123 @@ const CoachVideoCard: React.FC<CoachVideoCardProps> = ({ video }) => {
 const styles = StyleSheet.create({
   resourceCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
+    borderRadius: 10,
+    padding: 12,
+    gap: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    marginBottom: 16,
+    shadowRadius: 2,
+    elevation: 1,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.03)",
+    borderColor: "#E5E7EB",
   },
   headerSection: {
     gap: 6,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   resourceTitle: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 24,
-  },
-  resourceDescription: {
-    fontSize: 14,
-    color: "#4B5563",
     lineHeight: 20,
   },
-  drillSection: {
+  toggleButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     backgroundColor: "#F0FDF4",
-    padding: 12,
-    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+  },
+  resourceDescription: {
+    fontSize: 13,
+    color: "#6B7280",
+    lineHeight: 18,
+  },
+  durationBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  durationText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  detailsSection: {
+    backgroundColor: "#F0FDF4",
+    padding: 10,
+    borderRadius: 8,
     gap: 6,
     borderWidth: 1,
-    borderColor: "#DCFCE7",
+    borderColor: "#BBF7D0",
   },
   drillHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   drillName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#166534",
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#059669",
   },
   drillDescription: {
-    fontSize: 13,
-    color: "#15803D",
-    lineHeight: 18,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    paddingTop: 4,
+    fontSize: 12,
+    color: "#16A34A",
+    lineHeight: 16,
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    gap: 4,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
   },
   metaText: {
-    fontSize: 12,
-    color: "#4B5563",
-    fontWeight: "500",
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "600",
   },
   videoContainer: {
-    marginTop: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#000",
   },
   fallbackContainer: {
     backgroundColor: "#FEF2F2",
-    padding: 24,
+    padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FECACA",
   },
   fallbackText: {
-    fontSize: 13,
-    color: "#B91C1C",
+    fontSize: 12,
+    color: "#DC2626",
     fontWeight: "600",
   },
 });

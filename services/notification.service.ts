@@ -14,7 +14,7 @@ export const notificationService = {
       pageSize: number;
       totalPages: number;
     }>(
-      `/v1/notifications?page=${page}&size=${limit}&filter=user.id_eq_${userId}`
+      `/v1/notifications?page=${page}&size=${limit}&sort=createdAt_desc&filter=user.id_eq_${userId}`
     );
   },
 

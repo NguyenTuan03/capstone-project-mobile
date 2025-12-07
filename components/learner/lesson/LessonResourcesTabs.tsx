@@ -47,14 +47,13 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const [overlayVideoUrl, setOverlayVideoUrl] = useState<string | null>(null);
     const [showOverlayModal, setShowOverlayModal] = useState(false);
 
-    const tabs: { key: LessonResourcesTab; label: string; count: number }[] =
-      useMemo(
-        () => [
-          { key: "videos", label: "Video", count: video ? 1 : 0 },
-          { key: "quizzes", label: "Quiz", count: quiz ? 1 : 0 },
-        ],
-        [quiz, video]
-      );
+    const tabs: { key: LessonResourcesTab; label: string }[] = useMemo(
+      () => [
+        { key: "videos", label: "Video" },
+        { key: "quizzes", label: "Quiz" },
+      ],
+      [quiz, video]
+    );
 
     const handlePickVideo = async () => {
       try {
@@ -333,7 +332,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
                   style={[styles.tabLabel, isActive && styles.tabLabelActive]}
                 >
                   {tab.label}
-                  <Text style={styles.tabCounter}> ({tab.count})</Text>
                 </Text>
               </TouchableOpacity>
             );

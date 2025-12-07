@@ -1,15 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
-  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import LessonVideoPlayer from "./LessonVideoPlayer";
-import VideoCaptureComponent from "./VideoCaptureComponent";
 
 interface VideoUploadSectionProps {
   localVideo: {
@@ -25,11 +23,6 @@ interface VideoUploadSectionProps {
   coachVideoDuration?: number;
   onPickVideo: () => void;
   onUploadVideo: (coachVideoId: number) => void;
-  onVideoCapture?: (video: {
-    uri: string;
-    name: string;
-    duration?: number;
-  }) => void;
 }
 
 const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
@@ -40,9 +33,7 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
   coachVideoDuration,
   onPickVideo,
   onUploadVideo,
-  onVideoCapture,
 }) => {
-  const [showCapture, setShowCapture] = useState(false);
 
   // Format duration from seconds to MM:SS
   const formatDuration = (seconds: number | undefined): string => {
@@ -52,64 +43,22 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleVideoCapture = (uri: string, name: string, duration: number) => {
-    // Pass captured video back to parent component with duration in seconds
-    onVideoCapture?.({ uri, name, duration });
-    setShowCapture(false);
-  };
-
-  const handleCaptureCancel = () => {
-    setShowCapture(false);
-  };
-
-  const handleRecapture = () => {
-    setShowCapture(true);
-  };
-
-  // Use localVideo which now includes both captured and picked videos
+  // Use localVideo which now includes picked videos
   const videoToDisplay = localVideo;
 
-  // Show upload button if no local video and no captured video
+  // Show upload button if no local video
   if (!videoToDisplay) {
     return (
-      <>
-        <TouchableOpacity
-          style={styles.captureButtonCard}
-          onPress={() => setShowCapture(true)}
-          activeOpacity={0.7}
-        >
-          <MaterialCommunityIcons name="camera" size={24} color="#FFFFFF" />
-          <Text style={styles.captureButtonText}>Quay video của bạn</Text>
-          <Text style={styles.captureButtonSubtext}>
-            Chạm để bắt đầu quay video
-          </Text>
-        </TouchableOpacity>
-
-        {/* Fullscreen Video Capture Modal */}
-        <Modal
-          visible={showCapture}
-          animationType="fade"
-          presentationStyle="fullScreen"
-          onRequestClose={handleCaptureCancel}
-        >
-          <VideoCaptureComponent
-            duration={coachVideoDuration || 10}
-            onVideoCapture={handleVideoCapture}
-            onCancel={handleCaptureCancel}
-          />
-        </Modal>
-
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={onPickVideo}
-          activeOpacity={0.7}
-        >
-          <MaterialCommunityIcons name="upload" size={18} color="#059669" />
-          <Text style={styles.uploadButtonText}>
-            Hoặc chọn video từ thiết bị
-          </Text>
-        </TouchableOpacity>
-      </>
+      <TouchableOpacity
+        style={styles.uploadButton}
+        onPress={onPickVideo}
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons name="upload" size={18} color="#059669" />
+        <Text style={styles.uploadButtonText}>
+          Chọn video từ thiết bị
+        </Text>
+      </TouchableOpacity>
     );
   }
 
@@ -144,92 +93,55 @@ const VideoUploadSection: React.FC<VideoUploadSectionProps> = ({
 
         <LessonVideoPlayer source={videoToDisplay.uri} />
 
-        {!localVideo?.uploaded && hasCoachVideo && coachVideoId && (
+        {hasCoachVideo && coachVideoId && (
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                isUploading && styles.submitButtonDisabled,
-              ]}
-              onPress={() => onUploadVideo(coachVideoId)}
-              disabled={isUploading}
-              activeOpacity={0.7}
-            >
-              {isUploading ? (
-                <>
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.submitButtonText}>Đang upload...</Text>
-                </>
-              ) : (
-                <>
-                  <MaterialCommunityIcons
-                    name="upload"
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.submitButtonText}>Nộp bài</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {!localVideo?.uploaded && (
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  isUploading && styles.submitButtonDisabled,
+                ]}
+                onPress={() => onUploadVideo(coachVideoId)}
+                disabled={isUploading}
+                activeOpacity={0.7}
+              >
+                {isUploading ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.submitButtonText}>Đang upload...</Text>
+                  </>
+                ) : (
+                  <>
+                    <MaterialCommunityIcons
+                      name="upload"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.submitButtonText}>Nộp bài</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
-              style={styles.recaptureButton}
-              onPress={handleRecapture}
+              style={styles.reuploadButton}
+              onPress={onPickVideo}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons name="camera-retake" size={18} color="#059669" />
-              <Text style={styles.recaptureButtonText}>Quay lại</Text>
+              <MaterialCommunityIcons name="refresh" size={18} color="#059669" />
+              <Text style={styles.reuploadButtonText}>
+                {localVideo?.uploaded ? "Nộp lại" : "Chọn lại"}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
-
-      {/* Fullscreen Video Capture Modal - always available for recapture */}
-      <Modal
-        visible={showCapture}
-        animationType="fade"
-        presentationStyle="fullScreen"
-        onRequestClose={handleCaptureCancel}
-      >
-        <VideoCaptureComponent
-          duration={coachVideoDuration || 10}
-          onVideoCapture={handleVideoCapture}
-          onCancel={handleCaptureCancel}
-        />
-      </Modal>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  // Initial state buttons
-  captureButtonCard: {
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    backgroundColor: "#059669",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 10,
-  },
-  captureButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 0.3,
-  },
-  captureButtonSubtext: {
-    fontSize: 12,
-    color: "#FFFFFF",
-    fontWeight: "500",
-    opacity: 0.9,
-  },
+  // Initial state button
   uploadButton: {
     backgroundColor: "#FFFFFF",
     paddingVertical: 11,
@@ -345,7 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
   },
-  recaptureButton: {
+  reuploadButton: {
     flex: 1,
     backgroundColor: "#FFFFFF",
     paddingVertical: 11,
@@ -358,7 +270,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D1D5DB",
   },
-  recaptureButtonText: {
+  reuploadButtonText: {
     color: "#059669",
     fontSize: 13,
     fontWeight: "700",
