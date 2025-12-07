@@ -48,6 +48,8 @@ export default function CourseDetailScreen() {
     rating: 5,
     isAnonymous: false,
   });
+  const [showSessions, setShowSessions] = useState(true);
+  const [showFeedbacks, setShowFeedbacks] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     if (!courseId) return;
@@ -197,7 +199,7 @@ export default function CourseDetailScreen() {
     try {
       // For now, create a Google Meet URL format
       // Backend should return meetLink in future
-      const meetUrl = `https://meet.google.com/xpe-hawn-qoi`;
+      const meetUrl = `https://meet.google.com/${course?.googleMeetLink}`;
       setMeetLink(meetUrl);
       setIsVCVisible(true);
     } catch (error) {
@@ -383,11 +385,11 @@ export default function CourseDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
-        <View style={{ gap: 16 }}>
+        <View style={{ gap: 10 }}>
           {/* Course Info Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.courseName}>{course.name}</Text>
+              <Text style={styles.courseName} numberOfLines={2}>{course.name}</Text>
               {course.status && (
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusText}>
@@ -398,223 +400,150 @@ export default function CourseDetailScreen() {
             </View>
 
             {course.description && (
-              <Text style={styles.courseDescription}>{course.description}</Text>
+              <Text style={styles.courseDescription} numberOfLines={3}>{course.description}</Text>
             )}
 
-            <View style={styles.divider} />
+            {/* Compact Stats Grid */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statBox}>
+                <Ionicons name="school-outline" size={16} color="#059669" />
+                <Text style={styles.statLabel}>Trình độ</Text>
+                <Text style={styles.statValue}>{getLevelLabel(course.level)}</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <Ionicons name="people-outline" size={16} color="#059669" />
+                <Text style={styles.statLabel}>Hình thức</Text>
+                <Text style={styles.statValue}>{translateLearningFormat(course.learningFormat)}</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <Ionicons name="time-outline" size={16} color="#059669" />
+                <Text style={styles.statLabel}>Buổi học</Text>
+                <Text style={styles.statValue}>{course.totalSessions ?? 0}</Text>
+              </View>
+            </View>
 
-            <View style={styles.gridInfo}>
-              <View style={styles.gridItem}>
-                <Ionicons name="school-outline" size={18} color="#059669" />
-                <View>
-                  <Text style={styles.gridLabel}>Trình độ</Text>
-                  <Text style={styles.gridValue}>
-                    {getLevelLabel(course.level)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.gridItem}>
-                <Ionicons name="people-outline" size={18} color="#059669" />
-                <View>
-                  <Text style={styles.gridLabel}>Hình thức</Text>
-                  <Text style={styles.gridValue}>
-                    {translateLearningFormat(course.learningFormat)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.gridItem}>
-                <Ionicons name="time-outline" size={18} color="#059669" />
-                <View>
-                  <Text style={styles.gridLabel}>Thời lượng</Text>
-                  <Text style={styles.gridValue}>
-                    {course.totalSessions ?? 0} buổi
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.gridItem}>
+            {/* Price Banner */}
+            <View style={styles.priceBanner}>
+              <View style={styles.priceRow}>
                 <Ionicons name="cash-outline" size={18} color="#059669" />
-                <View>
-                  <Text style={styles.gridLabel}>Học phí</Text>
-                  <Text style={styles.gridValue}>
-                    {formatPrice(course.pricePerParticipant)}
+                <Text style={styles.priceLabel}>Học phí</Text>
+              </View>
+              <Text style={styles.priceValue}>{formatPrice(course.pricePerParticipant)}</Text>
+            </View>
+
+            {/* Participant Progress Compact */}
+            <View style={styles.participantSection}>
+              <View style={styles.participantHeader}>
+                <View style={styles.participantCount}>
+                  <Ionicons name="people" size={14} color="#059669" />
+                  <Text style={styles.participantText}>
+                    {course.currentParticipants}/{course.maxParticipants} học viên
                   </Text>
                 </View>
+                <Text style={styles.minText}>Tối thiểu {course.minParticipants}</Text>
               </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Participant & Schedule Info */}
-            <View style={styles.participantInfoSection}>
-              <View style={styles.participantProgressContainer}>
-                <View style={styles.participantProgressBar}>
-                  <View
-                    style={[
-                      styles.participantProgressFill,
-                      {
-                        width: `${Math.min(
-                          (course.currentParticipants /
-                            course.maxParticipants) *
-                            100,
-                          100
-                        )}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                <View style={styles.participantStatsRow}>
-                  <View style={styles.participantStat}>
-                    <Ionicons
-                      name="people"
-                      size={14}
-                      color="#059669"
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={styles.participantStatText}>
-                      {course.currentParticipants}/{course.maxParticipants}
-                    </Text>
-                  </View>
-                  <View style={styles.participantDividerSmall} />
-                  <View style={styles.participantStat}>
-                    <Ionicons
-                      name="alert-circle-outline"
-                      size={14}
-                      color="#6B7280"
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={styles.participantStatTextSmall}>
-                      Tối thiểu: {course.minParticipants}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Start & End Date */}
-            <View style={styles.dateSection}>
-              <View style={styles.dateItem}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={18}
-                  color="#059669"
-                  style={{ marginRight: 8 }}
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${Math.min(
+                        (course.currentParticipants / course.maxParticipants) * 100,
+                        100
+                      )}%`,
+                    },
+                  ]}
                 />
-                <View>
-                  <Text style={styles.dateLabel}>Ngày bắt đầu</Text>
-                  <Text style={styles.dateValue}>
-                    {formatDate(course.startDate)}
-                  </Text>
-                </View>
+              </View>
+            </View>
+
+            {/* Date Row Compact */}
+            <View style={styles.dateRow}>
+              <View style={styles.dateBox}>
+                <Ionicons name="play-circle-outline" size={14} color="#059669" />
+                <Text style={styles.dateText}>{formatDate(course.startDate)}</Text>
               </View>
               {course.endDate && (
-                <View style={styles.dateItem}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={18}
-                    color="#EF4444"
-                    style={{ marginRight: 8 }}
-                  />
-                  <View>
-                    <Text style={styles.dateLabel}>Ngày kết thúc</Text>
-                    <Text style={styles.dateValue}>
-                      {formatDate(course.endDate)}
-                    </Text>
+                <>
+                  <Ionicons name="arrow-forward" size={12} color="#D1D5DB" />
+                  <View style={styles.dateBox}>
+                    <Ionicons name="flag-outline" size={14} color="#EF4444" />
+                    <Text style={styles.dateText}>{formatDate(course.endDate)}</Text>
                   </View>
-                </View>
+                </>
               )}
             </View>
 
-            <View style={styles.divider} />
-            <View style={styles.metaSection}>
-              {course.court && (
-                <View style={styles.locationBox}>
-                  <View style={styles.metaRow}>
-                    <Ionicons
-                      name="location-outline"
-                      size={20}
-                      color="#6B7280"
-                    />
-                    <Text style={styles.metaText}>{course.court.name}</Text>
+            {/* Location Compact */}
+            {course.court && (
+              <View style={styles.locationSection}>
+                <View style={styles.locationRow}>
+                  <Ionicons name="location" size={16} color="#059669" />
+                  <View style={styles.locationContent}>
+                    <Text style={styles.locationName}>{course.court.name}</Text>
+                    <Text style={styles.locationAddress}>
+                      {course.court.address}, {course.court.district?.name}
+                    </Text>
                   </View>
-                  <Text style={styles.addressText}>
-                    {course.court.address}, {course.court.district?.name},{" "}
-                    {course.court.province?.name}
-                  </Text>
                 </View>
-              )}
-            </View>
+              </View>
+            )}
 
             {/* Coach Info Button */}
             {coachDetail && (
-              <>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.coachButtonCard}
-                  onPress={() => setShowCoachModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.coachButtonContent}>
-                    <Ionicons
-                      name="person-circle-outline"
-                      size={32}
-                      color="#059669"
-                    />
-                    <View style={styles.coachButtonText}>
-                      <Text style={styles.coachButtonName}>
-                        {coachDetail.user?.fullName}
-                      </Text>
-                      <Text style={styles.coachButtonPhone}>
-                        {coachDetail.user?.phoneNumber}
-                      </Text>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#059669" />
-                </TouchableOpacity>
-
-                {/* Video Conference Button */}
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.videoConferenceButton}
-                  onPress={handleJoinVideoConference}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="videocam" size={20} color="#FFFFFF" />
-                  <Text style={styles.videoConferenceButtonText}>
-                    Tham gia lớp học trực tuyến
-                  </Text>
-                </TouchableOpacity>
-              </>
+              <TouchableOpacity
+                style={styles.coachButton}
+                onPress={() => setShowCoachModal(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="person-circle" size={20} color="#059669" />
+                <View style={styles.coachInfo}>
+                  <Text style={styles.coachName}>{coachDetail.user?.fullName}</Text>
+                  <Text style={styles.coachPhone}>{coachDetail.user?.phoneNumber}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
             )}
+
+            {/* Video Conference Button */}
+            <TouchableOpacity
+              style={styles.vcButton}
+              onPress={handleJoinVideoConference}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="videocam" size={18} color="#FFFFFF" />
+              <Text style={styles.vcButtonText}>Tham gia lớp học trực tuyến</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Enrollment Info */}
           {learnerEnrollment && (
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Thông tin đăng ký</Text>
-              <View style={styles.enrollmentList}>
-                <View style={styles.enrollmentRow}>
+              <View style={styles.enrollmentHeader}>
+                <Ionicons name="receipt-outline" size={18} color="#059669" />
+                <Text style={styles.enrollmentTitle}>Thông tin đăng ký</Text>
+              </View>
+              <View style={styles.enrollmentGrid}>
+                <View style={styles.enrollmentItem}>
                   <Text style={styles.enrollmentLabel}>Trạng thái</Text>
                   <Text
                     style={[
                       styles.enrollmentValue,
                       enrollmentStatusStyle(learnerEnrollment.status),
-                      { fontWeight: "700" },
                     ]}
                   >
                     {getEnrollmentStatusLabel(learnerEnrollment.status)}
                   </Text>
                 </View>
-                <View style={styles.dividerLight} />
-                <View style={styles.enrollmentRow}>
+                <View style={styles.enrollmentItem}>
                   <Text style={styles.enrollmentLabel}>Ngày đăng ký</Text>
                   <Text style={styles.enrollmentValue}>
                     {formatDateTime(learnerEnrollment.enrolledAt)}
                   </Text>
                 </View>
-                <View style={styles.dividerLight} />
-                <View style={styles.enrollmentRow}>
+                <View style={styles.enrollmentItem}>
                   <Text style={styles.enrollmentLabel}>Đã đóng</Text>
                   <Text style={styles.enrollmentValue}>
                     {formatPrice(learnerEnrollment.paymentAmount)}
@@ -628,8 +557,8 @@ export default function CourseDetailScreen() {
                   course.status === "FULL") && (
                   <TouchableOpacity
                     style={[
-                      styles.cancelCourseButton,
-                      cancellingCourse && styles.cancelCourseButtonDisabled,
+                      styles.cancelButton,
+                      cancellingCourse && styles.cancelButtonDisabled,
                     ]}
                     onPress={() => handleCancelCourse(learnerEnrollment)}
                     disabled={cancellingCourse}
@@ -639,14 +568,8 @@ export default function CourseDetailScreen() {
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                       <>
-                        <Ionicons
-                          name="close-circle-outline"
-                          size={18}
-                          color="#FFFFFF"
-                        />
-                        <Text style={styles.cancelCourseText}>
-                          Hủy khóa học
-                        </Text>
+                        <Ionicons name="close-circle" size={16} color="#FFFFFF" />
+                        <Text style={styles.cancelButtonText}>Hủy khóa học</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -656,19 +579,34 @@ export default function CourseDetailScreen() {
 
           {/* Sessions List */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionHeader}>
-              Lịch trình học tập{" "}
-              <Text style={styles.countBadge}>({sessions.length})</Text>
-            </Text>
-
-            {sessions.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="calendar-outline" size={48} color="#D1D5DB" />
-                <Text style={styles.emptyText}>Chưa có lịch học</Text>
+            <TouchableOpacity
+              style={styles.sectionHeaderRow}
+              onPress={() => setShowSessions(!showSessions)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <Ionicons name="calendar" size={18} color="#059669" />
+                <Text style={styles.sectionHeader}>Lịch trình học tập</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{sessions.length}</Text>
+                </View>
               </View>
-            ) : (
-              <View style={{ gap: 12 }}>
-                {sessions.map((session, index) => (
+              <Ionicons
+                name={showSessions ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+
+            {showSessions && (
+              sessions.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="calendar-outline" size={40} color="#D1D5DB" />
+                  <Text style={styles.emptyText}>Chưa có lịch học</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  {sessions.map((session, index) => (
                   <View key={session.id} style={styles.sessionCard}>
                     <View style={styles.sessionLeft}>
                       <View style={styles.sessionIndex}>
@@ -802,36 +740,52 @@ export default function CourseDetailScreen() {
                       </View>
                     </View>
                   </View>
-                ))}
-              </View>
+                  ))}
+                </View>
+              )
             )}
           </View>
 
           {/* Feedbacks Section */}
           {course.status === CourseStatus.COMPLETED && (
             <View style={styles.sectionContainer}>
-              <View style={styles.feedbackHeaderRow}>
-                <Text style={styles.sectionHeader}>
-                  Đánh giá{" "}
-                  <Text style={styles.countBadge}>({feedbacks.length})</Text>
-                </Text>
-                {!hasUserFeedback && (
-                  <TouchableOpacity
-                    style={styles.writeFeedbackBtn}
-                    onPress={() => setShowFeedbackModal(true)}
-                  >
-                    <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.writeFeedbackText}>Viết đánh giá</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {feedbacks.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
+              <TouchableOpacity
+                style={styles.sectionHeaderRow}
+                onPress={() => setShowFeedbacks(!showFeedbacks)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.sectionHeaderLeft}>
+                  <Ionicons name="chatbubbles" size={18} color="#059669" />
+                  <Text style={styles.sectionHeader}>Đánh giá</Text>
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countText}>{feedbacks.length}</Text>
+                  </View>
                 </View>
-              ) : (
-                <View style={{ gap: 12 }}>
+                <Ionicons
+                  name={showFeedbacks ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="#6B7280"
+                />
+              </TouchableOpacity>
+
+              {!hasUserFeedback && (
+                <TouchableOpacity
+                  style={styles.writeFeedbackButton}
+                  onPress={() => setShowFeedbackModal(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="create" size={16} color="#FFFFFF" />
+                  <Text style={styles.writeFeedbackButtonText}>Viết đánh giá</Text>
+                </TouchableOpacity>
+              )}
+
+              {showFeedbacks && (
+                feedbacks.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
+                  </View>
+                ) : (
+                  <View style={{ gap: 8 }}>
                   {feedbacks.map((feedback, index) => (
                     <View
                       key={feedback.id || index}
@@ -883,7 +837,8 @@ export default function CourseDetailScreen() {
                       )}
                     </View>
                   ))}
-                </View>
+                  </View>
+                )
               )}
             </View>
           )}
@@ -1032,46 +987,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
     zIndex: 10,
   },
   backButton: { padding: 4 },
   infoButton: { padding: 4 },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
     flex: 1,
     textAlign: "center",
   },
-  container: { padding: 16, paddingBottom: 40 },
+  container: { padding: 12, paddingBottom: 30 },
 
   /* Card Styles */
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 6,
   },
   cardListHeader: {
     flexDirection: "row",
@@ -1105,33 +1060,289 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1D5DB",
   },
   courseName: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: "800",
     color: "#111827",
     flex: 1,
-    lineHeight: 28,
+    lineHeight: 24,
   },
   statusBadge: {
     backgroundColor: "#ECFDF5",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
   statusText: {
     color: "#059669",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   courseDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#4B5563",
-    lineHeight: 22,
-    marginBottom: 16,
+    lineHeight: 20,
+    marginBottom: 10,
+    marginTop: 4,
   },
   divider: {
     height: 1,
     backgroundColor: "#F3F4F6",
     marginVertical: 16,
+  },
+
+  /* Compact Stats Grid */
+  statsGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  statBox: {
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  statValue: {
+    fontSize: 13,
+    color: "#111827",
+    fontWeight: "700",
+  },
+  statDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: "#E5E7EB",
+  },
+
+  /* Price Banner */
+  priceBanner: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#ECFDF5",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  priceLabel: {
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  priceValue: {
+    fontSize: 15,
+    color: "#059669",
+    fontWeight: "800",
+  },
+
+  /* Participant Section Compact */
+  participantSection: {
+    backgroundColor: "#F0FDF4",
+    padding: 10,
+    borderRadius: 8,
+    gap: 6,
+    marginTop: 10,
+  },
+  participantHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  participantCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  participantText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  minText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  progressBar: {
+    height: 5,
+    backgroundColor: "#D1FAE5",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#059669",
+    borderRadius: 3,
+  },
+
+  /* Date Row Compact */
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+  },
+  dateBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 11,
+    color: "#374151",
+    fontWeight: "600",
+  },
+
+  /* Location Section Compact */
+  locationSection: {
+    marginTop: 10,
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 8,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  locationContent: {
+    flex: 1,
+    gap: 2,
+  },
+  locationName: {
+    fontSize: 13,
+    color: "#111827",
+    fontWeight: "700",
+  },
+  locationAddress: {
+    fontSize: 11,
+    color: "#6B7280",
+    lineHeight: 16,
+  },
+
+  /* Coach Button Compact */
+  coachButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  coachInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  coachName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  coachPhone: {
+    fontSize: 11,
+    color: "#6B7280",
+  },
+
+  /* Enrollment Section Compact */
+  enrollmentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  enrollmentTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  enrollmentGrid: {
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  enrollmentItem: {
+    gap: 4,
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#EF4444",
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  cancelButtonDisabled: {
+    backgroundColor: "#9CA3AF",
+    opacity: 0.6,
+  },
+
+  /* Section Header Row with Collapse */
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 12,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  sectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  countText: {
+    fontSize: 12,
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  writeFeedbackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#059669",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  writeFeedbackButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   /* Grid Info */
@@ -1210,66 +1421,67 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
   },
   enrollmentLabel: {
-    fontSize: 13,
+    fontSize: 11,
     color: "#6B7280",
-    fontWeight: "500",
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
   enrollmentValue: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#111827",
-    fontWeight: "600",
-    flex: 1,
-    textAlign: "right",
+    fontWeight: "700",
+    marginTop: 2,
   },
 
   /* Sessions List */
-  sectionContainer: { gap: 12 },
+  sectionContainer: { gap: 8 },
   sectionHeader: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
     color: "#111827",
   },
   countBadge: {
-    color: "#6B7280",
-    fontSize: 16,
-    fontWeight: "500",
+    backgroundColor: "#059669",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   emptyState: {
     alignItems: "center",
-    padding: 32,
+    padding: 24,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    gap: 12,
+    borderRadius: 10,
+    gap: 8,
   },
   emptyText: {
     color: "#9CA3AF",
-    fontSize: 14,
+    fontSize: 13,
   },
 
   /* Session Card */
   sessionCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    borderRadius: 10,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 1,
   },
   sessionLeft: {
-    width: 50,
+    width: 40,
     alignItems: "center",
-    paddingTop: 16,
+    paddingTop: 12,
     backgroundColor: "#F9FAFB",
     borderRightWidth: 1,
     borderRightColor: "#F3F4F6",
   },
   sessionIndex: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: "#059669",
     alignItems: "center",
     justifyContent: "center",
@@ -1277,55 +1489,55 @@ const styles = StyleSheet.create({
   },
   sessionIndexText: {
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   connectorLine: {
     width: 2,
     flex: 1,
     backgroundColor: "#E5E7EB",
-    marginTop: -4,
-    marginBottom: 16,
+    marginTop: -3,
+    marginBottom: 12,
   },
   sessionRight: {
     flex: 1,
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    gap: 8,
   },
   sessionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 8,
+    gap: 6,
   },
   sessionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111827",
     flex: 1,
   },
   sessionStatusBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: "#F3F4F6",
   },
   sessionStatusText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "600",
     color: "#6B7280",
   },
   sessionMetaRow: {
     flexDirection: "row",
-    gap: 16,
+    gap: 12,
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
   },
   metaValue: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
     fontWeight: "500",
   },
@@ -1333,37 +1545,37 @@ const styles = StyleSheet.create({
   /* Lesson Content */
   lessonContainer: {
     backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
-    gap: 10,
+    borderRadius: 8,
+    padding: 10,
+    gap: 8,
   },
   lessonHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   lessonLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: "#111827",
   },
   lessonStats: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   statTag: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
   statText: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#4B5563",
     fontWeight: "500",
   },
@@ -1371,14 +1583,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#059669",
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   accessButtonText: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
 
@@ -1404,13 +1616,13 @@ const styles = StyleSheet.create({
   },
   feedbackCard: {
     backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 16,
-    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+    gap: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 1,
   },
   feedbackTop: {
@@ -1421,38 +1633,38 @@ const styles = StyleSheet.create({
   userInfo: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   avatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#E5E7EB",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#6B7280",
   },
   userName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#111827",
   },
   feedbackTime: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#9CA3AF",
   },
   starsRow: {
     flexDirection: "row",
-    gap: 2,
+    gap: 1,
   },
   commentText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#4B5563",
-    lineHeight: 20,
+    lineHeight: 18,
   },
 
   /* Modal Styles */
@@ -1463,36 +1675,36 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: "90%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
   },
   closeBtn: { padding: 4 },
-  modalContent: { padding: 20 },
-  ratingWrapper: { alignItems: "center", marginBottom: 24 },
+  modalContent: { padding: 16 },
+  ratingWrapper: { alignItems: "center", marginBottom: 20 },
   ratingTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
     color: "#111827",
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  starSelectRow: { flexDirection: "row", gap: 12 },
-  inputWrapper: { gap: 8, marginBottom: 20 },
+  starSelectRow: { flexDirection: "row", gap: 10 },
+  inputWrapper: { gap: 6, marginBottom: 16 },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: "#374151",
   },
@@ -1500,33 +1712,33 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 14,
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 13,
     color: "#111827",
-    minHeight: 120,
+    minHeight: 100,
   },
   checkboxRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 8,
   },
   checkboxLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#4B5563",
   },
   modalFooter: {
     flexDirection: "row",
-    gap: 12,
-    padding: 20,
+    gap: 10,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     alignItems: "center",
@@ -1534,11 +1746,12 @@ const styles = StyleSheet.create({
   cancelText: {
     fontWeight: "600",
     color: "#6B7280",
+    fontSize: 13,
   },
   submitBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
     backgroundColor: "#059669",
     alignItems: "center",
   },
@@ -1546,20 +1759,22 @@ const styles = StyleSheet.create({
   submitText: {
     fontWeight: "700",
     color: "#FFFFFF",
+    fontSize: 13,
   },
   vcButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#3B82F6",
+    gap: 6,
+    backgroundColor: "#059669",
     paddingVertical: 10,
     borderRadius: 8,
+    marginTop: 10,
   },
   vcButtonText: {
     color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
   },
   cancelCourseButton: {
     flexDirection: "row",

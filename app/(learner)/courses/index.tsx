@@ -657,72 +657,74 @@ export default function CoursesScreen() {
                     />
                     <View style={styles.cardOverlay} />
 
-                    {/* Top Badges */}
-                    <View style={styles.cardHeaderBadges}>
-                      <View
-                        style={[
-                          styles.formatBadge,
-                          {
-                            backgroundColor:
-                              c.learningFormat === "INDIVIDUAL"
-                                ? "rgba(124, 58, 237, 0.9)"
-                                : "rgba(37, 99, 235, 0.9)",
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={
-                            c.learningFormat === "INDIVIDUAL"
-                              ? "person"
-                              : "people"
-                          }
-                          size={10}
-                          color="#FFF"
-                        />
-                        <Text style={styles.formatBadgeText}>
-                          {c.learningFormat === "INDIVIDUAL"
-                            ? "Cá nhân"
-                            : "Nhóm"}
-                        </Text>
-                      </View>
-
-                      {(c.status === "FULL" || c.status === "READY_OPENED") && (
+                    {/* Badges Overlay */}
+                    <View style={styles.cardBadgesOverlay}>
+                      {/* Top Right Badges */}
+                      <View style={styles.topRightBadges}>
                         <View
                           style={[
-                            styles.statusBadge,
+                            styles.formatBadge,
                             {
                               backgroundColor:
-                                c.status === "FULL"
-                                  ? "rgba(239, 68, 68, 0.9)"
-                                  : "rgba(16, 185, 129, 0.9)",
+                                c.learningFormat === "INDIVIDUAL"
+                                  ? "rgba(124, 58, 237, 0.9)"
+                                  : "rgba(37, 99, 235, 0.9)",
                             },
                           ]}
                         >
-                          <Text style={styles.statusBadgeText}>
-                            {c.status === "FULL" ? "Đã đủ" : "Sắp mở"}
+                          <Ionicons
+                            name={
+                              c.learningFormat === "INDIVIDUAL"
+                                ? "person"
+                                : "people"
+                            }
+                            size={10}
+                            color="#FFF"
+                          />
+                          <Text style={styles.formatBadgeText}>
+                            {c.learningFormat === "INDIVIDUAL"
+                              ? "Cá nhân"
+                              : "Nhóm"}
                           </Text>
                         </View>
-                      )}
+
+                        {(c.status === "FULL" || c.status === "READY_OPENED") && (
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor:
+                                  c.status === "FULL"
+                                    ? "rgba(239, 68, 68, 0.9)"
+                                    : "rgba(16, 185, 129, 0.9)",
+                              },
+                            ]}
+                          >
+                            <Text style={styles.statusBadgeText}>
+                              {c.status === "FULL" ? "Đã đủ" : "Sắp mở"}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Bottom Left Badge - Level */}
+                      <View style={styles.bottomLeftBadge}>
+                        <View style={styles.levelBadgeOverlay}>
+                          <Ionicons name="ribbon" size={10} color="#FFF" />
+                          <Text style={styles.levelBadgeText}>{levelLabel}</Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
 
                   {/* Content Section */}
                   <View style={styles.cardContent}>
-                    <View style={styles.cardTopRow}>
-                      <Text style={styles.courseTitle} numberOfLines={2}>
-                        {c.name}
-                      </Text>
-                      {c.createdBy?.id &&
-                        coachRatings[c.createdBy.id] !== undefined && (
-                          <View style={styles.ratingContainer}>
-                            <Ionicons name="star" size={12} color="#F59E0B" />
-                            <Text style={styles.ratingText}>
-                              {coachRatings[c.createdBy.id].toFixed(1)}
-                            </Text>
-                          </View>
-                        )}
-                    </View>
+                    {/* Title */}
+                    <Text style={styles.courseTitle} numberOfLines={2}>
+                      {c.name}
+                    </Text>
 
+                    {/* Coach Info + Rating */}
                     <View style={styles.coachInfoRow}>
                       <View style={styles.coachAvatarPlaceholder}>
                         <Text style={styles.coachAvatarText}>
@@ -732,58 +734,59 @@ export default function CoursesScreen() {
                       <Text style={styles.coachName} numberOfLines={1}>
                         {c.createdBy?.fullName || "Huấn luyện viên"}
                       </Text>
+                      {c.createdBy?.id &&
+                        coachRatings[c.createdBy.id] !== undefined && (
+                          <>
+                            <Text style={styles.dotSeparator}>•</Text>
+                            <Ionicons name="star" size={12} color="#F59E0B" />
+                            <Text style={styles.ratingInlineText}>
+                              {coachRatings[c.createdBy.id].toFixed(1)}
+                            </Text>
+                          </>
+                        )}
                     </View>
 
-                    <View style={styles.cardDivider} />
-
-                    <View style={styles.cardMetaGrid}>
-                      {/* Level */}
-                      <View style={styles.metaItem}>
-                        <Ionicons
-                          name="ribbon-outline"
-                          size={14}
-                          color="#6B7280"
-                        />
-                        <Text style={styles.metaText}>{levelLabel}</Text>
-                      </View>
-
-                      {/* Participants */}
-                      <View style={styles.metaItem}>
-                        <Ionicons
-                          name="people-outline"
-                          size={14}
-                          color="#6B7280"
-                        />
-                        <Text style={styles.metaText}>
-                          {c.currentParticipants}/{c.maxParticipants} học viên
-                        </Text>
-                      </View>
-
-                      {/* Location */}
-                      <View style={[styles.metaItem, { width: "100%" }]}>
-                        <Ionicons
-                          name="location-outline"
-                          size={14}
-                          color="#6B7280"
-                        />
-                        <Text style={styles.metaText} numberOfLines={1}>
-                          {c.court?.name || c.court?.address || "Chưa xác định"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.cardFooter}>
-                      <Text style={styles.priceText}>
-                        {formatPrice(c.pricePerParticipant)}
+                    {/* Metadata Row 1 */}
+                    <View style={styles.metadataRow}>
+                      <Ionicons name="people" size={13} color="#6B7280" />
+                      <Text style={styles.metadataText}>
+                        {c.currentParticipants}/{c.maxParticipants} học viên
                       </Text>
-                      <View style={styles.viewDetailBtn}>
-                        <Text style={styles.viewDetailText}>Xem chi tiết</Text>
-                        <Ionicons
-                          name="arrow-forward"
-                          size={14}
-                          color="#059669"
-                        />
+
+                      <Text style={styles.dotSeparator}>•</Text>
+
+                      <Ionicons name="calendar" size={13} color="#6B7280" />
+                      <Text style={styles.metadataText}>
+                        {c.totalSessions} buổi học
+                      </Text>
+                    </View>
+
+                    {/* Address Row */}
+                    <View style={styles.addressRow}>
+                      <Ionicons name="location" size={13} color="#059669" />
+                      <Text style={styles.addressText} numberOfLines={2}>
+                        {c.court?.address || c.court?.name || "Chưa xác định địa điểm"}
+                      </Text>
+                    </View>
+
+                    {/* Footer */}
+                    <View style={styles.cardFooter}>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.priceText}>
+                          {formatPrice(c.pricePerParticipant)}
+                        </Text>
                       </View>
+                      <TouchableOpacity
+                        style={styles.registerBtn}
+                        onPress={() => {
+                          setSelectedCourse(c);
+                          setShowCourseDetailModal(true);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.registerBtnText}>Đăng ký</Text>
+                        <Ionicons name="arrow-forward" size={12} color="#FFF" />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -1338,22 +1341,22 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.8)",
     fontWeight: "500",
   },
-  container: { padding: 16, gap: 12, paddingBottom: 20 },
+  container: { padding: 12, gap: 10, paddingBottom: 16 },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    marginBottom: 20,
+    borderRadius: 12,
+    marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.03)",
+    borderColor: "rgba(0,0,0,0.02)",
   },
   cardImageWrapper: {
-    height: 180,
+    height: 100,
     width: "100%",
     position: "relative",
   },
@@ -1364,57 +1367,72 @@ const styles = StyleSheet.create({
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.03)",
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
-  cardHeaderBadges: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    right: 12,
-    flexDirection: "row",
+  cardBadgesOverlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "space-between",
-    alignItems: "flex-start",
     zIndex: 10,
+  },
+  topRightBadges: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "flex-start",
+  },
+  bottomLeftBadge: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+  },
+  levelBadgeOverlay: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "rgba(5, 150, 105, 0.9)",
+  },
+  levelBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
   formatBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   formatBadgeText: {
     color: "#FFFFFF",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   statusBadgeText: {
     color: "#FFFFFF",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   cardContent: {
-    padding: 16,
-    gap: 12,
-  },
-  cardTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
+    padding: 12,
+    gap: 7,
   },
   courseTitle: {
-    flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 24,
+    lineHeight: 20,
   },
   coachRow: {
     flexDirection: "row",
@@ -1431,73 +1449,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FBBF24",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 6,
     gap: 3,
   },
   ratingBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#FFFFFF",
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
   },
   locationText: {
     color: "#6B7280",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
     flex: 1,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 2,
-  },
-  levelBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  levelBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  participantBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  participantBadgeText: {
-    color: "#6B7280",
-    fontSize: 11,
-    fontWeight: "600",
   },
   searchSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 10,
   },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   searchBar: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     shadowColor: "#000",
     shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 2 },
@@ -1507,66 +1497,66 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: "#111827",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
   },
   filterBtn: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     backgroundColor: "#059669",
-    borderRadius: 12,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#059669",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   activeFilterTag: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: "#ECFDF5",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#D1FAE5",
     marginBottom: 8,
   },
   activeFilterText: {
     color: "#059669",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
   clearTag: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: "#D1FAE5",
     alignItems: "center",
     justifyContent: "center",
   },
-  filterSection: { gap: 12, marginBottom: 12 },
+  filterSection: { gap: 10, marginBottom: 10 },
   filterSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingBottom: 8,
+    gap: 6,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
   filterTitle: {
     color: "#059669",
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   filterRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
     alignItems: "center",
   },
   filterSelect: {
@@ -1575,11 +1565,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
     shadowColor: "#000",
     shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 1 },
@@ -1592,7 +1582,7 @@ const styles = StyleSheet.create({
   },
   filterSelectText: {
     color: "#111827",
-    fontSize: 13,
+    fontSize: 12,
     flex: 1,
     fontWeight: "500",
   },
@@ -1600,8 +1590,8 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
   clearFilterBtn: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1612,15 +1602,15 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: "80%",
-    paddingTop: 20,
+    paddingTop: 16,
   },
   courseModalContent: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     height: "90%",
     overflow: "hidden",
   },
@@ -1628,26 +1618,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#111827",
   },
   modalLoading: {
-    padding: 40,
+    padding: 32,
     alignItems: "center",
   },
   modalItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F9FAFB",
   },
@@ -1655,7 +1645,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0FDF4",
   },
   modalItemText: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#111827",
   },
   modalItemTextActive: {
@@ -1663,7 +1653,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   modalImageContainer: {
-    height: 220,
+    height: 160,
     width: "100%",
     position: "relative",
   },
@@ -1673,94 +1663,97 @@ const styles = StyleSheet.create({
   },
   modalImageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.1)",
+    backgroundColor: "rgba(0,0,0,0.15)",
   },
   floatingCloseBtn: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
   modalBadgesContainer: {
     position: "absolute",
-    bottom: 16,
-    left: 16,
+    bottom: 10,
+    left: 10,
     flexDirection: "row",
-    gap: 8,
+    gap: 5,
   },
   modalBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   modalBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   modalBody: {
-    padding: 20,
-    gap: 24,
+    padding: 14,
+    gap: 16,
   },
   modalHeaderSection: {
-    gap: 12,
+    gap: 8,
   },
   modalCourseTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: "#111827",
-    lineHeight: 30,
+    lineHeight: 24,
   },
   modalCoachRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 7,
+    backgroundColor: "#F9FAFB",
+    padding: 8,
+    borderRadius: 8,
   },
   coachAvatarLarge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#E0F2FE",
     alignItems: "center",
     justifyContent: "center",
   },
   coachAvatarTextLarge: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "700",
     color: "#0284C7",
   },
   coachNameLarge: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
     color: "#1F2937",
   },
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
     marginTop: 2,
   },
   ratingValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: "#4B5563",
   },
   ratingLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#9CA3AF",
   },
   sectionDivider: {
@@ -1770,65 +1763,70 @@ const styles = StyleSheet.create({
   infoGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
+    gap: 8,
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 8,
   },
   infoGridItem: {
-    width: "47%",
+    width: "48%",
     flexDirection: "row",
-    gap: 10,
+    gap: 6,
+    alignItems: "center",
   },
   infoIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     backgroundColor: "#ECFDF5",
     alignItems: "center",
     justifyContent: "center",
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#6B7280",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   infoValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  contentSection: {
-    gap: 12,
-  },
-  sectionHeader: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: "700",
     color: "#111827",
   },
-  descriptionBody: {
+  contentSection: {
+    gap: 8,
+  },
+  sectionHeader: {
     fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  descriptionBody: {
+    fontSize: 13,
     color: "#4B5563",
-    lineHeight: 22,
+    lineHeight: 19,
   },
   scheduleContainer: {
-    gap: 10,
+    gap: 6,
   },
   scheduleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 12,
-  },
-  scheduleDayBox: {
+    gap: 8,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    padding: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
+  scheduleDayBox: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+  },
   scheduleDayTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: "#059669",
   },
@@ -1836,90 +1834,104 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scheduleTimeValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     color: "#374151",
   },
   locationCard: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 12,
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
   },
   locationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#ECFDF5",
     alignItems: "center",
     justifyContent: "center",
   },
   locationName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 2,
+    marginBottom: 3,
   },
   locationAddress: {
     fontSize: 12,
     color: "#6B7280",
+    lineHeight: 17,
   },
   stickyFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    padding: 12,
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: "#E5E7EB",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 8,
   },
   footerPrice: {
-    gap: 2,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
   },
   footerPriceLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#6B7280",
+    marginBottom: 1,
   },
   footerPriceValue: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
     color: "#059669",
+    letterSpacing: 0.3,
   },
   footerBtn: {
     backgroundColor: "#059669",
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    minWidth: 120,
   },
   footerBtnDisabled: {
     backgroundColor: "#9CA3AF",
     opacity: 0.8,
   },
   footerBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#FFFFFF",
   },
   coachInfoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 5,
   },
   coachAvatarPlaceholder: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: "#E0F2FE",
     alignItems: "center",
     justifyContent: "center",
@@ -1930,33 +1942,43 @@ const styles = StyleSheet.create({
     color: "#0284C7",
   },
   coachName: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#4B5563",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
     flex: 1,
   },
-  cardDivider: {
-    height: 1,
-    backgroundColor: "#F3F4F6",
+  dotSeparator: {
+    fontSize: 12,
+    color: "#D1D5DB",
+    marginHorizontal: 2,
   },
-  cardMetaGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+  ratingInlineText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#D97706",
   },
-  metaItem: {
+  metadataRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    gap: 4,
+    flexWrap: "wrap",
   },
-  metaText: {
-    fontSize: 12,
-    color: "#4B5563",
+  metadataText: {
+    fontSize: 11,
+    color: "#6B7280",
     fontWeight: "500",
+  },
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
+  },
+  addressText: {
+    flex: 1,
+    fontSize: 11,
+    color: "#374151",
+    fontWeight: "500",
+    lineHeight: 15,
   },
   cardFooter: {
     flexDirection: "row",
@@ -1964,55 +1986,59 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 4,
   },
-  priceText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#059669",
+  priceContainer: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
   },
-  viewDetailBtn: {
+  priceText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#059669",
+    letterSpacing: 0.3,
+  },
+  registerBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    backgroundColor: "#059669",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  viewDetailText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#059669",
+  registerBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   loadMoreBtn: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
     borderColor: "#059669",
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: "center",
-    paddingVertical: 12,
-    marginTop: 8,
+    paddingVertical: 10,
+    marginTop: 6,
   },
-  loadMoreText: { color: "#059669", fontWeight: "700" },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#FFFBEB",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#D97706",
-  },
+  loadMoreText: { color: "#059669", fontWeight: "700", fontSize: 13 },
   sessionContainer: {
-    gap: 12,
+    gap: 6,
   },
   sessionCard: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 9,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
-    gap: 10,
+    borderColor: "#E5E7EB",
+    gap: 6,
   },
   sessionHeader: {
     flexDirection: "row",
@@ -2021,60 +2047,58 @@ const styles = StyleSheet.create({
   },
   sessionNumber: {
     backgroundColor: "#ECFDF5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
   },
   sessionNumberText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700",
     color: "#059669",
   },
   sessionStatus: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
     backgroundColor: "#DBEAFE",
   },
   sessionStatusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     color: "#0284C7",
   },
   sessionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 5,
   },
   sessionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: "#111827",
     flex: 1,
   },
   sessionDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
-    lineHeight: 18,
+    lineHeight: 15,
   },
   sessionInfoRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 6,
     flexWrap: "wrap",
   },
   sessionInfoItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    gap: 3,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 5,
   },
   sessionInfoText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#4B5563",
     fontWeight: "500",
   },
