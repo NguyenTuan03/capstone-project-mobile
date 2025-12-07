@@ -95,7 +95,6 @@ export default function LearnerVideoModal({
         ],
       });
     } catch (error) {
- "AI Generation Error:", error);
       Alert.alert("Lỗi", "Không thể tạo phân tích AI. Vui lòng thử lại.");
     } finally {
       setIsGenerating(false);
@@ -141,7 +140,6 @@ export default function LearnerVideoModal({
       setCoachNote("");
       Alert.alert("Thành công", "Đã lưu ghi chú của HLV");
     } catch (error) {
- "Submit Coach Note Error:", error);
       Alert.alert("Lỗi", "Không thể lưu ghi chú. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);

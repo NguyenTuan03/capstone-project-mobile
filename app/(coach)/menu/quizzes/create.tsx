@@ -4,20 +4,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function CreateQuizScreen() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
-  
 
   const [quiz, setQuiz] = useState<QuizFormDTO>({
     title: "",
@@ -179,10 +178,6 @@ export default function CreateQuizScreen() {
       Alert.alert("Tạo bài quiz thành công");
       router.back();
     } catch (error: any) {
- 
-        "Lỗi, không thể tạo bài quiz",
-        error.response?.data || error
-      );
       Alert.alert("Lỗi không thể tạo bài quiz");
     }
   };

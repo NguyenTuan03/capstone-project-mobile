@@ -2,29 +2,28 @@ import { put } from "@/services/http/httpService";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-    Alert,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
-} from "react-native";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export default function EditSubjectScreen() {
-  const { subjectId, subjectName, subjectDescription, subjectLevel, subjectStatus } =
-    useLocalSearchParams<{
-      subjectId: string;
-      subjectName: string;
-      subjectDescription: string;
-      subjectLevel: string;
-      subjectStatus: string;
-    }>();
+  const {
+    subjectId,
+    subjectName,
+    subjectDescription,
+    subjectLevel,
+    subjectStatus,
+  } = useLocalSearchParams<{
+    subjectId: string;
+    subjectName: string;
+    subjectDescription: string;
+    subjectLevel: string;
+    subjectStatus: string;
+  }>();
 
-  //   
-  //   
-  //   
+  //
+  //
+  //
 
   const [editNameSubject, setEditNameSubject] = useState(subjectName || "");
   const [editDescription, setEditDescription] = useState(
@@ -33,7 +32,9 @@ export default function EditSubjectScreen() {
   const [editLevel, setEditLevel] = useState<
     "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
   >(subjectLevel as any);
-  const [editStatus, setEditStatus] = useState<"DRAFT" | "PUBLISHED">(subjectStatus as any);
+  const [editStatus, setEditStatus] = useState<"DRAFT" | "PUBLISHED">(
+    subjectStatus as any
+  );
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -53,7 +54,6 @@ export default function EditSubjectScreen() {
         },
       ]);
     } catch (error) {
- "Lỗi khi lưu tài liệu:", error);
       Alert.alert("Lỗi", "Không thể lưu thay đổi.");
     } finally {
       setSaving(false);

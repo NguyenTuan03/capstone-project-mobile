@@ -13,7 +13,11 @@ import {
 
 interface VideoCaptureComponentProps {
   duration: number; // Duration in seconds (e.g., 3, 5, 10)
-  onVideoCapture: (videoUri: string, videoName: string, recordedDuration: number) => void;
+  onVideoCapture: (
+    videoUri: string,
+    videoName: string,
+    recordedDuration: number
+  ) => void;
   onCancel?: () => void;
 }
 
@@ -60,7 +64,7 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
       try {
         const timestamp = Date.now();
         const fileName = `video_${timestamp}.mp4`;
-        
+
         // Try to get FileSystem directories dynamically
         const FileSystemAny = FileSystem as any;
         const cacheDir = FileSystemAny.cacheDirectory;
@@ -86,7 +90,6 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
           setPreviewVideoName(fileName);
         }
       } catch (error) {
- "Error saving video:", error);
         // Keep preview with original path if save fails
       }
     },
@@ -100,20 +103,21 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
       setCaptureState("recording");
       setRecordingDuration(0);
 
-      await cameraRef.current.recordAsync({
-        maxDuration: duration,
-      }).then(async (video: any) => {
-        if (video?.uri) {
-          await handleRecordingComplete(video.uri);
-        } else {
+      await cameraRef.current
+        .recordAsync({
+          maxDuration: duration,
+        })
+        .then(async (video: any) => {
+          if (video?.uri) {
+            await handleRecordingComplete(video.uri);
+          } else {
+            handleRecordingError();
+          }
+        })
+        .catch((error: any) => {
           handleRecordingError();
-        }
-      }).catch((error: any) => {
- "Recording error:", error);
-        handleRecordingError();
-      });
+        });
     } catch (error) {
- "Error starting recording:", error);
       handleRecordingError();
     }
   }, [duration, handleRecordingComplete, handleRecordingError]);
@@ -124,7 +128,6 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
         await cameraRef.current.stopRecording();
       }
     } catch (error) {
- "Error stopping recording:", error);
       handleRecordingError();
     }
   }, [handleRecordingError]);
@@ -175,9 +178,7 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
       if (timerRef.current) clearTimeout(timerRef.current);
       try {
         cameraRef.current?.stopRecording();
-      } catch (error) {
- "Error cancelling recording:", error);
-      }
+      } catch (error) {}
     }
     setCaptureState("idle");
     setCountdown(3);
@@ -274,7 +275,11 @@ const VideoCaptureComponent: React.FC<VideoCaptureComponentProps> = ({
                 onPress={handleCancel}
                 activeOpacity={0.7}
               >
-                <MaterialCommunityIcons name="close" size={24} color="#FFFFFF" />
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color="#FFFFFF"
+                />
               </TouchableOpacity>
 
               <TouchableOpacity

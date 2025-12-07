@@ -50,7 +50,6 @@ export default function EditLearnerAccountScreen() {
       const data = await locationService.getProvinces();
       setProvinces(data);
     } catch (fetchError) {
- "Failed to fetch provinces", fetchError);
     } finally {
       setLoadingProvinces(false);
     }
@@ -69,7 +68,6 @@ export default function EditLearnerAccountScreen() {
       );
       setDistricts(data);
     } catch (fetchError) {
- "Failed to fetch districts", fetchError);
     } finally {
       setLoadingDistricts(false);
     }
@@ -417,17 +415,16 @@ export default function EditLearnerAccountScreen() {
 
           <ScrollView style={styles.modalList}>
             {filteredProvinces.map((province) => {
-              const provinceKey = province.id ? String(province.id) : province.name;
+              const provinceKey = province.id
+                ? String(province.id)
+                : province.name;
               const isActive =
                 !!province.id && provinceId === String(province.id);
 
               return (
                 <Pressable
                   key={provinceKey}
-                  style={[
-                    styles.modalItem,
-                    isActive && styles.modalItemActive,
-                  ]}
+                  style={[styles.modalItem, isActive && styles.modalItemActive]}
                   onPress={() => handleSelectProvince(province)}
                 >
                   <Text
@@ -497,10 +494,7 @@ export default function EditLearnerAccountScreen() {
               return (
                 <Pressable
                   key={districtKey}
-                  style={[
-                    styles.modalItem,
-                    isActive && styles.modalItemActive,
-                  ]}
+                  style={[styles.modalItem, isActive && styles.modalItemActive]}
                   onPress={() => handleSelectDistrict(district)}
                 >
                   <Text
@@ -780,4 +774,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

@@ -76,7 +76,6 @@ const CoachSubjectScreen = () => {
               });
               setModalVisible(false);
             } catch (error) {
- "Lỗi khi xóa tài liệu:", error);
               Alert.alert(
                 "Lỗi",
                 "Không thể xóa tài liệu. Vui lòng thử lại sau."
@@ -89,56 +88,57 @@ const CoachSubjectScreen = () => {
     );
   };
 
-  const fetchSubjects = useCallback(async (pageNum: number = 1, append: boolean = false) => {
-    try {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+  const fetchSubjects = useCallback(
+    async (pageNum: number = 1, append: boolean = false) => {
+      try {
+        if (append) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+        }
 
-      const user = await storageService.getUser();
-      if (!user) {
- "Không tìm thấy thông tin người dùng");
-        return;
-      }
-      const userId = user.id;
+        const user = await storageService.getUser();
+        if (!user) {
+          return;
+        }
+        const userId = user.id;
 
-      const res = await get<PaginatedResponse>(
-        `/v1/subjects?filter=createdBy_eq_${userId}&page=${pageNum}&pageSize=10`
-      );
+        const res = await get<PaginatedResponse>(
+          `/v1/subjects?filter=createdBy_eq_${userId}&page=${pageNum}&pageSize=10`
+        );
 
-      if (append) {
-        setSubjects((prev) => {
+        if (append) {
+          setSubjects((prev) => {
+            const newItems = res.data.items || [];
+            const updatedSubjects = [...prev, ...newItems];
+
+            // Update pagination state
+            const newPage = res.data.page;
+            const newTotal = res.data.total;
+            setPage(newPage);
+            setTotal(newTotal);
+            setHasMore(updatedSubjects.length < newTotal);
+
+            return updatedSubjects;
+          });
+        } else {
           const newItems = res.data.items || [];
-          const updatedSubjects = [...prev, ...newItems];
-          
-          // Update pagination state
+          setSubjects(newItems);
+
           const newPage = res.data.page;
           const newTotal = res.data.total;
           setPage(newPage);
           setTotal(newTotal);
-          setHasMore(updatedSubjects.length < newTotal);
-          
-          return updatedSubjects;
-        });
-      } else {
-        const newItems = res.data.items || [];
-        setSubjects(newItems);
-        
-        const newPage = res.data.page;
-        const newTotal = res.data.total;
-        setPage(newPage);
-        setTotal(newTotal);
-        setHasMore(newItems.length < newTotal);
+          setHasMore(newItems.length < newTotal);
+        }
+      } catch (error) {
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    } catch (error) {
- "Lỗi khi tải danh sách tài liệu:", error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
@@ -174,9 +174,7 @@ const CoachSubjectScreen = () => {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Tài liệu của tôi</Text>
-          <Text style={styles.subheader}>
-            {`${total} tài liệu`}
-          </Text>
+          <Text style={styles.subheader}>{`${total} tài liệu`}</Text>
         </View>
 
         <View style={{ width: 32 }} />

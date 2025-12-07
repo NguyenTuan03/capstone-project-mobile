@@ -25,8 +25,6 @@ export default function QuizDetailScreen() {
     lessonId: string;
   }>();
 
-  
-
   const [quiz, setQuiz] = useState<QuizType | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCreateQuestion, setShowCreateQuestion] = useState(false);
@@ -63,7 +61,6 @@ export default function QuizDetailScreen() {
       const quiz = response.data;
       setQuiz(quiz);
     } catch (error) {
- "Error fetching quiz data:", error);
       setQuiz(null);
     } finally {
       setLoading(false);
@@ -126,7 +123,6 @@ export default function QuizDetailScreen() {
         await fetchDataQuiz(lessonId, quizId);
       }
     } catch (error: any) {
- "Error adding question:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể thêm câu hỏi";
       alert(errorMessage);
@@ -205,7 +201,6 @@ export default function QuizDetailScreen() {
       setShowEditQuiz(false);
       alert("Cập nhật quiz thành công");
     } catch (error: any) {
- "Error updating quiz:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật quiz";
       alert(errorMessage);
@@ -307,7 +302,6 @@ export default function QuizDetailScreen() {
         await fetchDataQuiz(lessonId, quizId);
       }
     } catch (error: any) {
- "Error updating question:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật câu hỏi";
       alert(errorMessage);
@@ -337,7 +331,6 @@ export default function QuizDetailScreen() {
                 await fetchDataQuiz(lessonId, quizId);
               }
             } catch (error: any) {
- "Error deleting question:", error);
               const errorMessage =
                 error.response?.data?.message || "Không thể xóa câu hỏi";
               alert(errorMessage);

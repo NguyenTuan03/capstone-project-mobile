@@ -31,7 +31,6 @@ export default function EnrollmentInfoScreen() {
       );
       setEnrollment(enrollmentRes.data);
     } catch (error) {
- "Lỗi khi tải chi tiết enrollment:", error);
       Alert.alert("Lỗi", "Không thể tải chi tiết khóa học");
     } finally {
       setLoading(false);

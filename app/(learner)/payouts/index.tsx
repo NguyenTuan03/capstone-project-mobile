@@ -46,9 +46,7 @@ export default function LearnerPayoutsScreen() {
         } else {
           setBankList([]);
         }
-      } catch (err) {
- "Lỗi lấy danh sách ngân hàng:", err);
-      }
+      } catch (err) {}
     };
     fetchBanks();
   }, []);
@@ -58,9 +56,7 @@ export default function LearnerPayoutsScreen() {
       try {
         const user = await storageService.getUser();
         setUserName(user?.fullName || "");
-      } catch (err) {
- "Lỗi lấy tên người dùng:", err);
-      }
+      } catch (err) {}
     };
     fetchUserName();
   }, []);
@@ -73,12 +69,7 @@ export default function LearnerPayoutsScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setWallet(res.data);
-      
     } catch (err: any) {
- 
-        "❌ Lỗi khi lấy dữ liệu ví:",
-        err.response?.data || err.message
-      );
     } finally {
       setLoading(false);
     }
@@ -110,7 +101,7 @@ export default function LearnerPayoutsScreen() {
       const res = await put(`${API_URL}/v1/wallets/${wallet.id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       setWallet(res.data);
       setIsEditing(false);
 
@@ -119,7 +110,6 @@ export default function LearnerPayoutsScreen() {
 
       Alert.alert("Thành công", "Cập nhật thông tin ngân hàng thành công!");
     } catch (err: any) {
- "❌ Lỗi cập nhật ví:", err.response?.data || err.message);
       Alert.alert("Lỗi", "Không thể cập nhật thông tin. Vui lòng thử lại.");
     }
   };
@@ -140,7 +130,8 @@ export default function LearnerPayoutsScreen() {
       const token = await storageService.getToken();
       const payload = parseFloat(withdrawalAmount);
 
-      await post(`${API_URL}/v1/wallets/withdrawal`, 
+      await post(
+        `${API_URL}/v1/wallets/withdrawal`,
         { amount: payload },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -150,22 +141,17 @@ export default function LearnerPayoutsScreen() {
       setWithdrawalModalVisible(false);
       setWithdrawalAmount("");
       await fetchWalletData();
-      
-      Alert.alert(
-        "Thành công",
-        "Yêu cầu rút tiền của bạn đã thành công",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Refresh the transaction list
-              fetchWalletData();
-            },
+
+      Alert.alert("Thành công", "Yêu cầu rút tiền của bạn đã thành công", [
+        {
+          text: "OK",
+          onPress: () => {
+            // Refresh the transaction list
+            fetchWalletData();
           },
-        ]
-      );
+        },
+      ]);
     } catch (err: any) {
- "❌ Lỗi rút tiền:", err.response?.data || err.message);
       const errorMessage =
         err.response?.data?.message ||
         "Không thể xử lý yêu cầu rút tiền. Vui lòng thử lại.";
@@ -189,7 +175,9 @@ export default function LearnerPayoutsScreen() {
     <View style={styles.transactionCard}>
       <View style={styles.transactionHeader}>
         <View style={styles.transactionInfo}>
-          <Text style={styles.transactionTitle}>{item.description || "Giao dịch"}</Text>
+          <Text style={styles.transactionTitle}>
+            {item.description || "Giao dịch"}
+          </Text>
           <Text style={styles.transactionSubtitle}>{item.type}</Text>
         </View>
         <View style={styles.transactionAmountContainer}>
@@ -252,7 +240,7 @@ export default function LearnerPayoutsScreen() {
                 <Text style={styles.balanceAmount}>
                   {formatCurrency(Number(wallet?.currentBalance))}
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.withdrawButton}
                   onPress={() => setWithdrawalModalVisible(true)}
                 >
@@ -273,9 +261,16 @@ export default function LearnerPayoutsScreen() {
                           onValueChange={(itemValue) => setBankId(itemValue)}
                           style={styles.bankPicker}
                         >
-                          <Picker.Item label="-- Chọn ngân hàng --" value={null} />
+                          <Picker.Item
+                            label="-- Chọn ngân hàng --"
+                            value={null}
+                          />
                           {bankList.map((b) => (
-                            <Picker.Item key={b.id} label={b.name} value={b.id} />
+                            <Picker.Item
+                              key={b.id}
+                              label={b.name}
+                              value={b.id}
+                            />
                           ))}
                         </Picker>
                       </View>
@@ -331,7 +326,11 @@ export default function LearnerPayoutsScreen() {
                   scrollEnabled={false}
                   ListEmptyComponent={
                     <View style={styles.emptyState}>
-                      <Ionicons name="swap-horizontal" size={48} color="#D1D5DB" />
+                      <Ionicons
+                        name="swap-horizontal"
+                        size={48}
+                        color="#D1D5DB"
+                      />
                       <Text style={styles.emptyStateText}>
                         Chưa có giao dịch nào
                       </Text>
@@ -352,13 +351,17 @@ export default function LearnerPayoutsScreen() {
         visible={withdrawalModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => !withdrawalLoading && setWithdrawalModalVisible(false)}
+        onRequestClose={() =>
+          !withdrawalLoading && setWithdrawalModalVisible(false)
+        }
       >
         <View style={styles.modalContainer}>
           {/* Modal Header */}
           <View style={styles.modalHeader}>
             <TouchableOpacity
-              onPress={() => !withdrawalLoading && setWithdrawalModalVisible(false)}
+              onPress={() =>
+                !withdrawalLoading && setWithdrawalModalVisible(false)
+              }
               disabled={withdrawalLoading}
               style={styles.modalCloseButton}
             >
@@ -380,9 +383,7 @@ export default function LearnerPayoutsScreen() {
                     {wallet?.bank?.name || "Chưa liên kết"}
                   </Text>
                 </View>
-                <View
-                  style={[styles.bankInfoRow, { borderBottomWidth: 0 }]}
-                >
+                <View style={[styles.bankInfoRow, { borderBottomWidth: 0 }]}>
                   <Text style={styles.bankInfoLabel}>Tài khoản</Text>
                   <Text style={styles.bankInfoValue}>
                     {accountNumber
@@ -430,9 +431,8 @@ export default function LearnerPayoutsScreen() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoTitle}>Thông tin rút tiền</Text>
                 <Text style={styles.infoText}>
-                  • Phí rút tiền: 0₫{"\n"}
-                  • Thời gian xử lý: 1-3 ngày làm việc{"\n"}
-                  • Tiền sẽ được chuyển vào tài khoản đã liên kết
+                  • Phí rút tiền: 0₫{"\n"}• Thời gian xử lý: 1-3 ngày làm việc
+                  {"\n"}• Tiền sẽ được chuyển vào tài khoản đã liên kết
                 </Text>
               </View>
             </View>

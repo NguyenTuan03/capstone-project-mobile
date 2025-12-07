@@ -230,7 +230,6 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
       setIsEditModalVisible(true);
     } catch (error) {
- "Error preparing edit session:", error);
       Alert.alert("Lỗi", "Không thể chuẩn bị chỉnh sửa lịch học.");
     }
   }, []);
@@ -264,7 +263,6 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         onWeekChange(initialStartDate, initialEndDate);
       }
     } catch (error) {
- "Error updating schedule:", error);
       Toast.show({
         type: "error",
         text1: "Thất bại",

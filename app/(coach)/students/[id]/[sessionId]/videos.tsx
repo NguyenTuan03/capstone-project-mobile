@@ -27,8 +27,11 @@ export default function SessionVideosScreen() {
     null
   );
   const [overlayVisible, setOverlayVisible] = useState(false);
-  const [selectedCoachVideo, setSelectedCoachVideo] = useState<string | null>(null);
-  const [selectedLearnerVideo, setSelectedLearnerVideo] = useState<LearnerVideo | null>(null);
+  const [selectedCoachVideo, setSelectedCoachVideo] = useState<string | null>(
+    null
+  );
+  const [selectedLearnerVideo, setSelectedLearnerVideo] =
+    useState<LearnerVideo | null>(null);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
 
   useEffect(() => {
@@ -36,9 +39,7 @@ export default function SessionVideosScreen() {
       try {
         const parsed = JSON.parse(sessionData);
         setSession(parsed);
-      } catch (e) {
- "Failed to parse session data:", e);
-      }
+      } catch (e) {}
     }
   }, [sessionData]);
 
@@ -47,9 +48,7 @@ export default function SessionVideosScreen() {
       try {
         const parsed = JSON.parse(learnerVideosData);
         setLearnerVideos(Array.isArray(parsed) ? parsed : []);
-      } catch (e) {
- "Failed to parse learner videos data:", e);
-      }
+      } catch (e) {}
     }
   }, [learnerVideosData]);
 
@@ -125,7 +124,9 @@ export default function SessionVideosScreen() {
                   <View style={styles.thumbnailImageWrapper}>
                     <Image
                       source={{
-                        uri: coachVideo.thumbnailUrl || "https://via.placeholder.com/400x300?text=Video",
+                        uri:
+                          coachVideo.thumbnailUrl ||
+                          "https://via.placeholder.com/400x300?text=Video",
                       }}
                       style={styles.thumbnailImage}
                       resizeMode="cover"
@@ -135,10 +136,9 @@ export default function SessionVideosScreen() {
                         <Text style={styles.durationText}>
                           {Math.floor(coachVideo.duration / 60)}
                           {":"}
-                          {String(Math.round(coachVideo.duration % 60)).padStart(
-                            2,
-                            "0"
-                          )}
+                          {String(
+                            Math.round(coachVideo.duration % 60)
+                          ).padStart(2, "0")}
                         </Text>
                       </View>
                     )}
@@ -184,7 +184,9 @@ export default function SessionVideosScreen() {
                       <View style={styles.thumbnailImageWrapper}>
                         <Image
                           source={{
-                            uri: video.thumbnailUrl || "https://via.placeholder.com/400x300?text=Video",
+                            uri:
+                              video.thumbnailUrl ||
+                              "https://via.placeholder.com/400x300?text=Video",
                           }}
                           style={styles.thumbnailImage}
                           resizeMode="cover"
@@ -202,7 +204,11 @@ export default function SessionVideosScreen() {
                           </View>
                         )}
                         <View style={styles.playIconOverlay}>
-                          <Ionicons name="play-circle" size={48} color="#FFFFFF" />
+                          <Ionicons
+                            name="play-circle"
+                            size={48}
+                            color="#FFFFFF"
+                          />
                         </View>
                       </View>
                       <View style={styles.videoInfo}>
@@ -210,7 +216,9 @@ export default function SessionVideosScreen() {
                           Video nộp bài {index + 1}
                         </Text>
                         <Text style={styles.videoMeta}>
-                          {new Date(video.createdAt).toLocaleDateString("vi-VN")}
+                          {new Date(video.createdAt).toLocaleDateString(
+                            "vi-VN"
+                          )}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -221,7 +229,9 @@ export default function SessionVideosScreen() {
                         activeOpacity={0.8}
                       >
                         <Ionicons name="layers" size={16} color="#FFFFFF" />
-                        <Text style={styles.compareButtonText}>So sánh video</Text>
+                        <Text style={styles.compareButtonText}>
+                          So sánh video
+                        </Text>
                       </TouchableOpacity>
                     )}
                   </View>

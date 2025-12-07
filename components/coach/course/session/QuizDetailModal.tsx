@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -26,13 +26,7 @@ const CustomTextInput = React.forwardRef<any, any>(
       [key: string]: any;
     },
     ref
-  ) => (
-    <RNTextInput
-      ref={ref}
-      style={[styles.textInput, style]}
-      {...props}
-    />
-  )
+  ) => <RNTextInput ref={ref} style={[styles.textInput, style]} {...props} />
 );
 CustomTextInput.displayName = "CustomTextInput";
 
@@ -55,7 +49,9 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
 }) => {
   const [editingQuiz, setEditingQuiz] = useState(false);
   const [editTitle, setEditTitle] = useState(quiz?.title || "");
-  const [editDescription, setEditDescription] = useState(quiz?.description || "");
+  const [editDescription, setEditDescription] = useState(
+    quiz?.description || ""
+  );
   const [submitting, setSubmitting] = useState(false);
 
   // Question editing state
@@ -164,7 +160,6 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
         onQuizUpdated();
       }
     } catch (error: any) {
- "Error updating question:", error);
       const errorMessage =
         error.response?.data?.message || "Không thể cập nhật câu hỏi";
       alert(errorMessage);
@@ -193,7 +188,6 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                 onQuizUpdated();
               }
             } catch (error: any) {
- "Error deleting question:", error);
               const errorMessage =
                 error.response?.data?.message || "Không thể xóa câu hỏi";
               alert(errorMessage);
@@ -217,10 +211,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
         <View style={styles.container}>
           {/* Modal Header */}
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
             <Text style={styles.title} numberOfLines={1}>
@@ -240,7 +231,11 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
               <View style={styles.cardHeader}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={styles.sectionLabel}>Bài Quiz</Text>
-                  <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
+                  <Text
+                    style={styles.cardTitle}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
                     {quiz.title}
                   </Text>
                 </View>
@@ -255,9 +250,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Mô tả</Text>
                 <View style={styles.descriptionBox}>
-                  <Text style={styles.descriptionText}>
-                    {quiz.description}
-                  </Text>
+                  <Text style={styles.descriptionText}>{quiz.description}</Text>
                 </View>
               </View>
             )}
@@ -286,12 +279,14 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                       activeOpacity={0.7}
                     >
                       <View style={styles.questionNumber}>
-                        <Text style={styles.questionNumberText}>
-                          {idx + 1}
-                        </Text>
+                        <Text style={styles.questionNumberText}>{idx + 1}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.questionText} numberOfLines={2} ellipsizeMode="tail">
+                        <Text
+                          style={styles.questionText}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
                           {question.title ||
                             question.questionText ||
                             question.content ||
@@ -319,7 +314,11 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                                         },
                                       ]}
                                     />
-                                    <Text style={styles.optionText} numberOfLines={1} ellipsizeMode="tail">
+                                    <Text
+                                      style={styles.optionText}
+                                      numberOfLines={1}
+                                      ellipsizeMode="tail"
+                                    >
                                       {option.content || "—"}
                                     </Text>
                                     {option.isCorrect && (
@@ -378,9 +377,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                             try {
                               onClose();
                               await onDelete(quiz.id, quiz.title);
-                            } catch (error) {
- "Error deleting quiz:", error);
-                            }
+                            } catch (error) {}
                           },
                         },
                       ]
@@ -404,17 +401,20 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
         onRequestClose={() => setEditingQuiz(false)}
       >
         <View style={styles.modalContainer}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                onPress={() => setEditingQuiz(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle} numberOfLines={1}>Sửa Quiz</Text>
-              <View style={{ width: 36 }} />
-            </View>          <ScrollView
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={() => setEditingQuiz(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle} numberOfLines={1}>
+              Sửa Quiz
+            </Text>
+            <View style={{ width: 36 }} />
+          </View>{" "}
+          <ScrollView
             style={styles.modalContent}
             contentContainerStyle={{ paddingBottom: 80 }}
             showsVerticalScrollIndicator={false}
@@ -448,7 +448,8 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
               <TouchableOpacity
                 style={[
                   styles.submitButton,
-                  (!editTitle.trim() || submitting) && styles.submitButtonDisabled,
+                  (!editTitle.trim() || submitting) &&
+                    styles.submitButtonDisabled,
                 ]}
                 onPress={async () => {
                   try {
@@ -480,11 +481,12 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                       onQuizUpdated();
                     }
                   } catch (error: any) {
- "Error updating quiz:", error);
                     Toast.show({
                       type: "error",
                       text1: "Lỗi",
-                      text2: error.response?.data?.message || "Không thể cập nhật quiz",
+                      text2:
+                        error.response?.data?.message ||
+                        "Không thể cập nhật quiz",
                       position: "top",
                       visibilityTime: 3000,
                     });
@@ -501,7 +503,11 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#FFFFFF"
+                    />
                     <Text style={styles.submitButtonText}>Cập nhật Quiz</Text>
                   </>
                 )}
@@ -533,7 +539,9 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
             >
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle} numberOfLines={1}>Sửa Câu Hỏi</Text>
+            <Text style={styles.modalTitle} numberOfLines={1}>
+              Sửa Câu Hỏi
+            </Text>
             <View style={{ width: 36 }} />
           </View>
 
@@ -604,9 +612,7 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
                   >
                     <Switch
                       value={option.isCorrect}
-                      onValueChange={() =>
-                        handleToggleEditCorrect(option.id)
-                      }
+                      onValueChange={() => handleToggleEditCorrect(option.id)}
                       trackColor={{ false: "#E5E7EB", true: "#D1FAE5" }}
                       thumbColor={option.isCorrect ? "#059669" : "#9CA3AF"}
                     />
@@ -683,7 +689,10 @@ const QuizDetailModal: React.FC<QuizDetailModalProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.submitButton, { backgroundColor: "#DC2626", marginTop: 10 }]}
+                style={[
+                  styles.submitButton,
+                  { backgroundColor: "#DC2626", marginTop: 10 },
+                ]}
                 onPress={() => handleDeleteQuestion(editingQuestion.id)}
               >
                 <Ionicons name="trash" size={18} color="#FFFFFF" />
