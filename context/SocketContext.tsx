@@ -63,12 +63,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             // router.push(`${notification.navigateTo}?refresh=${Date.now()}` as Href);
           }
         },
-        visibilityTime: 3000,
+        visibilityTime: 5000,
       });
 
       // Wait for toast to be visible before processing next
-      await new Promise((resolve) => setTimeout(resolve, 3500));
-
+      await new Promise((resolve) => setTimeout(resolve, 5500));
       setNotificationQueue((prev) => prev.slice(1));
       setIsProcessingQueue(false);
     };

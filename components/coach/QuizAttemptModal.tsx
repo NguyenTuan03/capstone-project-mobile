@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -29,8 +30,19 @@ export default function QuizAttemptModal({
   useEffect(() => {
     if (attempt) {
       setSelectedAttempt(attempt);
+    } else if (visible && (!attempts || attempts.length === 0)) {
+      Alert.alert(
+        "Ch\u01b0a c\u00f3 b\u00e0i l\u00e0m",
+        "H\u1ecdc vi\u00ean ch\u01b0a l\u00e0m b\u00e0i quiz n\u00e0y",
+        [
+          {
+            text: "\u0110\u00f3ng",
+            onPress: onClose,
+          },
+        ]
+      );
     }
-  }, [attempt]);
+  }, [attempt, attempts, visible, onClose]);
 
   if (!selectedAttempt) return null;
 
@@ -39,7 +51,9 @@ export default function QuizAttemptModal({
     return (
       <View key={index} style={styles.questionCard}>
         <View style={styles.questionHeader}>
-          <Text style={styles.questionNumber}>Câu {index + 1}</Text>
+          <View style={styles.questionNumberBadge}>
+            <Text style={styles.questionNumber}>Câu {index + 1}</Text>
+          </View>
           {isCorrect ? (
             <View style={[styles.statusBadge, styles.correctBadge]}>
               <Ionicons name="checkmark-circle" size={16} color="#059669" />
@@ -73,7 +87,10 @@ export default function QuizAttemptModal({
 
         {!isCorrect && answer.question?.explanation && (
           <View style={styles.explanationContainer}>
-            <Text style={styles.explanationLabel}>Giải thích:</Text>
+            <View style={styles.explanationHeader}>
+              <Ionicons name="information-circle" size={16} color="#059669" />
+              <Text style={styles.explanationLabel}>Giải thích</Text>
+            </View>
             <Text style={styles.explanationText}>
               {answer.question.explanation}
             </Text>
@@ -93,9 +110,9 @@ export default function QuizAttemptModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.headerTitle}>Chi tiết bài làm</Text>
-              <Text style={styles.quizTitle} numberOfLines={1}>
+              <Text style={styles.quizTitle} numberOfLines={2}>
                 {quizTitle}
               </Text>
             </View>
@@ -153,6 +170,13 @@ export default function QuizAttemptModal({
             contentContainerStyle={{ paddingBottom: 20 }}
           >
             <View style={styles.scoreContainer}>
+              <View style={styles.scoreIconContainer}>
+                <Ionicons 
+                  name={selectedAttempt.score >= 80 ? "trophy" : "document-text"} 
+                  size={28} 
+                  color={selectedAttempt.score >= 80 ? "#059669" : "#DC2626"} 
+                />
+              </View>
               <Text style={styles.scoreLabel}>Điểm số</Text>
               <Text
                 style={[
@@ -164,6 +188,17 @@ export default function QuizAttemptModal({
               >
                 {selectedAttempt.score}%
               </Text>
+              <View style={[
+                styles.scoreStatusBadge,
+                selectedAttempt.score >= 80 ? styles.passedBadge : styles.failedBadge
+              ]}>
+                <Text style={[
+                  styles.scoreStatusText,
+                  selectedAttempt.score >= 80 ? styles.passedText : styles.failedText
+                ]}>
+                  {selectedAttempt.score >= 80 ? "\u0110\u1ea1t" : "Ch\u01b0a \u0111\u1ea1t"}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.answersList}>
@@ -195,7 +230,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -203,47 +238,89 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "700",
     color: "#111827",
   },
   quizTitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#6B7280",
-    marginTop: 2,
+    marginTop: 3,
+    fontWeight: "500",
+    lineHeight: 17,
   },
   closeButton: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   scoreContainer: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 16,
     backgroundColor: "#FFFFFF",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
+  scoreIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   scoreLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6B7280",
-    marginBottom: 4,
+    marginBottom: 6,
+    fontWeight: "500",
   },
   scoreValue: {
     fontSize: 32,
-    fontWeight: "bold",
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  scoreStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  passedBadge: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
+  },
+  failedBadge: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+  },
+  scoreStatusText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  passedText: {
+    color: "#059669",
+  },
+  failedText: {
+    color: "#DC2626",
   },
   answersList: {
-    gap: 16,
+    gap: 12,
   },
   questionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
@@ -251,47 +328,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  questionNumberBadge: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   questionNumber: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#374151",
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     gap: 4,
+    borderWidth: 1,
   },
   correctBadge: {
     backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
   },
   wrongBadge: {
     backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
   },
   correctText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
     color: "#059669",
   },
   wrongText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
     color: "#DC2626",
   },
   questionTitle: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
     color: "#111827",
-    marginBottom: 12,
+    marginBottom: 10,
+    lineHeight: 20,
   },
   optionContainer: {
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   correctOption: {
     backgroundColor: "#ECFDF5",
@@ -302,7 +391,9 @@ const styles = StyleSheet.create({
     borderColor: "#DC2626",
   },
   optionText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18,
   },
   correctOptionText: {
     color: "#065F46",
@@ -311,57 +402,66 @@ const styles = StyleSheet.create({
     color: "#991B1B",
   },
   explanationContainer: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: "#F3F4F6",
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#ECFDF5",
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  explanationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
   },
   explanationLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#4B5563",
-    marginBottom: 4,
+    fontWeight: "700",
+    color: "#059669",
   },
   explanationText: {
-    fontSize: 13,
-    color: "#374151",
-    fontStyle: "italic",
+    fontSize: 12,
+    color: "#065F46",
+    lineHeight: 17,
+    fontWeight: "500",
   },
   attemptSelector: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  attemptTab: {
     paddingHorizontal: 16,
     paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+  },
+  attemptTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     marginRight: 8,
     borderRadius: 8,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    minWidth: 80,
+    minWidth: 75,
     alignItems: "center",
   },
   attemptTabActive: {
-    backgroundColor: "#EEF2FF",
-    borderColor: "#6366F1",
+    backgroundColor: "#ECFDF5",
+    borderColor: "#059669",
   },
   attemptTabText: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#6B7280",
     marginBottom: 4,
   },
   attemptTabTextActive: {
-    color: "#6366F1",
+    color: "#059669",
   },
   attemptTabScore: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "700",
   },
   attemptTabScoreActive: {
-    fontWeight: "bold",
+    fontWeight: "700",
   },
 });

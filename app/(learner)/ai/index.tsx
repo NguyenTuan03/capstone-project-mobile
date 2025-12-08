@@ -74,10 +74,17 @@ export default function AIScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Phân tích Video</Text>
-          <Text style={styles.headerSubtitle}>
-            Xem lại các buổi tập được phân tích bằng AI
-          </Text>
+          <View style={styles.headerTitleRow}>
+            <View style={styles.headerIconContainer}>
+              <Ionicons name="sparkles" size={24} color="#059669" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Phân tích Video AI</Text>
+              <Text style={styles.headerSubtitle}>
+                Xem lại các buổi tập được phân tích
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Loading State */}
@@ -120,7 +127,9 @@ export default function AIScreen() {
         {/* Empty State */}
         {!loading && !error && records.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Ionicons name="videocam-outline" size={56} color="#D1D5DB" />
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="analytics-outline" size={48} color="#D1D5DB" />
+            </View>
             <Text style={styles.emptyTitle}>Chưa có phân tích nào</Text>
             <Text style={styles.emptyText}>
               Hoàn thành các buổi tập để nhận phân tích video từ AI
@@ -138,61 +147,64 @@ export default function AIScreen() {
                 onPress={() => handleOpenResult(r)}
                 activeOpacity={0.7}
               >
-                <View style={styles.cardContent}>
-                  {/* Left Section */}
-                  <View style={styles.leftSection}>
-                    {/* Course/Drill Name */}
-                    <Text style={styles.analysisTitle} numberOfLines={2}>
-                      {r.video?.session?.course.name ||
-                        r.video?.title ||
-                        "Phân tích Video"}
+                {/* Course/Drill Name */}
+                <Text style={styles.analysisTitle} numberOfLines={2}>
+                  {r.video?.session?.course.name ||
+                    r.video?.title ||
+                    "Phân tích Video"}
+                </Text>
+
+                {/* Stats Row */}
+                <View style={styles.statsRow}>
+                  {/* Session Badge */}
+                  <View style={styles.sessionBadge}>
+                    <Ionicons name="videocam" size={12} color="#059669" />
+                    <Text style={styles.sessionBadgeText}>
+                      {r.video?.session?.sessionNumber
+                        ? `Buổi ${r.video?.session.sessionNumber}`
+                        : "Buổi tập"}
                     </Text>
-
-                    {/* Session Info */}
-                    <View style={styles.sessionBadge}>
-                      <Text style={styles.sessionBadgeText}>
-                        {r.video?.session?.sessionNumber
-                          ? `Buổi ${r.video?.session.sessionNumber}`
-                          : "Buổi chưa xác định"}
-                      </Text>
-                    </View>
-
-                    {/* Date */}
-                    <View style={styles.metaRow}>
-                      <Ionicons
-                        name="calendar-outline"
-                        size={14}
-                        color="#6B7280"
-                      />
-                      <Text style={styles.meta}>{formatDate(r.createdAt)}</Text>
-                    </View>
                   </View>
 
-                  {/* Right Section - Score */}
-                  <View style={styles.scoreSection}>
-                    <View style={styles.scoreCircle}>
-                      <Text style={styles.score}>{r.learnerScore || 0}</Text>
-                    </View>
-                    <Text style={styles.scoreLabel}>Điểm số</Text>
+                  {/* Score Badge */}
+                  <View style={[
+                    styles.scoreBadge,
+                    (r.learnerScore || 0) >= 70
+                      ? styles.scoreBadgePass
+                      : (r.learnerScore || 0) >= 50
+                      ? styles.scoreBadgeWarning
+                      : styles.scoreBadgeFail
+                  ]}>
+                    <Ionicons 
+                      name={(r.learnerScore || 0) >= 70 ? "checkmark-circle" : "alert-circle"} 
+                      size={12} 
+                      color={(r.learnerScore || 0) >= 70 ? "#059669" : (r.learnerScore || 0) >= 50 ? "#F59E0B" : "#DC2626"}
+                    />
+                    <Text style={[
+                      styles.scoreBadgeText,
+                      (r.learnerScore || 0) >= 70
+                        ? styles.scoreTextPass
+                        : (r.learnerScore || 0) >= 50
+                        ? styles.scoreTextWarning
+                        : styles.scoreTextFail
+                    ]}>
+                      {r.learnerScore || 0}
+                    </Text>
                   </View>
                 </View>
 
-                {/* Status Indicator */}
-                <View style={styles.statusBar}>
-                  <View
-                    style={[
-                      styles.statusIndicator,
-                      {
-                        width: `${Math.min(r.learnerScore || 0, 100)}%`,
-                        backgroundColor:
-                          (r.learnerScore || 0) >= 70
-                            ? "#10B981"
-                            : (r.learnerScore || 0) >= 50
-                            ? "#F59E0B"
-                            : "#EF4444",
-                      },
-                    ]}
+                {/* Date */}
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={13}
+                    color="#6B7280"
                   />
+                  <Text style={styles.meta}>{formatDate(r.createdAt)}</Text>
+                  <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={styles.viewText}>Xem chi tiết</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#059669" />
+                  </View>
                 </View>
               </TouchableOpacity>
             ))}
@@ -219,22 +231,36 @@ const styles = StyleSheet.create({
   scrollContainer: { paddingBottom: 20 },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
     marginBottom: 8,
   },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  headerIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 17,
+    fontWeight: "700",
     color: "#111827",
-    marginBottom: 6,
+    marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
-    lineHeight: 18,
+    lineHeight: 16,
+    fontWeight: "500",
   },
   centerContainer: {
     flex: 1,
@@ -250,150 +276,178 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     marginHorizontal: 16,
-    marginVertical: 20,
-    paddingVertical: 32,
+    marginVertical: 16,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     backgroundColor: "#FEF2F2",
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#FECACA",
     alignItems: "center",
-    gap: 12,
-    minHeight: 280,
+    gap: 10,
+    minHeight: 220,
     justifyContent: "center",
   },
   errorTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#7F1D1D",
-    marginTop: 8,
+    marginTop: 6,
   },
   errorText: {
     fontSize: 13,
     color: "#991B1B",
     textAlign: "center",
     lineHeight: 18,
+    fontWeight: "500",
   },
   retryButton: {
     backgroundColor: "#EF4444",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    marginTop: 8,
+    marginTop: 6,
+    shadowColor: "#EF4444",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   retryButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
+    letterSpacing: 0.3,
   },
   emptyContainer: {
     marginHorizontal: 16,
-    marginVertical: 40,
-    paddingVertical: 40,
+    marginVertical: 24,
+    paddingVertical: 32,
     paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     alignItems: "center",
-    gap: 12,
-    minHeight: 320,
+    gap: 10,
+    minHeight: 250,
     justifyContent: "center",
   },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
-    marginTop: 12,
+    marginTop: 6,
   },
   emptyText: {
     fontSize: 13,
     color: "#6B7280",
     textAlign: "center",
     lineHeight: 18,
-    marginTop: 4,
+    marginTop: 2,
+    fontWeight: "500",
   },
   recordsContainer: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
   analysisCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  cardContent: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  leftSection: {
-    flex: 1,
-    marginRight: 12,
+    borderRadius: 10,
+    padding: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   analysisTitle: {
     fontWeight: "700",
     color: "#111827",
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     marginBottom: 8,
   },
   sessionBadge: {
-    backgroundColor: "#DBEAFE",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ECFDF5",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 8,
-    alignSelf: "flex-start",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
   },
   sessionBadgeText: {
-    color: "#0369A1",
-    fontSize: 12,
-    fontWeight: "600",
+    color: "#059669",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  scoreBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  scoreBadgePass: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
+  },
+  scoreBadgeWarning: {
+    backgroundColor: "#FEF3C7",
+    borderColor: "#FCD34D",
+  },
+  scoreBadgeFail: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+  },
+  scoreBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  scoreTextPass: {
+    color: "#059669",
+  },
+  scoreTextWarning: {
+    color: "#F59E0B",
+  },
+  scoreTextFail: {
+    color: "#DC2626",
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   meta: {
     color: "#6B7280",
     fontSize: 12,
+    fontWeight: "500",
   },
-  scoreSection: {
-    alignItems: "center",
-    gap: 6,
-  },
-  scoreCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 2,
-    borderColor: "#10B981",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  score: {
+  viewText: {
     color: "#059669",
-    fontWeight: "800",
-    fontSize: 16,
-  },
-  scoreLabel: {
-    color: "#6B7280",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  statusBar: {
-    height: 4,
-    backgroundColor: "#E5E7EB",
-    width: "100%",
-  },
-  statusIndicator: {
-    height: "100%",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

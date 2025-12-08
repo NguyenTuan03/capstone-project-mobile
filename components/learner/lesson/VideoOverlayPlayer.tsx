@@ -55,6 +55,14 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
   const [sliderValues, setSliderValues] = useState({ coach: 0, learner: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    coachNote: true,
+    score: true,
+    summary: true,
+    details: true,
+    keyDifferences: true,
+    recommendations: true,
+  });
 
   useEffect(() => {
     if (visible) {
@@ -239,6 +247,13 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
     setOpacityDisplay(val);
   }, []);
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   return (
     <Modal
       visible={visible}
@@ -397,11 +412,11 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                             : "play-circle"
                         }
                         size={28}
-                        color="#10B981"
+                        color="#059669"
                       />
                     </TouchableOpacity>
                   )}
-                  <Text style={[styles.sliderLabel, { color: "#10B981" }]}>
+                  <Text style={[styles.sliderLabel, { color: "#059669" }]}>
                     Học viên
                   </Text>
                 </View>
@@ -425,9 +440,9 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                 onSlidingComplete={(val: number) =>
                   handleSeekComplete("learner", val)
                 }
-                minimumTrackTintColor="#10B981"
+                minimumTrackTintColor="#059669"
                 maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
-                thumbTintColor="#10B981"
+                thumbTintColor="#059669"
               />
             </View>
 
@@ -518,10 +533,26 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {/* Coach Note - Moved to top */}
                   {aiAnalysisResult.coachNote && (
                     <View style={styles.coachNoteContainer}>
-                      <Text style={styles.sectionTitle}>Ghi chú từ HLV</Text>
-                      <Text style={styles.coachNoteText}>
-                        {aiAnalysisResult.coachNote}
-                      </Text>
+                      <TouchableOpacity
+                        style={styles.collapsibleHeader}
+                        onPress={() => toggleSection('coachNote')}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Ionicons name="create" size={16} color="#059669" />
+                          <Text style={styles.sectionTitle}>Ghi chú từ HLV</Text>
+                        </View>
+                        <Ionicons
+                          name={expandedSections.coachNote ? "chevron-up" : "chevron-down"}
+                          size={20}
+                          color="#059669"
+                        />
+                      </TouchableOpacity>
+                      {expandedSections.coachNote && (
+                        <Text style={styles.coachNoteText}>
+                          {aiAnalysisResult.coachNote}
+                        </Text>
+                      )}
                     </View>
                   )}
 
@@ -538,10 +569,26 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {/* Summary */}
                   {aiAnalysisResult.summary && (
                     <View style={styles.summaryContainer}>
-                      <Text style={styles.sectionTitle}>Tóm tắt</Text>
-                      <Text style={styles.summaryText}>
-                        {aiAnalysisResult.summary}
-                      </Text>
+                      <TouchableOpacity
+                        style={styles.collapsibleHeader}
+                        onPress={() => toggleSection('summary')}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Ionicons name="document-text" size={16} color="#059669" />
+                          <Text style={styles.sectionTitle}>Tóm tắt</Text>
+                        </View>
+                        <Ionicons
+                          name={expandedSections.summary ? "chevron-up" : "chevron-down"}
+                          size={20}
+                          color="#6B7280"
+                        />
+                      </TouchableOpacity>
+                      {expandedSections.summary && (
+                        <Text style={styles.summaryText}>
+                          {aiAnalysisResult.summary}
+                        </Text>
+                      )}
                     </View>
                   )}
 
@@ -549,9 +596,24 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {aiAnalysisResult.details &&
                     aiAnalysisResult.details.length > 0 && (
                       <View style={styles.detailsContainer}>
-                        <Text style={styles.sectionTitle}>
-                          Phân tích theo giai đoạn
-                        </Text>
+                        <TouchableOpacity
+                          style={styles.collapsibleHeaderAlt}
+                          onPress={() => toggleSection('details')}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Ionicons name="list" size={16} color="#059669" />
+                            <Text style={styles.sectionTitle}>
+                              Phân tích theo giai đoạn
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name={expandedSections.details ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                        {expandedSections.details && (<>
                         {aiAnalysisResult.details.map((detail, index) => (
                           <TouchableOpacity
                             key={index}
@@ -603,9 +665,12 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                             {detail.weaknesses &&
                               detail.weaknesses.length > 0 && (
                                 <View style={styles.weaknessesContainer}>
-                                  <Text style={styles.weaknessesLabel}>
-                                    ⚠ Điểm yếu:
-                                  </Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                    <Ionicons name="close-circle" size={14} color="#DC2626" />
+                                    <Text style={styles.weaknessesLabel}>
+                                      Điểm yếu:
+                                    </Text>
+                                  </View>
                                   {detail.weaknesses.map((weakness, i) => (
                                     <Text key={i} style={styles.weaknessText}>
                                       • {weakness}
@@ -615,6 +680,8 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                               )}
                           </TouchableOpacity>
                         ))}
+                        </>
+                        )}
                       </View>
                     )}
 
@@ -622,9 +689,24 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {aiAnalysisResult.keyDifferents &&
                     aiAnalysisResult.keyDifferents.length > 0 && (
                       <View style={styles.differencesContainer}>
-                        <Text style={styles.sectionTitle}>
-                          Điểm khác biệt chính
-                        </Text>
+                        <TouchableOpacity
+                          style={styles.collapsibleHeaderAlt}
+                          onPress={() => toggleSection('keyDifferences')}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Ionicons name="git-compare" size={16} color="#F59E0B" />
+                            <Text style={styles.sectionTitle}>
+                              Điểm khác biệt chính
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name={expandedSections.keyDifferences ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                        {expandedSections.keyDifferences && (<>
                         {aiAnalysisResult.keyDifferents.map((diff, index) => (
                           <View key={index} style={styles.differenceItem}>
                             <Text style={styles.differenceAspect}>
@@ -643,6 +725,8 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                             </Text>
                           </View>
                         ))}
+                        </>
+                        )}
                       </View>
                     )}
 
@@ -650,9 +734,24 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                   {aiAnalysisResult.recommendationDrills &&
                     aiAnalysisResult.recommendationDrills.length > 0 && (
                       <View style={styles.recommendationsContainer}>
-                        <Text style={styles.sectionTitle}>
-                          Khuyến nghị & Bài tập
-                        </Text>
+                        <TouchableOpacity
+                          style={styles.collapsibleHeaderAlt}
+                          onPress={() => toggleSection('recommendations')}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Ionicons name="fitness" size={16} color="#059669" />
+                            <Text style={styles.sectionTitle}>
+                              Khuyến nghị & Bài tập
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name={expandedSections.recommendations ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                        {expandedSections.recommendations && (<>
                         {aiAnalysisResult.recommendationDrills.map(
                           (drill, index) => (
                             <View key={index} style={styles.recommendationItem}>
@@ -667,6 +766,8 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                               </Text>
                             </View>
                           )
+                        )}
+                        </>
                         )}
                       </View>
                     )}
@@ -695,26 +796,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   closeButton: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
     backgroundColor: "#F3F4F6",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
   },
   headerTitle: {
-    color: "#1F2937",
+    color: "#111827",
     fontSize: 17,
     fontWeight: "700",
-    letterSpacing: 0.3,
   },
   modeButton: {
     flexDirection: "row",
@@ -771,14 +869,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: "rgba(16, 185, 129, 0.85)",
+    backgroundColor: "rgba(5, 150, 105, 0.9)",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     zIndex: 10,
     borderWidth: 1.5,
-    borderColor: "#10B981",
-    shadowColor: "#10B981",
+    borderColor: "#ECFDF5",
+    shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -809,34 +907,38 @@ const styles = StyleSheet.create({
   },
   videoLabelTag: {
     position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    paddingHorizontal: 8,
+    top: 8,
+    left: 8,
+    backgroundColor: "rgba(5, 150, 105, 0.9)",
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
     zIndex: 10,
-    borderWidth: 1,
-    borderColor: "#059669",
+    borderWidth: 1.5,
+    borderColor: "#ECFDF5",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   videoLabelText: {
-    color: "#10B981",
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.2,
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     zIndex: 20,
+    gap: 12,
   },
   loadingText: {
-    color: "#10B981",
-    marginTop: 10,
-    fontSize: 16,
-    fontWeight: "600",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
   verticalSliderContainer: {
     position: "absolute",
@@ -866,40 +968,40 @@ const styles = StyleSheet.create({
   },
   controlsContainer: {
     flexGrow: 0,
-    padding: 14,
-    paddingBottom: 34,
+    padding: 12,
+    paddingBottom: 24,
     justifyContent: "flex-end",
     backgroundColor: "#FFFFFF",
   },
   slidersContainer: {
-    gap: 12,
+    gap: 10,
     backgroundColor: "#F9FAFB",
-    padding: 14,
+    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
-  sliderRow: { gap: 4 },
+  sliderRow: { gap: 3 },
   sliderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  sliderLabelContainer: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sliderLabel: { fontSize: 13, fontWeight: "600", color: "#374151" },
+  sliderLabelContainer: { flexDirection: "row", alignItems: "center", gap: 6 },
+  sliderLabel: { fontSize: 12, fontWeight: "700", color: "#374151" },
   timeValue: {
     color: "#059669",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
-  durationText: { color: "#9CA3AF", fontSize: 11, fontWeight: "500" },
+  durationText: { color: "#9CA3AF", fontSize: 10, fontWeight: "500" },
   analysisButton: {
-    marginTop: 12,
+    marginTop: 10,
     backgroundColor: "#059669",
     borderRadius: 8,
-    padding: 14,
+    padding: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -916,56 +1018,55 @@ const styles = StyleSheet.create({
   },
   analysisButtonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.3,
   },
   analysisModalContainer: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   analysisModalContent: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
     maxHeight: "85%",
-    borderTopWidth: 2,
-    borderTopColor: "#059669",
-    shadowColor: "#059669",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 8,
   },
   analysisHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
-  analysisTitle: { fontSize: 18, fontWeight: "700", color: "#059669" },
+  analysisTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   scoreContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#F0FDF4",
-    padding: 14,
+    backgroundColor: "#ECFDF5",
+    padding: 12,
     borderRadius: 10,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#D1FAE5",
+    borderColor: "#A7F3D0",
   },
-  scoreLabel: { fontSize: 13, fontWeight: "600", color: "#059669" },
+  scoreLabel: { fontSize: 12, fontWeight: "700", color: "#059669" },
   scoreValue: { fontSize: 24, fontWeight: "700", color: "#059669" },
   summaryContainer: {
     backgroundColor: "#F9FAFB",
     padding: 12,
     borderRadius: 10,
-    marginBottom: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
@@ -973,19 +1074,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#059669",
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    marginBottom: 0,
   },
-  summaryText: { fontSize: 13, color: "#4B5563", lineHeight: 20 },
-  detailsContainer: { marginBottom: 14 },
+  collapsibleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  collapsibleHeaderAlt: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  summaryText: { fontSize: 13, color: "#374151", lineHeight: 19, fontWeight: "500" },
+  detailsContainer: { marginBottom: 10 },
   detailItem: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   detailHeader: {
     flexDirection: "row",
@@ -996,44 +1112,52 @@ const styles = StyleSheet.create({
   detailType: { fontSize: 13, fontWeight: "700", color: "#059669" },
   detailAdvanced: {
     fontSize: 12,
-    color: "#4B5563",
+    color: "#374151",
     marginBottom: 8,
     lineHeight: 18,
+    fontWeight: "500",
   },
-  strengthsContainer: { marginTop: 8 },
+  strengthsContainer: { marginTop: 6 },
   strengthsLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#047857",
-    marginBottom: 6,
+    color: "#059669",
+    marginBottom: 4,
   },
   strengthText: {
     fontSize: 12,
     color: "#059669",
     marginLeft: 6,
-    lineHeight: 18,
+    lineHeight: 17,
+    fontWeight: "500",
   },
-  weaknessesContainer: { marginTop: 8 },
+  weaknessesContainer: { marginTop: 6 },
   weaknessesLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#D97706",
-    marginBottom: 6,
+    color: "#DC2626",
+    marginBottom: 4,
   },
   weaknessText: {
     fontSize: 12,
-    color: "#F59E0B",
+    color: "#DC2626",
     marginLeft: 6,
-    lineHeight: 18,
+    lineHeight: 17,
+    fontWeight: "500",
   },
-  differencesContainer: { marginBottom: 14 },
+  differencesContainer: { marginBottom: 10 },
   differenceItem: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   differenceAspect: {
     fontSize: 13,
@@ -1043,25 +1167,30 @@ const styles = StyleSheet.create({
   },
   analysisText: {
     fontSize: 12,
-    color: "#4B5563",
+    color: "#374151",
     marginBottom: 4,
-    lineHeight: 18,
+    lineHeight: 17,
+    fontWeight: "500",
   },
   impactText: {
     fontSize: 12,
     color: "#6B7280",
     fontWeight: "500",
     marginTop: 6,
-    fontStyle: "italic",
   },
-  recommendationsContainer: { marginBottom: 14 },
+  recommendationsContainer: { marginBottom: 10 },
   recommendationItem: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   drillTitle: {
     fontSize: 13,
@@ -1071,51 +1200,50 @@ const styles = StyleSheet.create({
   },
   drillText: {
     fontSize: 12,
-    color: "#4B5563",
+    color: "#374151",
     marginBottom: 6,
-    lineHeight: 18,
+    lineHeight: 17,
+    fontWeight: "500",
   },
   drillSets: {
     fontSize: 11,
-    color: "#9CA3AF",
-    fontStyle: "italic",
-    fontWeight: "500",
+    color: "#6B7280",
+    fontWeight: "700",
   },
   coachNoteContainer: {
-    backgroundColor: "#F0FDF4",
-    padding: 14,
+    backgroundColor: "#ECFDF5",
+    padding: 12,
     borderRadius: 10,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#D1FAE5",
+    borderColor: "#A7F3D0",
   },
   coachNoteText: {
     fontSize: 13,
-    color: "#047857",
-    lineHeight: 20,
+    color: "#059669",
+    lineHeight: 19,
     fontWeight: "500",
   },
   timestampContainer: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginTop: 6,
+    marginBottom: 6,
   },
   timestampLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#059669",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#ECFDF5",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    fontWeight: "600",
-    borderWidth: 0.5,
-    borderColor: "#D1FAE5",
+    borderRadius: 8,
+    fontWeight: "700",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
   },
   timestampText: {
     fontSize: 10,
     color: "#9CA3AF",
-    fontStyle: "italic",
     textAlign: "center",
     marginTop: 8,
     fontWeight: "500",

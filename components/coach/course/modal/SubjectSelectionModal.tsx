@@ -3,13 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type SubjectSelectionModalProps = {
@@ -80,8 +80,14 @@ export default function SubjectSelectionModal({
             <ScrollView>
               <View style={styles.lessonPreviewContainer}>
                 <Text style={styles.lessonPreviewTitle}>
-                  Danh sách bài học ({previewSubject.lessons?.length || 0} bài)
+                  Danh sách bài học ({previewSubject.lessons?.length || 0} bài học)
                 </Text>
+                <View style={styles.infoBox}>
+                  <Ionicons name="information-circle" size={18} color="#059669" />
+                  <Text style={styles.infoText}>
+                   Số lượng bài học {previewSubject.lessons?.length || 0} sẽ là số lượng buổi học của khóa.
+                  </Text>
+                </View>
                 {previewSubject.lessons && previewSubject.lessons.length > 0 ? (
                   previewSubject.lessons.map((lesson: any, index: number) => (
                     <View
@@ -140,26 +146,26 @@ export default function SubjectSelectionModal({
             </View>
           ) : (
             <ScrollView>
-              {subjects.map((subject) => (
-                <TouchableOpacity
-                  key={subject.id}
-                  style={[
-                    styles.modalItem,
-                    selectedSubjectId === subject.id &&
-                      styles.modalItemSelected,
-                  ]}
-                  onPress={() => setPreviewSubject(subject)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.modalItemText}>{subject.name}</Text>
-                    <Text style={styles.hint}>
-                      {subject.lessons?.length || 0} bài học
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="#6B7280" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                {subjects.map((subject) => (
+                  <TouchableOpacity
+                    key={subject.id}
+                    style={[
+                      styles.modalItem,
+                      selectedSubjectId === subject.id &&
+                        styles.modalItemSelected,
+                    ]}
+                    onPress={() => setPreviewSubject(subject)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.modalItemText}>{subject.name}</Text>
+                      <Text style={styles.hint}>
+                        {subject.lessons?.length || 0} bài học
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
           )}
         </View>
       </View>
@@ -344,5 +350,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: 0.3,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#ECFDF5",
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "600",
+    lineHeight: 17,
   },
 });

@@ -179,7 +179,10 @@ export default function LearnerProgressModal({
             {/* Video */}
             {session.video && (
               <View style={styles.sectionBlock}>
-                <Text style={styles.sectionTitle}>Video bài giảng</Text>
+                <View style={styles.sectionTitleRow}>
+                  <Ionicons name="play-circle" size={16} color="#059669" />
+                  <Text style={styles.sectionTitle}>Video bài giảng</Text>
+                </View>
                 <TouchableOpacity
                   style={styles.videoItem}
                   onPress={() =>
@@ -187,36 +190,30 @@ export default function LearnerProgressModal({
                   }
                   disabled={loadingVideos}
                 >
-                  <View style={styles.videoHeader}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        flex: 1,
-                      }}
-                    >
-                      <Ionicons name="play-circle" size={20} color="#059669" />
-                      <Text style={styles.videoTitle} numberOfLines={1}>
-                        {session.video.title}
-                      </Text>
-                    </View>
-                    {loadingVideos ? (
-                      <ActivityIndicator size="small" color="#059669" />
-                    ) : (
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#9CA3AF"
-                      />
-                    )}
+                  <View style={styles.videoContent}>
+                    <Text style={styles.videoTitle} numberOfLines={2}>
+                      {session.video.title}
+                    </Text>
                   </View>
+                  {loadingVideos ? (
+                    <ActivityIndicator size="small" color="#059669" />
+                  ) : (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  )}
                 </TouchableOpacity>
               </View>
             )}
             {/* Quiz */}
             {session.quiz && (
               <View style={styles.sectionBlock}>
-                <Text style={styles.sectionTitle}>Bài tập Quiz</Text>
+                <View style={styles.sectionTitleRow}>
+                  <Ionicons name="document-text" size={16} color="#F59E0B" />
+                  <Text style={styles.sectionTitle}>Bài tập Quiz</Text>
+                </View>
                 <TouchableOpacity
                   style={styles.videoItem}
                   onPress={() =>
@@ -224,29 +221,20 @@ export default function LearnerProgressModal({
                   }
                   disabled={loadingQuizAttempts}
                 >
-                  <View style={styles.videoHeader}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        flex: 1,
-                      }}
-                    >
-                      <Ionicons name="help-circle" size={20} color="#F59E0B" />
-                      <Text style={styles.videoTitle} numberOfLines={1}>
-                        {session.quiz.title}
-                      </Text>
-                    </View>
-                    {loadingQuizAttempts ? (
-                      <ActivityIndicator size="small" color="#F59E0B" />
-                    ) : (
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#9CA3AF"
-                      />
-                    )}
+                  <View style={styles.videoContent}>
+                    <Text style={styles.videoTitle} numberOfLines={2}>
+                      {session.quiz.title}
+                    </Text>
                   </View>
+                  {loadingQuizAttempts ? (
+                    <ActivityIndicator size="small" color="#F59E0B" />
+                  ) : (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  )}
                 </TouchableOpacity>
               </View>
             )}
@@ -285,9 +273,11 @@ export default function LearnerProgressModal({
               style={styles.content}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.courseName}>sdsd</Text>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
+                  <View style={styles.statIconContainer}>
+                    <Ionicons name="sparkles" size={18} color="#059669" />
+                  </View>
                   <Text style={styles.statValue}>
                     {learner.avgAiAnalysisScore}
                   </Text>
@@ -295,18 +285,30 @@ export default function LearnerProgressModal({
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
+                  <View style={styles.statIconContainer}>
+                    <Ionicons name="document-text" size={18} color="#F59E0B" />
+                  </View>
                   <Text style={styles.statValue}>{learner.avgQuizScore}</Text>
                   <Text style={styles.statLabel}>Điểm Quiz</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
+                  <View style={styles.statIconContainer}>
+                    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                  </View>
                   <Text style={styles.statValue}>
                     {learner.sessionsCompleted}/{learner.totalSessions}
                   </Text>
                   <Text style={styles.statLabel}>Hoàn thành</Text>
                 </View>
               </View>
-              <Text style={styles.sectionHeader}>Danh sách buổi học</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Ionicons name="calendar-outline" size={18} color="#059669" />
+                <Text style={styles.sectionHeader}>Danh sách buổi học</Text>
+                <View style={styles.sessionCountBadge}>
+                  <Text style={styles.sessionCountText}>{sessions.length}</Text>
+                </View>
+              </View>
               <View style={styles.sessionsList}>
                 {sessions
                   ?.sort((a, b) => a.sessionNumber - b.sessionNumber)
@@ -352,7 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -360,17 +362,23 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "700",
     color: "#111827",
   },
   learnerName: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#6B7280",
-    marginTop: 2,
+    marginTop: 3,
+    fontWeight: "500",
   },
   closeButton: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingContainer: {
     flex: 1,
@@ -379,56 +387,81 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
-  },
-  courseName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 16,
+    padding: 16,
   },
   statsRow: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   statItem: {
     flex: 1,
     alignItems: "center",
+    gap: 4,
+  },
+  statIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#059669",
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
+    fontWeight: "500",
   },
   statDivider: {
     width: 1,
     backgroundColor: "#E5E7EB",
   },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#374151",
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
+    gap: 8,
+  },
+  sectionHeader: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+    flex: 1,
+  },
+  sessionCountBadge: {
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  sessionCountText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
   },
   sessionsList: {
-    gap: 12,
+    gap: 10,
   },
   sessionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -437,48 +470,63 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
     backgroundColor: "#FFFFFF",
   },
   sessionInfo: {
     flex: 1,
   },
   sessionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: "#111827",
     marginBottom: 4,
   },
   sessionDate: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
+    fontWeight: "500",
   },
   sessionContent: {
-    padding: 16,
+    padding: 12,
     paddingTop: 0,
     backgroundColor: "#F9FAFB",
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: "#E5E7EB",
   },
   sectionBlock: {
-    marginTop: 16,
+    marginTop: 12,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#4B5563",
-    marginBottom: 8,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
   },
   videoItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    gap: 8,
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  videoContent: {
+    flex: 1,
+    marginRight: 8,
   },
   videoTitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#374151",
-    flex: 1,
+    fontWeight: "500",
+    lineHeight: 18,
   },
   videoHeader: {
     flexDirection: "row",

@@ -1028,7 +1028,7 @@ export default function CreateEditCourseModal({
                 />
               </View>
               <Text style={styles.hintText}>
-                Nhập mã cuộc họp Google Meet (ví dụ: abc-defg-xyz)
+                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến học.
               </Text>
             </View>
 
