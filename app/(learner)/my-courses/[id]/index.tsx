@@ -370,7 +370,7 @@ export default function CourseDetailScreen() {
       {/* Header - Premium */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(learner)/my-courses")}
           activeOpacity={0.7}
           style={styles.backButton}
         >

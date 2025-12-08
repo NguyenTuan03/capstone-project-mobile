@@ -36,6 +36,13 @@ export default function LearnerVideoModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coachNote, setCoachNote] = useState("");
+  const [expandedSections, setExpandedSections] = useState({
+    summary: true,
+    keyDifferences: true,
+    details: true,
+    recommendations: true,
+    coachNote: true,
+  });
   const videoRef = useRef<Video>(null);
 
   useEffect(() => {
@@ -148,6 +155,13 @@ export default function LearnerVideoModal({
 
   const aiResult = getLatestAiResult(selectedVideo);
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   return (
     <Modal
       visible={visible}
@@ -159,9 +173,9 @@ export default function LearnerVideoModal({
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.headerTitle}>Video học viên</Text>
-              <Text style={styles.videoTitle} numberOfLines={1}>
+              <Text style={styles.videoTitle} numberOfLines={2}>
                 {videoTitle}
               </Text>
             </View>
@@ -202,18 +216,23 @@ export default function LearnerVideoModal({
                           Lần {index + 1}
                         </Text>
                         {latestResult?.learnerScore && (
-                          <Text
-                            style={[
-                              styles.videoTabScore,
-                              selectedVideo?.id === video.id &&
-                                styles.videoTabScoreActive,
-                              latestResult.learnerScore >= 70
-                                ? { color: "#059669" }
-                                : { color: "#DC2626" },
-                            ]}
-                          >
-                            {latestResult.learnerScore}đ
-                          </Text>
+                          <View style={[
+                            styles.scoreTabBadge,
+                            latestResult.learnerScore >= 70
+                              ? styles.passScoreBadge
+                              : styles.failScoreBadge
+                          ]}>
+                            <Text
+                              style={[
+                                styles.videoTabScore,
+                                latestResult.learnerScore >= 70
+                                  ? { color: "#059669" }
+                                  : { color: "#DC2626" },
+                              ]}
+                            >
+                              {latestResult.learnerScore}đ
+                            </Text>
+                          </View>
                         )}
                       </TouchableOpacity>
                     );
@@ -249,25 +268,58 @@ export default function LearnerVideoModal({
                 {/* Score */}
                 {aiResult.learnerScore !== null && (
                   <View style={styles.scoreCard}>
-                    <Text style={styles.scoreLabel}>Điểm đánh giá</Text>
+                    <View style={styles.scoreIconContainer}>
+                      <Ionicons 
+                        name={aiResult.learnerScore >= 50 ? "trophy" : "analytics"} 
+                        size={28} 
+                        color={aiResult.learnerScore >= 50 ? "#059669" : "#DC2626"} 
+                      />
+                    </View>
+                    <Text style={styles.scoreLabel}>Đánh giá từ AI</Text>
                     <Text
                       style={[
                         styles.scoreValue,
-                        aiResult.learnerScore >= 70
+                        aiResult.learnerScore >= 50
                           ? { color: "#059669" }
                           : { color: "#DC2626" },
                       ]}
                     >
                       {aiResult.learnerScore}/100
                     </Text>
+                    <View style={[
+                      styles.scoreStatusBadge,
+                      aiResult.learnerScore >= 50 ? styles.passedBadge : styles.failedBadge
+                    ]}>
+                      <Text style={[
+                        styles.scoreStatusText,
+                        aiResult.learnerScore >= 50 ? styles.passedText : styles.failedText
+                      ]}>
+                        {aiResult.learnerScore >= 50 ? "Đạt" : "Chưa đạt"}
+                      </Text>
+                    </View>
                   </View>
                 )}
 
                 {/* Summary */}
                 {aiResult.summary && (
                   <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Tổng quan</Text>
-                    <Text style={styles.cardContent}>{aiResult.summary}</Text>
+                    <TouchableOpacity
+                      style={styles.cardTitleRow}
+                      onPress={() => toggleSection('summary')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="document-text" size={18} color="#059669" />
+                      <Text style={styles.cardTitle}>Tổng quan</Text>
+                      <Ionicons
+                        name={expandedSections.summary ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#6B7280"
+                        style={{ marginLeft: 'auto' }}
+                      />
+                    </TouchableOpacity>
+                    {expandedSections.summary && (
+                      <Text style={styles.cardContent}>{aiResult.summary}</Text>
+                    )}
                   </View>
                 )}
 
@@ -275,7 +327,21 @@ export default function LearnerVideoModal({
                 {aiResult.keyDifferents &&
                   aiResult.keyDifferents.length > 0 && (
                     <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Điểm khác biệt chính</Text>
+                      <TouchableOpacity
+                        style={styles.cardTitleRow}
+                        onPress={() => toggleSection('keyDifferences')}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="git-compare" size={18} color="#F59E0B" />
+                        <Text style={styles.cardTitle}>Điểm khác biệt chính</Text>
+                        <Ionicons
+                          name={expandedSections.keyDifferences ? "chevron-up" : "chevron-down"}
+                          size={20}
+                          color="#6B7280"
+                          style={{ marginLeft: 'auto' }}
+                        />
+                      </TouchableOpacity>
+                      {expandedSections.keyDifferences && (<>
                       {aiResult.keyDifferents.map((diff, index) => (
                         <View key={index} style={styles.differenceItem}>
                           <Text style={styles.differenceAspect}>
@@ -291,18 +357,37 @@ export default function LearnerVideoModal({
                               </Text>
                             </View>
                           </View>
-                          <Text style={styles.impactText}>
-                            💡 {diff.impact}
-                          </Text>
+                          <View style={styles.impactContainer}>
+                            <Ionicons name="information-circle" size={14} color="#6B7280" />
+                            <Text style={styles.impactText}>
+                              {diff.impact}
+                            </Text>
+                          </View>
                         </View>
                       ))}
+                      </>
+                    )}
                     </View>
                   )}
 
                 {/* Details */}
                 {aiResult.details && aiResult.details.length > 0 && (
                   <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Chi tiết phân tích</Text>
+                    <TouchableOpacity
+                      style={styles.cardTitleRow}
+                      onPress={() => toggleSection('details')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="list" size={18} color="#6366F1" />
+                      <Text style={styles.cardTitle}>Chi tiết phân tích</Text>
+                      <Ionicons
+                        name={expandedSections.details ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#6B7280"
+                        style={{ marginLeft: 'auto' }}
+                      />
+                    </TouchableOpacity>
+                    {expandedSections.details && (<>
                     {aiResult.details.map((detail, index) => (
                       <View key={index} style={styles.detailItem}>
                         <Text style={styles.detailType}>
@@ -311,7 +396,10 @@ export default function LearnerVideoModal({
                         <Text style={styles.detailText}>{detail.advanced}</Text>
                         {detail.strengths && detail.strengths.length > 0 && (
                           <View style={styles.listSection}>
-                            <Text style={styles.listTitle}>✓ Điểm mạnh:</Text>
+                            <View style={styles.listTitleRow}>
+                              <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                              <Text style={styles.listTitle}>Điểm mạnh:</Text>
+                            </View>
                             {detail.strengths.map((strength, i) => (
                               <Text key={i} style={styles.strengthText}>
                                 • {strength}
@@ -321,9 +409,10 @@ export default function LearnerVideoModal({
                         )}
                         {detail.weaknesses && detail.weaknesses.length > 0 && (
                           <View style={styles.listSection}>
-                            <Text style={styles.listTitle}>
-                              ⚠ Cần cải thiện:
-                            </Text>
+                            <View style={styles.listTitleRow}>
+                              <Ionicons name="close-circle" size={14} color="#DC2626" />
+                              <Text style={styles.listTitle}>Cần cải thiện:</Text>
+                            </View>
                             {detail.weaknesses.map((weakness, i) => (
                               <Text key={i} style={styles.weaknessText}>
                                 • {weakness}
@@ -333,14 +422,30 @@ export default function LearnerVideoModal({
                         )}
                       </View>
                     ))}
-                  </View>
-                )}
+                      </>
+                    )}
+                    </View>
+                  )}
 
                 {/* Recommendations */}
                 {aiResult.recommendationDrills &&
                   aiResult.recommendationDrills.length > 0 && (
                     <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Bài tập đề xuất</Text>
+                      <TouchableOpacity
+                        style={styles.cardTitleRow}
+                        onPress={() => toggleSection('recommendations')}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="fitness" size={18} color="#059669" />
+                        <Text style={styles.cardTitle}>Bài tập đề xuất</Text>
+                        <Ionicons
+                          name={expandedSections.recommendations ? "chevron-up" : "chevron-down"}
+                          size={20}
+                          color="#6B7280"
+                          style={{ marginLeft: 'auto' }}
+                        />
+                      </TouchableOpacity>
+                      {expandedSections.recommendations && (<>
                       {aiResult.recommendationDrills.map((drill, index) => (
                         <View key={index} style={styles.drillItem}>
                           <Text style={styles.drillName}>{drill.name}</Text>
@@ -352,42 +457,61 @@ export default function LearnerVideoModal({
                           </Text>
                         </View>
                       ))}
+                      </>
+                    )}
                     </View>
                   )}
 
                 {/* Coach Note Input */}
                 <View style={[styles.card, { paddingBottom: 200 }]}>
-                  <Text style={styles.cardTitle}>Ghi chú của HLV</Text>
-                  {aiResult.coachNote ? (
-                    <Text style={styles.cardContent}>{aiResult.coachNote}</Text>
-                  ) : (
-                    <View>
-                      <TextInput
-                        style={styles.coachNoteInput}
-                        placeholder="Nhập ghi chú, nhận xét cho học viên..."
-                        multiline
-                        numberOfLines={4}
-                        value={coachNote}
-                        onChangeText={setCoachNote}
-                        textAlignVertical="top"
-                      />
-                      <TouchableOpacity
-                        style={[
-                          styles.submitButton,
-                          isSubmitting && { opacity: 0.6 },
-                        ]}
-                        onPress={handleSubmitCoachNote}
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <ActivityIndicator color="#FFFFFF" size="small" />
-                        ) : (
-                          <Text style={styles.submitButtonText}>
-                            Lưu ghi chú
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
+                  <TouchableOpacity
+                    style={styles.cardTitleRow}
+                    onPress={() => toggleSection('coachNote')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="create" size={18} color="#059669" />
+                    <Text style={styles.cardTitle}>Ghi chú của HLV</Text>
+                    <Ionicons
+                      name={expandedSections.coachNote ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color="#6B7280"
+                      style={{ marginLeft: 'auto' }}
+                    />
+                  </TouchableOpacity>
+                  {expandedSections.coachNote && (
+                    <>
+                      {aiResult.coachNote ? (
+                        <Text style={styles.cardContent}>{aiResult.coachNote}</Text>
+                      ) : (
+                        <View>
+                          <TextInput
+                            style={styles.coachNoteInput}
+                            placeholder="Nhập ghi chú, nhận xét cho học viên..."
+                            multiline
+                            numberOfLines={4}
+                            value={coachNote}
+                            onChangeText={setCoachNote}
+                            textAlignVertical="top"
+                          />
+                          <TouchableOpacity
+                            style={[
+                              styles.submitButton,
+                              isSubmitting && { opacity: 0.6 },
+                            ]}
+                            onPress={handleSubmitCoachNote}
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? (
+                              <ActivityIndicator color="#FFFFFF" size="small" />
+                            ) : (
+                              <Text style={styles.submitButtonText}>
+                                Lưu ghi chú
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               </View>
@@ -395,10 +519,21 @@ export default function LearnerVideoModal({
 
             {!aiResult && (
               <View style={styles.noAnalysis}>
-                <Ionicons name="analytics-outline" size={48} color="#6366F1" />
-                <Text style={styles.noAnalysisText}>
-                  Chưa có phân tích AI cho video này
+                <View style={styles.noAnalysisIconContainer}>
+                  <Ionicons name="analytics-outline" size={48} color="#D1D5DB" />
+                </View>
+                <Text style={styles.noAnalysisTitle}>
+                  Chưa có phân tích AI
                 </Text>
+                <Text style={styles.noAnalysisSubtitle}>
+                  Tạo phân tích AI để đánh giá kỹ thuật của học viên
+                </Text>
+                <View style={styles.infoBox}>
+                  <Ionicons name="time" size={16} color="#059669" />
+                  <Text style={styles.infoText}>
+                    AI sẽ phân tích trong vòng 15 giây
+                  </Text>
+                </View>
                 <TouchableOpacity
                   style={styles.generateButton}
                   onPress={handleGenerateAI}
@@ -441,7 +576,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
@@ -449,55 +584,76 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: "700",
     color: "#111827",
   },
   videoTitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#6B7280",
-    marginTop: 4,
+    marginTop: 3,
+    fontWeight: "500",
+    lineHeight: 17,
   },
   closeButton: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   videoSelector: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
     backgroundColor: "#FFFFFF",
   },
   videoTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     marginRight: 8,
     borderRadius: 8,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    minWidth: 80,
+    minWidth: 75,
     alignItems: "center",
   },
   videoTabActive: {
-    backgroundColor: "#EEF2FF",
-    borderColor: "#6366F1",
+    backgroundColor: "#ECFDF5",
+    borderColor: "#059669",
   },
   videoTabText: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#6B7280",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   videoTabTextActive: {
-    color: "#6366F1",
+    color: "#059669",
+  },
+  scoreTabBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  passScoreBadge: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
+  },
+  failScoreBadge: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
   },
   videoTabScore: {
-    fontSize: 14,
-    fontWeight: "bold",
+    fontSize: 12,
+    fontWeight: "700",
   },
   videoTabScoreActive: {
-    fontWeight: "bold",
+    fontWeight: "700",
   },
   content: {
     flex: 1,
@@ -512,206 +668,315 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   analysisSection: {
-    padding: 20,
+    padding: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   scoreCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  scoreIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
   scoreLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#6B7280",
-    marginBottom: 8,
+    marginBottom: 6,
+    fontWeight: "500",
   },
   scoreValue: {
-    fontSize: 36,
-    fontWeight: "bold",
+    fontSize: 32,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  scoreStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  passedBadge: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
+  },
+  failedBadge: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+  },
+  scoreStatusText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  passedText: {
+    color: "#059669",
+  },
+  failedText: {
+    color: "#DC2626",
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 12,
   },
   cardContent: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#374151",
-    lineHeight: 20,
+    lineHeight: 19,
+    fontWeight: "500",
   },
   differenceItem: {
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   differenceAspect: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   techniqueComparison: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   techniqueRow: {
     flexDirection: "row",
     marginBottom: 4,
   },
   techniqueLabel: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: "#6B7280",
-    width: 80,
+    width: 75,
   },
   coachTechnique: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: "#059669",
+    fontWeight: "500",
   },
   learnerTechnique: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: "#DC2626",
-  },
-  impactText: {
-    fontSize: 13,
-    color: "#6B7280",
-    fontStyle: "italic",
-    marginTop: 4,
+    fontWeight: "500",
   },
   detailItem: {
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   detailType: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#6366F1",
-    marginBottom: 8,
+    marginBottom: 6,
     textTransform: "capitalize",
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#374151",
-    marginBottom: 8,
-    lineHeight: 20,
+    marginBottom: 6,
+    lineHeight: 18,
+    fontWeight: "500",
   },
   listSection: {
-    marginTop: 8,
+    marginTop: 6,
   },
-  listTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#111827",
+  listTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     marginBottom: 4,
   },
+  listTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  impactContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: 4,
+  },
+  impactText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#6B7280",
+    lineHeight: 17,
+  },
   strengthText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#059669",
     marginLeft: 8,
     marginBottom: 2,
+    fontWeight: "500",
   },
   weaknessText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#DC2626",
     marginLeft: 8,
     marginBottom: 2,
+    fontWeight: "500",
   },
   drillItem: {
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   drillName: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   drillDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#374151",
-    marginBottom: 8,
-    lineHeight: 20,
+    marginBottom: 6,
+    lineHeight: 18,
+    fontWeight: "500",
   },
   drillPractice: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
-    fontStyle: "italic",
+    fontWeight: "500",
   },
   noAnalysis: {
-    padding: 40,
+    padding: 24,
     alignItems: "center",
     justifyContent: "center",
   },
-  noAnalysisText: {
+  noAnalysisIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  noAnalysisTitle: {
     fontSize: 16,
-    color: "#9CA3AF",
-    marginTop: 12,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  noAnalysisSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  infoText: {
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "700",
   },
   generateButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#6366F1",
+    backgroundColor: "#059669",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
-    marginTop: 16,
     gap: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   generateButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   coachNoteInput: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
+    padding: 10,
+    fontSize: 13,
     color: "#374151",
     backgroundColor: "#F9FAFB",
     minHeight: 100,
-    marginBottom: 12,
+    marginBottom: 10,
+    fontWeight: "500",
   },
   submitButton: {
     backgroundColor: "#059669",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   submitButtonText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });

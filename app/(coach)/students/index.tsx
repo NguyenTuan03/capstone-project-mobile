@@ -106,9 +106,9 @@ export default function CoachStudentsScreen() {
                 {item.user.fullName?.charAt(0) || "U"}
               </Text>
             </View>
-            <View>
+            <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={styles.userName}>{item.user.fullName}</Text>
-              <Text style={styles.courseName} numberOfLines={1}>
+              <Text style={styles.courseName} numberOfLines={2}>
                 {item.course?.name}
               </Text>
             </View>
@@ -134,20 +134,35 @@ export default function CoachStudentsScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{item.avgAiAnalysisScore}</Text>
-            <Text style={styles.statLabel}>Điểm AI</Text>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="sparkles" size={16} color="#059669" />
+            </View>
+            <View>
+              <Text style={styles.statValue}>{item.avgAiAnalysisScore}</Text>
+              <Text style={styles.statLabel}>AI</Text>
+            </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{item.avgQuizScore}</Text>
-            <Text style={styles.statLabel}>Điểm Quiz</Text>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="document-text" size={16} color="#059669" />
+            </View>
+            <View>
+              <Text style={styles.statValue}>{item.avgQuizScore}</Text>
+              <Text style={styles.statLabel}>Quiz</Text>
+            </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {item.sessionsCompleted}/{item.totalSessions}
-            </Text>
-            <Text style={styles.statLabel}>Buổi học</Text>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="calendar" size={16} color="#059669" />
+            </View>
+            <View>
+              <Text style={styles.statValue}>
+                {item.sessionsCompleted}/{item.totalSessions}
+              </Text>
+              <Text style={styles.statLabel}>Buổi học</Text>
+            </View>
           </View>
         </View>
 
@@ -170,7 +185,14 @@ export default function CoachStudentsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Học viên của tôi</Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>Học viên của tôi</Text>
+            <Text style={styles.headerSubtitle}>
+              {learners.length} học viên {status === CourseStatus.ON_GOING ? "đang học" : "đã hoàn thành"}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.filterContainer}>
@@ -223,11 +245,18 @@ export default function CoachStudentsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color="#9CA3AF" />
-              <Text style={styles.emptyText}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="people-outline" size={48} color="#D1D5DB" />
+              </View>
+              <Text style={styles.emptyTitle}>
                 {status === CourseStatus.ON_GOING
                   ? "Chưa có học viên đang học"
                   : "Chưa có học viên đã hoàn thành"}
+              </Text>
+              <Text style={styles.emptyDescription}>
+                {status === CourseStatus.ON_GOING
+                  ? "Học viên sẽ xuất hiện ở đây khi họ đăng ký khóa học của bạn"
+                  : "Học viên sẽ xuất hiện ở đây khi họ hoàn thành khóa học"}
               </Text>
             </View>
           }
@@ -251,27 +280,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
   },
   header: {
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
     color: "#111827",
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   filterContainer: {
     flexDirection: "row",
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    gap: 10,
+    backgroundColor: "#FFFFFF",
   },
   filterTab: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
@@ -293,25 +334,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   listContent: {
-    padding: 16,
+    padding: 12,
     paddingTop: 0,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   userInfo: {
     flexDirection: "row",
@@ -319,39 +362,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#D1FAE5",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#ECFDF5",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
+    borderWidth: 1.5,
+    borderColor: "#A7F3D0",
   },
   avatarText: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#059669",
   },
   userName: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "700",
     color: "#111827",
     marginBottom: 4,
   },
   courseName: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6B7280",
-    maxWidth: 200,
+    lineHeight: 16,
+    fontWeight: "500",
   },
   statusBadge: {
     backgroundColor: "#DBEAFE",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
   },
   statusText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#1D4ED8",
   },
   statsRow: {
@@ -360,26 +408,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F9FAFB",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   statItem: {
+    flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    gap: 6,
+  },
+  statIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "700",
     color: "#111827",
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#6B7280",
+    fontWeight: "500",
   },
   divider: {
     width: 1,
-    height: 24,
+    height: 32,
     backgroundColor: "#E5E7EB",
   },
   progressSection: {
@@ -415,11 +475,29 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 40,
+    paddingVertical: 60,
+    paddingHorizontal: 24,
   },
-  emptyText: {
-    marginTop: 12,
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
     fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyDescription: {
+    fontSize: 13,
     color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 18,
   },
 });
