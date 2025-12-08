@@ -32,8 +32,13 @@ export default function CoachCourseScreen() {
 
   const coursesData = {
     all: total,
-    ongoing: courses.filter((c) => c.status === "APPROVED").length,
+    ongoing: courses.filter((c) => c.status === "ON_GOING").length,
     completed: courses.filter((c) => c.status === "COMPLETED").length,
+    approved: courses.filter((c) => c.status === "APPROVED").length,
+    rejected: courses.filter((c) => c.status === "REJECTED").length,
+    pending: courses.filter((c) => c.status === "PENDING_APPROVAL").length,
+    full: courses.filter((c) => c.status === "FULL").length,
+    cancelled: courses.filter((c) => c.status === "CANCELLED").length,
   };
 
   const fetchCourses = useCallback(
@@ -100,12 +105,25 @@ export default function CoachCourseScreen() {
   );
 
   const filteredCourses = useMemo(() => {
-    if (activeTab === "ongoing") {
-      return courses.filter((c) => c.status === "APPROVED");
+    switch (activeTab) {
+      case "all":
+        break;
+      case "approved":
+        return courses.filter((c) => c.status === "APPROVED");
+      case "rejected":
+        return courses.filter((c) => c.status === "REJECTED");
+      case "pending":
+        return courses.filter((c) => c.status === "PENDING_APPROVAL");
+      case "full":
+        return courses.filter((c) => c.status === "FULL");
+      case "cancelled":
+        return courses.filter((c) => c.status === "CANCELLED");
+      case "ongoing":
+        return courses.filter((c) => c.status === "ON_GOING");
+      case "completed":
+        return courses.filter((c) => c.status === "COMPLETED");
     }
-    if (activeTab === "completed") {
-      return courses.filter((c) => c.status === "COMPLETED");
-    }
+
     return courses;
   }, [activeTab, courses]);
 

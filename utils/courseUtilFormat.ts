@@ -51,6 +51,9 @@ export const getStatusColor = (status: string) => {
     READY_OPENED: { bg: "#DBEAFE", text: "#1E40AF" },
     REJECTED: { bg: "#FEE2E2", text: "#DC2626" },
     COMPLETED: { bg: "#E0F2FE", text: "#0284C7" },
+    ON_GOING: { bg: "#D1FAE5", text: "#059669" },
+    CANCELLED: { bg: "#FEE2E2", text: "#B91C1C" },
+    FULL: { bg: "#F3F4F6", text: "#6B7280" },
   };
   return colorMap[status] || { bg: "#F3F4F6", text: "#6B7280" };
 };

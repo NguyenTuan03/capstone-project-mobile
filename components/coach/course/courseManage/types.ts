@@ -1,2 +1,9 @@
-export type CourseTabKey = "all" | "ongoing" | "completed";
-
+export type CourseTabKey =
+  | "all"
+  | "approved"
+  | "rejected"
+  | "pending"
+  | "full"
+  | "cancelled"
+  | "ongoing"
+  | "completed";

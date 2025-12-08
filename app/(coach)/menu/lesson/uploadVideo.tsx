@@ -251,7 +251,7 @@ export default function UploadVideoScreen() {
 
         {[
           {
-            label: "Tên bài tập (drill)",
+            label: "Tên bài tập",
             value: drillName,
             setter: setDrillName,
           },
