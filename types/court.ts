@@ -7,6 +7,8 @@ export type Court = {
   address: string;
   province: Province;
   district: District;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type Province = {

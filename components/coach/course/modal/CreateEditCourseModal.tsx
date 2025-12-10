@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Province = {
@@ -135,6 +136,25 @@ export default function CreateEditCourseModal({
   const [courts, setCourts] = useState<Court[]>([]);
   const [loadingCourts, setLoadingCourts] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const courtsWithCoordinates = useMemo(
+    () =>
+      courts.filter(
+        (court) =>
+          typeof court.latitude === "number" &&
+          typeof court.longitude === "number"
+      ),
+    [courts]
+  );
+  const mapInitialRegion = useMemo<Region | null>(() => {
+    if (!courtsWithCoordinates.length) return null;
+    const first = courtsWithCoordinates[0];
+    return {
+      latitude: first.latitude as number,
+      longitude: first.longitude as number,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    };
+  }, [courtsWithCoordinates]);
   const [selectedCourseImage, setSelectedCourseImage] =
     useState<SelectedCourseImage | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
@@ -200,7 +220,7 @@ export default function CreateEditCourseModal({
           }
         }
       }
-    } catch (error) {}
+    } catch {}
   }, [provinces]);
 
   useEffect(() => {
@@ -348,7 +368,7 @@ export default function CreateEditCourseModal({
           if (Number.isNaN(maxParticipants)) maxParticipants = 12;
         }
         setMaxParticipantsLimit(maxParticipants);
-      } catch (err) {
+      } catch {
         setCourseStartDateAfterDaysFromNow(7);
         setMaxParticipantsLimit(12);
       }
@@ -366,7 +386,7 @@ export default function CreateEditCourseModal({
         : `/v1/subjects?filter=createdBy.id_eq_${user?.id}`;
       const res = await get<{ items: Subject[] }>(url);
       setSubjects(res.data.items || []);
-    } catch (error) {
+    } catch {
     } finally {
       setLoadingSubjects(false);
     }
@@ -377,7 +397,7 @@ export default function CreateEditCourseModal({
       setLoadingProvinces(true);
       const res = await get<Province[]>("/v1/provinces");
       setProvinces(res.data || []);
-    } catch (error) {
+    } catch {
     } finally {
       setLoadingProvinces(false);
     }
@@ -390,7 +410,7 @@ export default function CreateEditCourseModal({
         `/v1/provinces/${provinceId}/districts`
       );
       setDistricts(res.data || []);
-    } catch (error) {
+    } catch {
     } finally {
       setLoadingDistricts(false);
     }
@@ -411,11 +431,15 @@ export default function CreateEditCourseModal({
 
         setCourts(res || []);
 
-        // Auto-select first court if in create mode and no court is already selected
+        // Auto-select a court with coordinates (if available) when creating
         if (autoSelectFirst && res && res.length > 0 && !selectedCourt) {
-          setSelectedCourt(res[0]);
+          const firstWithCoords = res.find(
+            (c: Court) =>
+              typeof c.latitude === "number" && typeof c.longitude === "number"
+          );
+          setSelectedCourt(firstWithCoords || res[0]);
         }
-      } catch (error) {
+      } catch {
       } finally {
         setLoadingCourts(false);
       }
@@ -430,7 +454,7 @@ export default function CreateEditCourseModal({
         "/v1/schedules/coaches/available"
       );
       setAvailableSchedules(res.data?.metadata || []);
-    } catch (error) {
+    } catch {
     } finally {
       setLoadingAvailableSchedules(false);
     }
@@ -673,7 +697,7 @@ export default function CreateEditCourseModal({
 
       await onSubmit(payload);
       onClose();
-    } catch (error) {
+    } catch {
     } finally {
       setSubmitting(false);
     }
@@ -709,7 +733,7 @@ export default function CreateEditCourseModal({
         });
         setExistingImageUrl(null);
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
     }
   };
@@ -717,8 +741,9 @@ export default function CreateEditCourseModal({
   const handleRemoveCourseImage = () => {
     setSelectedCourseImage(null);
     setExistingImageUrl(null);
-  };
-
+  };  
+  console.log(courts);
+  
   return (
     <Modal
       visible={visible}
@@ -1007,6 +1032,44 @@ export default function CreateEditCourseModal({
                 {!loadingCourts && courts.length === 0 && (
                   <Text style={styles.hint}>
                     Không tìm thấy sân nào tại vị trí này
+                  </Text>
+                )}
+                <View style={styles.courtMapContainer}>
+                  {mapInitialRegion && courtsWithCoordinates.length > 0 ? (
+                    <MapView
+                      style={styles.courtMap}
+                      initialRegion={mapInitialRegion}
+                    >
+                      {courtsWithCoordinates.map((court) => (
+                        <Marker
+                          key={court.id}
+                          coordinate={{
+                            latitude: court.latitude as number,
+                            longitude: court.longitude as number,
+                          }}
+                          title={court.name}
+                          description={court.address}
+                          pinColor={
+                            selectedCourt?.id === court.id ? "#059669" : undefined
+                          }
+                          onPress={() => setSelectedCourt(court)}
+                        />
+                      ))}
+                    </MapView>
+                  ) : (
+                    <View style={styles.mapPlaceholder}>
+                      <Ionicons name="map-outline" size={28} color="#9CA3AF" />
+                      <Text style={styles.mapHintTitle}>Chưa có tọa độ sân</Text>
+                      <Text style={styles.mapHintText}>
+                        Kiểm tra lại vị trí hoặc chọn sân trong danh sách bên
+                        trên.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {courtsWithCoordinates.length > 0 && (
+                  <Text style={styles.hint}>
+                    Chạm vào điểm trên bản đồ để chọn sân.
                   </Text>
                 )}
               </View>
@@ -2349,6 +2412,35 @@ const styles = StyleSheet.create({
     color: "#059669",
     fontWeight: "700",
     marginTop: 3,
+  },
+  courtMapContainer: {
+    marginTop: 12,
+    height: 220,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+  },
+  courtMap: {
+    flex: 1,
+  },
+  mapPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    gap: 6,
+  },
+  mapHintTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  mapHintText: {
+    fontSize: 12,
+    color: "#6B7280",
+    textAlign: "center",
   },
   labelWithAction: {
     flexDirection: "row",
