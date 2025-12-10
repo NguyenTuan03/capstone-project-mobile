@@ -8,6 +8,7 @@ export interface Subject {
   level: string;
   status: string;
   publicUrl?: string | null;
+  isAIGenerated?: boolean;
   createdAt: string;
   updatedAt: string;
   createdBy?: {

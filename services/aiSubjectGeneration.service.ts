@@ -93,6 +93,21 @@ class AiSubjectGenerationService {
       throw error;
     }
   }
+
+  /**
+   * Use an AI-generated subject to create a real subject
+   * @param generationId - The AI generation ID to use
+   */
+  async useGeneratedSubject(generationId: number): Promise<any> {
+    try {
+      const response = await http.post(
+        "/v1/ai-subject-generations/use-generated-subject/" + generationId
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default new AiSubjectGenerationService();

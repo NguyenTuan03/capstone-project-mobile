@@ -75,9 +75,7 @@ const CoachSubjectScreen = () => {
     try {
       // Call AI API to generate subject structure with lesson count
       const fullPrompt = `${aiPrompt.trim()}. Tài liệu sẽ có ${lessonCount} bài học.`;
-      const generation = await aiSubjectGenerationService.create(
-        fullPrompt
-      );
+      const generation = await aiSubjectGenerationService.create(fullPrompt);
 
       console.log("AI generation response:", generation);
 
@@ -157,7 +155,7 @@ const CoachSubjectScreen = () => {
         const userId = user.id;
 
         const res = await get<PaginatedResponse>(
-          `/v1/subjects?filter=createdBy_eq_${userId}&page=${pageNum}&pageSize=10`
+          `/v1/subjects?sort=updatedAt_desc&filter=createdBy_eq_${userId}&page=${pageNum}&pageSize=10`
         );
 
         if (append) {
@@ -258,11 +256,15 @@ const CoachSubjectScreen = () => {
         {/* View AI Generations Button */}
         <TouchableOpacity
           style={styles.viewAiGenerationsButton}
-          onPress={() => router.push("/(coach)/menu/subject/ai-generations" as any)}
+          onPress={() =>
+            router.push("/(coach)/menu/subject/ai-generations" as any)
+          }
           activeOpacity={0.7}
         >
           <Ionicons name="list" size={18} color="#8B5CF6" />
-          <Text style={styles.viewAiGenerationsText}>Xem tài liệu AI đã tạo</Text>
+          <Text style={styles.viewAiGenerationsText}>
+            Xem tài liệu AI đã tạo
+          </Text>
           <Ionicons name="chevron-forward" size={18} color="#8B5CF6" />
         </TouchableOpacity>
       </View>
@@ -294,7 +296,10 @@ const CoachSubjectScreen = () => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item: subject }) => (
             <TouchableOpacity
-              style={styles.subjectCard}
+              style={[
+                styles.subjectCard,
+                subject.isAIGenerated && styles.aiGeneratedCard,
+              ]}
               onPress={() =>
                 router.push({
                   pathname: `/(coach)/menu/subject/${subject.id}/lesson` as any,
@@ -310,9 +315,17 @@ const CoachSubjectScreen = () => {
               {/* Card Header */}
               <View style={styles.cardHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.subjectName} numberOfLines={2}>
-                    {subject.name}
-                  </Text>
+                  <View style={styles.subjectNameRow}>
+                    <Text style={styles.subjectName} numberOfLines={2}>
+                      {subject.name}
+                    </Text>
+                    {subject.isAIGenerated && (
+                      <View style={styles.aiGeneratedBadge}>
+                        <Ionicons name="sparkles" size={12} color="#8B5CF6" />
+                        <Text style={styles.aiGeneratedText}>AI</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={styles.statusRow}>
                     <Text
                       style={[
@@ -384,12 +397,7 @@ const CoachSubjectScreen = () => {
         presentationStyle="pageSheet"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View
-          style={[
-            styles.modalContainer,
-            { paddingTop: insets.top, paddingBottom: insets.bottom },
-          ]}
-        >
+        <View style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
           {/* Modal Header */}
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -772,17 +780,43 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  aiGeneratedCard: {
+    borderColor: "#8B5CF6",
+    backgroundColor: "#FEFEFE",
+  },
   cardHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: 10,
   },
+  subjectNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
   subjectName: {
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 8,
+    flex: 1,
+  },
+  aiGeneratedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#F5F3FF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#8B5CF6",
+  },
+  aiGeneratedText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#8B5CF6",
   },
   statusRow: {
     flexDirection: "row",

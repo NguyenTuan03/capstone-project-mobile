@@ -63,10 +63,12 @@ export enum PickleballLevel {
 
 export interface PaginatedAiGenerations {
   items: AiSubjectGeneration[];
-  metadata: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  nextPage?: number;
+  previousPage?: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }

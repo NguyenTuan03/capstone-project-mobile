@@ -66,9 +66,9 @@ const AIGenerationsScreen = () => {
           setGenerations((prev) => [...prev, ...newGenerations]);
         }
 
-        setTotal(response.metadata?.total || 0);
+        setTotal(response?.total || 0);
         setHasMore(
-          (response.metadata?.page || 0) < (response.metadata?.totalPages || 0)
+          (response?.page || 0) < (response?.totalPages || 0)
         );
       } catch (error) {
         Alert.alert("Lỗi", "Không thể tải danh sách tài liệu AI");
@@ -126,16 +126,50 @@ const AIGenerationsScreen = () => {
     });
   };
 
-  const handleUseGeneration = () => {
+  const handleUseGeneration = async () => {
     if (!selectedGeneration) return;
 
-    setModalVisible(false);
-    router.push({
-      pathname: "/(coach)/menu/subject/create-ai" as any,
-      params: {
-        generationId: selectedGeneration.id.toString(),
-      },
-    });
+    Alert.alert(
+      "Xác nhận sử dụng",
+      `Bạn có chắc muốn sử dụng tài liệu "${selectedGeneration.generatedData.name}"?\n\nTài liệu sẽ được tạo thành tài liệu chính thức và trạng thái sẽ chuyển sang "Đã sử dụng".`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Sử dụng",
+          style: "default",
+          onPress: async () => {
+            try {
+              setDeleting(true); // Reuse deleting state for loading indicator
+              const createdSubject = await aiSubjectGenerationService.useGeneratedSubject(
+                selectedGeneration.id
+              );
+              
+              Alert.alert(
+                "Thành công",
+                `Đã tạo tài liệu từ AI thành công`,
+                [
+                  {
+                    text: "OK",
+                    onPress: () => {
+                      setModalVisible(false);
+                      handleRefresh();
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              console.error("Use generation error:", error);
+              Alert.alert(
+                "Lỗi",
+                "Không thể tạo tài liệu từ AI. Vui lòng thử lại."
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleEditPress = () => {
@@ -718,9 +752,16 @@ const AIGenerationsScreen = () => {
               <TouchableOpacity
                 style={styles.useButton}
                 onPress={handleUseGeneration}
+                disabled={deleting}
               >
-                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.useButtonText}>Sử dụng tài liệu này</Text>
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    <Text style={styles.useButtonText}>Sử dụng tài liệu này</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           )}
