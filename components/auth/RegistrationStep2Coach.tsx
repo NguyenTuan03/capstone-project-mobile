@@ -9,7 +9,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const SPECIALTIES_LIST = [
@@ -37,6 +37,7 @@ type SelectedCredential = {
   baseCredential: number;
   issuedAt?: string;
   expiredAt?: string;
+  imageUri?: string;
 };
 
 type Props = {
@@ -51,7 +52,7 @@ type Props = {
   onYearsChange: (value: string) => void;
   onSpecialtiesChange: (value: string) => void;
   onTeachingMethodsChange: (value: string) => void;
-  onCredentialsChange: (credentials: SelectedCredential[]) => void;
+  onCredentialsChange: (value: SelectedCredential[]) => void;
   onClearError: (field: string) => void;
   onBack: () => void;
   onSubmit: () => void;
@@ -337,6 +338,59 @@ const styles = StyleSheet.create({
     color: "#4B5563",
   },
   chipTextSelected: {
+    color: "#059669",
+    fontWeight: "600",
+  },
+  optionalText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    fontWeight: "400",
+  },
+  imageHelperText: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 12,
+  },
+  imageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 12,
+  },
+  imageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: "hidden",
+    position: "relative",
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#F3F4F6",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+  },
+  addImageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#059669",
+    borderStyle: "dashed",
+    backgroundColor: "#ECFDF5",
+  },
+  addImageText: {
+    fontSize: 14,
     color: "#059669",
     fontWeight: "600",
   },
