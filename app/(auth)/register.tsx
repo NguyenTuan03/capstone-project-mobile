@@ -10,7 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { RegistrationStep1 } from "../../components/auth/RegistrationStep1";
@@ -25,6 +25,7 @@ type SelectedCredential = {
   baseCredential: number;
   issuedAt?: string;
   expiredAt?: string;
+  imageUri?: string;
 };
 
 const Register = () => {
@@ -164,28 +165,109 @@ const Register = () => {
         : phoneNumber;
 
       if (role === "COACH") {
-        const coachPayload = {
-          fullName: fullName.trim(),
-          phoneNumber: formattedPhone,
-          password: password,
-          province: Number(province),
-          district: Number(district),
-          coach: {
-            bio: coachBio.trim(),
-            yearOfExperience: Number(yearsOfExperience),
-            specialties: specialties
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s),
-            teachingMethods: teachingMethods
-              .split(",")
-              .map((m) => m.trim())
-              .filter((m) => m),
-            credentials: credentials.length > 0 ? credentials : undefined,
-          },
-        };
+        // Check if any credentials have images
+        const hasCredentialImages = credentials.some((cred) => cred.imageUri);
 
-        await axios.post(`${API_URL}/v1/coaches/register`, coachPayload);
+        if (hasCredentialImages) {
+          // Use FormData for multipart upload
+          const formData = new FormData();
+
+          // Append text fields
+          formData.append("fullName", fullName.trim());
+          formData.append("phoneNumber", formattedPhone);
+          formData.append("password", password);
+          formData.append("province", province!.toString());
+          formData.append("district", district!.toString());
+          formData.append("bio", coachBio.trim());
+          formData.append("yearOfExperience", yearsOfExperience);
+          formData.append(
+            "specialties",
+            JSON.stringify(
+              specialties
+                .split(",")
+                .map((s) => s.trim())
+                .filter((s) => s)
+            )
+          );
+          formData.append(
+            "teachingMethods",
+            JSON.stringify(
+              teachingMethods
+                .split(",")
+                .map((m) => m.trim())
+                .filter((m) => m)
+            )
+          );
+
+          // Append credentials and their images
+          credentials.forEach((cred, index) => {
+            // Append credential metadata
+            formData.append(
+              `credentials[${index}][baseCredential]`,
+              cred.baseCredential.toString()
+            );
+            if (cred.issuedAt) {
+              formData.append(`credentials[${index}][issuedAt]`, cred.issuedAt);
+            }
+            if (cred.expiredAt) {
+              formData.append(
+                `credentials[${index}][expiredAt]`,
+                cred.expiredAt
+              );
+            }
+
+            // Append credential image if exists
+            if (cred.imageUri) {
+              const filename =
+                cred.imageUri.split("/").pop() || `credential_${index}.jpg`;
+              const match = /\.(\w+)$/.exec(filename);
+              const type = match ? `image/${match[1]}` : "image/jpeg";
+
+              formData.append("credential_images", {
+                uri: cred.imageUri,
+                name: filename,
+                type,
+              } as any);
+            }
+          });
+
+          await axios.post(`${API_URL}/v1/coaches/register`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          });
+        } else {
+          // No images, use regular JSON
+          const coachData = {
+            fullName: fullName.trim(),
+            phoneNumber: formattedPhone,
+            password: password,
+            province: Number(province),
+            district: Number(district),
+            coach: {
+              bio: coachBio.trim(),
+              yearOfExperience: Number(yearsOfExperience),
+              specialties: specialties
+                .split(",")
+                .map((s) => s.trim())
+                .filter((s) => s),
+              teachingMethods: teachingMethods
+                .split(",")
+                .map((m) => m.trim())
+                .filter((m) => m),
+              credentials:
+                credentials.length > 0
+                  ? credentials.map((c) => ({
+                      baseCredential: c.baseCredential,
+                      issuedAt: c.issuedAt,
+                      expiredAt: c.expiredAt,
+                    }))
+                  : undefined,
+            },
+          };
+
+          await axios.post(`${API_URL}/v1/coaches/register`, coachData);
+        }
       } else {
         const learnerPayload = {
           fullName: fullName.trim(),
@@ -261,10 +343,7 @@ const Register = () => {
         <StepIndicator
           currentStep={currentStep}
           totalSteps={2}
-          stepLabels={[
-            "Cơ bản",
-            role === "COACH" ? "HLV" : "Học viên",
-          ]}
+          stepLabels={["Cơ bản", role === "COACH" ? "HLV" : "Học viên"]}
         />
 
         {/* Form Card */}

@@ -2,9 +2,11 @@ import { formStyles } from "@/components/common/formStyles";
 import credentialService from "@/services/credentialService";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -14,7 +16,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 type BaseCredential = {
@@ -29,6 +31,7 @@ type SelectedCredential = {
   baseCredential: number;
   issuedAt?: string;
   expiredAt?: string;
+  imageUri?: string;
 };
 
 type Props = {
@@ -80,8 +83,43 @@ export const CredentialSelector = ({
     setModalVisible(true);
   };
 
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert(
+          "Cần quyền truy cập",
+          "Vui lòng cấp quyền truy cập thư viện ảnh để tải lên ảnh chứng chỉ"
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setSelectedForEdit(prev => prev ? {
+          ...prev,
+          imageUri: result.assets[0].uri
+        } : null);
+      }
+    } catch {
+      Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại");
+    }
+  };
+
   const handleSaveCredential = () => {
     if (!selectedForEdit) return;
+
+    // Validate: Image is required
+    if (!selectedForEdit.imageUri) {
+      Alert.alert("Thiếu ảnh chứng chỉ", "Vui lòng tải lên ảnh chứng chỉ");
+      return;
+    }
 
     const updated = [...selectedCredentials];
     const issuedAtStr = issuedAtDate
@@ -97,6 +135,7 @@ export const CredentialSelector = ({
         baseCredential: selectedForEdit.baseCredential,
         issuedAt: issuedAtStr,
         expiredAt: expiredAtStr,
+        imageUri: selectedForEdit.imageUri,
       };
     } else {
       // Add new
@@ -104,6 +143,7 @@ export const CredentialSelector = ({
         baseCredential: selectedForEdit.baseCredential,
         issuedAt: issuedAtStr,
         expiredAt: expiredAtStr,
+        imageUri: selectedForEdit.imageUri,
       });
     }
     onCredentialsChange(updated);
@@ -139,6 +179,12 @@ export const CredentialSelector = ({
           <View style={styles.selectedList}>
             {selectedCredentials.map((cred, index) => (
               <View key={index} style={styles.credentialItem}>
+                {cred.imageUri && (
+                  <Image 
+                    source={{ uri: cred.imageUri }} 
+                    style={styles.credentialThumbnail}
+                  />
+                )}
                 <View style={styles.credentialInfo}>
                   <Text style={styles.credentialName}>
                     {getCredentialName(cred.baseCredential)}
@@ -306,6 +352,38 @@ export const CredentialSelector = ({
                     ? "Chỉnh sửa thông tin"
                     : getCredentialName(selectedForEdit.baseCredential)}
                 </Text>
+
+                {/* Credential Image */}
+                <View style={formStyles.fieldContainer}>
+                  <Text style={formStyles.label}>
+                    Ảnh Chứng Chỉ <Text style={styles.requiredText}>*</Text>
+                  </Text>
+                  
+                  {selectedForEdit.imageUri ? (
+                    <View style={styles.imagePreviewContainer}>
+                      <Image 
+                        source={{ uri: selectedForEdit.imageUri }} 
+                        style={styles.credentialImage}
+                      />
+                      <TouchableOpacity
+                        style={styles.changeImageButton}
+                        onPress={pickImage}
+                      >
+                        <Ionicons name="camera-outline" size={20} color="#059669" />
+                        <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.uploadImageButton}
+                      onPress={pickImage}
+                    >
+                      <Ionicons name="camera-outline" size={32} color="#059669" />
+                      <Text style={styles.uploadImageText}>Tải lên ảnh chứng chỉ</Text>
+                      <Text style={styles.uploadImageSubtext}>Bắt buộc</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
 
                 {/* Issued At */}
                 <View style={formStyles.fieldContainer}>
@@ -739,5 +817,57 @@ const styles = StyleSheet.create({
   datePickerStyle: {
     width: "100%",
     backgroundColor: "#FFFFFF",
+  },
+  credentialThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    marginRight: 12,
+  },
+  requiredText: {
+    color: "#DC2626",
+    fontSize: 13,
+  },
+  imagePreviewContainer: {
+    gap: 12,
+    alignItems: "center",
+  },
+  changeImageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#059669",
+    backgroundColor: "#ECFDF5",
+  },
+  changeImageText: {
+    fontSize: 14,
+    color: "#059669",
+    fontWeight: "600",
+  },
+  uploadImageButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#059669",
+    backgroundColor: "#ECFDF5",
+    gap: 8,
+  },
+  uploadImageText: {
+    fontSize: 15,
+    color: "#059669",
+    fontWeight: "600",
+  },
+  uploadImageSubtext: {
+    fontSize: 12,
+    color: "#DC2626",
+    fontWeight: "500",
   },
 });
