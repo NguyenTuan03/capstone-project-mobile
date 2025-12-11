@@ -138,11 +138,21 @@ export default function CreateEditCourseModal({
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const courtsWithCoordinates = useMemo(
     () =>
-      courts.filter(
-        (court) =>
-          typeof court.latitude === "number" &&
-          typeof court.longitude === "number"
-      ),
+      courts
+        .map((court) => ({
+          ...court,
+          latitude: court.latitude ? parseFloat(court.latitude as any) : null,
+          longitude: court.longitude
+            ? parseFloat(court.longitude as any)
+            : null,
+        }))
+        .filter(
+          (court) =>
+            typeof court.latitude === "number" &&
+            typeof court.longitude === "number" &&
+            !isNaN(court.latitude) &&
+            !isNaN(court.longitude)
+        ),
     [courts]
   );
   const mapInitialRegion = useMemo<Region | null>(() => {
@@ -428,6 +438,7 @@ export default function CreateEditCourseModal({
           provinceId,
           districtId
         );
+        console.log(res);
 
         setCourts(res || []);
 
@@ -741,9 +752,8 @@ export default function CreateEditCourseModal({
   const handleRemoveCourseImage = () => {
     setSelectedCourseImage(null);
     setExistingImageUrl(null);
-  };  
-  console.log(courts);
-  
+  };
+
   return (
     <Modal
       visible={visible}
@@ -984,56 +994,97 @@ export default function CreateEditCourseModal({
               </View>
             </View>
 
-            {/* Court Selection - MOVED HERE */}
+            {/* Court Selection */}
             {selectedProvince && selectedDistrict && (
               <View style={styles.section}>
                 <Text style={styles.label}>
                   Sân <Text style={styles.required}>*</Text>
                 </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.selectButton,
-                    loadingCourts && styles.selectButtonDisabled,
-                  ]}
-                  onPress={() => setShowCourtModal(true)}
-                  disabled={loadingCourts || courts.length === 0}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.selectButtonText,
-                        !selectedCourt && styles.placeholderText,
-                      ]}
-                    >
-                      {loadingCourts
-                        ? "Đang tải sân..."
-                        : selectedCourt
-                        ? selectedCourt.name
-                        : courts.length === 0
-                        ? "Không có sân nào"
-                        : "Chọn sân"}
-                    </Text>
-                    {selectedCourt && (
-                      <Text style={styles.courtPriceHighlight}>
-                        {formatPrice(selectedCourt.pricePerHour)} VNĐ/giờ
-                      </Text>
-                    )}
+
+                {/* Court List */}
+                {loadingCourts ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#059669" />
+                    <Text style={styles.loadingText}>Đang tải sân...</Text>
                   </View>
-                  <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                </TouchableOpacity>
-                {selectedCourt && (
-                  <View style={styles.courtInfo}>
-                    <Ionicons name="location" size={14} color="#6B7280" />
-                    <Text style={styles.courtInfoText}>
-                      {selectedCourt.address}
+                ) : courts.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={24}
+                      color="#9CA3AF"
+                    />
+                    <Text style={styles.emptyText}>
+                      Không tìm thấy sân nào tại vị trí này
                     </Text>
                   </View>
+                ) : (
+                  <ScrollView
+                    style={styles.courtListContainer}
+                    nestedScrollEnabled
+                  >
+                    {courts.map((court) => {
+                      const isSelected = selectedCourt?.id === court.id;
+                      return (
+                        <TouchableOpacity
+                          key={court.id}
+                          style={[
+                            styles.courtCard,
+                            isSelected && styles.courtCardSelected,
+                          ]}
+                          onPress={() => setSelectedCourt(court)}
+                        >
+                          {/* Court Name & Price */}
+                          <View style={styles.courtCardHeader}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.courtName}>{court.name}</Text>
+                              <Text style={styles.courtPrice}>
+                                {formatPrice(court.pricePerHour)} VNĐ/giờ
+                              </Text>
+                            </View>
+                            {isSelected && (
+                              <View style={styles.selectedBadge}>
+                                <Ionicons
+                                  name="checkmark-circle"
+                                  size={24}
+                                  color="#059669"
+                                />
+                              </View>
+                            )}
+                          </View>
+
+                          {/* Court Address */}
+                          <View style={styles.courtAddressRow}>
+                            <Ionicons
+                              name="location-outline"
+                              size={14}
+                              color="#6B7280"
+                            />
+                            <Text style={styles.courtAddress}>
+                              {court.address}
+                            </Text>
+                          </View>
+
+                          {/* Court Phone */}
+                          {court.phoneNumber && (
+                            <View style={styles.courtPhoneRow}>
+                              <Ionicons
+                                name="call-outline"
+                                size={14}
+                                color="#6B7280"
+                              />
+                              <Text style={styles.courtPhone}>
+                                {court.phoneNumber}
+                              </Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 )}
-                {!loadingCourts && courts.length === 0 && (
-                  <Text style={styles.hint}>
-                    Không tìm thấy sân nào tại vị trí này
-                  </Text>
-                )}
+
+                {/* Map View */}
                 <View style={styles.courtMapContainer}>
                   {mapInitialRegion && courtsWithCoordinates.length > 0 ? (
                     <MapView
@@ -1050,26 +1101,32 @@ export default function CreateEditCourseModal({
                           title={court.name}
                           description={court.address}
                           pinColor={
-                            selectedCourt?.id === court.id ? "#059669" : undefined
+                            selectedCourt?.id === court.id
+                              ? "#059669"
+                              : "#EF4444"
                           }
-                          onPress={() => setSelectedCourt(court)}
+                          onPress={() =>
+                            setSelectedCourt(court as unknown as Court)
+                          }
                         />
                       ))}
                     </MapView>
                   ) : (
                     <View style={styles.mapPlaceholder}>
                       <Ionicons name="map-outline" size={28} color="#9CA3AF" />
-                      <Text style={styles.mapHintTitle}>Chưa có tọa độ sân</Text>
+                      <Text style={styles.mapHintTitle}>
+                        Chưa có tọa độ sân
+                      </Text>
                       <Text style={styles.mapHintText}>
-                        Kiểm tra lại vị trí hoặc chọn sân trong danh sách bên
-                        trên.
+                        Các sân chưa có tọa độ không hiển thị trên bản đồ
                       </Text>
                     </View>
                   )}
                 </View>
+
                 {courtsWithCoordinates.length > 0 && (
                   <Text style={styles.hint}>
-                    Chạm vào điểm trên bản đồ để chọn sân.
+                    💡 Chạm vào điểm trên bản đồ hoặc chọn từ danh sách
                   </Text>
                 )}
               </View>
@@ -1091,7 +1148,8 @@ export default function CreateEditCourseModal({
                 />
               </View>
               <Text style={styles.hintText}>
-                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến học.
+                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến
+                học.
               </Text>
             </View>
 
@@ -2558,5 +2616,120 @@ const styles = StyleSheet.create({
     color: "#991B1B",
     fontWeight: "500",
     lineHeight: 18,
+  },
+  courtListContainer: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+
+  courtCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+
+  courtCardSelected: {
+    borderColor: "#059669",
+    borderWidth: 2,
+    backgroundColor: "#F0FDF4",
+  },
+
+  courtCardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+
+  courtName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 4,
+  },
+
+  courtPrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
+  },
+
+  selectedBadge: {
+    marginLeft: 8,
+  },
+
+  courtAddressRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+
+  courtAddress: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginLeft: 6,
+    flex: 1,
+  },
+
+  courtPhoneRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  courtPhone: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginLeft: 6,
+  },
+
+  coordinatesBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+
+  coordinatesText: {
+    fontSize: 11,
+    color: "#059669",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+  },
+
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  emptyContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+  },
+
+  emptyText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#991B1B",
   },
 });
