@@ -105,6 +105,43 @@ const CoachSubjectScreen = () => {
     }
   };
 
+  const handlePublish = async (subject: Subject | null) => {
+    if (!subject || subject.status !== "DRAFT") return;
+
+    Alert.alert(
+      "Xuất bản tài liệu",
+      `Bạn có muốn xuất bản tài liệu "${subject.name}" không? Tài liệu sẽ hiển thị công khai.`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xuất bản",
+          style: "default",
+          onPress: async () => {
+            try {
+              await get(`/v1/subjects/${subject.id}/publish`);
+
+              setSubjects((prev) =>
+                prev.map((item) =>
+                  item.id === subject.id
+                    ? { ...item, status: "PUBLISHED" }
+                    : item
+                )
+              );
+              setModalVisible(false);
+              Alert.alert("Thành công", "Đã xuất bản tài liệu");
+            } catch (error) {
+              Alert.alert(
+                "Lỗi",
+                "Không thể xuất bản tài liệu. Vui lòng thử lại sau."
+              );
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const handleDelete = (subject: Subject | null) => {
     if (!subject) return;
 
@@ -295,85 +332,103 @@ const CoachSubjectScreen = () => {
           data={subjects}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item: subject }) => (
-            <TouchableOpacity
+            <View
               style={[
                 styles.subjectCard,
                 subject.isAIGenerated && styles.aiGeneratedCard,
               ]}
-              onPress={() =>
-                router.push({
-                  pathname: `/(coach)/menu/subject/${subject.id}/lesson` as any,
-                  params: {
-                    subjectId: subject.id,
-                    subjectName: subject.name,
-                    lessons: JSON.stringify(subject.lessons || []),
-                  },
-                })
-              }
-              activeOpacity={0.7}
             >
-              {/* Card Header */}
-              <View style={styles.cardHeader}>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.subjectNameRow}>
-                    <Text style={styles.subjectName} numberOfLines={2}>
-                      {subject.name}
-                    </Text>
-                    {subject.isAIGenerated && (
-                      <View style={styles.aiGeneratedBadge}>
-                        <Ionicons name="sparkles" size={12} color="#8B5CF6" />
-                        <Text style={styles.aiGeneratedText}>AI</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.statusRow}>
-                    <Text
-                      style={[
-                        styles.statusBadge,
-                        {
-                          color:
-                            subject.status === "DRAFT"
-                              ? "#D97706"
-                              : subject.status === "PUBLISHED"
-                              ? "#059669"
-                              : "#6B7280",
-                        },
-                      ]}
-                    >
-                      {subject.status === "DRAFT"
-                        ? "● Bản nháp"
-                        : subject.status === "PUBLISHED"
-                        ? "● Công khai"
-                        : "● " + subject.status}
-                    </Text>
-                    <View style={styles.lessonBadge}>
-                      <Ionicons name="book-outline" size={12} color="#6B7280" />
-                      <Text style={styles.lessonCount}>
-                        {subject.lessons?.length || 0} bài
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: `/(coach)/menu/subject/${subject.id}/lesson` as any,
+                    params: {
+                      subjectId: subject.id,
+                      subjectName: subject.name,
+                      lessons: JSON.stringify(subject.lessons || []),
+                    },
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                {/* Card Header */}
+                <View style={styles.cardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.subjectNameRow}>
+                      <Text style={styles.subjectName} numberOfLines={2}>
+                        {subject.name}
                       </Text>
+                      {subject.isAIGenerated && (
+                        <View style={styles.aiGeneratedBadge}>
+                          <Ionicons name="sparkles" size={12} color="#8B5CF6" />
+                          <Text style={styles.aiGeneratedText}>AI</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.statusRow}>
+                      <Text
+                        style={[
+                          styles.statusBadge,
+                          {
+                            color:
+                              subject.status === "DRAFT"
+                                ? "#D97706"
+                                : subject.status === "PUBLISHED"
+                                ? "#059669"
+                                : "#6B7280",
+                          },
+                        ]}
+                      >
+                        {subject.status === "DRAFT"
+                          ? "● Bản nháp"
+                          : subject.status === "PUBLISHED"
+                          ? "● Công khai"
+                          : "● " + subject.status}
+                      </Text>
+                      <View style={styles.lessonBadge}>
+                        <Ionicons name="book-outline" size={12} color="#6B7280" />
+                        <Text style={styles.lessonCount}>
+                          {subject.lessons?.length || 0} bài
+                        </Text>
+                      </View>
                     </View>
                   </View>
+
+                  {/* Menu Button */}
+                  <TouchableOpacity
+                    style={styles.menuButton}
+                    onPress={() => handleOpenMenu(subject)}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name="ellipsis-vertical"
+                      size={20}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
                 </View>
 
-                {/* Menu Button */}
-                <TouchableOpacity
-                  style={styles.menuButton}
-                  onPress={() => handleOpenMenu(subject)}
-                  hitSlop={8}
-                >
-                  <Ionicons
-                    name="ellipsis-vertical"
-                    size={20}
-                    color="#6B7280"
-                  />
-                </TouchableOpacity>
-              </View>
+                {/* Card Description */}
+                <Text style={styles.description} numberOfLines={2}>
+                  {subject.description || "Không có mô tả cho tài liệu này"}
+                </Text>
+              </TouchableOpacity>
 
-              {/* Card Description */}
-              <Text style={styles.description} numberOfLines={2}>
-                {subject.description || "Không có mô tả cho tài liệu này"}
-              </Text>
-            </TouchableOpacity>
+              {/* Publish Button for Draft Subjects */}
+              {subject.status === "DRAFT" && (
+                <TouchableOpacity
+                  style={styles.publishButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handlePublish(subject);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="checkmark-circle" size={16} color="#3B82F6" />
+                  <Text style={styles.publishButtonText}>Xuất bản</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
@@ -433,6 +488,25 @@ const CoachSubjectScreen = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionButtonsContainer}>
+            {selectedSubject?.status === "DRAFT" && (
+              <TouchableOpacity
+                onPress={() => handlePublish(selectedSubject)}
+                style={styles.actionButton}
+                activeOpacity={0.7}
+              >
+                <View style={styles.actionButtonIcon}>
+                  <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.actionButtonTitle}>Xuất bản tài liệu</Text>
+                  <Text style={styles.actionButtonDesc}>
+                    Chuyển trạng thái sang công khai
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               onPress={() => handleEdit(selectedSubject)}
               style={styles.actionButton}
@@ -845,6 +919,25 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 6,
     marginLeft: 8,
+  },
+  publishButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#EFF6FF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    marginTop: 12,
+  },
+  publishButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#3B82F6",
   },
   description: {
     fontSize: 13,
