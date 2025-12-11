@@ -517,7 +517,7 @@ const CoachSubjectScreen = () => {
             <Text style={styles.aiTitle}>Mô tả tài liệu bạn muốn tạo</Text>
             <Text style={styles.aiDescription}>
               AI sẽ tự động tạo cấu trúc tài liệu hoàn chỉnh với các bài học,
-              bài kiểm tra và video placeholder. Bạn có thể chỉnh sửa trước khi
+              bài kiểm tra và video. Bạn có thể chỉnh sửa trước khi
               tạo.
             </Text>
 
