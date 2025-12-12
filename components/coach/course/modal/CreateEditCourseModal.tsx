@@ -165,6 +165,7 @@ export default function CreateEditCourseModal({
       longitudeDelta: 0.05,
     };
   }, [courtsWithCoordinates]);
+  const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [selectedCourseImage, setSelectedCourseImage] =
     useState<SelectedCourseImage | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
@@ -326,6 +327,13 @@ export default function CreateEditCourseModal({
   useEffect(() => {
     fetchCoachAvailableSchedules();
   }, []);
+
+  // Keep map region in sync with fetched courts
+  useEffect(() => {
+    if (mapInitialRegion) {
+      setMapRegion(mapInitialRegion);
+    }
+  }, [mapInitialRegion]);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -1000,96 +1008,13 @@ export default function CreateEditCourseModal({
                 <Text style={styles.label}>
                   Sân <Text style={styles.required}>*</Text>
                 </Text>
-
-                {/* Court List */}
-                {loadingCourts ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color="#059669" />
-                    <Text style={styles.loadingText}>Đang tải sân...</Text>
-                  </View>
-                ) : courts.length === 0 ? (
-                  <View style={styles.emptyContainer}>
-                    <Ionicons
-                      name="alert-circle-outline"
-                      size={24}
-                      color="#9CA3AF"
-                    />
-                    <Text style={styles.emptyText}>
-                      Không tìm thấy sân nào tại vị trí này
-                    </Text>
-                  </View>
-                ) : (
-                  <ScrollView
-                    style={styles.courtListContainer}
-                    nestedScrollEnabled
-                  >
-                    {courts.map((court) => {
-                      const isSelected = selectedCourt?.id === court.id;
-                      return (
-                        <TouchableOpacity
-                          key={court.id}
-                          style={[
-                            styles.courtCard,
-                            isSelected && styles.courtCardSelected,
-                          ]}
-                          onPress={() => setSelectedCourt(court)}
-                        >
-                          {/* Court Name & Price */}
-                          <View style={styles.courtCardHeader}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.courtName}>{court.name}</Text>
-                              <Text style={styles.courtPrice}>
-                                {formatPrice(court.pricePerHour)} VNĐ/giờ
-                              </Text>
-                            </View>
-                            {isSelected && (
-                              <View style={styles.selectedBadge}>
-                                <Ionicons
-                                  name="checkmark-circle"
-                                  size={24}
-                                  color="#059669"
-                                />
-                              </View>
-                            )}
-                          </View>
-
-                          {/* Court Address */}
-                          <View style={styles.courtAddressRow}>
-                            <Ionicons
-                              name="location-outline"
-                              size={14}
-                              color="#6B7280"
-                            />
-                            <Text style={styles.courtAddress}>
-                              {court.address}
-                            </Text>
-                          </View>
-
-                          {/* Court Phone */}
-                          {court.phoneNumber && (
-                            <View style={styles.courtPhoneRow}>
-                              <Ionicons
-                                name="call-outline"
-                                size={14}
-                                color="#6B7280"
-                              />
-                              <Text style={styles.courtPhone}>
-                                {court.phoneNumber}
-                              </Text>
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                )}
-
                 {/* Map View */}
                 <View style={styles.courtMapContainer}>
                   {mapInitialRegion && courtsWithCoordinates.length > 0 ? (
                     <MapView
                       style={styles.courtMap}
-                      initialRegion={mapInitialRegion}
+                      region={mapRegion ?? mapInitialRegion}
+                      onRegionChangeComplete={(region) => setMapRegion(region)}
                     >
                       {courtsWithCoordinates.map((court) => (
                         <Marker
@@ -1105,9 +1030,7 @@ export default function CreateEditCourseModal({
                               ? "#059669"
                               : "#EF4444"
                           }
-                          onPress={() =>
-                            setSelectedCourt(court as unknown as Court)
-                          }
+                          onPress={() => setSelectedCourt(court as Court)}
                         />
                       ))}
                     </MapView>
@@ -1124,9 +1047,45 @@ export default function CreateEditCourseModal({
                   )}
                 </View>
 
+                {selectedCourt && (
+                  <View style={styles.selectedCourtPreview}>
+                    <View style={styles.selectedCourtHeader}>
+                      <Text style={styles.selectedCourtName}>
+                        {selectedCourt.name}
+                      </Text>
+                      <Text style={styles.selectedCourtPrice}>
+                        {formatPrice(selectedCourt.pricePerHour)} VNĐ/giờ
+                      </Text>
+                    </View>
+                    <View style={styles.selectedCourtRow}>
+                      <Ionicons
+                        name="location-outline"
+                        size={14}
+                        color="#6B7280"
+                      />
+                      <Text style={styles.selectedCourtText}>
+                        {selectedCourt.address}
+                      </Text>
+                    </View>
+                    {selectedCourt.phoneNumber ? (
+                      <View style={styles.selectedCourtRow}>
+                        <Ionicons
+                          name="call-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.selectedCourtText}>
+                          {selectedCourt.phoneNumber}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                )}
+
                 {courtsWithCoordinates.length > 0 && (
                   <Text style={styles.hint}>
-                    💡 Chạm vào điểm trên bản đồ hoặc chọn từ danh sách
+                    💡 Bản đồ chỉ để xem vị trí, thông tin sân đã chọn hiển thị
+                    bên dưới
                   </Text>
                 )}
               </View>
@@ -2635,6 +2594,47 @@ const styles = StyleSheet.create({
     borderColor: "#059669",
     borderWidth: 2,
     backgroundColor: "#F0FDF4",
+  },
+  selectedCourtPreview: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectedCourtHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  selectedCourtName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    flex: 1,
+    marginRight: 8,
+  },
+  selectedCourtPrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  selectedCourtRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  selectedCourtText: {
+    marginLeft: 6,
+    color: "#4B5563",
+    fontSize: 14,
   },
 
   courtCardHeader: {
