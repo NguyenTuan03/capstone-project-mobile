@@ -223,7 +223,7 @@ const Register = () => {
               const match = /\.(\w+)$/.exec(filename);
               const type = match ? `image/${match[1]}` : "image/jpeg";
 
-              formData.append("credential_images", {
+              formData.append("credential_image", {
                 uri: cred.imageUri,
                 name: filename,
                 type,
