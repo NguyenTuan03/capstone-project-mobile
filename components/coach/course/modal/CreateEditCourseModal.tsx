@@ -138,11 +138,21 @@ export default function CreateEditCourseModal({
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const courtsWithCoordinates = useMemo(
     () =>
-      courts.filter(
-        (court) =>
-          typeof court.latitude === "number" &&
-          typeof court.longitude === "number"
-      ),
+      courts
+        .map((court) => ({
+          ...court,
+          latitude: court.latitude ? parseFloat(court.latitude as any) : null,
+          longitude: court.longitude
+            ? parseFloat(court.longitude as any)
+            : null,
+        }))
+        .filter(
+          (court) =>
+            typeof court.latitude === "number" &&
+            typeof court.longitude === "number" &&
+            !isNaN(court.latitude) &&
+            !isNaN(court.longitude)
+        ),
     [courts]
   );
   const mapInitialRegion = useMemo<Region | null>(() => {
@@ -155,6 +165,7 @@ export default function CreateEditCourseModal({
       longitudeDelta: 0.05,
     };
   }, [courtsWithCoordinates]);
+  const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [selectedCourseImage, setSelectedCourseImage] =
     useState<SelectedCourseImage | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
@@ -317,6 +328,13 @@ export default function CreateEditCourseModal({
     fetchCoachAvailableSchedules();
   }, []);
 
+  // Keep map region in sync with fetched courts
+  useEffect(() => {
+    if (mapInitialRegion) {
+      setMapRegion(mapInitialRegion);
+    }
+  }, [mapInitialRegion]);
+
   useEffect(() => {
     const loadConfig = async () => {
       try {
@@ -428,6 +446,7 @@ export default function CreateEditCourseModal({
           provinceId,
           districtId
         );
+        console.log(res);
 
         setCourts(res || []);
 
@@ -741,9 +760,8 @@ export default function CreateEditCourseModal({
   const handleRemoveCourseImage = () => {
     setSelectedCourseImage(null);
     setExistingImageUrl(null);
-  };  
-  console.log(courts);
-  
+  };
+
   return (
     <Modal
       visible={visible}
@@ -984,61 +1002,19 @@ export default function CreateEditCourseModal({
               </View>
             </View>
 
-            {/* Court Selection - MOVED HERE */}
+            {/* Court Selection */}
             {selectedProvince && selectedDistrict && (
               <View style={styles.section}>
                 <Text style={styles.label}>
                   Sân <Text style={styles.required}>*</Text>
                 </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.selectButton,
-                    loadingCourts && styles.selectButtonDisabled,
-                  ]}
-                  onPress={() => setShowCourtModal(true)}
-                  disabled={loadingCourts || courts.length === 0}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.selectButtonText,
-                        !selectedCourt && styles.placeholderText,
-                      ]}
-                    >
-                      {loadingCourts
-                        ? "Đang tải sân..."
-                        : selectedCourt
-                        ? selectedCourt.name
-                        : courts.length === 0
-                        ? "Không có sân nào"
-                        : "Chọn sân"}
-                    </Text>
-                    {selectedCourt && (
-                      <Text style={styles.courtPriceHighlight}>
-                        {formatPrice(selectedCourt.pricePerHour)} VNĐ/giờ
-                      </Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                </TouchableOpacity>
-                {selectedCourt && (
-                  <View style={styles.courtInfo}>
-                    <Ionicons name="location" size={14} color="#6B7280" />
-                    <Text style={styles.courtInfoText}>
-                      {selectedCourt.address}
-                    </Text>
-                  </View>
-                )}
-                {!loadingCourts && courts.length === 0 && (
-                  <Text style={styles.hint}>
-                    Không tìm thấy sân nào tại vị trí này
-                  </Text>
-                )}
+                {/* Map View */}
                 <View style={styles.courtMapContainer}>
                   {mapInitialRegion && courtsWithCoordinates.length > 0 ? (
                     <MapView
                       style={styles.courtMap}
-                      initialRegion={mapInitialRegion}
+                      region={mapRegion ?? mapInitialRegion}
+                      onRegionChangeComplete={(region) => setMapRegion(region)}
                     >
                       {courtsWithCoordinates.map((court) => (
                         <Marker
@@ -1050,26 +1026,66 @@ export default function CreateEditCourseModal({
                           title={court.name}
                           description={court.address}
                           pinColor={
-                            selectedCourt?.id === court.id ? "#059669" : undefined
+                            selectedCourt?.id === court.id
+                              ? "#059669"
+                              : "#EF4444"
                           }
-                          onPress={() => setSelectedCourt(court)}
+                          onPress={() => setSelectedCourt(court as Court)}
                         />
                       ))}
                     </MapView>
                   ) : (
                     <View style={styles.mapPlaceholder}>
                       <Ionicons name="map-outline" size={28} color="#9CA3AF" />
-                      <Text style={styles.mapHintTitle}>Chưa có tọa độ sân</Text>
+                      <Text style={styles.mapHintTitle}>
+                        Chưa có tọa độ sân
+                      </Text>
                       <Text style={styles.mapHintText}>
-                        Kiểm tra lại vị trí hoặc chọn sân trong danh sách bên
-                        trên.
+                        Các sân chưa có tọa độ không hiển thị trên bản đồ
                       </Text>
                     </View>
                   )}
                 </View>
+
+                {selectedCourt && (
+                  <View style={styles.selectedCourtPreview}>
+                    <View style={styles.selectedCourtHeader}>
+                      <Text style={styles.selectedCourtName}>
+                        {selectedCourt.name}
+                      </Text>
+                      <Text style={styles.selectedCourtPrice}>
+                        {formatPrice(selectedCourt.pricePerHour)} VNĐ/giờ
+                      </Text>
+                    </View>
+                    <View style={styles.selectedCourtRow}>
+                      <Ionicons
+                        name="location-outline"
+                        size={14}
+                        color="#6B7280"
+                      />
+                      <Text style={styles.selectedCourtText}>
+                        {selectedCourt.address}
+                      </Text>
+                    </View>
+                    {selectedCourt.phoneNumber ? (
+                      <View style={styles.selectedCourtRow}>
+                        <Ionicons
+                          name="call-outline"
+                          size={14}
+                          color="#6B7280"
+                        />
+                        <Text style={styles.selectedCourtText}>
+                          {selectedCourt.phoneNumber}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                )}
+
                 {courtsWithCoordinates.length > 0 && (
                   <Text style={styles.hint}>
-                    Chạm vào điểm trên bản đồ để chọn sân.
+                    💡 Bản đồ chỉ để xem vị trí, thông tin sân đã chọn hiển thị
+                    bên dưới
                   </Text>
                 )}
               </View>
@@ -1091,7 +1107,8 @@ export default function CreateEditCourseModal({
                 />
               </View>
               <Text style={styles.hintText}>
-                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến học.
+                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến
+                học.
               </Text>
             </View>
 
@@ -2558,5 +2575,161 @@ const styles = StyleSheet.create({
     color: "#991B1B",
     fontWeight: "500",
     lineHeight: 18,
+  },
+  courtListContainer: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+
+  courtCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+
+  courtCardSelected: {
+    borderColor: "#059669",
+    borderWidth: 2,
+    backgroundColor: "#F0FDF4",
+  },
+  selectedCourtPreview: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectedCourtHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  selectedCourtName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    flex: 1,
+    marginRight: 8,
+  },
+  selectedCourtPrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  selectedCourtRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  selectedCourtText: {
+    marginLeft: 6,
+    color: "#4B5563",
+    fontSize: 14,
+  },
+
+  courtCardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+
+  courtName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 4,
+  },
+
+  courtPrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#059669",
+  },
+
+  selectedBadge: {
+    marginLeft: 8,
+  },
+
+  courtAddressRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+
+  courtAddress: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginLeft: 6,
+    flex: 1,
+  },
+
+  courtPhoneRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  courtPhone: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginLeft: 6,
+  },
+
+  coordinatesBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+
+  coordinatesText: {
+    fontSize: 11,
+    color: "#059669",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+  },
+
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+
+  emptyContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+  },
+
+  emptyText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#991B1B",
   },
 });
