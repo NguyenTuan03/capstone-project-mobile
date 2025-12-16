@@ -388,7 +388,10 @@ export default function CoachHomeScreen() {
         {/* Quick Actions */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
-          <TouchableOpacity style={styles.createCourseButton}>
+          <TouchableOpacity
+            style={styles.createCourseButton}
+            onPress={() => router.push('/(coach)/course')}
+          >
             <LinearGradient
               colors={["#059669", "#047857"]}
               start={{ x: 0, y: 0 }}

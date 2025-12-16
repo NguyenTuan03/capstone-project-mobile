@@ -311,6 +311,62 @@ export default function LearnerPayoutsScreen() {
                 </View>
               </View>
 
+              {/* Withdrawal Requests List */}
+              {wallet?.withdrawalRequests &&
+                wallet.withdrawalRequests.length > 0 && (
+                  <View style={styles.withdrawalSection}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>Yêu cầu rút tiền</Text>
+                    </View>
+                    {wallet.withdrawalRequests.map((req: any, idx: number) => (
+                      <View key={req.id || idx} style={styles.withdrawalCard}>
+                        <View style={styles.withdrawalRow}>
+                          <Ionicons
+                            name={
+                              req.status === "APPROVED"
+                                ? "checkmark-circle"
+                                : req.status === "REJECTED"
+                                ? "close-circle"
+                                : "time"
+                            }
+                            size={20}
+                            color={
+                              req.status === "APPROVED"
+                                ? "#059669"
+                                : req.status === "REJECTED"
+                                ? "#EF4444"
+                                : "#F59E0B"
+                            }
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text style={styles.withdrawalAmount}>
+                            {formatCurrency(req.amount)}
+                          </Text>
+                          <Text style={styles.withdrawalStatus}>
+                            {req.status === "APPROVED"
+                              ? "Đã duyệt"
+                              : req.status === "REJECTED"
+                              ? "Từ chối"
+                              : "Đang xử lý"}
+                          </Text>
+                          <Text style={styles.withdrawalDate}>
+                            {req.requestedAt
+                              ? new Date(req.requestedAt).toLocaleDateString(
+                                  "vi-VN"
+                                )
+                              : ""}
+                          </Text>
+                        </View>
+                        {req.adminComment && (
+                          <Text style={styles.withdrawalComment}>
+                            {req.adminComment}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
               {/* Transactions List */}
               <View style={styles.transactionSection}>
                 <View style={styles.sectionHeader}>
@@ -478,6 +534,50 @@ export default function LearnerPayoutsScreen() {
 }
 
 const styles = StyleSheet.create({
+  withdrawalSection: {
+    marginBottom: 16,
+  },
+  withdrawalCard: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 12,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  withdrawalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 2,
+  },
+  withdrawalAmount: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#059669",
+    marginRight: 8,
+  },
+  withdrawalStatus: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginRight: 8,
+    color: "#374151",
+  },
+  withdrawalDate: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginLeft: "auto",
+  },
+  withdrawalComment: {
+    fontSize: 12,
+    color: "#EF4444",
+    marginTop: 2,
+  },
   container: {
     flex: 1,
     backgroundColor: "#F9FAFB",

@@ -72,6 +72,7 @@ export default function CoachPayoutsScreen() {
       const res = await get(`${API_URL}/v1/wallets/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Wallet data:", res.data);
       setWallet(res.data);
     } catch (err: any) {
     } finally {
@@ -424,6 +425,62 @@ export default function CoachPayoutsScreen() {
                   </>
                 )}
               </LinearGradient>
+
+              {/* Withdrawal Requests List */}
+              {wallet?.withdrawalRequests &&
+                wallet.withdrawalRequests.length > 0 && (
+                  <View style={styles.withdrawalSection}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>Yêu cầu rút tiền</Text>
+                    </View>
+                    {wallet.withdrawalRequests.map((req: any, idx: number) => (
+                      <View key={req.id || idx} style={styles.withdrawalCard}>
+                        <View style={styles.withdrawalRow}>
+                          <Ionicons
+                            name={
+                              req.status === "APPROVED"
+                                ? "checkmark-circle"
+                                : req.status === "REJECTED"
+                                ? "close-circle"
+                                : "time"
+                            }
+                            size={20}
+                            color={
+                              req.status === "APPROVED"
+                                ? "#059669"
+                                : req.status === "REJECTED"
+                                ? "#EF4444"
+                                : "#F59E0B"
+                            }
+                            style={{ marginRight: 8 }}
+                          />
+                          <Text style={styles.withdrawalAmount}>
+                            {formatCurrency(req.amount)}
+                          </Text>
+                          <Text style={styles.withdrawalStatus}>
+                            {req.status === "APPROVED"
+                              ? "Đã duyệt"
+                              : req.status === "REJECTED"
+                              ? "Từ chối"
+                              : "Đang xử lý"}
+                          </Text>
+                          <Text style={styles.withdrawalDate}>
+                            {req.requestedAt
+                              ? new Date(req.requestedAt).toLocaleDateString(
+                                  "vi-VN"
+                                )
+                              : ""}
+                          </Text>
+                        </View>
+                        {req.adminComment && (
+                          <Text style={styles.withdrawalComment}>
+                            {req.adminComment}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
 
               {/* Tabs */}
               <View style={styles.tabContainer}>
@@ -784,6 +841,56 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
     elevation: 6,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  withdrawalSection: {
+    marginBottom: 16,
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  withdrawalCard: {
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  withdrawalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
+  },
+  withdrawalAmount: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#059669",
+    marginRight: 8,
+  },
+  withdrawalStatus: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginRight: 8,
+    color: "#374151",
+  },
+  withdrawalDate: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginLeft: "auto",
+  },
+  withdrawalComment: {
+    fontSize: 12,
+    color: "#EF4444",
+    marginTop: 2,
   },
   editButtonCard: {
     position: "absolute",

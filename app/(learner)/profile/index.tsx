@@ -9,12 +9,14 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -181,9 +183,17 @@ export default function ProfileScreen() {
           {/* Avatar */}
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {getInitials(user?.fullName || "User")}
-              </Text>
+              {user?.profilePicture ? (
+                <Image
+                  source={{ uri: user.profilePicture }}
+                  style={{ width: 80, height: 80, borderRadius: 40 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {getInitials(user?.fullName || "User")}
+                </Text>
+              )}
             </View>
             <View style={styles.editButton}>
               <Ionicons name="pencil" size={14} color="#FFFFFF" />

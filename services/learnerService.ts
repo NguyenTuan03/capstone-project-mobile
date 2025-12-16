@@ -25,7 +25,6 @@ class LearnerService {
   async getLearnerProgresses(): Promise<LearnerProgress[]> {
     try {
       const response = await http.get("/v1/learners/current-progresses");
-      console.log("Learner Progresses Response:", response.data);
       return response.data || [];
     } catch (error) {
        

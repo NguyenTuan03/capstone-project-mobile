@@ -20,10 +20,6 @@ import {
 const EditAiGenerationScreen: React.FC = () => {
   const { generationId } = useLocalSearchParams();
 
-  console.log(
-    "EditAiGenerationScreen mounted with generationId:",
-    generationId
-  );
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -39,13 +35,11 @@ const EditAiGenerationScreen: React.FC = () => {
   const loadGeneration = useCallback(async () => {
     try {
       setLoading(true);
-      console.log("Loading generation with ID:", generationId);
 
       const data = await aiSubjectGenerationService.getById(
         Number(generationId)
       );
 
-      console.log("Loaded generation data:", data);
 
       // Initialize form with existing data
       setName(data.generatedData.name);
@@ -53,7 +47,6 @@ const EditAiGenerationScreen: React.FC = () => {
       setLevel(data.generatedData.level);
       setLessons(data.generatedData.lessons || []);
 
-      console.log("Form initialized successfully");
     } catch (error) {
       console.error("Error loading generation:", error);
       Alert.alert(
@@ -138,7 +131,6 @@ const EditAiGenerationScreen: React.FC = () => {
         lessons,
       };
 
-      console.log("Updating generation with data:", updatedData.name);
 
       await aiSubjectGenerationService.update(
         Number(generationId),

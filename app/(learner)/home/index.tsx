@@ -191,30 +191,30 @@ export default function HomeScreen() {
         />
 
         {/* Quick Stats */}
-        <View style={styles.statsRow}>
-          <View style={[styles.card, styles.statCard]}>
-            <View style={styles.statIcon}>
-              <Ionicons name="book" size={20} color="#059669" />
+        <View style={[styles.statsRow, { gap: 8, marginBottom: 4 }]}> 
+          <View style={[styles.card, styles.statCard, { paddingVertical: 8, paddingHorizontal: 10, minWidth: 90, minHeight: 60 }]}> 
+            <View style={[styles.statIcon, { width: 28, height: 28, borderRadius: 8, marginBottom: 4 }]}> 
+              <Ionicons name="book" size={16} color="#059669" />
             </View>
             {loadingStats ? (
               <ActivityIndicator size="small" color="#059669" />
             ) : (
               <>
-                <Text style={styles.statNumber}>{totalCourses}</Text>
-                <Text style={styles.statLabel}>Khóa học</Text>
+                <Text style={[styles.statNumber, { fontSize: 18, marginBottom: 0 }]}>{totalCourses}</Text>
+                <Text style={[styles.statLabel, { fontSize: 12, marginTop: 0 }]} numberOfLines={1}>Khóa học</Text>
               </>
             )}
           </View>
-          <View style={[styles.card, styles.statCard]}>
-            <View style={[styles.statIcon, { backgroundColor: "#DCFCE7" }]}>
-              <Ionicons name="sparkles" size={20} color="#059669" />
+          <View style={[styles.card, styles.statCard, { paddingVertical: 8, paddingHorizontal: 10, minWidth: 90, minHeight: 60 }]}> 
+            <View style={[styles.statIcon, { backgroundColor: "#DCFCE7", width: 28, height: 28, borderRadius: 8, marginBottom: 4 }]}> 
+              <Ionicons name="sparkles" size={16} color="#059669" />
             </View>
             {loadingStats ? (
               <ActivityIndicator size="small" color="#059669" />
             ) : (
               <>
-                <Text style={styles.statNumber}>{totalAiFeedbacks}</Text>
-                <Text style={styles.statLabel}>Phân tích AI</Text>
+                <Text style={[styles.statNumber, { fontSize: 18, marginBottom: 0 }]}>{totalAiFeedbacks}</Text>
+                <Text style={[styles.statLabel, { fontSize: 12, marginTop: 0 }]} numberOfLines={1}>Phân tích AI</Text>
               </>
             )}
           </View>
@@ -945,16 +945,13 @@ export default function HomeScreen() {
                                         rec.priority === "LOW" && { backgroundColor: "#DBEAFE" },
                                       ]}
                                     >
-                                      <Text
-                                        style={[
-                                          styles.detailPriorityText,
-                                          rec.priority === "HIGH" && { color: "#DC2626" },
-                                          rec.priority === "MEDIUM" && { color: "#D97706" },
-                                          rec.priority === "LOW" && { color: "#2563EB" },
-                                        ]}
-                                      >
-                                        {rec.priority === "HIGH" ? "Cao" : rec.priority === "MEDIUM" ? "TB" : "Thấp"}
-                                      </Text>
+                                      {rec.priority === "HIGH" ? (
+                                        <Ionicons name="alert-circle" size={18} color="#DC2626" style={{ marginTop: 1 }} />
+                                      ) : rec.priority === "MEDIUM" ? (
+                                        <Ionicons name="bulb" size={18} color="#D97706" style={{ marginTop: 1 }} />
+                                      ) : (
+                                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" style={{ marginTop: 1 }} />
+                                      )}
                                     </View>
                                   </View>
                                   <Text style={styles.detailRecommendationText}>{rec.title}</Text>

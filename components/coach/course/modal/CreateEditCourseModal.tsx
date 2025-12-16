@@ -28,7 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+// import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Province = {
@@ -145,16 +145,16 @@ export default function CreateEditCourseModal({
       ),
     [courts]
   );
-  const mapInitialRegion = useMemo<Region | null>(() => {
-    if (!courtsWithCoordinates.length) return null;
-    const first = courtsWithCoordinates[0];
-    return {
-      latitude: first.latitude as number,
-      longitude: first.longitude as number,
-      latitudeDelta: 0.05,
-      longitudeDelta: 0.05,
-    };
-  }, [courtsWithCoordinates]);
+  // const mapInitialRegion = useMemo<Region | null>(() => {
+  //   if (!courtsWithCoordinates.length) return null;
+  //   const first = courtsWithCoordinates[0];
+  //   return {
+  //     latitude: first.latitude as number,
+  //     longitude: first.longitude as number,
+  //     latitudeDelta: 0.05,
+  //     longitudeDelta: 0.05,
+  //   };
+  // }, [courtsWithCoordinates]);
   const [selectedCourseImage, setSelectedCourseImage] =
     useState<SelectedCourseImage | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
@@ -742,7 +742,6 @@ export default function CreateEditCourseModal({
     setSelectedCourseImage(null);
     setExistingImageUrl(null);
   };  
-  console.log(courts);
   
   return (
     <Modal
@@ -1034,7 +1033,7 @@ export default function CreateEditCourseModal({
                     Không tìm thấy sân nào tại vị trí này
                   </Text>
                 )}
-                <View style={styles.courtMapContainer}>
+                {/* <View style={styles.courtMapContainer}>
                   {mapInitialRegion && courtsWithCoordinates.length > 0 ? (
                     <MapView
                       style={styles.courtMap}
@@ -1066,7 +1065,7 @@ export default function CreateEditCourseModal({
                       </Text>
                     </View>
                   )}
-                </View>
+                </View> */}
                 {courtsWithCoordinates.length > 0 && (
                   <Text style={styles.hint}>
                     Chạm vào điểm trên bản đồ để chọn sân.
