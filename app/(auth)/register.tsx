@@ -178,10 +178,10 @@ const Register = () => {
           formData.append("password", password);
           formData.append("province", province!.toString());
           formData.append("district", district!.toString());
-          formData.append("bio", coachBio.trim());
-          formData.append("yearOfExperience", yearsOfExperience);
+          formData.append("coach[bio]", coachBio.trim());
+          formData.append("coach[yearOfExperience]", yearsOfExperience);
           formData.append(
-            "specialties",
+            "coach[specialties]",
             JSON.stringify(
               specialties
                 .split(",")
@@ -190,7 +190,7 @@ const Register = () => {
             )
           );
           formData.append(
-            "teachingMethods",
+            "coach[teachingMethods]",
             JSON.stringify(
               teachingMethods
                 .split(",")
@@ -201,17 +201,18 @@ const Register = () => {
 
           // Append credentials and their images
           credentials.forEach((cred, index) => {
-            // Append credential metadata
+
+            // Append credential metadata (use coach[credentials] for all fields)
             formData.append(
-              `credentials[${index}][baseCredential]`,
+              `coach[credentials][${index}][baseCredential]`,
               cred.baseCredential.toString()
             );
             if (cred.issuedAt) {
-              formData.append(`credentials[${index}][issuedAt]`, cred.issuedAt);
+              formData.append(`coach[credentials][${index}][issuedAt]`, cred.issuedAt);
             }
             if (cred.expiredAt) {
               formData.append(
-                `credentials[${index}][expiredAt]`,
+                `coach[credentials][${index}][expiredAt]`,
                 cred.expiredAt
               );
             }
@@ -223,14 +224,13 @@ const Register = () => {
               const match = /\.(\w+)$/.exec(filename);
               const type = match ? `image/${match[1]}` : "image/jpeg";
 
-              formData.append("credential_images", {
+              formData.append("credential_image", {
                 uri: cred.imageUri,
                 name: filename,
                 type,
               } as any);
             }
           });
-
           await axios.post(`${API_URL}/v1/coaches/register`, formData, {
             headers: {
               "Content-Type": "multipart/form-data",
@@ -265,6 +265,8 @@ const Register = () => {
                   : undefined,
             },
           };
+
+          console.log("Coach Data:", coachData);
 
           await axios.post(`${API_URL}/v1/coaches/register`, coachData);
         }
