@@ -25,6 +25,26 @@ class LearnerService {
   async getLearnerProgresses(): Promise<LearnerProgress[]> {
     try {
       const response = await http.get("/v1/learners/current-progresses");
+      console.log("Learner Progresses Response:", response.data);
+      return response.data || [];
+    } catch (error) {
+       
+      throw error;
+    }
+  }
+
+  async generateProgressAnalysis(progressId: number): Promise<void> {
+    try {
+      await http.post(`/v1/learner-progresses/${progressId}/ai-analysis`);
+    } catch (error) {
+       
+      throw error;
+    }
+  }
+
+  async getProgressAnalyses(progressId: number): Promise<any[]> {
+    try {
+      const response = await http.get(`/v1/learner-progresses/${progressId}/ai-analysis`);
       return response.data || [];
     } catch (error) {
        
