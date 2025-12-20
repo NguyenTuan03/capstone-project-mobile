@@ -195,9 +195,6 @@ export default function ProfileScreen() {
                 </Text>
               )}
             </View>
-            <View style={styles.editButton}>
-              <Ionicons name="pencil" size={14} color="#FFFFFF" />
-            </View>
           </View>
 
           {/* User Info */}

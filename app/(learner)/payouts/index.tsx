@@ -31,6 +31,7 @@ export default function LearnerPayoutsScreen() {
   const [withdrawalModalVisible, setWithdrawalModalVisible] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+  const [withdrawalAmountError, setWithdrawalAmountError] = useState("");
 
   useEffect(() => {
     const fetchBanks = async () => {
@@ -117,6 +118,30 @@ export default function LearnerPayoutsScreen() {
   const handleWithdrawal = async () => {
     if (!withdrawalAmount || parseFloat(withdrawalAmount) <= 0) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ.");
+      return;
+    }
+
+    const amount = parseFloat(withdrawalAmount);
+    const currentBalance = Number(wallet?.currentBalance || 0);
+
+    if (amount > currentBalance) {
+      Alert.alert(
+        "Lỗi",
+        `Số tiền rút không được vượt quá số dư khả dụng (${formatCurrency(
+          currentBalance
+        )})`
+      );
+      setWithdrawalAmountError(
+        `Số tiền rút không được vượt quá số dư khả dụng (${formatCurrency(
+          currentBalance
+        )})`
+      );
+      return;
+    }
+
+    if (amount < 100000) {
+      Alert.alert("Lỗi", "Số tiền rút tối thiểu là 100,000₫");
+      setWithdrawalAmountError("Số tiền rút tối thiểu là 100,000₫");
       return;
     }
 
@@ -466,19 +491,48 @@ export default function LearnerPayoutsScreen() {
               <View style={styles.amountInputContainer}>
                 <Text style={styles.amountCurrencySymbol}>₫</Text>
                 <TextInput
-                  style={styles.amountInput}
+                  style={[
+                    styles.amountInput,
+                    withdrawalAmountError && styles.amountInputError,
+                  ]}
                   placeholder="Nhập số tiền"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="number-pad"
                   value={withdrawalAmount}
-                  onChangeText={setWithdrawalAmount}
+                  onChangeText={(text) => {
+                    // Only allow numbers
+                    const numericText = text.replace(/[^0-9]/g, "");
+                    setWithdrawalAmount(numericText);
+                    setWithdrawalAmountError("");
+
+                    // Validate amount
+                    if (numericText) {
+                      const amount = parseFloat(numericText);
+                      const currentBalance = Number(wallet?.currentBalance || 0);
+
+                      if (!isNaN(amount)) {
+                        if (amount > currentBalance) {
+                          setWithdrawalAmountError(
+                            `Số tiền rút không được vượt quá số dư khả dụng (${formatCurrency(
+                              currentBalance
+                            )})`
+                          );
+                        } else if (amount < 100000) {
+                          setWithdrawalAmountError(
+                            "Số tiền rút tối thiểu là 100,000₫"
+                          );
+                        }
+                      }
+                    }
+                  }}
                   editable={!withdrawalLoading}
                 />
               </View>
-              <Text style={styles.amountHint}>
-                Tối thiểu: 100,000₫ | Tối đa:{" "}
-                {formatCurrency(Number(wallet?.currentBalance || 0))}
-              </Text>
+              {withdrawalAmountError && (
+                <Text style={styles.amountErrorText}>
+                  {withdrawalAmountError}
+                </Text>
+              )}
             </View>
 
             {/* Withdrawal Fee Note */}
@@ -499,6 +553,7 @@ export default function LearnerPayoutsScreen() {
                 style={styles.modalCancelButton}
                 onPress={() => {
                   setWithdrawalAmount("");
+                  setWithdrawalAmountError("");
                   setWithdrawalModalVisible(false);
                 }}
                 disabled={withdrawalLoading}
@@ -952,10 +1007,22 @@ const styles = StyleSheet.create({
     color: "#111827",
     paddingVertical: 12,
   },
+  amountInputError: {
+    borderColor: "#EF4444",
+    borderWidth: 1,
+  },
   amountHint: {
     fontSize: 11,
     color: "#6B7280",
     marginLeft: 4,
+    marginTop: 4,
+  },
+  amountErrorText: {
+    fontSize: 12,
+    color: "#EF4444",
+    marginLeft: 4,
+    marginTop: 4,
+    fontWeight: "500",
   },
   infoBox: {
     flexDirection: "row",
