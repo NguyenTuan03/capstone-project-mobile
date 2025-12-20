@@ -1,4 +1,6 @@
+import CreateEditCourseModal from "@/components/coach/course/modal/CreateEditCourseModal";
 import coachService from "@/services/coach.service";
+import { post } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { User } from "@/types/user";
 import { formatPrice } from "@/utils/priceFormat";
@@ -8,7 +10,7 @@ import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
+  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -21,8 +23,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import sessionService from "../../../services/sessionService";
 import { CalendarSession, SessionStatus } from "../../../types/session";
-
-const { width } = Dimensions.get("window");
 
 export default function CoachHomeScreen() {
   const insets = useSafeAreaInsets();
@@ -80,6 +80,7 @@ export default function CoachHomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
 
   const loadData = useCallback(async () => {
     const user = await storageService.getUser();
@@ -126,7 +127,7 @@ export default function CoachHomeScreen() {
       if (ratingData) {
         setRating(ratingData);
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoadingSessions(false);
     }
@@ -137,6 +138,67 @@ export default function CoachHomeScreen() {
     await loadData();
     setRefreshing(false);
   }, [loadData]);
+
+  const handleCreateCourse = async (data: {
+    subjectId: number;
+    learningFormat: string;
+    minParticipants: number;
+    maxParticipants: number;
+    pricePerParticipant: number;
+    startDate: string;
+    court?: number | undefined;
+    schedules?: any[];
+    courseImage?: {
+      uri: string;
+      fileName?: string;
+      mimeType?: string;
+    };
+  }) => {
+    try {
+      const { subjectId, courseImage, ...payload } = data;
+
+      if (courseImage) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+          if (Array.isArray(value) || typeof value === "object") {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
+
+        formData.append("course_image", {
+          uri: courseImage.uri,
+          name:
+            courseImage.fileName ||
+            courseImage.uri.split("/").pop() ||
+            `course_${Date.now()}.jpg`,
+          type: courseImage.mimeType || "image/jpeg",
+        } as any);
+
+        await post(`/v1/courses/subjects/${subjectId}`, formData);
+      } else {
+        await post(`/v1/courses/subjects/${subjectId}`, payload);
+      }
+
+      Alert.alert("Thành công", "Tạo khóa học thành công!", [
+        {
+          text: "OK",
+          onPress: () => {
+            setShowCreateCourseModal(false);
+            router.push("/(coach)/course");
+          },
+        },
+      ]);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Không thể tạo khóa học. Vui lòng thử lại.";
+      Alert.alert("Lỗi", errorMessage);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -351,7 +413,7 @@ export default function CoachHomeScreen() {
           <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
           <TouchableOpacity
             style={[styles.createCourseButton, { borderRadius: 12, elevation: 3 }]}
-            onPress={() => router.push('/(coach)/course')}
+            onPress={() => setShowCreateCourseModal(true)}
           >
             <LinearGradient
               colors={["#059669", "#047857"]}
@@ -373,6 +435,14 @@ export default function CoachHomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Create Course Modal */}
+      <CreateEditCourseModal
+        visible={showCreateCourseModal}
+        onClose={() => setShowCreateCourseModal(false)}
+        onSubmit={handleCreateCourse}
+        mode="create"
+      />
     </View>
   );
 }
