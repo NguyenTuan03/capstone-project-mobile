@@ -150,23 +150,40 @@ export default function CoachHomeScreen() {
         translucent
       />
 
-      {/* Header Background */}
+      {/* Header - compact, modern, mobile-first */}
       <LinearGradient
         colors={["#059669", "#10B981"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.headerGradient, { paddingTop: insets.top + 20 }]}
+        style={[styles.headerGradient, { paddingTop: insets.top + 16, paddingBottom: 18 }]}
       >
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.welcomeLabel}>Chào mừng trở lại,</Text>
-            <Text style={styles.welcomeName}>{user?.fullName} 👋</Text>
+            <Text style={styles.welcomeName} numberOfLines={1}>
+              {user?.fullName}
+            </Text>
           </View>
           <View style={styles.profileImageContainer}>
-            {/* Placeholder for profile image or avatar */}
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileInitials}>{user?.fullName}</Text>
-            </View>
+            {user?.profilePicture ? (
+              <Image
+                source={{ uri: user.profilePicture }}
+                style={styles.profileAvatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileInitials}>
+                  {user?.fullName
+                    ? user.fullName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                    : "?"}
+                </Text>
+              </View>
+            )}
             <View style={styles.onlineBadge} />
           </View>
         </View>
@@ -175,8 +192,8 @@ export default function CoachHomeScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{
-          paddingBottom: insets.bottom + 80,
-          paddingTop: 20,
+          paddingBottom: insets.bottom + 60,
+          paddingTop: 12,
         }}
         refreshControl={
           <RefreshControl
@@ -187,87 +204,66 @@ export default function CoachHomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Main Stats Grid */}
-        <View style={styles.sectionContainer}>
+        {/* Stats - compact grid, modern cards */}
+        <View style={[styles.sectionContainer, { marginBottom: 14 }]}> 
           <Text style={styles.sectionTitle}>Tổng quan</Text>
-          <View style={styles.statsGrid}>
-            {/* Row 1 */}
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <View
-                  style={[styles.iconContainer, { backgroundColor: "#DBEAFE" }]}
-                >
-                  <Ionicons name="cash-outline" size={24} color="#3B82F6" />
+          <View style={{ gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#DBEAFE', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+                  <Ionicons name="cash-outline" size={18} color="#3B82F6" />
                 </View>
-                <Text style={styles.statCardLabel}>Thu nhập</Text>
-                <Text style={styles.statCardValue}>{formatPrice(revenue)}</Text>
+                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Thu nhập</Text>
+                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{formatPrice(revenue)}</Text>
                 {revenueGrowth !== null && (
-                  <View style={styles.trendBadge}>
+                  <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
                     <Ionicons
-                      name={
-                        revenueGrowth >= 0 ? "trending-up" : "trending-down"
-                      }
-                      size={12}
-                      color={revenueGrowth >= 0 ? "#059669" : "#EF4444"}
+                      name={revenueGrowth >= 0 ? 'trending-up' : 'trending-down'}
+                      size={10}
+                      color={revenueGrowth >= 0 ? '#059669' : '#EF4444'}
                     />
-                    <Text
-                      style={[
-                        styles.trendText,
-                        { color: revenueGrowth >= 0 ? "#059669" : "#EF4444" },
-                      ]}
-                    >
-                      {revenueGrowth > 0 ? "+" : ""}
-                      {revenueGrowth}%
+                    <Text style={[styles.trendText, { color: revenueGrowth >= 0 ? '#059669' : '#EF4444', fontSize: 10 }]}>
+                      {revenueGrowth > 0 ? '+' : ''}{revenueGrowth}%
                     </Text>
                   </View>
                 )}
               </View>
-              <View style={styles.statCard}>
-                <View
-                  style={[styles.iconContainer, { backgroundColor: "#FEF3C7" }]}
-                >
-                  <Ionicons name="star-outline" size={24} color="#F59E0B" />
+              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+                  <Ionicons name="star-outline" size={18} color="#F59E0B" />
                 </View>
-                <Text style={styles.statCardLabel}>Đánh giá</Text>
-                <Text style={styles.statCardValue}>{rating?.overall}</Text>
-                <View style={styles.trendBadge}>
-                  <Ionicons name="star" size={12} color="#F59E0B" />
-                  <Text style={[styles.trendText, { color: "#F59E0B" }]}>
-                    {rating?.total}
-                  </Text>
+                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Đánh giá</Text>
+                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{rating?.overall}</Text>
+                <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                  <Ionicons name="star" size={10} color="#F59E0B" />
+                  <Text style={[styles.trendText, { color: '#F59E0B', fontSize: 10 }]}>{rating?.total}</Text>
                 </View>
               </View>
             </View>
-
-            {/* Row 2 */}
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <View
-                  style={[styles.iconContainer, { backgroundColor: "#D1FAE5" }]}
-                >
-                  <Ionicons name="book-outline" size={24} color="#10B981" />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#D1FAE5', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+                  <Ionicons name="book-outline" size={18} color="#10B981" />
                 </View>
-                <Text style={styles.statCardLabel}>Khóa học</Text>
-                <Text style={styles.statCardValue}>{courseCount}</Text>
+                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Khóa học</Text>
+                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{courseCount}</Text>
                 {courseGrowth && (
-                  <View style={styles.trendBadge}>
-                    <Ionicons name="add" size={12} color="#059669" />
-                    <Text style={styles.trendText}>{courseGrowth}</Text>
+                  <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                    <Ionicons name="add" size={10} color="#059669" />
+                    <Text style={[styles.trendText, { fontSize: 10 }]}>{courseGrowth}</Text>
                   </View>
                 )}
               </View>
-              <View style={styles.statCard}>
-                <View
-                  style={[styles.iconContainer, { backgroundColor: "#E0E7FF" }]}
-                >
-                  <Ionicons name="people-outline" size={24} color="#6366F1" />
+              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#E0E7FF', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+                  <Ionicons name="people-outline" size={18} color="#6366F1" />
                 </View>
-                <Text style={styles.statCardLabel}>Học viên</Text>
-                <Text style={styles.statCardValue}>{learnerCount}</Text>
+                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Học viên</Text>
+                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{learnerCount}</Text>
                 {learnerGrowth && (
-                  <View style={styles.trendBadge}>
-                    <Ionicons name="trending-up" size={12} color="#059669" />
-                    <Text style={styles.trendText}>{learnerGrowth}</Text>
+                  <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                    <Ionicons name="trending-up" size={10} color="#059669" />
+                    <Text style={[styles.trendText, { fontSize: 10 }]}>{learnerGrowth}</Text>
                   </View>
                 )}
               </View>
@@ -275,22 +271,18 @@ export default function CoachHomeScreen() {
           </View>
         </View>
 
-        {/* Today's Schedule */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
+        {/* Today's Schedule - compact, modern */}
+        <View style={[styles.sectionContainer, { marginBottom: 14 }]}> 
+          <View style={[styles.sectionHeader, { marginBottom: 10 }]}> 
             <View>
               <Text style={styles.sectionTitle}>Lịch dạy hôm nay</Text>
               <View style={styles.subtitleRow}>
-                <Text style={styles.sectionSubtitle}>
-                  {formatDisplayDate()}
-                </Text>
+                <Text style={styles.sectionSubtitle}>{formatDisplayDate()}</Text>
                 <View style={styles.dotSeparator} />
-                <Text style={styles.sessionCountText}>
-                  {sessions.length} buổi
-                </Text>
+                <Text style={styles.sessionCountText}>{sessions.length} buổi</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={() => router.push("/(coach)/calendar")}>
+            <TouchableOpacity onPress={() => router.push("/(coach)/calendar")}> 
               <Text style={styles.viewAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
@@ -304,62 +296,37 @@ export default function CoachHomeScreen() {
             sessions.map((session) => (
               <TouchableOpacity
                 key={session.id}
-                style={styles.sessionCard}
+                style={[styles.sessionCard, { padding: 12, borderRadius: 12, marginBottom: 8 }]}
                 onPress={() => router.push(`/(coach)/calendar` as any)}
                 activeOpacity={0.7}
               >
                 <View style={styles.sessionTimeContainer}>
-                  <Text style={styles.sessionStartTime}>
-                    {session.startTime}
-                  </Text>
+                  <Text style={[styles.sessionStartTime, { fontSize: 13 }]}>{session.startTime}</Text>
                   <View style={styles.sessionTimeLine} />
-                  <Text style={styles.sessionEndTime}>{session.endTime}</Text>
+                  <Text style={[styles.sessionEndTime, { fontSize: 11 }]}>{session.endTime}</Text>
                 </View>
-
                 <View style={styles.sessionInfoContainer}>
                   <View style={styles.sessionHeaderRow}>
-                    <Text style={styles.sessionCourseName} numberOfLines={1}>
-                      {session.courseName}
-                    </Text>
-                    <View
-                      style={[
-                        styles.sessionStatusBadge,
-                        { backgroundColor: "#ECFDF5" }, // Dynamic color based on status if available
-                      ]}
-                    >
-                      <Text
-                        style={[styles.sessionStatusText, { color: "#059669" }]}
-                      >
+                    <Text style={[styles.sessionCourseName, { fontSize: 14 }]} numberOfLines={1}>{session.courseName}</Text>
+                    <View style={[styles.sessionStatusBadge, { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: '#ECFDF5' }]}> 
+                      <Text style={[styles.sessionStatusText, { color: '#059669', fontSize: 10 }]}> 
                         {session.status === SessionStatus.IN_PROGRESS
-                          ? "Đang diễn ra"
+                          ? 'Đang diễn ra'
                           : session.status === SessionStatus.COMPLETED
-                          ? "Đã kết thúc"
-                          : "Đang chờ"}
+                          ? 'Đã kết thúc'
+                          : 'Đang chờ'}
                       </Text>
                     </View>
                   </View>
-
                   <View style={styles.sessionDetailsRow}>
                     <View style={styles.sessionDetailItem}>
-                      <Ionicons
-                        name="location-outline"
-                        size={14}
-                        color="#6B7280"
-                      />
-                      <Text style={styles.sessionDetailText} numberOfLines={1}>
-                        Sân 1 - Khu A
-                      </Text>
+                      <Ionicons name="location-outline" size={12} color="#6B7280" />
+                      <Text style={[styles.sessionDetailText, { fontSize: 11 }]} numberOfLines={1}>Sân 1 - Khu A</Text>
                     </View>
                     {session.course?.currentParticipants != null && (
                       <View style={styles.sessionDetailItem}>
-                        <Ionicons
-                          name="people-outline"
-                          size={14}
-                          color="#6B7280"
-                        />
-                        <Text style={styles.sessionDetailText}>
-                          {session.course.currentParticipants} học viên
-                        </Text>
+                        <Ionicons name="people-outline" size={12} color="#6B7280" />
+                        <Text style={[styles.sessionDetailText, { fontSize: 11 }]}>{session.course.currentParticipants} học viên</Text>
                       </View>
                     )}
                   </View>
@@ -369,47 +336,39 @@ export default function CoachHomeScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Image
-                source={{
-                  uri: "https://img.freepik.com/free-vector/no-data-concept-illustration_114360-536.jpg",
-                }} // Placeholder or local asset
-                style={styles.emptyStateImage}
+                source={{ uri: 'https://img.freepik.com/free-vector/no-data-concept-illustration_114360-536.jpg' }}
+                style={[styles.emptyStateImage, { width: 90, height: 90, marginBottom: 10 }]}
                 resizeMode="contain"
               />
-              <Text style={styles.emptyStateText}>
-                Không có lịch dạy hôm nay
-              </Text>
-              <Text style={styles.emptyStateSubtext}>
-                Tận hưởng ngày nghỉ của bạn nhé!
-              </Text>
+              <Text style={[styles.emptyStateText, { fontSize: 13, marginBottom: 2 }]}>Không có lịch dạy hôm nay</Text>
+              <Text style={[styles.emptyStateSubtext, { fontSize: 11 }]}>Tận hưởng ngày nghỉ của bạn nhé!</Text>
             </View>
           )}
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.sectionContainer}>
+        {/* Quick Actions - compact button */}
+        <View style={[styles.sectionContainer, { marginBottom: 10 }]}> 
           <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
           <TouchableOpacity
-            style={styles.createCourseButton}
+            style={[styles.createCourseButton, { borderRadius: 12, elevation: 3 }]}
             onPress={() => router.push('/(coach)/course')}
           >
             <LinearGradient
               colors={["#059669", "#047857"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.createCourseGradient}
+              style={[styles.createCourseGradient, { padding: 14, borderRadius: 12 }]}
             >
-              <View style={styles.createCourseContent}>
-                <View style={styles.createCourseIcon}>
-                  <Ionicons name="add" size={24} color="#059669" />
+              <View style={[styles.createCourseContent, { gap: 10 }]}> 
+                <View style={[styles.createCourseIcon, { width: 36, height: 36, borderRadius: 8 }]}> 
+                  <Ionicons name="add" size={18} color="#059669" />
                 </View>
                 <View>
-                  <Text style={styles.createCourseTitle}>Tạo khóa học mới</Text>
-                  <Text style={styles.createCourseSubtitle}>
-                    Thiết lập lớp học và lịch trình
-                  </Text>
+                  <Text style={[styles.createCourseTitle, { fontSize: 14, marginBottom: 1 }]}>Tạo khóa học mới</Text>
+                  <Text style={[styles.createCourseSubtitle, { fontSize: 11 }]}>Thiết lập lớp học và lịch trình</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
             </LinearGradient>
           </TouchableOpacity>
         </View>

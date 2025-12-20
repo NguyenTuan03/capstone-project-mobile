@@ -16,6 +16,7 @@ class CoachService {
         queryString ? `?${queryString}` : ""
       }`;
       const response = await http.get(url);
+      console.log(response.data.metadata);
       return response.data.metadata;
     } catch (error) {
       throw error;

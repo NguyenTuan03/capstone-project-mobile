@@ -28,7 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Province = {
@@ -145,16 +145,16 @@ export default function CreateEditCourseModal({
       ),
     [courts]
   );
-  // const mapInitialRegion = useMemo<Region | null>(() => {
-  //   if (!courtsWithCoordinates.length) return null;
-  //   const first = courtsWithCoordinates[0];
-  //   return {
-  //     latitude: first.latitude as number,
-  //     longitude: first.longitude as number,
-  //     latitudeDelta: 0.05,
-  //     longitudeDelta: 0.05,
-  //   };
-  // }, [courtsWithCoordinates]);
+  const mapInitialRegion = useMemo<Region | null>(() => {
+    if (!courtsWithCoordinates.length) return null;
+    const first = courtsWithCoordinates[0];
+    return {
+      latitude: first.latitude as number,
+      longitude: first.longitude as number,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    };
+  }, [courtsWithCoordinates]);
   const [selectedCourseImage, setSelectedCourseImage] =
     useState<SelectedCourseImage | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
@@ -741,8 +741,8 @@ export default function CreateEditCourseModal({
   const handleRemoveCourseImage = () => {
     setSelectedCourseImage(null);
     setExistingImageUrl(null);
-  };  
-  
+  };
+
   return (
     <Modal
       visible={visible}
@@ -1033,7 +1033,7 @@ export default function CreateEditCourseModal({
                     Không tìm thấy sân nào tại vị trí này
                   </Text>
                 )}
-                {/* <View style={styles.courtMapContainer}>
+                <View style={styles.courtMapContainer}>
                   {mapInitialRegion && courtsWithCoordinates.length > 0 ? (
                     <MapView
                       style={styles.courtMap}
@@ -1049,7 +1049,9 @@ export default function CreateEditCourseModal({
                           title={court.name}
                           description={court.address}
                           pinColor={
-                            selectedCourt?.id === court.id ? "#059669" : undefined
+                            selectedCourt?.id === court.id
+                              ? "#059669"
+                              : undefined
                           }
                           onPress={() => setSelectedCourt(court)}
                         />
@@ -1058,14 +1060,16 @@ export default function CreateEditCourseModal({
                   ) : (
                     <View style={styles.mapPlaceholder}>
                       <Ionicons name="map-outline" size={28} color="#9CA3AF" />
-                      <Text style={styles.mapHintTitle}>Chưa có tọa độ sân</Text>
+                      <Text style={styles.mapHintTitle}>
+                        Chưa có tọa độ sân
+                      </Text>
                       <Text style={styles.mapHintText}>
                         Kiểm tra lại vị trí hoặc chọn sân trong danh sách bên
                         trên.
                       </Text>
                     </View>
                   )}
-                </View> */}
+                </View>
                 {courtsWithCoordinates.length > 0 && (
                   <Text style={styles.hint}>
                     Chạm vào điểm trên bản đồ để chọn sân.
@@ -1090,7 +1094,8 @@ export default function CreateEditCourseModal({
                 />
               </View>
               <Text style={styles.hintText}>
-                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến học.
+                Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến
+                học.
               </Text>
             </View>
 
