@@ -572,9 +572,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 12, // reduced from 16
+    paddingTop: 12, // reduced from 16
+    paddingBottom: 8, // reduced from 12
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 0,
     shadowColor: "#000",
@@ -594,8 +594,8 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: "800",
+    fontSize: 15, // reduced from 17
+    fontWeight: "700", // reduced from 800
     color: "#111827",
   },
   placeholder: {
@@ -603,13 +603,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 12,
+    padding: 8, // reduced from 12
   },
   titleSection: {
-    marginBottom: 12,
+    marginBottom: 8, // reduced from 12
     backgroundColor: "#FFFFFF",
-    padding: 14,
-    borderRadius: 14,
+    padding: 10, // reduced from 14
+    borderRadius: 10, // reduced from 14
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -617,29 +617,29 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sessionTitle: {
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 17, // reduced from 20
+    fontWeight: "700", // reduced from 800
     color: "#111827",
-    marginBottom: 6,
-    lineHeight: 26,
+    marginBottom: 4, // reduced from 6
+    lineHeight: 22, // reduced from 26
   },
   sessionDate: {
-    fontSize: 14,
+    fontSize: 12, // reduced from 14
     color: "#6B7280",
     fontWeight: "600",
   },
   statusBadge: {
     alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    marginBottom: 12,
+    paddingHorizontal: 8, // reduced from 12
+    paddingVertical: 4, // reduced from 6
+    borderRadius: 10, // reduced from 14
+    marginBottom: 8, // reduced from 12
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: "800",
+    fontSize: 10, // reduced from 11
+    fontWeight: "700", // reduced from 800
     color: "#FFFFFF",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3, // reduced from 0.5
     textTransform: "uppercase",
   },
   vcButton: {
@@ -647,9 +647,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingVertical: 10, // reduced from 12
+    borderRadius: 10, // reduced from 12
+    marginBottom: 12, // reduced from 16
     shadowColor: "#3B82F6",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -658,43 +658,43 @@ const styles = StyleSheet.create({
   },
   vcButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 13, // reduced from 15
     fontWeight: "700",
-    marginLeft: 8,
+    marginLeft: 6, // reduced from 8
   },
   warningSection: {
     backgroundColor: "#FFFBEB",
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#FBBF24",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 10, // reduced from 12
+    padding: 8, // reduced from 12
+    marginBottom: 8, // reduced from 12
   },
   warningHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 4, // reduced from 6
   },
   warningTitle: {
-    fontSize: 14,
+    fontSize: 12, // reduced from 14
     fontWeight: "700",
     color: "#92400E",
-    marginLeft: 8,
+    marginLeft: 6, // reduced from 8
   },
   warningContent: {
-    paddingLeft: 24,
+    paddingLeft: 18, // reduced from 24
   },
   warningText: {
-    fontSize: 13,
+    fontSize: 12, // reduced from 13
     color: "#78350F",
-    lineHeight: 18,
+    lineHeight: 16, // reduced from 18
     fontWeight: "500",
   },
   section: {
-    marginBottom: 12,
+    marginBottom: 8, // reduced from 12
     backgroundColor: "#FFFFFF",
-    padding: 12,
-    borderRadius: 12,
+    padding: 8, // reduced from 12
+    borderRadius: 10, // reduced from 12
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -704,40 +704,40 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 1.5,
+    marginBottom: 6, // reduced from 10
+    paddingBottom: 6, // reduced from 8
+    borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 13, // reduced from 15
     fontWeight: "700",
     color: "#111827",
-    marginLeft: 8,
+    marginLeft: 6, // reduced from 8
   },
   sectionContent: {
-    paddingLeft: 24,
+    paddingLeft: 18, // reduced from 24
   },
   timeText: {
-    fontSize: 15,
+    fontSize: 13, // reduced from 15
     color: "#1F2937",
     fontWeight: "600",
   },
   courseName: {
-    fontSize: 15,
+    fontSize: 13, // reduced from 15
     color: "#1F2937",
     fontWeight: "600",
   },
   locationText: {
-    fontSize: 14,
+    fontSize: 12, // reduced from 14
     color: "#374151",
-    lineHeight: 20,
+    lineHeight: 16, // reduced from 20
     fontWeight: "500",
   },
   descriptionText: {
-    fontSize: 14,
+    fontSize: 12, // reduced from 14
     color: "#374151",
-    lineHeight: 20,
+    lineHeight: 16, // reduced from 20
     fontWeight: "500",
   },
   quizItem: {

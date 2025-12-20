@@ -57,30 +57,33 @@ export default function CoachCalendarScreen() {
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 50 },
+        { paddingTop: insets.top, paddingBottom: insets.bottom + 36 },
       ]}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#059669" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
 
-      {/* Header */}
+      {/* Header - compact, modern */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lịch dạy</Text>
       </View>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#059669" />
-          <Text style={styles.loadingText}>Đang tải lịch học...</Text>
-        </View>
-      ) : (
-        <CustomWeeklyCalendar
-          sessions={sessions}
-          initialStartDate={currentWeek.start}
-          initialEndDate={currentWeek.end}
-          onWeekChange={handleWeekChange}
-          onRefresh={() => loadSessions(currentWeek.start, currentWeek.end)}
-        />
-      )}
+      {/* Content */}
+      <View style={styles.contentWrapper}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#059669" />
+            <Text style={styles.loadingText}>Đang tải lịch học...</Text>
+          </View>
+        ) : (
+          <CustomWeeklyCalendar
+            sessions={sessions}
+            initialStartDate={currentWeek.start}
+            initialEndDate={currentWeek.end}
+            onWeekChange={handleWeekChange}
+            onRefresh={() => loadSessions(currentWeek.start, currentWeek.end)}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -88,43 +91,41 @@ export default function CoachCalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: '#F3F4F6',
   },
   header: {
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: '#E5E7EB',
+    elevation: 0,
+    shadowOpacity: 0,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: 0.1,
   },
-  todayButton: {
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  todayButtonText: {
-    color: "#059669",
-    fontWeight: "600",
-    fontSize: 14,
+  contentWrapper: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingTop: 8,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    minHeight: 180,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#6B7280",
+    marginTop: 8,
+    fontSize: 13,
+    color: '#6B7280',
+    letterSpacing: 0.1,
   },
 });

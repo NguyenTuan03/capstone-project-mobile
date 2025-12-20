@@ -266,8 +266,6 @@ const Register = () => {
             },
           };
 
-          console.log("Coach Data:", coachData);
-
           await axios.post(`${API_URL}/v1/coaches/register`, coachData);
         }
       } else {

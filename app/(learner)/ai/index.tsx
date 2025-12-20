@@ -143,68 +143,52 @@ export default function AIScreen() {
             {records.map((r, index) => (
               <TouchableOpacity
                 key={r.id}
-                style={styles.analysisCard}
+                style={styles.analysisCardModern}
                 onPress={() => handleOpenResult(r)}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
-                {/* Course/Drill Name */}
-                <Text style={styles.analysisTitle} numberOfLines={2}>
-                  {r.video?.session?.course.name ||
-                    r.video?.title ||
-                    "Phân tích Video"}
-                </Text>
-
-                {/* Stats Row */}
-                <View style={styles.statsRow}>
-                  {/* Session Badge */}
-                  <View style={styles.sessionBadge}>
-                    <Ionicons name="videocam" size={12} color="#059669" />
-                    <Text style={styles.sessionBadgeText}>
-                      {r.video?.session?.sessionNumber
-                        ? `Buổi ${r.video?.session.sessionNumber}`
-                        : "Buổi tập"}
+                <View style={styles.cardRow}>
+                  <View style={styles.cardIconBox}>
+                    <Ionicons name="videocam" size={22} color="#059669" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.analysisTitleModern} numberOfLines={2}>
+                      {r.video?.session?.course.name || r.video?.title || "Phân tích Video"}
                     </Text>
+                    <View style={styles.badgeRow}>
+                      <View style={styles.sessionBadgeModern}>
+                        <Text style={styles.sessionBadgeTextModern}>
+                          {r.video?.session?.sessionNumber ? `Buổi ${r.video?.session.sessionNumber}` : "Buổi tập"}
+                        </Text>
+                      </View>
+                      <View style={[
+                        styles.scoreBadgeModern,
+                        styles.scoreBadgeCircle,
+                        (r.learnerScore || 0) >= 70
+                          ? styles.scoreBadgePass
+                          : (r.learnerScore || 0) >= 50
+                          ? styles.scoreBadgeWarning
+                          : styles.scoreBadgeFail
+                      ]}>
+                        <Text style={[
+                          styles.scoreBadgeTextModern,
+                          styles.scoreBadgeTextCircle,
+                          (r.learnerScore || 0) >= 70
+                            ? styles.scoreTextPass
+                            : (r.learnerScore || 0) >= 50
+                            ? styles.scoreTextWarning
+                            : styles.scoreTextFail
+                        ]}>
+                          {r.learnerScore || 0}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.metaRowModern}>
+                      <Ionicons name="calendar-outline" size={13} color="#6B7280" />
+                      <Text style={styles.metaModern}>{formatDate(r.createdAt)}</Text>
+                    </View>
                   </View>
-
-                  {/* Score Badge */}
-                  <View style={[
-                    styles.scoreBadge,
-                    (r.learnerScore || 0) >= 70
-                      ? styles.scoreBadgePass
-                      : (r.learnerScore || 0) >= 50
-                      ? styles.scoreBadgeWarning
-                      : styles.scoreBadgeFail
-                  ]}>
-                    <Ionicons 
-                      name={(r.learnerScore || 0) >= 70 ? "checkmark-circle" : "alert-circle"} 
-                      size={12} 
-                      color={(r.learnerScore || 0) >= 70 ? "#059669" : (r.learnerScore || 0) >= 50 ? "#F59E0B" : "#DC2626"}
-                    />
-                    <Text style={[
-                      styles.scoreBadgeText,
-                      (r.learnerScore || 0) >= 70
-                        ? styles.scoreTextPass
-                        : (r.learnerScore || 0) >= 50
-                        ? styles.scoreTextWarning
-                        : styles.scoreTextFail
-                    ]}>
-                      {r.learnerScore || 0}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Date */}
-                <View style={styles.metaRow}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={13}
-                    color="#6B7280"
-                  />
-                  <Text style={styles.meta}>{formatDate(r.createdAt)}</Text>
-                  <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={styles.viewText}>Xem chi tiết</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#059669" />
-                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#059669" style={{ marginLeft: 8 }} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -219,7 +203,7 @@ export default function AIScreen() {
           coachVideoUrl={selectedResult.video?.publicUrl || ""}
           learnerVideoUrl={selectedResult.learnerVideo?.publicUrl || ""}
           aiAnalysisResult={selectedResult}
-          isPaddingTopEnabled={true}
+          isPaddingTopEnabled={false}
         />
       )}
     </View>
@@ -360,55 +344,105 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 10,
   },
-  analysisCard: {
-    backgroundColor: "#FFFFFF",
+  analysisCardModern: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 10,
-    padding: 12,
+    padding: 10,
+    marginBottom: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 2,
+    minHeight: 70,
   },
-  analysisTitle: {
+  cardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 0,
+  },
+  cardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 0,
+  },
+  analysisTitleModern: {
     fontWeight: "700",
     color: "#111827",
-    fontSize: 14,
-    lineHeight: 19,
-    marginBottom: 8,
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: 4,
   },
-  statsRow: {
+  badgeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  sessionBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#A7F3D0",
+  sessionBadgeModern: {
+    backgroundColor: "#F0FDF4",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    marginRight: 6,
   },
-  sessionBadgeText: {
+  sessionBadgeTextModern: {
     color: "#059669",
     fontSize: 11,
     fontWeight: "700",
   },
-  scoreBadge: {
+  scoreBadgeModern: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    borderWidth: 2,
+    width: 38,
+    height: 38,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
+    marginLeft: 2,
+  },
+  scoreBadgeCircle: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+  },
+  scoreBadgeTextModern: {
+    fontWeight: "800",
+    fontSize: 16,
+    textAlign: "center",
+    marginLeft: 0,
+  },
+  scoreBadgeTextCircle: {
+    fontWeight: "800",
+    fontSize: 16,
+    textAlign: "center",
+    marginLeft: 0,
+  },
+  metaRowModern: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
+    gap: 5,
+    marginTop: 2,
+  },
+  metaModern: {
+    color: "#6B7280",
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: 3,
   },
   scoreBadgePass: {
     backgroundColor: "#ECFDF5",

@@ -77,7 +77,6 @@ const CoachSubjectScreen = () => {
       const fullPrompt = `${aiPrompt.trim()}. Tài liệu sẽ có ${lessonCount} bài học.`;
       const generation = await aiSubjectGenerationService.create(fullPrompt);
 
-      console.log("AI generation response:", generation);
 
       // Navigate to AI generations list with highlight
       setAiModalVisible(false);
