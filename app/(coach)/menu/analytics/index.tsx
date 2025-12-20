@@ -107,8 +107,11 @@ export default function CoachAnalyticsScreen() {
 
   // Helper function to format month labels
   const formatMonthLabel = (month: string) => {
+    if (!month || typeof month !== "string") {
+      return "";
+    }
     const [m] = month.split("/");
-    return `${m}`;
+    return m || "";
   };
 
   // Helper function to prepare chart data
