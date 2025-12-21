@@ -1,4 +1,4 @@
-import {Alert, Image, Pressable, Text, View } from "react-native";
+import {Alert, Image, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
 import { useState } from "react";
 import { useRouter, Href } from "expo-router";
 import { useJWTAuthActions } from "@/services/jwt-auth/JWTAuthProvider";
@@ -42,6 +42,7 @@ export default function AuthScreen() {
   };
 
   return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
     <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
       <Image
         source={require("@/assets/images/login.jpg")}
@@ -138,5 +139,6 @@ export default function AuthScreen() {
         }
       />
     </View>
+    </KeyboardAvoidingView>
   );
 }
