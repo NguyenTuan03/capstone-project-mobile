@@ -184,68 +184,82 @@ export default function UploadVideoScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView
-        style={{ paddingHorizontal: 20 }}
+        style={{ paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingVertical: 12,
+            paddingVertical: 10,
+            marginBottom: 8,
           }}
         >
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#059669" />
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB" }}
+          >
+            <Ionicons name="arrow-back" size={20} color="#059669" />
           </TouchableOpacity>
-
           <Text
             style={{
-              fontSize: 20,
-              fontWeight: "bold",
+              fontSize: 16,
+              fontWeight: "700",
               textAlign: "center",
               flex: 1,
+              marginLeft: -36, // visually center title
             }}
+            numberOfLines={1}
           >
             {videoId ? "Chỉnh sửa video" : "Thêm video mới"}
           </Text>
-
-          <View style={{ width: 24 }} />
+          <View style={{ width: 36 }} />
         </View>
 
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+        {/* Form Fields */}
+        <View style={{ marginBottom: 8 }}>
+          <Text style={{ fontWeight: "600", fontSize: 13, marginBottom: 4, color: "#374151" }}>
             Tiêu đề video
           </Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
             placeholder="Tiêu đề video"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#9CA3AF"
             style={{
               borderWidth: 1,
-              borderColor: "#ccc",
+              borderColor: "#D1D5DB",
               borderRadius: 8,
               paddingVertical: 8,
               paddingHorizontal: 12,
+              fontSize: 14,
+              color: "#111827",
             }}
+            maxLength={60}
           />
         </View>
 
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: "600", marginBottom: 6 }}>Mô tả</Text>
+        <View style={{ marginBottom: 8 }}>
+          <Text style={{ fontWeight: "600", fontSize: 13, marginBottom: 4, color: "#374151" }}>Mô tả</Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
             placeholder="Mô tả video"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor="#9CA3AF"
             style={{
               borderWidth: 1,
-              borderColor: "#ccc",
+              borderColor: "#D1D5DB",
               borderRadius: 8,
               paddingVertical: 8,
               paddingHorizontal: 12,
+              fontSize: 14,
+              color: "#111827",
             }}
+            multiline
+            maxLength={200}
           />
         </View>
 
@@ -254,45 +268,54 @@ export default function UploadVideoScreen() {
             label: "Tên bài tập",
             value: drillName,
             setter: setDrillName,
+            placeholder: "Tên bài tập",
           },
           {
             label: "Mô tả bài tập",
             value: drillDescription,
             setter: setDrillDescription,
+            placeholder: "Mô tả bài tập",
           },
           {
             label: "Số set luyện tập",
             value: drillPracticeSets,
             setter: setDrillPracticeSets,
+            placeholder: "Số set luyện tập",
+            keyboardType: "numeric",
           },
         ].map((field, index) => (
-          <View key={index} style={{ marginBottom: 12 }}>
-            <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+          <View key={index} style={{ marginBottom: 8 }}>
+            <Text style={{ fontWeight: "600", fontSize: 13, marginBottom: 4, color: "#374151" }}>
               {field.label}
             </Text>
             <TextInput
               value={field.value}
               onChangeText={field.setter}
-              placeholder={field.label}
-              placeholderTextColor="#6B7280"
+              placeholder={field.placeholder}
+              placeholderTextColor="#9CA3AF"
               style={{
                 borderWidth: 1,
-                borderColor: "#ccc",
+                borderColor: "#D1D5DB",
                 borderRadius: 8,
                 paddingVertical: 8,
                 paddingHorizontal: 12,
+                fontSize: 14,
+                color: "#111827",
               }}
+              keyboardType={(field.keyboardType as import("react-native").KeyboardTypeOptions) || "default"}
+              maxLength={field.keyboardType === "numeric" ? 3 : 60}
             />
           </View>
         ))}
 
-        <View style={{ marginBottom: 20 }}>
+        {/* Video Section */}
+        <View style={{ marginBottom: 16 }}>
           <Text
             style={{
               fontWeight: "600",
-              marginBottom: 12,
+              marginBottom: 8,
               fontSize: 14,
-              color: "#111827",
+              color: "#059669",
             }}
           >
             Video
@@ -307,30 +330,32 @@ export default function UploadVideoScreen() {
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: "#059669",
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 10,
+                paddingHorizontal: 18,
+                paddingVertical: 13,
+                borderRadius: 8,
                 shadowColor: "#059669",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.15,
                 shadowRadius: 4,
                 elevation: 3,
+                marginBottom: 2,
               }}
             >
-              <Octicons name="upload" size={20} color="white" />
+              <Octicons name="upload" size={18} color="white" />
               <Text
                 style={{
                   color: "white",
-                  fontWeight: "600",
+                  fontWeight: "700",
                   fontSize: 14,
-                  marginLeft: 8,
+                  marginLeft: 7,
+                  letterSpacing: 0.3,
                 }}
               >
                 Chọn video
               </Text>
             </TouchableOpacity>
           ) : (
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 8 }}>
               {/* Video Preview */}
               <View
                 style={{
@@ -339,12 +364,13 @@ export default function UploadVideoScreen() {
                   overflow: "hidden",
                   borderWidth: 1,
                   borderColor: "#E5E7EB",
+                  marginBottom: 4,
                 }}
               >
                 <Video
                   ref={videoRef}
                   source={{ uri: video.uri }}
-                  style={{ width: "100%", height: 200 }}
+                  style={{ width: "100%", height: 180 }}
                   resizeMode={"contain" as any}
                   onLoad={(status) => {
                     if (status.isLoaded && status.durationMillis) {
@@ -359,83 +385,84 @@ export default function UploadVideoScreen() {
               <View
                 style={{
                   backgroundColor: "#F9FAFB",
-                  borderRadius: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
                   borderWidth: 1,
                   borderColor: "#E5E7EB",
-                  gap: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 2,
                 }}
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Ionicons name="film" size={18} color="#059669" />
-                    <Text
-                      style={{
-                        marginLeft: 6,
-                        fontWeight: "600",
-                        fontSize: 13,
-                        color: "#111827",
-                      }}
-                    >
-                      {video.fileName}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setVideo(undefined)}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      backgroundColor: "#FEE2E2",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ color: "#DC2626", fontWeight: "bold" }}>
-                      ×
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Duration Display */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingTop: 4,
-                  }}
-                >
-                  <Ionicons name="time" size={16} color="#6B7280" />
+                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                  <Ionicons name="film" size={16} color="#059669" />
                   <Text
                     style={{
                       marginLeft: 6,
+                      fontWeight: "600",
                       fontSize: 12,
-                      color: "#6B7280",
-                      fontWeight: "500",
+                      color: "#111827",
+                      maxWidth: 120,
                     }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
-                    {duration > 0 ? `${duration} giây` : "Đang tải..."}
+                    {video.fileName}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  onPress={() => setVideo(undefined)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 8,
+                    backgroundColor: "#FEE2E2",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginLeft: 8,
+                  }}
+                >
+                  <Text style={{ color: "#DC2626", fontWeight: "bold", fontSize: 16 }}>
+                    ×
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Duration Display */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingTop: 2,
+                  marginBottom: 2,
+                }}
+              >
+                <Ionicons name="time" size={14} color="#6B7280" />
+                <Text
+                  style={{
+                    marginLeft: 5,
+                    fontSize: 12,
+                    color: "#6B7280",
+                    fontWeight: "500",
+                  }}
+                >
+                  {duration > 0 ? `${duration} giây` : "Đang tải..."}
+                </Text>
               </View>
 
               {/* Change Video Button */}
               <TouchableOpacity
                 onPress={pickVideo}
                 style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  paddingHorizontal: 10,
                   borderWidth: 1,
                   borderColor: "#D1D5DB",
-                  borderRadius: 10,
+                  borderRadius: 8,
                   alignItems: "center",
+                  marginTop: 2,
                 }}
               >
                 <Text
@@ -448,40 +475,77 @@ export default function UploadVideoScreen() {
           )}
         </View>
 
-        <TouchableOpacity
-          onPress={handleUploadVideo}
-          disabled={saving || (!videoId && !video)}
-          activeOpacity={0.8}
-          style={{
-            backgroundColor:
-              saving || (!videoId && !video) ? "#9CA3AF" : "#059669",
-            paddingVertical: 14,
-            borderRadius: 10,
-            alignItems: "center",
-            marginBottom: 30,
-            gap: 8,
-          }}
-        >
-          {saving ? (
-            <>
-              <ActivityIndicator color="#fff" size="small" />
-              <Text
-                style={{
-                  color: "#fff",
-                  fontSize: 15,
-                  fontWeight: "600",
-                }}
-              >
-                {videoId ? "Đang cập nhật" : "Đang tải lên"}... {uploadProgress}
-                %
-              </Text>
-            </>
-          ) : (
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>
-              {videoId ? "Cập nhật video" : "Tải video lên"}
+        {/* Action Buttons */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+          {/* Secondary Button: Cancel/Back */}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            activeOpacity={0.85}
+            style={{
+              flex: 1,
+              backgroundColor: '#fff',
+              borderWidth: 1,
+              borderColor: '#D1D5DB',
+              borderRadius: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 13,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.07,
+              shadowRadius: 2,
+              elevation: 1,
+            }}
+          >
+            <Text style={{ color: '#374151', fontSize: 15, fontWeight: '600', letterSpacing: 0.2 }}>
+              Huỷ
             </Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Primary Button: Upload/Update */}
+          <TouchableOpacity
+            onPress={handleUploadVideo}
+            disabled={saving || (!videoId && !video)}
+            activeOpacity={0.85}
+            style={{
+              flex: 1,
+              backgroundColor:
+                saving || (!videoId && !video) ? '#9CA3AF' : '#059669',
+              borderRadius: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 13,
+              shadowColor: '#059669',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 4,
+              elevation: 3,
+              flexDirection: 'row',
+              gap: 8,
+            }}
+          >
+            {saving ? (
+              <>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 15,
+                    fontWeight: '700',
+                    marginLeft: 8,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {videoId ? 'Đang cập nhật' : 'Đang tải lên'}... {uploadProgress}%
+                </Text>
+              </>
+            ) : (
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>
+                {videoId ? 'Cập nhật video' : 'Tải video lên'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );

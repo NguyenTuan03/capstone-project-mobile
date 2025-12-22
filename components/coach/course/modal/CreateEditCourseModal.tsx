@@ -1,3 +1,4 @@
+// Keep selectedDate in sync with startDate for picker
 import CourtSelectionModal from "@/components/coach/course/modal/CourtSelectionModal";
 import SubjectSelectionModal from "@/components/coach/course/modal/SubjectSelectionModal";
 import { DAYS_OF_WEEK, DAYS_OF_WEEK_VI } from "@/components/common/AppEnum";
@@ -30,7 +31,6 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 type Province = {
   id: number;
   name: string;
@@ -98,7 +98,22 @@ export default function CreateEditCourseModal({
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [googleMeetError, setGoogleMeetError] = useState<string | null>(null);
 
+  // Validate Google Meet link format
+  const validateGoogleMeetLink = (link: string) => {
+    if (!link || link.trim() === "") return null;
+    const meetCodePattern = /^[a-zA-Z0-9]{3}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{3}$/;
+    const meetUrlPattern =
+      /^https:\/\/meet\.google\.com\/[a-zA-Z0-9]{3}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{3}$/;
+    if (
+      !meetCodePattern.test(link.trim()) &&
+      !meetUrlPattern.test(link.trim())
+    ) {
+      return "Link Google Meet không hợp lệ. Vui lòng nhập đúng mã (abc-defg-xyz) hoặc dán link đầy đủ.";
+    }
+    return null;
+  };
   // Form fields
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(
     initialData?.subjectId || null
@@ -644,6 +659,13 @@ export default function CreateEditCourseModal({
   };
 
   const handleSubmit = async () => {
+    // Validate Google Meet link if provided
+    const meetError = validateGoogleMeetLink(googleMeetLink);
+    setGoogleMeetError(meetError);
+    if (meetError) {
+      Alert.alert("Lỗi", meetError);
+      return;
+    }
     // Validation with error messages
     if (!selectedSubjectId) {
       Alert.alert("Lỗi", "Vui lòng chọn tài liệu");
@@ -794,8 +816,8 @@ export default function CreateEditCourseModal({
               </Text>
               <Text style={styles.hintText}>
                 Chỉ những tài liệu{" "}
-                <Text style={styles.highlightedText}>Công khai</Text> mới có thể
-                sử dụng
+                <Text style={styles.highlightedText}>Đã xuất bản</Text> mới có
+                thể sử dụng
               </Text>
               <TouchableOpacity
                 style={styles.selectButton}
@@ -1102,10 +1124,29 @@ export default function CreateEditCourseModal({
                   style={styles.googleMeetInput}
                   placeholder="abc-defg-xyz"
                   value={googleMeetLink}
-                  onChangeText={setGoogleMeetLink}
+                  onChangeText={(text) => {
+                    setGoogleMeetLink(text);
+                    if (googleMeetError) setGoogleMeetError(null);
+                  }}
+                  onBlur={() => {
+                    const err = validateGoogleMeetLink(googleMeetLink);
+                    setGoogleMeetError(err);
+                  }}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
+              {googleMeetError && (
+                <Text
+                  style={{
+                    color: "#DC2626",
+                    fontSize: 12,
+                    marginTop: 4,
+                    marginLeft: 8,
+                  }}
+                >
+                  {googleMeetError}
+                </Text>
+              )}
               <Text style={styles.hintText}>
                 Nhập mã cuộc họp Google Meet để hỗ trợ học viên không thể đến
                 học.
@@ -1223,6 +1264,7 @@ export default function CreateEditCourseModal({
               <TouchableOpacity
                 style={styles.dateInput}
                 onPress={() => {
+                  // Always update selectedDate to avoid stale state
                   if (startDate) {
                     setSelectedDate(new Date(startDate));
                   } else {
@@ -1337,8 +1379,16 @@ export default function CreateEditCourseModal({
                         mode="date"
                         display="inline"
                         onChange={(event, date) => {
+                          // Always update selectedDate and startDate on iOS picker change
                           if (date) {
                             setSelectedDate(date);
+                            // For iOS, update startDate immediately for inline picker
+                            if (Platform.OS === "ios") {
+                              const formattedDate = date
+                                .toISOString()
+                                .split("T")[0];
+                              setStartDate(formattedDate);
+                            }
                           }
                         }}
                         minimumDate={
@@ -1365,8 +1415,7 @@ export default function CreateEditCourseModal({
                   mode="date"
                   display="default"
                   onChange={(event, date) => {
-                    if (date) {
-                      setShowDatePicker(false);
+                    if (event.type === "set" && date) {
                       // Calculate minimum allowed date
                       const minAllowedDate = new Date(
                         new Date().getTime() +
@@ -1383,6 +1432,7 @@ export default function CreateEditCourseModal({
                           "Ngày không hợp lệ",
                           `Ngày bắt đầu phải cách ít nhất ${courseStartDateAfterDaysFromNow} ngày từ hôm nay.`
                         );
+                        setShowDatePicker(false);
                         return;
                       }
 
@@ -1398,13 +1448,15 @@ export default function CreateEditCourseModal({
                           "Ngày không hợp lệ",
                           `Ngày bắt đầu phải là ${scheduleDays} (theo lịch học của bạn)`
                         );
+                        setShowDatePicker(false);
                         return;
                       }
 
-                      setSelectedDate(date);
                       const formattedDate = date.toISOString().split("T")[0];
                       setStartDate(formattedDate);
+                      setSelectedDate(date);
                     }
+                    setShowDatePicker(false);
                   }}
                   minimumDate={
                     new Date(
@@ -1742,93 +1794,174 @@ export default function CreateEditCourseModal({
                   <View
                     style={[
                       styles.warningSection,
-                      { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" },
+                      {
+                        flexDirection: "row",
+                        backgroundColor: "#FFFBEB",
+                        borderRadius: 14,
+                        marginTop: 12,
+                        marginBottom: 12,
+                        shadowColor: "#FDE68A",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 4,
+                        elevation: 1,
+                        overflow: "hidden",
+                      },
                     ]}
                   >
+                    {/* Left accent bar */}
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "flex-start",
-                        marginBottom: 6,
-                        gap: 6,
+                        width: 6,
+                        backgroundColor: "#F59E42",
+                        borderTopLeftRadius: 14,
+                        borderBottomLeftRadius: 14,
                       }}
-                    >
-                      <Ionicons
-                        name="warning"
-                        size={16}
-                        color="#92400E"
-                        style={{ marginTop: 2 }}
-                      />
-                      <Text style={[styles.warningLabel, { color: "#92400E" }]}>
-                        Lịch các khóa khác
+                    />
+                    {/* Content */}
+                    <View style={{ flex: 1, padding: 12, paddingLeft: 14 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 2,
+                        }}
+                      >
+                        <Ionicons
+                          name="warning"
+                          size={18}
+                          color="#D97706"
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text
+                          style={{
+                            color: "#B45309",
+                            fontWeight: "700",
+                            fontSize: 14,
+                            letterSpacing: 0.1,
+                          }}
+                        >
+                          Lịch các khóa khác
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          color: "#B45309",
+                          fontSize: 12,
+                          marginBottom: 8,
+                          lineHeight: 16,
+                          fontWeight: "500",
+                        }}
+                      >
+                        Chú ý: Lịch bên dưới hiển thị khung giờ các khóa học
+                        khác. Chọn khung giờ không trùng lặp.
                       </Text>
-                    </View>
 
-                    <Text
-                      style={{
-                        color: "#92400E",
-                        fontSize: 11,
-                        marginBottom: 8,
-                        lineHeight: 14,
-                      }}
-                    >
-                      Chú ý: Lịch bên dưới hiển thị khung giờ các khóa học khác.
-                      Chọn khung giờ không trùng lặp.
-                    </Text>
-
-                    {loadingAvailableSchedules ? (
-                      <ActivityIndicator size="small" color="#92400E" />
-                    ) : availableSchedules.length === 0 ? (
-                      <Text style={styles.hint}>Không có lịch xung đột</Text>
-                    ) : (
-                      <View style={{ gap: 6 }}>
-                        {availableSchedules.map((sch, i) => {
-                          const dayIndex = DAYS_OF_WEEK.indexOf(sch.dayOfWeek);
-                          const dayName =
-                            dayIndex >= 0
-                              ? DAYS_OF_WEEK_VI[dayIndex]
-                              : sch.dayOfWeek;
-                          const isSelected =
-                            sch.dayOfWeek === tempSchedule.dayOfWeek &&
-                            sch.startTime === tempSchedule.startTime &&
-                            sch.endTime === tempSchedule.endTime;
-
-                          return (
-                            <View
-                              key={i}
-                              style={[
-                                styles.warningItem,
-                                isSelected && styles.warningItemSelected,
-                                {
+                      {loadingAvailableSchedules ? (
+                        <ActivityIndicator
+                          size="small"
+                          color="#D97706"
+                          style={{ marginVertical: 8 }}
+                        />
+                      ) : availableSchedules.length === 0 ? (
+                        <Text
+                          style={{
+                            color: "#059669",
+                            fontWeight: "600",
+                            fontSize: 13,
+                            marginVertical: 4,
+                          }}
+                        >
+                          Không có lịch xung đột
+                        </Text>
+                      ) : (
+                        <View style={{ gap: 2 }}>
+                          {availableSchedules.map((sch, i) => {
+                            const dayIndex = DAYS_OF_WEEK.indexOf(
+                              sch.dayOfWeek
+                            );
+                            const dayName =
+                              dayIndex >= 0
+                                ? DAYS_OF_WEEK_VI[dayIndex]
+                                : sch.dayOfWeek;
+                            const isSelected =
+                              sch.dayOfWeek === tempSchedule.dayOfWeek &&
+                              sch.startTime === tempSchedule.startTime &&
+                              sch.endTime === tempSchedule.endTime;
+                            return (
+                              <TouchableOpacity
+                                key={i}
+                                activeOpacity={0.85}
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
                                   backgroundColor: isSelected
                                     ? "#FEF3C7"
                                     : "#FFF7ED",
-                                },
-                              ]}
-                            >
-                              <View style={{ flex: 1 }}>
-                                <Text style={styles.warningItemTime}>
-                                  {dayName}: {sch.startTime} - {sch.endTime}
-                                </Text>
-                                <Text style={styles.warningItemMeta}>
-                                  {sch.course?.startDate
-                                    ? new Date(
-                                        sch.course.startDate
-                                      ).toLocaleDateString("vi-VN")
-                                    : "—"}{" "}
-                                  đến{" "}
-                                  {sch.course?.endDate
-                                    ? new Date(
-                                        sch.course.endDate
-                                      ).toLocaleDateString("vi-VN")
-                                    : "—"}
-                                </Text>
-                              </View>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
+                                  borderColor: isSelected
+                                    ? "#F59E42"
+                                    : "#FDE68A",
+                                  borderWidth: isSelected ? 1.5 : 1,
+                                  borderRadius: 7,
+                                  paddingVertical: 7,
+                                  paddingHorizontal: 10,
+                                  marginBottom: 2,
+                                  shadowColor: isSelected
+                                    ? "#F59E42"
+                                    : undefined,
+                                  shadowOffset: isSelected
+                                    ? { width: 0, height: 1 }
+                                    : undefined,
+                                  shadowOpacity: isSelected ? 0.1 : undefined,
+                                  shadowRadius: isSelected ? 2 : undefined,
+                                }}
+                                disabled
+                              >
+                                <View style={{ flex: 1 }}>
+                                  <Text
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: isSelected ? "700" : "500",
+                                      color: isSelected ? "#B45309" : "#92400E",
+                                      marginBottom: 1,
+                                    }}
+                                  >
+                                    {dayName}: {sch.startTime} - {sch.endTime}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: "#A16207",
+                                      fontWeight: "400",
+                                    }}
+                                  >
+                                    {sch.course?.startDate
+                                      ? new Date(
+                                          sch.course.startDate
+                                        ).toLocaleDateString("vi-VN")
+                                      : "—"}{" "}
+                                    đến{" "}
+                                    {sch.course?.endDate
+                                      ? new Date(
+                                          sch.course.endDate
+                                        ).toLocaleDateString("vi-VN")
+                                      : "—"}
+                                  </Text>
+                                </View>
+                                {isSelected && (
+                                  <Ionicons
+                                    name="checkmark-circle"
+                                    size={18}
+                                    color="#F59E42"
+                                    style={{ marginLeft: 6 }}
+                                  />
+                                )}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
                   </View>
 
                   <TouchableOpacity

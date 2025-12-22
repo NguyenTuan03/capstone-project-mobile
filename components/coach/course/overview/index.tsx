@@ -130,6 +130,7 @@ const statusMap = (status: string) => {
     ON_GOING: { text: "Đang diễn ra", color: "#16A34A" },
     COMPLETED: { text: "Hoàn thành", color: "#16A34A" },
     PENDING_APPROVAL: { text: "Chờ duyệt", color: "#F59E0B" },
+    FULL: { text: "Đã đủ học viên", color: "#DC2626" },
   };
   const found = map[status] || { text: status, color: "#6B7280" };
   return (

@@ -583,7 +583,6 @@ export default function LessonDetailScreen() {
       >
         {activeTab === "VIDEO LESSON" ? (
           <View>
-            {/* Add Video Button */}
             <TouchableOpacity
               style={styles.addVideoButton}
               onPress={() =>
@@ -597,51 +596,41 @@ export default function LessonDetailScreen() {
               <Ionicons name="add-circle" size={20} color="#FFFFFF" />
               <Text style={styles.addVideoButtonText}>Thêm video mới</Text>
             </TouchableOpacity>
-
-            {/* Videos List */}
             {loading ? (
-              // Skeleton Loaders
-              <View style={{ gap: 10 }}>
-                {[1, 2, 3].map((index) => (
-                  <View key={index} style={styles.videoCardSkeleton}>
-                    {/* Thumbnail Skeleton */}
-                    <View style={styles.videoThumbnailSkeleton} />
-
-                    {/* Header Skeleton */}
-                    <View style={{ gap: 8, marginBottom: 10 }}>
-                      <View style={styles.skeletonBar} />
-                      <View style={[styles.skeletonBar, { width: "70%" }]} />
-                    </View>
-
-                    {/* Buttons Skeleton */}
-                    <View style={{ flexDirection: "row", gap: 6 }}>
-                      <View
-                        style={[
-                          styles.skeletonBar,
-                          { flex: 1, height: 32, borderRadius: 5 },
-                        ]}
-                      />
-                      <View
-                        style={[
-                          styles.skeletonBar,
-                          { flex: 1, height: 32, borderRadius: 5 },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                ))}
+              <View style={styles.videoCardSkeleton}>
+                <View style={styles.videoThumbnailSkeleton} />
+                <View style={{ gap: 8, paddingHorizontal: 4 }}>
+                  <View style={[styles.skeletonBar, { width: "70%" }]} />
+                  <View style={[styles.skeletonBar, { width: "40%" }]} />
+                </View>
               </View>
             ) : video === undefined ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconContainer}>
-                  <Ionicons name="film-outline" size={56} color="#059669" />
+                  <Ionicons name="videocam-outline" size={32} color="#10B981" />
                 </View>
-                <Text style={styles.emptyTitle}>
-                  Chưa có video cho bài học này
-                </Text>
+                <Text style={styles.emptyTitle}>Chưa có video bài giảng</Text>
                 <Text style={styles.emptyDescription}>
-                  Tải lên video bài giảng để giúp học viên học tập hiệu quả
+                  Tải lên video bài giảng đầu tiên để giúp học viên tiếp cận nội
+                  dung bài học tốt hơn.
                 </Text>
+                <TouchableOpacity
+                  style={styles.emptyCreateButton}
+                  onPress={() =>
+                    router.push(
+                      `/menu/lesson/video/create?lessonId=${lessonId}`
+                    )
+                  }
+                >
+                  <Ionicons
+                    name="cloud-upload-outline"
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.emptyCreateButtonText}>
+                    Tải video lên ngay
+                  </Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <View>
@@ -650,143 +639,90 @@ export default function LessonDetailScreen() {
                 </View>
                 {video && (
                   <View style={styles.videoCard}>
-                    <View style={{ flexDirection: "row", gap: 12 }}>
-                      {/* Thumbnail - Left Side */}
+                    <View style={styles.videoCardContent}>
                       <TouchableOpacity
-                        style={{
-                          width: 120,
-                          height: 90,
-                          borderRadius: 8,
-                          overflow: "hidden",
-                          backgroundColor: "#E5E7EB",
-                          position: "relative",
-                        }}
-                        activeOpacity={0.7}
+                        style={styles.thumbnailContainer}
+                        activeOpacity={0.8}
                         onPress={() => setSelectedVideo(video)}
                       >
                         {video.thumbnailUrl ? (
                           <Image
                             source={{ uri: video.thumbnailUrl }}
-                            style={{ width: "100%", height: "100%" }}
+                            style={styles.thumbnailImage}
                             resizeMode="cover"
                           />
                         ) : (
-                          <View style={styles.videoThumbnailPlaceholder}>
-                            <Ionicons name="film" size={32} color="#FFFFFF" />
+                          <View style={styles.thumbnailPlaceholder}>
+                            <Ionicons
+                              name="film"
+                              size={32}
+                              color="rgba(255, 255, 255, 0.5)"
+                            />
                           </View>
                         )}
-                        <View style={styles.videoPlayButtonOverlay}>
-                          <Ionicons
-                            name="play-circle"
-                            size={36}
-                            color="#FFFFFF"
-                          />
+                        <View style={styles.thumbnailOverlay}>
+                          <View style={styles.playButtonGlass}>
+                            <Ionicons
+                              name="play"
+                              size={20}
+                              color="#FFFFFF"
+                              style={{ marginLeft: 2 }}
+                            />
+                          </View>
+                        </View>
+                        <View style={styles.durationOverlayBadge}>
+                          <Text style={styles.durationOverlayText}>
+                            {`${Math.floor(
+                              (video.duration || 0) / 60
+                            )}:${String((video.duration || 0) % 60).padStart(
+                              2,
+                              "0"
+                            )}`}
+                          </Text>
                         </View>
                       </TouchableOpacity>
 
-                      {/* Content - Right Side */}
-                      <View style={{ flex: 1, justifyContent: "space-between" }}>
+                      <View style={styles.videoInfoContainer}>
                         <View>
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              gap: 8,
-                            }}
-                          >
+                          <View style={styles.videoTitleRow}>
                             <Text
-                              style={[styles.videoTitle, { flex: 1 }]}
+                              style={styles.videoTitleText}
                               numberOfLines={2}
                             >
                               {video.title}
                             </Text>
-                            <View
-                              style={[
-                                styles.videoStatusBadge,
-                                {
-                                  paddingHorizontal: 6,
-                                  paddingVertical: 2,
-                                  minWidth: 0,
-                                  backgroundColor:
-                                    video.status === "READY"
-                                      ? "#D1FAE5"
-                                      : video.status === "ANALYZING"
-                                      ? "#FEF3C7"
-                                      : "#FEE2E2",
-                                },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.videoStatusText,
-                                  {
-                                    fontSize: 10,
-                                    color:
-                                      video.status === "READY"
-                                        ? "#059669"
-                                        : video.status === "ANALYZING"
-                                        ? "#D97706"
-                                        : "#DC2626",
-                                  },
-                                ]}
-                              >
-                                {video.status === "READY"
-                                  ? "Sẵn sàng"
-                                  : video.status === "ANALYZING"
-                                  ? "Đang xử lý"
-                                  : "Lỗi"}
+                          </View>
+
+                          <View style={[styles.metaRow, { marginTop: 2 }]}>
+                            <View style={styles.metaBadge}>
+                              <Ionicons
+                                name="time-outline"
+                                size={12}
+                                color="#6B7280"
+                              />
+                              <Text style={styles.metaBadgeText}>
+                                Video bài giảng
                               </Text>
                             </View>
                           </View>
-
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 4,
-                              marginTop: 6,
-                            }}
-                          >
-                            <Ionicons
-                              name="time-outline"
-                              size={14}
-                              color="#6B7280"
-                            />
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                color: "#6B7280",
-                                fontWeight: "500",
-                              }}
-                            >
-                              {Math.floor(video.duration / 60)}:
-                              {String(video.duration % 60).padStart(2, "0")}
-                            </Text>
-                          </View>
                         </View>
 
-                        {/* Actions */}
-                        <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                        <View style={styles.videoActionsContainer}>
                           <TouchableOpacity
-                            style={[
-                              styles.videoActionButton,
-                              { paddingVertical: 4, paddingHorizontal: 8, flex: 0 },
-                            ]}
+                            style={styles.actionButtonSecondary}
                             onPress={() => updateVideo(video.id)}
                           >
-                            <Ionicons name="pencil" size={12} color="#FFFFFF" />
-                            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "600" }}>
+                            <Ionicons
+                              name="create-outline"
+                              size={16}
+                              color="#4B5563"
+                            />
+                            <Text style={styles.actionButtonTextSecondary}>
                               Sửa
                             </Text>
                           </TouchableOpacity>
-
                           <TouchableOpacity
-                            style={[
-                              styles.videoActionButton,
-                              styles.videoActionButtonDelete,
-                              { paddingVertical: 4, paddingHorizontal: 8, flex: 0 },
-                            ]}
+                            style={styles.actionButtonDanger}
                             onPress={() => {
                               Alert.alert(
                                 "Xác nhận xóa",
@@ -803,8 +739,12 @@ export default function LessonDetailScreen() {
                               );
                             }}
                           >
-                            <Ionicons name="trash" size={12} color="#FFFFFF" />
-                            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "600" }}>
+                            <Ionicons
+                              name="trash-outline"
+                              size={16}
+                              color="#DC2626"
+                            />
+                            <Text style={styles.actionButtonTextDanger}>
                               Xóa
                             </Text>
                           </TouchableOpacity>
@@ -812,90 +752,115 @@ export default function LessonDetailScreen() {
                       </View>
                     </View>
 
-                    {/* Description & Drill Info (Collapsible) */}
-                    {(video.description ||
+                    {/* Description & Drill Info (Refined) */}
+                    {!!(
+                      video.description ||
                       video.drillName ||
                       video.drillDescription ||
-                      video.drillPracticeSets) && (
-                      <View style={{ marginTop: 12 }}>
+                      video.drillPracticeSets
+                    ) && (
+                      <View style={styles.expandableContainer}>
                         <TouchableOpacity
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            backgroundColor: "#F9FAFB",
-                            padding: 8,
-                            borderRadius: 6,
-                          }}
+                          style={styles.expandHeader}
                           onPress={() =>
                             setExpandedDrill(
                               expandedDrill === video.id ? null : video.id
                             )
                           }
+                          activeOpacity={0.7}
                         >
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              fontWeight: "600",
-                              color: "#4B5563",
-                            }}
-                          >
-                            Thông tin chi tiết
-                          </Text>
+                          <View style={styles.expandHeaderTitle}>
+                            <Ionicons
+                              name={
+                                expandedDrill === video.id
+                                  ? "information-circle"
+                                  : "information-circle-outline"
+                              }
+                              size={18}
+                              color="#059669"
+                            />
+                            <Text style={styles.expandHeaderText}>
+                              Thông tin chi tiết
+                            </Text>
+                          </View>
                           <Ionicons
                             name={
                               expandedDrill === video.id
                                 ? "chevron-up"
                                 : "chevron-down"
                             }
-                            size={16}
-                            color="#6B7280"
+                            size={18}
+                            color="#9CA3AF"
                           />
                         </TouchableOpacity>
 
                         {expandedDrill === video.id && (
-                          <View style={{ marginTop: 8, gap: 8 }}>
-                            {video.description && (
-                              <Text style={styles.videoDescription}>
-                                {video.description}
-                              </Text>
+                          <View style={styles.expandedContent}>
+                            {!!video.description && (
+                              <View style={styles.videoDescriptionBox}>
+                                <Text style={styles.videoDescriptionText}>
+                                  {video.description}
+                                </Text>
+                              </View>
                             )}
-                            
-                            {(video.drillName || video.drillPracticeSets) && (
-                                <View style={styles.drillInfoSection}>
-                                    <View style={styles.drillInfoHeader}>
-                                        <View style={styles.drillInfoTitleContainer}>
-                                            <Ionicons name="fitness" size={16} color="#FFFFFF" />
-                                            <Text style={[styles.drillInfoTitle, { marginLeft: 6 }]}>
-                                                {video.drillName || "Bài tập"}
-                                            </Text>
-                                        </View>
+
+                            {!!(video.drillName || video.drillPracticeSets) && (
+                              <View style={styles.drillInfoCard}>
+                                <View style={styles.drillCardHeader}>
+                                  <View style={styles.drillTitleContainer}>
+                                    <View style={styles.drillIconCircle}>
+                                      <Ionicons
+                                        name="fitness"
+                                        size={16}
+                                        color="#FFFFFF"
+                                      />
                                     </View>
-                                    <View style={styles.drillInfoContent}>
-                                        {video.drillPracticeSets && (
-                                            <View style={styles.drillInfoItem}>
-                                                <View style={styles.drillInfoItemIcon}>
-                                                    <Ionicons name="repeat" size={14} color="#059669" />
-                                                </View>
-                                                <View style={styles.drillInfoItemText}>
-                                                    <Text style={styles.drillInfoLabel}>Số bộ tập</Text>
-                                                    <Text style={styles.drillInfoValue}>{video.drillPracticeSets} bộ</Text>
-                                                </View>
-                                            </View>
-                                        )}
-                                        {video.drillDescription && (
-                                            <View style={styles.drillInfoItem}>
-                                                <View style={styles.drillInfoItemIcon}>
-                                                    <Ionicons name="information-circle" size={14} color="#059669" />
-                                                </View>
-                                                <View style={styles.drillInfoItemText}>
-                                                    <Text style={styles.drillInfoLabel}>Mô tả bài tập</Text>
-                                                    <Text style={styles.drillInfoDescValue}>{video.drillDescription}</Text>
-                                                </View>
-                                            </View>
-                                        )}
-                                    </View>
+                                    <Text style={styles.drillTitleText}>
+                                      {video.drillName || "Bài tập tập luyện"}
+                                    </Text>
+                                  </View>
                                 </View>
+                                <View style={styles.drillCardBody}>
+                                  {!!video.drillPracticeSets && (
+                                    <View style={styles.drillMetaItem}>
+                                      <View style={styles.drillMetaIcon}>
+                                        <Ionicons
+                                          name="repeat"
+                                          size={14}
+                                          color="#059669"
+                                        />
+                                      </View>
+                                      <View style={styles.drillMetaContent}>
+                                        <Text style={styles.drillMetaLabel}>
+                                          Số SET tập luyện
+                                        </Text>
+                                        <Text style={styles.drillMetaValue}>
+                                          {video.drillPracticeSets} bộ
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  )}
+                                  {!!video.drillDescription && (
+                                    <View style={styles.drillMetaItem}>
+                                      <View style={styles.drillMetaIcon}>
+                                        <Ionicons
+                                          name="book-outline"
+                                          size={14}
+                                          color="#059669"
+                                        />
+                                      </View>
+                                      <View style={styles.drillMetaContent}>
+                                        <Text style={styles.drillMetaLabel}>
+                                          Hướng dẫn
+                                        </Text>
+                                        <Text style={styles.drillMetaDesc}>
+                                          {video.drillDescription}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  )}
+                                </View>
+                              </View>
                             )}
                           </View>
                         )}
@@ -1092,7 +1057,13 @@ export default function LessonDetailScreen() {
                   activeOpacity={0.7}
                 >
                   <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontWeight: "700",
+                      fontSize: 14,
+                    }}
+                  >
                     Thêm câu hỏi mới
                   </Text>
                 </TouchableOpacity>
@@ -1641,62 +1612,57 @@ export default function LessonDetailScreen() {
         </View>
       </Modal>
 
-      {/* Video Player Modal */}
+      {/* Video Player Modal - Premium Dark Theme */}
       <Modal
         visible={selectedVideo !== null}
-        animationType="slide"
-        presentationStyle="fullScreen"
+        animationType="fade"
+        transparent={true}
         onRequestClose={() => setSelectedVideo(null)}
       >
-        <View style={{ flex: 1, backgroundColor: "#000", paddingTop: 40 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: 16,
-              backgroundColor: "#fff",
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => setSelectedVideo(null)}
-              style={{ padding: 8 }}
-            >
-              <Ionicons name="close" size={28} color="#000" />
-            </TouchableOpacity>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                flex: 1,
-                marginLeft: 12,
-              }}
-              numberOfLines={1}
-            >
-              {selectedVideo?.title || "Video"}
-            </Text>
-          </View>
+        <View style={styles.videoModalContainer}>
+          {/* Backdrop Blur/Overlay */}
+          <View style={styles.videoModalBackdrop} />
 
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            {selectedVideo?.publicUrl ? (
-              <VideoView
-                player={createVideoPlayer({
-                  uri: selectedVideo.publicUrl,
-                })}
-                style={styles.fullScreenVideo}
-                nativeControls
-                contentFit="contain"
-              />
-            ) : (
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#fff" />
-                <Text style={{ color: "#fff", marginTop: 12 }}>
-                  Đang tải video...
+          <View style={styles.videoModalContent}>
+            {/* Elegant Header */}
+            <View style={styles.videoModalHeader}>
+              <TouchableOpacity
+                onPress={() => setSelectedVideo(null)}
+                style={styles.videoModalCloseBtn}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              <View style={styles.videoModalTitleContainer}>
+                <Text style={styles.videoModalTitle} numberOfLines={1}>
+                  {selectedVideo?.title || "Video bài giảng"}
                 </Text>
+                <Text style={styles.videoModalSubtitle}>{lessonName}</Text>
               </View>
-            )}
+            </View>
+
+            {/* Video Player Area */}
+            <View style={styles.videoModalPlayerArea}>
+              {selectedVideo?.publicUrl ? (
+                <View style={styles.videoPlayerWrapper}>
+                  <VideoView
+                    player={createVideoPlayer({
+                      uri: selectedVideo.publicUrl,
+                    })}
+                    style={styles.premiumVideoView}
+                    nativeControls
+                    contentFit="contain"
+                  />
+                </View>
+              ) : (
+                <View style={styles.videoLoadingCenter}>
+                  <ActivityIndicator size="large" color="#059669" />
+                  <Text style={styles.videoLoadingText}>
+                    Đang chuẩn bị video...
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </Modal>
@@ -2016,7 +1982,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
-  // Video Styles
   videosHeader: {
     marginBottom: 8,
     paddingBottom: 6,
@@ -2028,172 +1993,272 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111827",
   },
+  // --- PREMIUM VIDEO SECTION STYLES ---
   videoCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 8,
-    marginBottom: 10,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F3F4F6",
     shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
-    overflow: "hidden",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  videoCardHeader: {
+  videoCardContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-    gap: 8,
+    gap: 16,
   },
-  videoCardTitle: {
-    flex: 1,
-  },
-  videoStepLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 2,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  videoTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 16,
-  },
-  videoDescription: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: 2,
-    fontWeight: "400",
-    lineHeight: 14,
-  },
-  videoDescriptionSection: {
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginBottom: 8,
-    borderLeftWidth: 2,
-    borderLeftColor: "#059669",
-  },
-  videoMetadataSection: {
-    flexDirection: "row",
-    gap: 10,
-    backgroundColor: "#F9FAFB",
-    padding: 10,
-    borderRadius: 6,
-  },
-  metadataColumn: {
-    flex: 1,
-    gap: 8,
-  },
-  metadataItem: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "flex-start",
-  },
-  metadataLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 1,
-  },
-  metadataValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111827",
-    marginTop: 1,
-  },
-  videoDrillLabel: {
-    fontWeight: "700",
-    color: "#059669",
-  },
-  videoStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    minWidth: 60,
-    alignItems: "center",
-  },
-  videoStatusText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  videoCardInfo: {
-    gap: 6,
-  },
-  videoInfoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  videoInfoText: {
-    fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  /* Video Thumbnail Styles */
-  videoThumbnail: {
-    width: "100%",
-    height: 120, // Reduced from 140
-    backgroundColor: "#E5E7EB",
-    borderRadius: 6,
-    marginBottom: 8,
-    justifyContent: "center",
-    alignItems: "center",
+  thumbnailContainer: {
+    width: 130,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: "#111827",
     overflow: "hidden",
     position: "relative",
   },
-  videoThumbnailPlaceholder: {
+  thumbnailImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#9CA3AF",
-    justifyContent: "center",
-    alignItems: "center",
+    opacity: 0.9,
   },
-  videoPlayButtonOverlay: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  // Video Player Modal Styles
-  modalBackdrop: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-  },
-  modalWrapper: {
+  thumbnailPlaceholder: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#374151",
+  },
+  thumbnailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+  },
+  playButtonGlass: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(4px)", // Fallback for some systems
+  },
+  durationOverlayBadge: {
+    position: "absolute",
+    bottom: 6,
+    right: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  durationOverlayText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  videoInfoContainer: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
+  videoTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  videoTitleText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1F2937",
+    lineHeight: 20,
+  },
+  statusBadgeRefined: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    gap: 4,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusTextRefined: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  metaRow: {
+    flexDirection: "row",
+    marginTop: 4,
+  },
+  metaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  metaBadgeText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  videoActionsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
+  },
+  actionButtonSecondary: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  actionButtonTextSecondary: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4B5563",
+  },
+  actionButtonDanger: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(220, 38, 38, 0.05)",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    gap: 4,
+  },
+  actionButtonTextDanger: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#DC2626",
+  },
+
+  // --- EXPANDABLE DRILL INFO ---
+  expandableContainer: {
+    marginTop: 12,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  expandHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 12,
   },
-  closeButton: {
-    position: "absolute",
-    right: 10,
-    top: 10,
-    zIndex: 10,
-    width: 32,
-    height: 32,
+  expandHeaderTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  expandHeaderText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  expandedContent: {
+    padding: 12,
+    paddingTop: 0,
+    gap: 12,
+  },
+  videoDescriptionBox: {
+    backgroundColor: "#FFFFFF",
+    padding: 10,
     borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#10B981",
+  },
+  videoDescriptionText: {
+    fontSize: 13,
+    color: "#4B5563",
+    lineHeight: 18,
+  },
+  drillInfoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ECFDF5",
+    overflow: "hidden",
+  },
+  drillCardHeader: {
+    backgroundColor: "#10B981",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  drillTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  drillIconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
+  drillTitleText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  drillCardBody: {
+    padding: 10,
+    gap: 10,
+  },
+  drillMetaItem: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  drillMetaIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  drillMetaContent: {
+    flex: 1,
+  },
+  drillMetaLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  drillMetaValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1F2937",
+  },
+  drillMetaDesc: {
+    fontSize: 12,
+    color: "#4B5563",
+    lineHeight: 16,
+  },
+
   modalContent: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -2201,140 +2266,75 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 8,
   },
-  video: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#000",
-  },
-  videoPlayer: {
-    width: "100%",
-    aspectRatio: 16 / 9,
+  // --- PREMIUM VIDEO PLAYER MODAL ---
+  videoModalContainer: {
+    flex: 1,
     backgroundColor: "#000000",
   },
-  fullScreenVideo: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#000",
+  videoModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
-
-  /* Quick Metadata Row */
-  quickMetadataRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 8,
-  },
-  quickMetadataItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#F0FDF4",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
+  videoModalContent: {
     flex: 1,
   },
-  quickMetadataText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#059669",
-  },
-
-  /* Video Actions Row */
-  videoActionsRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 6,
-  },
-  videoActionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#059669",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 5,
-    gap: 4,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  videoActionButtonDelete: {
-    backgroundColor: "#DC2626",
-    shadowColor: "#DC2626",
-  },
-  videoActionButtonText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-
-  /* Drill Information Section */
-  drillInfoSection: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 6,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  drillInfoHeader: {
+  videoModalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#059669",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingTop: 48,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
-  drillInfoTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  drillInfoTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  drillInfoContent: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    gap: 8,
-  },
-  drillInfoItem: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "flex-start",
-  },
-  drillInfoItemIcon: {
-    width: 16,
-    alignItems: "center",
+  videoModalCloseBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     justifyContent: "center",
-    paddingTop: 2,
+    alignItems: "center",
   },
-  drillInfoItemText: {
+  videoModalTitleContainer: {
     flex: 1,
-    gap: 2,
+    alignItems: "center",
+    marginHorizontal: 16,
   },
-  drillInfoLabel: {
-    fontSize: 10,
+  videoModalTitle: {
+    color: "#FFFFFF",
+    fontSize: 17,
     fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    textAlign: "center",
   },
-  drillInfoValue: {
+  videoModalSubtitle: {
+    color: "rgba(255, 255, 255, 0.6)",
     fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
+    marginTop: 2,
   },
-  drillInfoDescValue: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#374151",
-    lineHeight: 15,
+  videoModalPlayerArea: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  videoPlayerWrapper: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#111827",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+  },
+  premiumVideoView: {
+    flex: 1,
+  },
+  videoLoadingCenter: {
+    alignItems: "center",
+    gap: 16,
+  },
+  videoLoadingText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
   },
 
   /* Skeleton Loading Styles */
