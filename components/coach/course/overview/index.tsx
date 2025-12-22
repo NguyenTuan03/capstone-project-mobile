@@ -32,15 +32,17 @@ const StatCard = ({
   footer?: React.ReactNode;
 }) => {
   return (
-    <View style={styles.statCard}>
-      <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={18} color={iconColor} />
+    <View style={styles.statCardRefined}>
+      <View style={styles.statRowTop}>
+        <View style={[styles.iconWrapRefined, { backgroundColor: iconBg }]}>
+          <Ionicons name={icon} size={20} color={iconColor} />
+        </View>
+        <View style={styles.statTextGroup}>
+          <Text style={styles.statLabelRefined}>{label}</Text>
+          <Text style={styles.statValueRefined}>{value}</Text>
+        </View>
       </View>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-      {footer ? (
-        <View style={{ marginTop: 8, alignSelf: "stretch" }}>{footer}</View>
-      ) : null}
+      {footer ? <View style={styles.statFooter}>{footer}</View> : null}
     </View>
   );
 };
@@ -86,25 +88,20 @@ const InfoRow = ({
   valueStyle,
 }: {
   label: string;
-  value: string;
+  value: string | undefined | null;
   icon?: any;
   multiline?: boolean;
   valueStyle?: any;
 }) => (
-  <View style={styles.infoRow}>
-    <View style={styles.infoLabelWrap}>
-      {icon ? (
-        <Ionicons
-          name={icon}
-          size={15}
-          color="#6B7280"
-          style={{ marginRight: 6 }}
-        />
-      ) : null}
-      <Text style={styles.infoLabel}>{label}</Text>
+  <View style={styles.infoRowRefined}>
+    <View style={styles.infoLabelLeft}>
+      <View style={styles.infoIconBox}>
+        {icon && <Ionicons name={icon} size={14} color="#059669" />}
+      </View>
+      <Text style={styles.infoLabelText}>{label}</Text>
     </View>
     <Text
-      style={[styles.infoValue, valueStyle]}
+      style={[styles.infoValueText, valueStyle]}
       numberOfLines={multiline ? undefined : 2}
     >
       {value || "—"}
@@ -123,22 +120,27 @@ const ChipRow = ({ chips }: { chips: string[] }) => (
   </View>
 );
 const statusMap = (status: string) => {
-  const map: Record<string, { text: string; color: string }> = {
-    APPROVED: { text: "Đã duyệt", color: "#16A34A" },
-    PENDING: { text: "Chờ duyệt", color: "#F59E0B" },
-    REJECTED: { text: "Từ chối", color: "#DC2626" },
-    ON_GOING: { text: "Đang diễn ra", color: "#16A34A" },
-    COMPLETED: { text: "Hoàn thành", color: "#16A34A" },
-    PENDING_APPROVAL: { text: "Chờ duyệt", color: "#F59E0B" },
-    FULL: { text: "Đã đủ học viên", color: "#DC2626" },
+  const map: Record<string, { text: string; color: string; bg: string }> = {
+    APPROVED: { text: "Đã duyệt", color: "#16A34A", bg: "#DCFCE7" },
+    PENDING: { text: "Chờ duyệt", color: "#F59E0B", bg: "#FEF3C7" },
+    REJECTED: { text: "Từ chối", color: "#DC2626", bg: "#FEE2E2" },
+    ON_GOING: { text: "Đang diễn ra", color: "#16A34A", bg: "#DCFCE7" },
+    COMPLETED: { text: "Hoàn thành", color: "#3B82F6", bg: "#DBEAFE" },
+    PENDING_APPROVAL: { text: "Chờ duyệt", color: "#F59E0B", bg: "#FEF3C7" },
+    FULL: { text: "Đã đủ học viên", color: "#DC2626", bg: "#FEE2E2" },
   };
-  const found = map[status] || { text: status, color: "#6B7280" };
+  const found = map[status] || {
+    text: status,
+    color: "#6B7280",
+    bg: "#F3F4F6",
+  };
   return (
-    <Text
-      style={[styles.badge, { color: found.color, borderColor: found.color }]}
-    >
-      {found.text}
-    </Text>
+    <View style={[styles.badgePremium, { backgroundColor: found.bg }]}>
+      <View style={[styles.badgeDot, { backgroundColor: found.color }]} />
+      <Text style={[styles.badgeTextPremium, { color: found.color }]}>
+        {found.text}
+      </Text>
+    </View>
   );
 };
 
@@ -277,12 +279,12 @@ export const OverviewTab: React.FC<Props> = ({
 
       {/* === Description === */}
       <Section title="Mô tả">
-        <View style={styles.descriptionBox}>
+        <View style={styles.descriptionBoxRefined}>
           <Text
-            style={styles.descriptionText}
-            numberOfLines={descExpanded ? undefined : 4}
+            style={styles.descriptionTextRefined}
+            numberOfLines={descExpanded ? undefined : 6}
           >
-            {course?.description || "—"}
+            {course?.description || "Chưa có mô tả chi tiết cho khóa học này."}
           </Text>
         </View>
       </Section>
@@ -363,175 +365,240 @@ export const OverviewTab: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  tabContent: { flex: 1 },
+  tabContent: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
 
   /* Section */
   section: {
     backgroundColor: "#FFFFFF",
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-    // subtle shadow
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 12,
+    borderRadius: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 16,
     justifyContent: "space-between",
   },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#111827" },
-  sectionHint: { fontSize: 11, color: "#6B7280" },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: -0.3,
+  },
+  sectionHint: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
 
   /* KPI grid */
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    marginBottom: 10,
+    paddingHorizontal: 8,
+    paddingTop: 12,
+    marginBottom: 4,
   },
-  statCard: {
-    width: "47.6%",
+  statCardRefined: {
+    width: "46.5%",
     backgroundColor: "#FFFFFF",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "flex-start",
+    padding: 14,
+    borderRadius: 16,
+    margin: 6,
     shadowColor: "#000",
     shadowOpacity: 0.04,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
-  iconWrap: {
-    borderRadius: 8,
-    padding: 7,
-    marginBottom: 7,
+  statRowTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  statLabel: { fontSize: 11, color: "#6B7280", fontWeight: "500" },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "700",
+  iconWrapRefined: {
+    borderRadius: 12,
+    padding: 8,
+    width: 38,
+    height: 38,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statTextGroup: {
+    flex: 1,
+  },
+  statLabelRefined: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  statValueRefined: {
+    fontSize: 16,
+    fontWeight: "800",
     color: "#111827",
-    marginTop: 3,
+  },
+  statFooter: {
+    marginTop: 12,
+    alignSelf: "stretch",
   },
 
   /* Progress */
   progressOuter: {
     height: 6,
-    borderRadius: 999,
+    borderRadius: 3,
     backgroundColor: "#F3F4F6",
     overflow: "hidden",
   },
   progressInner: {
     height: "100%",
     backgroundColor: "#3B82F6",
-    borderRadius: 999,
+    borderRadius: 3,
   },
 
-  /* Info rows */
-  infoRow: {
+  /* Info rows refined */
+  infoRowRefined: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#F9FAFB",
   },
-  infoLabelWrap: {
+  infoLabelLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    paddingRight: 8,
+    gap: 10,
   },
-  infoLabel: { fontSize: 13, color: "#6B7280" },
-  infoValue: {
-    fontSize: 13,
-    color: "#111827",
+  infoIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(5, 150, 105, 0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  infoLabelText: {
+    fontSize: 14,
+    color: "#6B7280",
     fontWeight: "500",
+  },
+  infoValueText: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "600",
     flex: 1,
     textAlign: "right",
   },
 
-  /* Description */
-  descriptionBox: {
+  /* Description Refined */
+  descriptionBoxRefined: {
     backgroundColor: "#F9FAFB",
-    padding: 12,
-    borderRadius: 10,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#F3F4F6",
   },
-  descriptionText: { fontSize: 13, color: "#374151", lineHeight: 19 },
-  seeMoreBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    alignSelf: "flex-start",
+  descriptionTextRefined: {
+    fontSize: 14,
+    color: "#4B5563",
+    lineHeight: 22,
+    fontWeight: "400",
   },
-  seeMoreText: { fontSize: 12, color: "#2563EB", fontWeight: "600" },
 
   /* Chips */
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 16,
+  },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: "#EFF6FF",
     borderWidth: 1,
     borderColor: "#DBEAFE",
   },
-  chipText: { fontSize: 11, color: "#1D4ED8", fontWeight: "600" },
-
-  /* Badge */
-  badge: {
-    fontSize: 11,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
-    fontWeight: "600",
+  chipText: {
+    fontSize: 12,
+    color: "#1D4ED8",
+    fontWeight: "700",
   },
 
-  /* Feedback */
+  /* Badge Premium */
+  badgePremium: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 6,
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  badgeTextPremium: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  /* Feedback Refined */
   feedbackItem: {
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   feedbackHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 8,
-    gap: 8,
   },
   ratingContainer: {
     flexDirection: "row",
-    gap: 3,
+    gap: 2,
   },
   feedbackAuthorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
     flex: 1,
+    marginLeft: 8,
   },
   feedbackAuthor: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#111827",
   },
   feedbackComment: {
-    fontSize: 13,
-    color: "#374151",
-    lineHeight: 18,
-    marginBottom: 6,
+    fontSize: 14,
+    color: "#4B5563",
+    lineHeight: 20,
+    marginBottom: 8,
+    fontWeight: "400",
   },
   feedbackDate: {
     fontSize: 11,
@@ -539,8 +606,10 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   loadingContainer: {
-    paddingVertical: 16,
+    paddingVertical: 20,
     alignItems: "center",
     justifyContent: "center",
   },
 });
+
+export default OverviewTab;
