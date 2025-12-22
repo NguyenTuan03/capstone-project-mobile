@@ -34,6 +34,7 @@ export interface AiSubjectGenerationResponse {
       drillName?: string;
       drillDescription?: string;
       drillPracticeSets?: string;
+      createInstructions?: string;
     };
     quiz: {
       title: string;

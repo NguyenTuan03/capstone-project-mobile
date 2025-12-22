@@ -226,7 +226,7 @@ export default function EditSubjectScreen() {
               ]}
               onPress={() => setEditStatus(status as any)}
             >
-              <Text>{status === "DRAFT" ? "Nháp" : "Công khai"}</Text>
+              <Text>{status === "DRAFT" ? "Nháp" : "Đã xuất bản"}</Text>
             </TouchableOpacity>
           ))}
         </View>

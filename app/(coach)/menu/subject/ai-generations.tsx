@@ -515,6 +515,16 @@ const AIGenerationsScreen = () => {
                                         Video
                                       </Text>
                                     </View>
+                                    {/* Create Instructions (AI-generated) */}
+                                    {lesson.video.createInstructions && (
+                                      <View style={{ marginBottom: 8, marginTop: 2, backgroundColor: '#FEF3C7', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                                        <Ionicons name="bulb" size={16} color="#F59E0B" style={{ marginTop: 2 }} />
+                                        <View style={{ flex: 1 }}>
+                                          <Text style={[styles.detailLabel, { color: '#B45309', fontWeight: '700', marginBottom: 2 }]}>Hướng dẫn tạo video:</Text>
+                                          <Text style={{ color: '#92400E', fontSize: 13, lineHeight: 18 }}>{lesson.video.createInstructions}</Text>
+                                        </View>
+                                      </View>
+                                    )}
                                     <Text style={styles.detailText}>
                                       <Text style={styles.detailLabel}>
                                         Tiêu đề:

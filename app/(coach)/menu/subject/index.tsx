@@ -1,5 +1,5 @@
 import aiSubjectGenerationService from "@/services/aiSubjectGeneration.service";
-import { get, remove } from "@/services/http/httpService";
+import { get, patch, remove } from "@/services/http/httpService";
 import storageService from "@/services/storageService";
 import { Subject } from "@/types/subject";
 import { Ionicons } from "@expo/vector-icons";
@@ -77,7 +77,6 @@ const CoachSubjectScreen = () => {
       const fullPrompt = `${aiPrompt.trim()}. Tài liệu sẽ có ${lessonCount} bài học.`;
       const generation = await aiSubjectGenerationService.create(fullPrompt);
 
-
       // Navigate to AI generations list with highlight
       setAiModalVisible(false);
       setAiPrompt("");
@@ -109,7 +108,7 @@ const CoachSubjectScreen = () => {
 
     Alert.alert(
       "Xuất bản tài liệu",
-      `Bạn có muốn xuất bản tài liệu "${subject.name}" không? Tài liệu sẽ hiển thị công khai.`,
+      `Bạn có muốn xuất bản tài liệu "${subject.name}" không? Tài liệu sẽ hiển thị Đã xuất bản.`,
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -117,7 +116,7 @@ const CoachSubjectScreen = () => {
           style: "default",
           onPress: async () => {
             try {
-              await get(`/v1/subjects/${subject.id}/publish`);
+              await patch(`/v1/subjects/${subject.id}/publish`);
 
               setSubjects((prev) =>
                 prev.map((item) =>
@@ -340,7 +339,8 @@ const CoachSubjectScreen = () => {
               <TouchableOpacity
                 onPress={() =>
                   router.push({
-                    pathname: `/(coach)/menu/subject/${subject.id}/lesson` as any,
+                    pathname:
+                      `/(coach)/menu/subject/${subject.id}/lesson` as any,
                     params: {
                       subjectId: subject.id,
                       subjectName: subject.name,
@@ -381,11 +381,15 @@ const CoachSubjectScreen = () => {
                         {subject.status === "DRAFT"
                           ? "● Bản nháp"
                           : subject.status === "PUBLISHED"
-                          ? "● Công khai"
+                          ? "● Đã xuất bản"
                           : "● " + subject.status}
                       </Text>
                       <View style={styles.lessonBadge}>
-                        <Ionicons name="book-outline" size={12} color="#6B7280" />
+                        <Ionicons
+                          name="book-outline"
+                          size={12}
+                          color="#6B7280"
+                        />
                         <Text style={styles.lessonCount}>
                           {subject.lessons?.length || 0} bài
                         </Text>
@@ -478,7 +482,7 @@ const CoachSubjectScreen = () => {
                   {selectedSubject.status === "DRAFT"
                     ? "● Bản nháp"
                     : selectedSubject.status === "PUBLISHED"
-                    ? "● Công khai"
+                    ? "● Đã xuất bản"
                     : "● " + selectedSubject.status}
                 </Text>
               </View>
@@ -497,9 +501,11 @@ const CoachSubjectScreen = () => {
                   <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.actionButtonTitle}>Xuất bản tài liệu</Text>
+                  <Text style={styles.actionButtonTitle}>
+                    Xuất bản tài liệu
+                  </Text>
                   <Text style={styles.actionButtonDesc}>
-                    Chuyển trạng thái sang công khai
+                    Chuyển trạng thái sang Đã xuất bản
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
@@ -590,8 +596,7 @@ const CoachSubjectScreen = () => {
             <Text style={styles.aiTitle}>Mô tả tài liệu bạn muốn tạo</Text>
             <Text style={styles.aiDescription}>
               AI sẽ tự động tạo cấu trúc tài liệu hoàn chỉnh với các bài học,
-              bài kiểm tra và video. Bạn có thể chỉnh sửa trước khi
-              tạo.
+              bài kiểm tra và video. Bạn có thể chỉnh sửa trước khi tạo.
             </Text>
 
             {/* Examples */}

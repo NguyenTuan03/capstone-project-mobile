@@ -359,24 +359,22 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
   ).current;
 
   const renderDayHeader = (day: any) => {
-    const sessionCountColor = getSessionCountColor(day.sessions.length);
-
     return (
       <TouchableOpacity
         key={day.dateStr}
         style={[
           styles.dayHeader,
           day.isSelected && styles.dayHeaderSelected,
-          day.hasSessions && styles.dayHeaderWithSessions,
           day.isToday && styles.dayHeaderToday,
         ]}
         onPress={() => handleDayPress(day)}
+        activeOpacity={0.8}
       >
         <Text
           style={[
             styles.dayText,
             day.isSelected && styles.dayTextSelected,
-            day.isToday && styles.dayTextToday,
+            day.isToday && !day.isSelected && styles.dayTextToday,
           ]}
         >
           {day.dayShort}
@@ -385,24 +383,16 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           style={[
             styles.dayNumber,
             day.isSelected && styles.dayNumberSelected,
-            day.isToday && styles.dayNumberToday,
+            day.isToday && !day.isSelected && styles.dayNumberToday,
           ]}
         >
           {day.dayNumber}
         </Text>
-        {day.hasSessions ? (
-          <View
-            style={[
-              styles.sessionBadge,
-              { backgroundColor: sessionCountColor },
-            ]}
-          >
-            <Text style={styles.sessionBadgeText}>{day.sessions.length}</Text>
-          </View>
-        ) : (
-          <View style={styles.emptyIndicator} />
-        )}
-        {day.isToday && !day.isSelected && <View style={styles.todayDot} />}
+        {day.isSelected && day.isToday ? (
+          <View style={styles.todayDotStrip} />
+        ) : day.hasSessions ? (
+          <View style={styles.sessionDot} />
+        ) : null}
       </TouchableOpacity>
     );
   };
@@ -413,8 +403,6 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         styles.sessionCard,
         {
           borderLeftColor: getSessionStatusColor(item.status),
-          shadowColor: getSessionStatusColor(item.status),
-          shadowOpacity: 0.2,
         },
       ]}
       onPress={() => handleSessionPress(item)}
@@ -441,9 +429,10 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => handleEditSession(item)}
+            activeOpacity={0.6}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="create-outline" size={18} color="#059669" />
+            <Ionicons name="create-outline" size={16} color="#059669" />
           </TouchableOpacity>
         </View>
       </View>
@@ -454,13 +443,13 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
         </Text>
         <View style={styles.sessionMeta}>
           <View style={styles.metaItem}>
-            <Ionicons name="book-outline" size={12} color="#6B7280" />
+            <Ionicons name="book-outline" size={14} color="#9CA3AF" />
             <Text style={styles.courseName}>{item.courseName}</Text>
           </View>
           <View style={styles.metaItem}>
-            <Ionicons name="location-outline" size={12} color="#6B7280" />
-            <Text style={styles.locationText} numberOfLines={1}>
-              {item.course?.court.address}
+            <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+            <Text style={styles.locationText} numberOfLines={2}>
+              {item.course?.court.address || "Chưa có địa điểm"}
             </Text>
           </View>
         </View>
@@ -470,9 +459,13 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 
   const renderEmptyDay = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
-      <Text style={styles.emptyTitle}>Không có buổi học</Text>
-      <Text style={styles.emptySubtitle}>Thưởng thức ngày nghỉ nhé!</Text>
+      <View style={styles.emptyIconBoxLarge}>
+        <Ionicons name="calendar-clear-outline" size={40} color="#D1D5DB" />
+      </View>
+      <Text style={styles.emptyTitle}>Nghỉ dưỡng sức nào!</Text>
+      <Text style={styles.emptySubtitle}>
+        Không có lịch dạy cho ngày được chọn
+      </Text>
     </View>
   );
 
@@ -514,60 +507,95 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
   return (
     <View style={styles.container}>
       <View {...panResponder.panHandlers} style={styles.gestureContainer}>
-        {/* Week Navigation - Simplified */}
-        <View style={styles.weekHeader}>
-          <View style={styles.weekTitleContainer}>
-            <Text style={styles.monthYear}>
+        {/* Week Navigation & Selector Row */}
+        <View style={styles.topSelectorRow}>
+          <View style={styles.weekTitleGroup}>
+            <Text style={styles.monthYearText}>
               Tháng {format(currentDate, "M/yyyy")}
             </Text>
-            <Text style={styles.weekRange}>
-              {format(weekStart, "dd")} - {format(weekEnd, "dd")}{" "}
+            <Text style={styles.weekRangeText}>
+              Tuần: {format(weekStart, "dd/MM")} - {format(weekEnd, "dd/MM")}
             </Text>
           </View>
 
-          {!isCurrentWeek && (
+          <View style={styles.headerControls}>
             <TouchableOpacity
-              style={styles.todayButtonPrimary}
-              onPress={goToToday}
-              activeOpacity={0.8}
+              style={styles.navIconBtn}
+              onPress={() => navigateWeek("prev")}
+              activeOpacity={0.6}
             >
-              <Ionicons name="today" size={16} color="#FFFFFF" />
-              <Text style={styles.todayButtonPrimaryText}>Hôm nay</Text>
+              <Ionicons name="chevron-back" size={20} color="#374151" />
             </TouchableOpacity>
-          )}
-        </View>
 
-        {/* Swipe Hint */}
-        <View style={styles.swipeHint}>
-          <Ionicons name="chevron-back" size={12} color="#9CA3AF" />
-          <Text style={styles.swipeHintText}>Vuốt để chuyển tuần</Text>
-          <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
-        </View>
+            {!isCurrentWeek && (
+              <TouchableOpacity
+                style={styles.todayBtnRefined}
+                onPress={goToToday}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.todayBtnText}>Hôm nay</Text>
+              </TouchableOpacity>
+            )}
 
-        {/* Week Summary Stats */}
-        <View style={styles.weekSummary}>
-          <View style={styles.statItem}>
-            <Ionicons name="calendar" size={16} color="#059669" />
-            <Text style={styles.statValue}>{weekStats.totalSessions}</Text>
-            <Text style={styles.statLabel}>buổi học</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Ionicons name="time" size={16} color="#3B82F6" />
-            <Text style={styles.statValue}>{weekStats.timeText}</Text>
-            <Text style={styles.statLabel}>giảng dạy</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-            <Text style={styles.statValue}>{weekStats.completedSessions}</Text>
-            <Text style={styles.statLabel}>hoàn thành</Text>
+            <TouchableOpacity
+              style={styles.navIconBtn}
+              onPress={() => navigateWeek("next")}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="chevron-forward" size={20} color="#374151" />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Day Headers */}
-        <View style={styles.daysContainer}>
-          {weekData.map(renderDayHeader)}
+        {/* Day Headers Row */}
+        <View style={styles.daysStripContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.daysStripContent}
+          >
+            {weekData.map(renderDayHeader)}
+          </ScrollView>
+        </View>
+
+        {/* Week Summary Stats Row */}
+        <View style={styles.summaryStatsRefined}>
+          <View style={styles.summaryItem}>
+            <View
+              style={[styles.summaryIconBox, { backgroundColor: "#F0FDF4" }]}
+            >
+              <Ionicons name="calendar" size={16} color="#16A34A" />
+            </View>
+            <View>
+              <Text style={styles.summaryValue}>{weekStats.totalSessions}</Text>
+              <Text style={styles.summaryLabel}>Buổi dạy</Text>
+            </View>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <View
+              style={[styles.summaryIconBox, { backgroundColor: "#EFF6FF" }]}
+            >
+              <Ionicons name="time" size={16} color="#2563EB" />
+            </View>
+            <View>
+              <Text style={styles.summaryValue}>{weekStats.timeText}</Text>
+              <Text style={styles.summaryLabel}>Thời gian</Text>
+            </View>
+          </View>
+          <View style={styles.summaryItem}>
+            <View
+              style={[styles.summaryIconBox, { backgroundColor: "#FEF2F2" }]}
+            >
+              <Ionicons name="checkmark-circle" size={16} color="#DC2626" />
+            </View>
+            <View>
+              <Text style={styles.summaryValue}>
+                {weekStats.completedSessions}
+              </Text>
+              <Text style={styles.summaryLabel}>Đã xong</Text>
+            </View>
+          </View>
         </View>
 
         {/* Sessions for Selected Day */}
@@ -770,399 +798,407 @@ const CustomWeeklyCalendar: React.FC<CustomWeeklyCalendarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
   },
   gestureContainer: {
     flex: 1,
   },
-  weekHeader: {
+  /* Top Selector Row */
+  topSelectorRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
   },
-  weekTitleContainer: {
-    flexDirection: "column",
-    justifyContent: "center",
+  weekTitleGroup: {
+    flex: 1,
   },
-  navButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#ECFDF5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  weekTitle: {
-    fontSize: 15,
-    fontWeight: "700",
+  monthYearText: {
+    fontSize: 18,
+    fontWeight: "800",
     color: "#111827",
+    letterSpacing: -0.5,
   },
-  monthYear: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  weekRange: {
+  weekRangeText: {
     fontSize: 12,
     color: "#6B7280",
+    fontWeight: "500",
     marginTop: 2,
   },
-  todayButtonPrimary: {
+  headerControls: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    backgroundColor: "#059669",
-    borderRadius: 8,
-    shadowColor: "#059669",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 8,
   },
-  todayButtonPrimaryText: {
+  navIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  todayBtnRefined: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(5, 150, 105, 0.1)",
+  },
+  todayBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 0.3,
+    color: "#059669",
   },
-  swipeHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+
+  /* Days Strip */
+  daysStripContainer: {
     backgroundColor: "#FFFFFF",
-    paddingVertical: 6,
-    gap: 6,
+    paddingBottom: 16,
+    paddingLeft: 12,
   },
-  swipeHintText: {
-    fontSize: 10,
-    color: "#9CA3AF",
-    fontWeight: "500",
-  },
-  daysContainer: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-    paddingBottom: 10,
-    gap: 3,
+  daysStripContent: {
+    paddingRight: 20,
+    gap: 10,
   },
   dayHeader: {
-    flex: 1,
+    width: 58,
+    height: 82,
+    borderRadius: 16,
+    backgroundColor: "#F9FAFB",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 3,
-    borderRadius: 12,
-    marginHorizontal: 1,
-    minHeight: 75,
-    justifyContent: "space-between",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   dayHeaderSelected: {
-    backgroundColor: "#DCFCE7",
-    borderWidth: 1.5,
-    borderColor: "#10B981",
-    shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  dayHeaderWithSessions: {
-    backgroundColor: "#FEF9C3",
-  },
-  dayText: {
-    fontSize: 10,
-    color: "#6B7280",
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  dayTextSelected: {
-    color: "#059669",
-    fontWeight: "700",
-  },
-  dayNumber: {
-    fontSize: 19,
-    fontWeight: "800",
-    color: "#1F2937",
-    marginTop: 4,
-  },
-  dayNumberSelected: {
-    color: "#059669",
-    fontSize: 20,
-  },
-  sessionBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 6,
-    paddingHorizontal: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  sessionBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  emptyIndicator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E5E7EB",
-    marginTop: 14,
-  },
-  todayDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
     backgroundColor: "#059669",
-    position: "absolute",
-    bottom: 4,
+    borderColor: "#059669",
+    shadowColor: "#059669",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   dayHeaderToday: {
     borderColor: "#059669",
-    borderWidth: 1,
+    borderWidth: 1.5,
+  },
+  dayText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  dayTextSelected: {
+    color: "rgba(255, 255, 255, 0.8)",
   },
   dayTextToday: {
     color: "#059669",
   },
+  dayNumber: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+    marginTop: 4,
+  },
+  dayNumberSelected: {
+    color: "#FFFFFF",
+  },
   dayNumberToday: {
     color: "#059669",
   },
+  todayDotStrip: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#FFFFFF",
+    marginTop: 6,
+  },
+  sessionDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#16A34A",
+    marginTop: 6,
+  },
+
+  /* Summary Stats Refined */
+  summaryStatsRefined: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginTop: -8,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  summaryItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  summaryIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  summaryValue: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  summaryLabel: {
+    fontSize: 10,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  summaryDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: "#F3F4F6",
+    marginHorizontal: 8,
+  },
+
+  /* Sessions List Container */
   sessionsContainer: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
   },
   sessionsContent: {
-    padding: 16,
-    paddingBottom: 80,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   selectedDayHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    marginTop: 8,
   },
   selectedDayTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
     color: "#111827",
-    textTransform: "capitalize",
+    letterSpacing: -0.3,
   },
   sessionCount: {
     fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "500",
+    color: "#059669",
+    fontWeight: "700",
+    backgroundColor: "rgba(5, 150, 105, 0.08)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   sessionItem: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
+
+  /* Session Card Premium */
   sessionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 20,
+    padding: 18,
+    borderLeftWidth: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   sessionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
+    alignItems: "center",
+    marginBottom: 14,
   },
   timeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    gap: 6,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   sessionTime: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#4B5563",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  sessionContent: {
-    gap: 4,
-  },
-  sessionName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1F2937",
-    lineHeight: 24,
-  },
-  sessionMeta: {
-    marginTop: 4,
-    gap: 4,
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  courseName: {
-    fontSize: 13,
-    color: "#6B7280",
-    flex: 1,
-  },
-  locationText: {
-    fontSize: 13,
-    color: "#6B7280",
-    flex: 1,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: "#9CA3AF",
-  },
-  weekSummary: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 12,
-    marginTop: 12,
-    marginBottom: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    justifyContent: "space-between",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statItem: {
-    alignItems: "center",
-    gap: 2,
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1F2937",
-  },
-  statLabel: {
-    fontSize: 10,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: "#E5E7EB",
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  editButton: {
-    padding: 4,
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  editButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "rgba(5, 150, 105, 0.05)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sessionContent: {
+    gap: 6,
+  },
+  sessionName: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+    lineHeight: 24,
+    letterSpacing: -0.2,
+  },
+  sessionMeta: {
+    marginTop: 8,
+    gap: 6,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  courseName: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+    flex: 1,
+  },
+  locationText: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    flex: 1,
+    lineHeight: 18,
+  },
+
+  /* Empty State */
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    marginVertical: 20,
+  },
+  emptyIconBoxLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#F9FAFB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: "#9CA3AF",
+    fontWeight: "500",
+  },
+
+  /* Edit Modal */
   editModalContainer: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
   },
   editModalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
   },
   cancelButton: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   cancelButtonText: {
     fontSize: 16,
     color: "#6B7280",
+    fontWeight: "600",
   },
   saveButton: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#059669",
   },
   editModalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#111827",
   },
   editModalContent: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
   editSection: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 16,
-    gap: 8,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   editSectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 4,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   sessionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2937",
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111827",
   },
   courseTitle: {
     fontSize: 14,
-    color: "#4B5563",
+    color: "#6B7280",
+    fontWeight: "500",
   },
   editLabel: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "700",
     color: "#374151",
   },
   editInput: {
@@ -1171,29 +1207,33 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: "#F3F4F6",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   editInputText: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
     fontSize: 16,
-    color: "#1F2937",
+    color: "#111827",
+    fontWeight: "600",
   },
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
+    backgroundColor: "rgba(59, 130, 246, 0.08)",
+    padding: 16,
+    borderRadius: 16,
+    gap: 12,
+    marginTop: 8,
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: "#1E40AF",
+    fontWeight: "500",
+    lineHeight: 20,
   },
 });
 
