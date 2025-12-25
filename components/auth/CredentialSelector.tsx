@@ -16,7 +16,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 type BaseCredential = {
@@ -85,8 +85,9 @@ export const CredentialSelector = ({
 
   const pickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
       if (status !== "granted") {
         Alert.alert(
           "Cần quyền truy cập",
@@ -102,10 +103,14 @@ export const CredentialSelector = ({
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedForEdit(prev => prev ? {
-          ...prev,
-          imageUri: result.assets[0].uri
-        } : null);
+        setSelectedForEdit((prev) =>
+          prev
+            ? {
+                ...prev,
+                imageUri: result.assets[0].uri,
+              }
+            : null
+        );
       }
     } catch {
       Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại");
@@ -172,7 +177,7 @@ export const CredentialSelector = ({
   return (
     <View style={styles.container}>
       <View style={formStyles.fieldContainer}>
-        <Text style={formStyles.label}>Chứng chỉ (Tùy chọn)</Text>
+        <Text style={formStyles.label}>Chứng chỉ</Text>
 
         {/* Selected Credentials List */}
         {selectedCredentials.length > 0 && (
@@ -180,8 +185,8 @@ export const CredentialSelector = ({
             {selectedCredentials.map((cred, index) => (
               <View key={index} style={styles.credentialItem}>
                 {cred.imageUri && (
-                  <Image 
-                    source={{ uri: cred.imageUri }} 
+                  <Image
+                    source={{ uri: cred.imageUri }}
                     style={styles.credentialThumbnail}
                   />
                 )}
@@ -358,18 +363,22 @@ export const CredentialSelector = ({
                   <Text style={formStyles.label}>
                     Ảnh Chứng Chỉ <Text style={styles.requiredText}>*</Text>
                   </Text>
-                  
+
                   {selectedForEdit.imageUri ? (
                     <View style={styles.imagePreviewContainer}>
-                      <Image 
-                        source={{ uri: selectedForEdit.imageUri }} 
+                      <Image
+                        source={{ uri: selectedForEdit.imageUri }}
                         style={styles.credentialImage}
                       />
                       <TouchableOpacity
                         style={styles.changeImageButton}
                         onPress={pickImage}
                       >
-                        <Ionicons name="camera-outline" size={20} color="#059669" />
+                        <Ionicons
+                          name="camera-outline"
+                          size={20}
+                          color="#059669"
+                        />
                         <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
                       </TouchableOpacity>
                     </View>
@@ -378,8 +387,14 @@ export const CredentialSelector = ({
                       style={styles.uploadImageButton}
                       onPress={pickImage}
                     >
-                      <Ionicons name="camera-outline" size={32} color="#059669" />
-                      <Text style={styles.uploadImageText}>Tải lên ảnh chứng chỉ</Text>
+                      <Ionicons
+                        name="camera-outline"
+                        size={32}
+                        color="#059669"
+                      />
+                      <Text style={styles.uploadImageText}>
+                        Tải lên ảnh chứng chỉ
+                      </Text>
                       <Text style={styles.uploadImageSubtext}>Bắt buộc</Text>
                     </TouchableOpacity>
                   )}

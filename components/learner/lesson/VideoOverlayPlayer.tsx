@@ -412,11 +412,11 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                             : "play-circle"
                         }
                         size={28}
-                        color="#059669"
+                        color="#10B981"
                       />
                     </TouchableOpacity>
                   )}
-                  <Text style={[styles.sliderLabel, { color: "#059669" }]}>
+                  <Text style={[styles.sliderLabel, { color: "#10B981" }]}>
                     Học viên
                   </Text>
                 </View>
@@ -440,9 +440,9 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                 onSlidingComplete={(val: number) =>
                   handleSeekComplete("learner", val)
                 }
-                minimumTrackTintColor="#059669"
+                minimumTrackTintColor="#10B981"
                 maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
-                thumbTintColor="#059669"
+                thumbTintColor="#10B981"
               />
             </View>
 
@@ -535,17 +535,29 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                     <View style={styles.coachNoteContainer}>
                       <TouchableOpacity
                         style={styles.collapsibleHeader}
-                        onPress={() => toggleSection('coachNote')}
+                        onPress={() => toggleSection("coachNote")}
                         activeOpacity={0.7}
                       >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <Ionicons name="create" size={16} color="#059669" />
-                          <Text style={styles.sectionTitle}>Ghi chú từ HLV</Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons name="create" size={16} color="#10B981" />
+                          <Text style={styles.sectionTitle}>
+                            Ghi chú từ HLV
+                          </Text>
                         </View>
                         <Ionicons
-                          name={expandedSections.coachNote ? "chevron-up" : "chevron-down"}
+                          name={
+                            expandedSections.coachNote
+                              ? "chevron-up"
+                              : "chevron-down"
+                          }
                           size={20}
-                          color="#059669"
+                          color="#10B981"
                         />
                       </TouchableOpacity>
                       {expandedSections.coachNote && (
@@ -571,15 +583,29 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                     <View style={styles.summaryContainer}>
                       <TouchableOpacity
                         style={styles.collapsibleHeader}
-                        onPress={() => toggleSection('summary')}
+                        onPress={() => toggleSection("summary")}
                         activeOpacity={0.7}
                       >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <Ionicons name="document-text" size={16} color="#059669" />
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="document-text"
+                            size={16}
+                            color="#10B981"
+                          />
                           <Text style={styles.sectionTitle}>Tóm tắt</Text>
                         </View>
                         <Ionicons
-                          name={expandedSections.summary ? "chevron-up" : "chevron-down"}
+                          name={
+                            expandedSections.summary
+                              ? "chevron-up"
+                              : "chevron-down"
+                          }
                           size={20}
                           color="#6B7280"
                         />
@@ -598,89 +624,117 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                       <View style={styles.detailsContainer}>
                         <TouchableOpacity
                           style={styles.collapsibleHeaderAlt}
-                          onPress={() => toggleSection('details')}
+                          onPress={() => toggleSection("details")}
                           activeOpacity={0.7}
                         >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <Ionicons name="list" size={16} color="#059669" />
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Ionicons name="list" size={16} color="#10B981" />
                             <Text style={styles.sectionTitle}>
                               Phân tích theo giai đoạn
                             </Text>
                           </View>
                           <Ionicons
-                            name={expandedSections.details ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.details
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#6B7280"
                           />
                         </TouchableOpacity>
-                        {expandedSections.details && (<>
-                        {aiAnalysisResult.details.map((detail, index) => (
-                          <TouchableOpacity
-                            key={index}
-                            style={styles.detailItem}
-                            onPress={() => handleAnalysisItemClick(detail)}
-                          >
-                            <View style={styles.detailHeader}>
-                              <Text style={styles.detailType}>
-                                {detail.type === "PREPARATION"
-                                  ? "1. Tư thế chuẩn bị"
-                                  : detail.type === "SWING_AND_CONTACT"
-                                  ? "2. Vung vợt"
-                                  : "3. Động tác kết thúc"}
-                              </Text>
-                            </View>
-                            {/* Show timestamps */}
-                            {(detail.learnerTimestamp !== undefined ||
-                              detail.coachTimestamp !== undefined) && (
-                              <View style={styles.timestampContainer}>
-                                {detail.learnerTimestamp !== undefined && (
-                                  <Text style={styles.timestampLabel}>
-                                    Học viên:{" "}
-                                    {formatTime(detail.learnerTimestamp)}
+                        {expandedSections.details && (
+                          <>
+                            {aiAnalysisResult.details.map((detail, index) => (
+                              <TouchableOpacity
+                                key={index}
+                                style={styles.detailItem}
+                                onPress={() => handleAnalysisItemClick(detail)}
+                              >
+                                <View style={styles.detailHeader}>
+                                  <Text style={styles.detailType}>
+                                    {detail.type === "PREPARATION"
+                                      ? "1. Tư thế chuẩn bị"
+                                      : detail.type === "SWING_AND_CONTACT"
+                                      ? "2. Vung vợt"
+                                      : "3. Động tác kết thúc"}
                                   </Text>
-                                )}
-                                {detail.coachTimestamp !== undefined && (
-                                  <Text style={styles.timestampLabel}>
-                                    HLV: {formatTime(detail.coachTimestamp)}
-                                  </Text>
-                                )}
-                              </View>
-                            )}
-                            <Text style={styles.detailAdvanced}>
-                              {detail.advanced}
-                            </Text>
-                            {detail.strengths &&
-                              detail.strengths.length > 0 && (
-                                <View style={styles.strengthsContainer}>
-                                  <Text style={styles.strengthsLabel}>
-                                    Điểm mạnh:
-                                  </Text>
-                                  {detail.strengths.map((strength, i) => (
-                                    <Text key={i} style={styles.strengthText}>
-                                      • {strength}
-                                    </Text>
-                                  ))}
                                 </View>
-                              )}
-                            {detail.weaknesses &&
-                              detail.weaknesses.length > 0 && (
-                                <View style={styles.weaknessesContainer}>
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                                    <Ionicons name="close-circle" size={14} color="#DC2626" />
-                                    <Text style={styles.weaknessesLabel}>
-                                      Điểm yếu:
-                                    </Text>
+                                {/* Show timestamps */}
+                                {(detail.learnerTimestamp !== undefined ||
+                                  detail.coachTimestamp !== undefined) && (
+                                  <View style={styles.timestampContainer}>
+                                    {detail.learnerTimestamp !== undefined && (
+                                      <Text style={styles.timestampLabel}>
+                                        Học viên:{" "}
+                                        {formatTime(detail.learnerTimestamp)}
+                                      </Text>
+                                    )}
+                                    {detail.coachTimestamp !== undefined && (
+                                      <Text style={styles.timestampLabel}>
+                                        HLV: {formatTime(detail.coachTimestamp)}
+                                      </Text>
+                                    )}
                                   </View>
-                                  {detail.weaknesses.map((weakness, i) => (
-                                    <Text key={i} style={styles.weaknessText}>
-                                      • {weakness}
-                                    </Text>
-                                  ))}
-                                </View>
-                              )}
-                          </TouchableOpacity>
-                        ))}
-                        </>
+                                )}
+                                <Text style={styles.detailAdvanced}>
+                                  {detail.advanced}
+                                </Text>
+                                {detail.strengths &&
+                                  detail.strengths.length > 0 && (
+                                    <View style={styles.strengthsContainer}>
+                                      <Text style={styles.strengthsLabel}>
+                                        Điểm mạnh:
+                                      </Text>
+                                      {detail.strengths.map((strength, i) => (
+                                        <Text
+                                          key={i}
+                                          style={styles.strengthText}
+                                        >
+                                          • {strength}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  )}
+                                {detail.weaknesses &&
+                                  detail.weaknesses.length > 0 && (
+                                    <View style={styles.weaknessesContainer}>
+                                      <View
+                                        style={{
+                                          flexDirection: "row",
+                                          alignItems: "center",
+                                          gap: 4,
+                                          marginBottom: 4,
+                                        }}
+                                      >
+                                        <Ionicons
+                                          name="close-circle"
+                                          size={14}
+                                          color="#DC2626"
+                                        />
+                                        <Text style={styles.weaknessesLabel}>
+                                          Điểm yếu:
+                                        </Text>
+                                      </View>
+                                      {detail.weaknesses.map((weakness, i) => (
+                                        <Text
+                                          key={i}
+                                          style={styles.weaknessText}
+                                        >
+                                          • {weakness}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  )}
+                              </TouchableOpacity>
+                            ))}
+                          </>
                         )}
                       </View>
                     )}
@@ -691,41 +745,62 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                       <View style={styles.differencesContainer}>
                         <TouchableOpacity
                           style={styles.collapsibleHeaderAlt}
-                          onPress={() => toggleSection('keyDifferences')}
+                          onPress={() => toggleSection("keyDifferences")}
                           activeOpacity={0.7}
                         >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <Ionicons name="git-compare" size={16} color="#F59E0B" />
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Ionicons
+                              name="git-compare"
+                              size={16}
+                              color="#F59E0B"
+                            />
                             <Text style={styles.sectionTitle}>
                               Điểm khác biệt chính
                             </Text>
                           </View>
                           <Ionicons
-                            name={expandedSections.keyDifferences ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.keyDifferences
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#6B7280"
                           />
                         </TouchableOpacity>
-                        {expandedSections.keyDifferences && (<>
-                        {aiAnalysisResult.keyDifferents.map((diff, index) => (
-                          <View key={index} style={styles.differenceItem}>
-                            <Text style={styles.differenceAspect}>
-                              {diff.aspect}
-                            </Text>
-                            <Text style={styles.analysisText}>
-                              <Text style={{ fontWeight: "bold" }}>HLV:</Text>{" "}
-                              {diff.coachTechnique}
-                            </Text>
-                            <Text style={styles.analysisText}>
-                              <Text style={{ fontWeight: "bold" }}>Bạn:</Text>{" "}
-                              {diff.learnerTechnique}
-                            </Text>
-                            <Text style={styles.impactText}>
-                              Tác động: {diff.impact}
-                            </Text>
-                          </View>
-                        ))}
-                        </>
+                        {expandedSections.keyDifferences && (
+                          <>
+                            {aiAnalysisResult.keyDifferents.map(
+                              (diff, index) => (
+                                <View key={index} style={styles.differenceItem}>
+                                  <Text style={styles.differenceAspect}>
+                                    {diff.aspect}
+                                  </Text>
+                                  <Text style={styles.analysisText}>
+                                    <Text style={{ fontWeight: "bold" }}>
+                                      HLV:
+                                    </Text>{" "}
+                                    {diff.coachTechnique}
+                                  </Text>
+                                  <Text style={styles.analysisText}>
+                                    <Text style={{ fontWeight: "bold" }}>
+                                      Bạn:
+                                    </Text>{" "}
+                                    {diff.learnerTechnique}
+                                  </Text>
+                                  <Text style={styles.impactText}>
+                                    Tác động: {diff.impact}
+                                  </Text>
+                                </View>
+                              )
+                            )}
+                          </>
                         )}
                       </View>
                     )}
@@ -736,38 +811,56 @@ const VideoOverlayPlayer: React.FC<VideoOverlayPlayerProps> = ({
                       <View style={styles.recommendationsContainer}>
                         <TouchableOpacity
                           style={styles.collapsibleHeaderAlt}
-                          onPress={() => toggleSection('recommendations')}
+                          onPress={() => toggleSection("recommendations")}
                           activeOpacity={0.7}
                         >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <Ionicons name="fitness" size={16} color="#059669" />
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Ionicons
+                              name="fitness"
+                              size={16}
+                              color="#10B981"
+                            />
                             <Text style={styles.sectionTitle}>
                               Khuyến nghị & Bài tập
                             </Text>
                           </View>
                           <Ionicons
-                            name={expandedSections.recommendations ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.recommendations
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#6B7280"
                           />
                         </TouchableOpacity>
-                        {expandedSections.recommendations && (<>
-                        {aiAnalysisResult.recommendationDrills.map(
-                          (drill, index) => (
-                            <View key={index} style={styles.recommendationItem}>
-                              <Text style={styles.drillTitle}>
-                                {index + 1}. {drill.name}
-                              </Text>
-                              <Text style={styles.drillText}>
-                                {drill.description}
-                              </Text>
-                              <Text style={styles.drillSets}>
-                                Số hiệp: {drill.practiceSets}
-                              </Text>
-                            </View>
-                          )
-                        )}
-                        </>
+                        {expandedSections.recommendations && (
+                          <>
+                            {aiAnalysisResult.recommendationDrills.map(
+                              (drill, index) => (
+                                <View
+                                  key={index}
+                                  style={styles.recommendationItem}
+                                >
+                                  <Text style={styles.drillTitle}>
+                                    {index + 1}. {drill.name}
+                                  </Text>
+                                  <Text style={styles.drillText}>
+                                    {drill.description}
+                                  </Text>
+                                  <Text style={styles.drillSets}>
+                                    Số hiệp: {drill.practiceSets}
+                                  </Text>
+                                </View>
+                              )
+                            )}
+                          </>
                         )}
                       </View>
                     )}
@@ -817,12 +910,12 @@ const styles = StyleSheet.create({
   modeButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#059669",
+    backgroundColor: "#10B981",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
-    shadowColor: "#059669",
+    shadowColor: "#10B981",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -842,7 +935,7 @@ const styles = StyleSheet.create({
   },
   splitViewContainer: { flex: 1, flexDirection: "column" },
   splitVideoWrapper: { flex: 1, position: "relative" },
-  splitVideoDivider: { height: 2, backgroundColor: "#059669" },
+  splitVideoDivider: { height: 2, backgroundColor: "#10B981" },
   overlayViewContainer: { flex: 1, position: "relative" },
   video: {
     width: "100%",
@@ -869,14 +962,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: "rgba(5, 150, 105, 0.9)",
+    backgroundColor: "rgba(16, 185, 129, 0.9)",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     zIndex: 10,
     borderWidth: 1.5,
     borderColor: "#ECFDF5",
-    shadowColor: "#059669",
+    shadowColor: "#10B981",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -916,7 +1009,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderWidth: 1.5,
     borderColor: "#ECFDF5",
-    shadowColor: "#059669",
+    shadowColor: "#10B981",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -958,7 +1051,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   opacityLabel: {
-    color: "#059669",
+    color: "#10B981",
     fontSize: 12,
     fontWeight: "700",
     marginTop: 100,
@@ -991,7 +1084,7 @@ const styles = StyleSheet.create({
   sliderLabelContainer: { flexDirection: "row", alignItems: "center", gap: 6 },
   sliderLabel: { fontSize: 12, fontWeight: "700", color: "#374151" },
   timeValue: {
-    color: "#059669",
+    color: "#10B981",
     fontSize: 12,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
@@ -999,13 +1092,13 @@ const styles = StyleSheet.create({
   durationText: { color: "#9CA3AF", fontSize: 10, fontWeight: "500" },
   analysisButton: {
     marginTop: 10,
-    backgroundColor: "#059669",
+    backgroundColor: "#10B981",
     borderRadius: 8,
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    shadowColor: "#059669",
+    shadowColor: "#10B981",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -1060,8 +1153,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#A7F3D0",
   },
-  scoreLabel: { fontSize: 12, fontWeight: "700", color: "#059669" },
-  scoreValue: { fontSize: 24, fontWeight: "700", color: "#059669" },
+  scoreLabel: { fontSize: 12, fontWeight: "700", color: "#10B981" },
+  scoreValue: { fontSize: 24, fontWeight: "700", color: "#10B981" },
   summaryContainer: {
     backgroundColor: "#F9FAFB",
     padding: 12,
@@ -1073,7 +1166,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#059669",
+    color: "#10B981",
     marginBottom: 0,
   },
   collapsibleHeader: {
@@ -1088,7 +1181,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  summaryText: { fontSize: 13, color: "#374151", lineHeight: 19, fontWeight: "500" },
+  summaryText: {
+    fontSize: 13,
+    color: "#374151",
+    lineHeight: 19,
+    fontWeight: "500",
+  },
   detailsContainer: { marginBottom: 10 },
   detailItem: {
     backgroundColor: "#FFFFFF",
@@ -1109,7 +1207,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 6,
   },
-  detailType: { fontSize: 13, fontWeight: "700", color: "#059669" },
+  detailType: { fontSize: 13, fontWeight: "700", color: "#10B981" },
   detailAdvanced: {
     fontSize: 12,
     color: "#374151",
@@ -1121,12 +1219,12 @@ const styles = StyleSheet.create({
   strengthsLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#059669",
+    color: "#10B981",
     marginBottom: 4,
   },
   strengthText: {
     fontSize: 12,
-    color: "#059669",
+    color: "#10B981",
     marginLeft: 6,
     lineHeight: 17,
     fontWeight: "500",
@@ -1162,7 +1260,7 @@ const styles = StyleSheet.create({
   differenceAspect: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#059669",
+    color: "#10B981",
     marginBottom: 6,
   },
   analysisText: {
@@ -1195,7 +1293,7 @@ const styles = StyleSheet.create({
   drillTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#059669",
+    color: "#10B981",
     marginBottom: 6,
   },
   drillText: {
@@ -1220,7 +1318,7 @@ const styles = StyleSheet.create({
   },
   coachNoteText: {
     fontSize: 13,
-    color: "#059669",
+    color: "#10B981",
     lineHeight: 19,
     fontWeight: "500",
   },
@@ -1232,7 +1330,7 @@ const styles = StyleSheet.create({
   },
   timestampLabel: {
     fontSize: 10,
-    color: "#059669",
+    color: "#10B981",
     backgroundColor: "#ECFDF5",
     paddingHorizontal: 8,
     paddingVertical: 4,

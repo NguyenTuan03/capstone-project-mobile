@@ -139,9 +139,9 @@ export default function LearnerPayoutsScreen() {
       return;
     }
 
-    if (amount < 100000) {
-      Alert.alert("Lỗi", "Số tiền rút tối thiểu là 100,000₫");
-      setWithdrawalAmountError("Số tiền rút tối thiểu là 100,000₫");
+    if (amount < 1000) {
+      Alert.alert("Lỗi", "Số tiền rút tối thiểu là 1,000₫");
+      setWithdrawalAmountError("Số tiền rút tối thiểu là 1,000₫");
       return;
     }
 
@@ -196,6 +196,18 @@ export default function LearnerPayoutsScreen() {
     }).format(num);
   };
 
+  const getTransactionTypeLabel = (type: string) => {
+    const typeUpper = type?.toUpperCase();
+    switch (typeUpper) {
+      case "CREDIT":
+        return "Tiền vào";
+      case "DEBIT":
+        return "Tiền ra";
+      default:
+        return type || "Giao dịch";
+    }
+  };
+
   const renderTransactionItem = ({ item }: any) => (
     <View style={styles.transactionCard}>
       <View style={styles.transactionHeader}>
@@ -203,7 +215,9 @@ export default function LearnerPayoutsScreen() {
           <Text style={styles.transactionTitle}>
             {item.description || "Giao dịch"}
           </Text>
-          <Text style={styles.transactionSubtitle}>{item.type}</Text>
+          <Text style={styles.transactionSubtitle}>
+            {getTransactionTypeLabel(item.type)}
+          </Text>
         </View>
         <View style={styles.transactionAmountContainer}>
           <Text style={styles.transactionAmount}>
@@ -213,7 +227,7 @@ export default function LearnerPayoutsScreen() {
           <View
             style={[
               styles.statusBadge,
-              item.status === "completed"
+              item.type !== "debit"
                 ? styles.statusCompleted
                 : styles.statusPending,
             ]}
@@ -221,12 +235,12 @@ export default function LearnerPayoutsScreen() {
             <Text
               style={[
                 styles.statusText,
-                item.status === "completed"
+                item.type !== "debit"
                   ? styles.statusCompletedText
                   : styles.statusPendingText,
               ]}
             >
-              {item.status === "completed" ? "Hoàn thành" : "Đang xử lý"}
+              {item.type !== "debit" ? "Thành công" : "Đã xử lý"}
             </Text>
           </View>
         </View>
@@ -508,7 +522,9 @@ export default function LearnerPayoutsScreen() {
                     // Validate amount
                     if (numericText) {
                       const amount = parseFloat(numericText);
-                      const currentBalance = Number(wallet?.currentBalance || 0);
+                      const currentBalance = Number(
+                        wallet?.currentBalance || 0
+                      );
 
                       if (!isNaN(amount)) {
                         if (amount > currentBalance) {
@@ -517,9 +533,9 @@ export default function LearnerPayoutsScreen() {
                               currentBalance
                             )})`
                           );
-                        } else if (amount < 100000) {
+                        } else if (amount < 1000) {
                           setWithdrawalAmountError(
-                            "Số tiền rút tối thiểu là 100,000₫"
+                            "Số tiền rút tối thiểu là 1,000₫"
                           );
                         }
                       }
