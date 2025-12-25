@@ -189,6 +189,18 @@ export default function CoachPayoutsScreen() {
     });
   };
 
+  const getTransactionTypeLabel = (type: string) => {
+    const typeUpper = type?.toUpperCase();
+    switch (typeUpper) {
+      case "CREDIT":
+        return "Tiền vào";
+      case "DEBIT":
+        return "Tiền ra";
+      default:
+        return type || "Giao dịch";
+    }
+  };
+
   const renderTransactionItem = ({ item, type }: any) => {
     // CREDIT = money IN (income), DEBIT = money OUT (withdrawal)
     const isCredit = type === "CREDIT";

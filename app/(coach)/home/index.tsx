@@ -217,7 +217,10 @@ export default function CoachHomeScreen() {
         colors={["#059669", "#10B981"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.headerGradient, { paddingTop: insets.top + 16, paddingBottom: 18 }]}
+        style={[
+          styles.headerGradient,
+          { paddingTop: insets.top + 16, paddingBottom: 18 },
+        ]}
       >
         <View style={styles.headerContent}>
           <View>
@@ -267,65 +270,243 @@ export default function CoachHomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Stats - compact grid, modern cards */}
-        <View style={[styles.sectionContainer, { marginBottom: 14 }]}> 
+        <View style={[styles.sectionContainer, { marginBottom: 14 }]}>
           <Text style={styles.sectionTitle}>Tổng quan</Text>
           <View style={{ gap: 8 }}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#DBEAFE', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View
+                style={[
+                  styles.statCard,
+                  { minWidth: 140, padding: 12, borderRadius: 12 },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconContainer,
+                    {
+                      backgroundColor: "#DBEAFE",
+                      marginBottom: 8,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                    },
+                  ]}
+                >
                   <Ionicons name="cash-outline" size={18} color="#3B82F6" />
                 </View>
-                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Thu nhập</Text>
-                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{formatPrice(revenue)}</Text>
+                <Text
+                  style={[
+                    styles.statCardLabel,
+                    { fontSize: 11, marginBottom: 2 },
+                  ]}
+                >
+                  Thu nhập
+                </Text>
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    { fontSize: 15, marginBottom: 4 },
+                  ]}
+                >
+                  {formatPrice(revenue)}
+                </Text>
                 {revenueGrowth !== null && (
-                  <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                  <View
+                    style={[
+                      styles.trendBadge,
+                      {
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      },
+                    ]}
+                  >
                     <Ionicons
-                      name={revenueGrowth >= 0 ? 'trending-up' : 'trending-down'}
+                      name={
+                        revenueGrowth >= 0 ? "trending-up" : "trending-down"
+                      }
                       size={10}
-                      color={revenueGrowth >= 0 ? '#059669' : '#EF4444'}
+                      color={revenueGrowth >= 0 ? "#059669" : "#EF4444"}
                     />
-                    <Text style={[styles.trendText, { color: revenueGrowth >= 0 ? '#059669' : '#EF4444', fontSize: 10 }]}>
-                      {revenueGrowth > 0 ? '+' : ''}{revenueGrowth}%
+                    <Text
+                      style={[
+                        styles.trendText,
+                        {
+                          color: revenueGrowth >= 0 ? "#059669" : "#EF4444",
+                          fontSize: 10,
+                        },
+                      ]}
+                    >
+                      {revenueGrowth > 0 ? "+" : ""}
+                      {revenueGrowth}%
                     </Text>
                   </View>
                 )}
               </View>
-              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+              <View
+                style={[
+                  styles.statCard,
+                  { minWidth: 140, padding: 12, borderRadius: 12 },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconContainer,
+                    {
+                      backgroundColor: "#FEF3C7",
+                      marginBottom: 8,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                    },
+                  ]}
+                >
                   <Ionicons name="star-outline" size={18} color="#F59E0B" />
                 </View>
-                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Đánh giá</Text>
-                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{rating?.overall}</Text>
-                <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                <Text
+                  style={[
+                    styles.statCardLabel,
+                    { fontSize: 11, marginBottom: 2 },
+                  ]}
+                >
+                  Đánh giá
+                </Text>
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    { fontSize: 15, marginBottom: 4 },
+                  ]}
+                >
+                  {rating?.overall}
+                </Text>
+                <View
+                  style={[
+                    styles.trendBadge,
+                    {
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    },
+                  ]}
+                >
                   <Ionicons name="star" size={10} color="#F59E0B" />
-                  <Text style={[styles.trendText, { color: '#F59E0B', fontSize: 10 }]}>{rating?.total}</Text>
+                  <Text
+                    style={[
+                      styles.trendText,
+                      { color: "#F59E0B", fontSize: 10 },
+                    ]}
+                  >
+                    {rating?.total}
+                  </Text>
                 </View>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#D1FAE5', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View
+                style={[
+                  styles.statCard,
+                  { minWidth: 140, padding: 12, borderRadius: 12 },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconContainer,
+                    {
+                      backgroundColor: "#D1FAE5",
+                      marginBottom: 8,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                    },
+                  ]}
+                >
                   <Ionicons name="book-outline" size={18} color="#10B981" />
                 </View>
-                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Khóa học</Text>
-                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{courseCount}</Text>
+                <Text
+                  style={[
+                    styles.statCardLabel,
+                    { fontSize: 11, marginBottom: 2 },
+                  ]}
+                >
+                  Khóa học
+                </Text>
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    { fontSize: 15, marginBottom: 4 },
+                  ]}
+                >
+                  {courseCount}
+                </Text>
                 {courseGrowth && (
-                  <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                  <View
+                    style={[
+                      styles.trendBadge,
+                      {
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      },
+                    ]}
+                  >
                     <Ionicons name="add" size={10} color="#059669" />
-                    <Text style={[styles.trendText, { fontSize: 10 }]}>{courseGrowth}</Text>
+                    <Text style={[styles.trendText, { fontSize: 10 }]}>
+                      {courseGrowth}
+                    </Text>
                   </View>
                 )}
               </View>
-              <View style={[styles.statCard, { minWidth: 140, padding: 12, borderRadius: 12 }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#E0E7FF', marginBottom: 8, width: 32, height: 32, borderRadius: 8 }]}> 
+              <View
+                style={[
+                  styles.statCard,
+                  { minWidth: 140, padding: 12, borderRadius: 12 },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconContainer,
+                    {
+                      backgroundColor: "#E0E7FF",
+                      marginBottom: 8,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                    },
+                  ]}
+                >
                   <Ionicons name="people-outline" size={18} color="#6366F1" />
                 </View>
-                <Text style={[styles.statCardLabel, { fontSize: 11, marginBottom: 2 }]}>Học viên</Text>
-                <Text style={[styles.statCardValue, { fontSize: 15, marginBottom: 4 }]}>{learnerCount}</Text>
+                <Text
+                  style={[
+                    styles.statCardLabel,
+                    { fontSize: 11, marginBottom: 2 },
+                  ]}
+                >
+                  Học viên
+                </Text>
+                <Text
+                  style={[
+                    styles.statCardValue,
+                    { fontSize: 15, marginBottom: 4 },
+                  ]}
+                >
+                  {learnerCount}
+                </Text>
                 {learnerGrowth && (
-                  <View style={[styles.trendBadge, { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}> 
+                  <View
+                    style={[
+                      styles.trendBadge,
+                      {
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      },
+                    ]}
+                  >
                     <Ionicons name="trending-up" size={10} color="#059669" />
-                    <Text style={[styles.trendText, { fontSize: 10 }]}>{learnerGrowth}</Text>
+                    <Text style={[styles.trendText, { fontSize: 10 }]}>
+                      {learnerGrowth}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -334,17 +515,21 @@ export default function CoachHomeScreen() {
         </View>
 
         {/* Today's Schedule - compact, modern */}
-        <View style={[styles.sectionContainer, { marginBottom: 14 }]}> 
-          <View style={[styles.sectionHeader, { marginBottom: 10 }]}> 
+        <View style={[styles.sectionContainer, { marginBottom: 14 }]}>
+          <View style={[styles.sectionHeader, { marginBottom: 10 }]}>
             <View>
               <Text style={styles.sectionTitle}>Lịch dạy hôm nay</Text>
               <View style={styles.subtitleRow}>
-                <Text style={styles.sectionSubtitle}>{formatDisplayDate()}</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {formatDisplayDate()}
+                </Text>
                 <View style={styles.dotSeparator} />
-                <Text style={styles.sessionCountText}>{sessions.length} buổi</Text>
+                <Text style={styles.sessionCountText}>
+                  {sessions.length} buổi
+                </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={() => router.push("/(coach)/calendar")}> 
+            <TouchableOpacity onPress={() => router.push("/(coach)/calendar")}>
               <Text style={styles.viewAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
@@ -358,37 +543,81 @@ export default function CoachHomeScreen() {
             sessions.map((session) => (
               <TouchableOpacity
                 key={session.id}
-                style={[styles.sessionCard, { padding: 12, borderRadius: 12, marginBottom: 8 }]}
+                style={[
+                  styles.sessionCard,
+                  { padding: 12, borderRadius: 12, marginBottom: 8 },
+                ]}
                 onPress={() => router.push(`/(coach)/calendar` as any)}
                 activeOpacity={0.7}
               >
                 <View style={styles.sessionTimeContainer}>
-                  <Text style={[styles.sessionStartTime, { fontSize: 13 }]}>{session.startTime}</Text>
+                  <Text style={[styles.sessionStartTime, { fontSize: 13 }]}>
+                    {session.startTime}
+                  </Text>
                   <View style={styles.sessionTimeLine} />
-                  <Text style={[styles.sessionEndTime, { fontSize: 11 }]}>{session.endTime}</Text>
+                  <Text style={[styles.sessionEndTime, { fontSize: 11 }]}>
+                    {session.endTime}
+                  </Text>
                 </View>
                 <View style={styles.sessionInfoContainer}>
                   <View style={styles.sessionHeaderRow}>
-                    <Text style={[styles.sessionCourseName, { fontSize: 14 }]} numberOfLines={1}>{session.courseName}</Text>
-                    <View style={[styles.sessionStatusBadge, { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: '#ECFDF5' }]}> 
-                      <Text style={[styles.sessionStatusText, { color: '#059669', fontSize: 10 }]}> 
+                    <Text
+                      style={[styles.sessionCourseName, { fontSize: 14 }]}
+                      numberOfLines={1}
+                    >
+                      {session.courseName}
+                    </Text>
+                    <View
+                      style={[
+                        styles.sessionStatusBadge,
+                        {
+                          borderRadius: 6,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          backgroundColor: "#ECFDF5",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.sessionStatusText,
+                          { color: "#059669", fontSize: 10 },
+                        ]}
+                      >
                         {session.status === SessionStatus.IN_PROGRESS
-                          ? 'Đang diễn ra'
+                          ? "Đang diễn ra"
                           : session.status === SessionStatus.COMPLETED
-                          ? 'Đã kết thúc'
-                          : 'Đang chờ'}
+                          ? "Đã kết thúc"
+                          : "Đang chờ"}
                       </Text>
                     </View>
                   </View>
                   <View style={styles.sessionDetailsRow}>
                     <View style={styles.sessionDetailItem}>
-                      <Ionicons name="location-outline" size={12} color="#6B7280" />
-                      <Text style={[styles.sessionDetailText, { fontSize: 11 }]} numberOfLines={1}>Sân 1 - Khu A</Text>
+                      <Ionicons
+                        name="location-outline"
+                        size={12}
+                        color="#6B7280"
+                      />
+                      <Text
+                        style={[styles.sessionDetailText, { fontSize: 11 }]}
+                        numberOfLines={1}
+                      >
+                        Sân 1 - Khu A
+                      </Text>
                     </View>
                     {session.course?.currentParticipants != null && (
                       <View style={styles.sessionDetailItem}>
-                        <Ionicons name="people-outline" size={12} color="#6B7280" />
-                        <Text style={[styles.sessionDetailText, { fontSize: 11 }]}>{session.course.currentParticipants} học viên</Text>
+                        <Ionicons
+                          name="people-outline"
+                          size={12}
+                          color="#6B7280"
+                        />
+                        <Text
+                          style={[styles.sessionDetailText, { fontSize: 11 }]}
+                        >
+                          {session.course.currentParticipants} học viên
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -398,36 +627,70 @@ export default function CoachHomeScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Image
-                source={{ uri: 'https://img.freepik.com/free-vector/no-data-concept-illustration_114360-536.jpg' }}
-                style={[styles.emptyStateImage, { width: 90, height: 90, marginBottom: 10 }]}
+                source={{
+                  uri: "https://img.freepik.com/free-vector/no-data-concept-illustration_114360-536.jpg",
+                }}
+                style={[
+                  styles.emptyStateImage,
+                  { width: 90, height: 90, marginBottom: 10 },
+                ]}
                 resizeMode="contain"
               />
-              <Text style={[styles.emptyStateText, { fontSize: 13, marginBottom: 2 }]}>Không có lịch dạy hôm nay</Text>
-              <Text style={[styles.emptyStateSubtext, { fontSize: 11 }]}>Tận hưởng ngày nghỉ của bạn nhé!</Text>
+              <Text
+                style={[
+                  styles.emptyStateText,
+                  { fontSize: 13, marginBottom: 2 },
+                ]}
+              >
+                Không có lịch dạy hôm nay
+              </Text>
+              <Text style={[styles.emptyStateSubtext, { fontSize: 11 }]}>
+                Tận hưởng ngày nghỉ của bạn nhé!
+              </Text>
             </View>
           )}
         </View>
 
         {/* Quick Actions - compact button */}
-        <View style={[styles.sectionContainer, { marginBottom: 10 }]}> 
+        <View style={[styles.sectionContainer, { marginBottom: 10 }]}>
           <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
           <TouchableOpacity
-            style={[styles.createCourseButton, { borderRadius: 12, elevation: 3 }]}
+            style={[
+              styles.createCourseButton,
+              { borderRadius: 12, elevation: 3 },
+            ]}
             onPress={() => setShowCreateCourseModal(true)}
           >
             <LinearGradient
               colors={["#059669", "#047857"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.createCourseGradient, { padding: 14, borderRadius: 12 }]}
+              style={[
+                styles.createCourseGradient,
+                { padding: 14, borderRadius: 12 },
+              ]}
             >
-              <View style={[styles.createCourseContent, { gap: 10 }]}> 
-                <View style={[styles.createCourseIcon, { width: 36, height: 36, borderRadius: 8 }]}> 
+              <View style={[styles.createCourseContent, { gap: 10 }]}>
+                <View
+                  style={[
+                    styles.createCourseIcon,
+                    { width: 36, height: 36, borderRadius: 8 },
+                  ]}
+                >
                   <Ionicons name="add" size={18} color="#059669" />
                 </View>
                 <View>
-                  <Text style={[styles.createCourseTitle, { fontSize: 14, marginBottom: 1 }]}>Tạo khóa học mới</Text>
-                  <Text style={[styles.createCourseSubtitle, { fontSize: 11 }]}>Thiết lập lớp học và lịch trình</Text>
+                  <Text
+                    style={[
+                      styles.createCourseTitle,
+                      { fontSize: 14, marginBottom: 1 },
+                    ]}
+                  >
+                    Tạo khóa học mới
+                  </Text>
+                  <Text style={[styles.createCourseSubtitle, { fontSize: 11 }]}>
+                    Thiết lập lớp học và lịch trình
+                  </Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
