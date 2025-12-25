@@ -23,6 +23,7 @@ interface LearnerVideoModalProps {
   learnerVideo: LearnerVideo | null;
   learnerVideos?: LearnerVideo[];
   videoTitle: string;
+  onReload?: () => void;
 }
 
 export default function LearnerVideoModal({
@@ -31,6 +32,7 @@ export default function LearnerVideoModal({
   learnerVideo,
   learnerVideos,
   videoTitle,
+  onReload,
 }: LearnerVideoModalProps) {
   const [selectedVideo, setSelectedVideo] = useState(learnerVideo);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -190,6 +192,7 @@ export default function LearnerVideoModal({
       // Update local input state to reflect saved status if needed, or just keep as is
       setCoachNotesInput((prev) => ({ ...prev, [index]: note }));
       Alert.alert("Thành công", "Đã lưu ghi chú của HLV");
+      onReload?.();
     } catch (error) {
       Alert.alert("Lỗi", "Không thể lưu ghi chú. Vui lòng thử lại.");
     } finally {
@@ -263,6 +266,7 @@ export default function LearnerVideoModal({
         });
       }
       setEditingResultIndex(null);
+      onReload?.();
     } catch (error) {
       console.error("Error updating AI feedback:", error);
       Alert.alert("Lỗi", "Không thể cập nhật kết quả phân tích.");
@@ -1279,7 +1283,7 @@ export default function LearnerVideoModal({
                 <View style={styles.infoBox}>
                   <Ionicons name="time" size={16} color="#059669" />
                   <Text style={styles.infoText}>
-                    AI sẽ phân tích trong vòng 15 giây
+                    AI sẽ phân tích trong khoảng 20 giây
                   </Text>
                 </View>
                 <TouchableOpacity
