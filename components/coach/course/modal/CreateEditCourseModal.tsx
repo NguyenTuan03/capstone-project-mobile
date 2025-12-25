@@ -748,6 +748,16 @@ export default function CreateEditCourseModal({
 
   const handlePickCourseImage = async () => {
     try {
+      // Ensure any open modals are closed before opening ImagePicker
+      setShowDatePicker(false);
+      setShowSubjectModal(false);
+      setShowScheduleModal(false);
+      setShowProvinceModal(false);
+      setShowDistrictModal(false);
+      setShowCourtModal(false);
+      setShowStartTimePicker(false);
+      setShowEndTimePicker(false);
+
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -774,6 +784,10 @@ export default function CreateEditCourseModal({
         });
         setExistingImageUrl(null);
       }
+
+      // Small delay to ensure ImagePicker modal is fully closed
+      // This prevents interaction blocking issues
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } catch {
       Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
     }
@@ -1263,6 +1277,7 @@ export default function CreateEditCourseModal({
               </Text>
               <TouchableOpacity
                 style={styles.dateInput}
+                activeOpacity={0.7}
                 onPress={() => {
                   // Always update selectedDate to avoid stale state
                   if (startDate) {
