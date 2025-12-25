@@ -1,8 +1,6 @@
 import HowToPlayModal from "@/components/learner/HowToPlayModal";
 import HowToPlayPreview from "@/components/learner/HowToPlayPreview";
-import {
-  LearnerProgress
-} from "@/types/learner-progress";
+import { LearnerProgress } from "@/types/learner-progress";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -14,7 +12,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import learnerService from "../../../services/learnerService";
@@ -40,7 +38,8 @@ export default function HomeScreen() {
   const [loadingProgress, setLoadingProgress] = useState(true);
   const [howToPlayModalVisible, setHowToPlayModalVisible] = useState(false);
   const [analysisModalVisible, setAnalysisModalVisible] = useState(false);
-  const [analysisDetailModalVisible, setAnalysisDetailModalVisible] = useState(false);
+  const [analysisDetailModalVisible, setAnalysisDetailModalVisible] =
+    useState(false);
   const [selectedProgress, setSelectedProgress] =
     useState<LearnerProgress | null>(null);
   const [selectedAnalysisIndex, setSelectedAnalysisIndex] = useState(0);
@@ -159,12 +158,7 @@ export default function HomeScreen() {
   }, [loadTodaySessions, loadStats, loadProgress]);
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safe,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.container}>
         {/* Welcome Card */}
         <View style={[styles.card, styles.welcomeCard]}>
@@ -191,30 +185,86 @@ export default function HomeScreen() {
         />
 
         {/* Quick Stats */}
-        <View style={[styles.statsRow, { gap: 8, marginBottom: 4 }]}> 
-          <View style={[styles.card, styles.statCard, { paddingVertical: 8, paddingHorizontal: 10, minWidth: 90, minHeight: 60 }]}> 
-            <View style={[styles.statIcon, { width: 28, height: 28, borderRadius: 8, marginBottom: 4 }]}> 
+        <View style={[styles.statsRow, { gap: 8, marginBottom: 4 }]}>
+          <View
+            style={[
+              styles.card,
+              styles.statCard,
+              {
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                minWidth: 90,
+                minHeight: 60,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.statIcon,
+                { width: 28, height: 28, borderRadius: 8, marginBottom: 4 },
+              ]}
+            >
               <Ionicons name="book" size={16} color="#059669" />
             </View>
             {loadingStats ? (
               <ActivityIndicator size="small" color="#059669" />
             ) : (
               <>
-                <Text style={[styles.statNumber, { fontSize: 18, marginBottom: 0 }]}>{totalCourses}</Text>
-                <Text style={[styles.statLabel, { fontSize: 12, marginTop: 0 }]} numberOfLines={1}>Khóa học</Text>
+                <Text
+                  style={[styles.statNumber, { fontSize: 18, marginBottom: 0 }]}
+                >
+                  {totalCourses}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { fontSize: 12, marginTop: 0 }]}
+                  numberOfLines={1}
+                >
+                  Khóa học
+                </Text>
               </>
             )}
           </View>
-          <View style={[styles.card, styles.statCard, { paddingVertical: 8, paddingHorizontal: 10, minWidth: 90, minHeight: 60 }]}> 
-            <View style={[styles.statIcon, { backgroundColor: "#DCFCE7", width: 28, height: 28, borderRadius: 8, marginBottom: 4 }]}> 
+          <View
+            style={[
+              styles.card,
+              styles.statCard,
+              {
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                minWidth: 90,
+                minHeight: 60,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.statIcon,
+                {
+                  backgroundColor: "#DCFCE7",
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  marginBottom: 4,
+                },
+              ]}
+            >
               <Ionicons name="sparkles" size={16} color="#059669" />
             </View>
             {loadingStats ? (
               <ActivityIndicator size="small" color="#059669" />
             ) : (
               <>
-                <Text style={[styles.statNumber, { fontSize: 18, marginBottom: 0 }]}>{totalAiFeedbacks}</Text>
-                <Text style={[styles.statLabel, { fontSize: 12, marginTop: 0 }]} numberOfLines={1}>Phân tích AI</Text>
+                <Text
+                  style={[styles.statNumber, { fontSize: 18, marginBottom: 0 }]}
+                >
+                  {totalAiFeedbacks}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { fontSize: 12, marginTop: 0 }]}
+                  numberOfLines={1}
+                >
+                  Phân tích AI
+                </Text>
               </>
             )}
           </View>
@@ -502,14 +552,21 @@ export default function HomeScreen() {
               {selectedProgress.aiLearnerProgressAnalyses &&
                 selectedProgress.aiLearnerProgressAnalyses.length > 0 && (
                   <View style={styles.analysisListHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
                       <Ionicons name="sparkles" size={20} color="#8B5CF6" />
                       <Text style={styles.analysisListTitle}>
                         Danh sách phân tích AI
                       </Text>
                       <View style={styles.analysisCountBadge}>
                         <Text style={styles.analysisCountText}>
-                          {selectedAnalysisIndex + 1}/{selectedProgress.aiLearnerProgressAnalyses.length}
+                          {selectedAnalysisIndex + 1}/
+                          {selectedProgress.aiLearnerProgressAnalyses.length}
                         </Text>
                       </View>
                     </View>
@@ -525,17 +582,14 @@ export default function HomeScreen() {
                       disabled={selectedAnalysisIndex === 0}
                       style={[
                         styles.navButton,
-                        selectedAnalysisIndex === 0 &&
-                          styles.navButtonDisabled,
+                        selectedAnalysisIndex === 0 && styles.navButtonDisabled,
                       ]}
                     >
                       <Ionicons
                         name="chevron-back"
                         size={20}
                         color={
-                          selectedAnalysisIndex === 0
-                            ? "#9CA3AF"
-                            : "#059669"
+                          selectedAnalysisIndex === 0 ? "#9CA3AF" : "#059669"
                         }
                       />
                       <Text
@@ -552,14 +606,12 @@ export default function HomeScreen() {
                       onPress={handleNextAnalysis}
                       disabled={
                         selectedAnalysisIndex ===
-                        selectedProgress.aiLearnerProgressAnalyses.length -
-                          1
+                        selectedProgress.aiLearnerProgressAnalyses.length - 1
                       }
                       style={[
                         styles.navButton,
                         selectedAnalysisIndex ===
-                          selectedProgress.aiLearnerProgressAnalyses
-                            .length -
+                          selectedProgress.aiLearnerProgressAnalyses.length -
                             1 && styles.navButtonDisabled,
                       ]}
                     >
@@ -567,8 +619,7 @@ export default function HomeScreen() {
                         style={[
                           styles.navButtonText,
                           selectedAnalysisIndex ===
-                            selectedProgress.aiLearnerProgressAnalyses
-                              .length -
+                            selectedProgress.aiLearnerProgressAnalyses.length -
                               1 && styles.navButtonTextDisabled,
                         ]}
                       >
@@ -579,9 +630,7 @@ export default function HomeScreen() {
                         size={20}
                         color={
                           selectedAnalysisIndex ===
-                          selectedProgress.aiLearnerProgressAnalyses
-                            .length -
-                            1
+                          selectedProgress.aiLearnerProgressAnalyses.length - 1
                             ? "#9CA3AF"
                             : "#059669"
                         }
@@ -592,7 +641,7 @@ export default function HomeScreen() {
 
               {/* AI Analysis Title Card - Click to open detail modal */}
               {selectedProgress.aiLearnerProgressAnalyses &&
-                selectedProgress.aiLearnerProgressAnalyses.length > 0 ? (
+              selectedProgress.aiLearnerProgressAnalyses.length > 0 ? (
                 <>
                   {(() => {
                     const currentAnalysis =
@@ -615,54 +664,59 @@ export default function HomeScreen() {
                             ).toLocaleDateString("vi-VN")}
                           </Text>
                         </View>
-                        <Ionicons
-                          name="eye"
-                          size={24}
-                          color="#5B21B6"
-                        />
+                        <Ionicons name="eye" size={24} color="#5B21B6" />
                       </TouchableOpacity>
                     );
                   })()}
-                  
+
                   {/* Info text about generating new analysis */}
                   <View style={styles.analysisInfoCard}>
-                    <Ionicons name="information-circle-outline" size={20} color="#6B7280" />
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={20}
+                      color="#6B7280"
+                    />
                     <Text style={styles.analysisInfoText}>
-                      Bạn có thể tạo phân tích AI mới sau khi hoàn thành một buổi học
+                      Bạn có thể tạo phân tích AI mới sau khi hoàn thành một
+                      buổi học
                     </Text>
                   </View>
                 </>
               ) : (
                 <View style={styles.noAnalysisContainer}>
-                      <Ionicons name="analytics-outline" size={48} color="#C4B5FD" />
-                      <Text style={styles.noAnalysisText}>
-                        Chưa có phân tích AI
-                      </Text>
-                      <Text style={styles.noAnalysisSubtext}>
-                        {selectedProgress.canGenerateAIAnalysis
-                          ? "AI sẽ phân tích kết quả quiz, video và đưa ra đề xuất cải thiện"
-                          : "Hoàn thành thêm bài tập để tạo phân tích AI"}
-                      </Text>
-                      {selectedProgress.canGenerateAIAnalysis && (
-                        <TouchableOpacity
-                          style={styles.generateButton}
-                          onPress={handleGenerateAnalysis}
-                          disabled={generatingAnalysis}
-                        >
-                          {generatingAnalysis ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : (
-                            <>
-                              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-                              <Text style={styles.generateButtonText}>
-                                Tạo phân tích AI
-                              </Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
+                  <Ionicons
+                    name="analytics-outline"
+                    size={48}
+                    color="#C4B5FD"
+                  />
+                  <Text style={styles.noAnalysisText}>
+                    Chưa có phân tích AI
+                  </Text>
+                  <Text style={styles.noAnalysisSubtext}>
+                    {selectedProgress.canGenerateAIAnalysis
+                      ? "AI sẽ phân tích kết quả quiz, video và đưa ra đề xuất cải thiện"
+                      : "Hoàn thành thêm bài tập để tạo phân tích AI"}
+                  </Text>
+                  {selectedProgress.canGenerateAIAnalysis && (
+                    <TouchableOpacity
+                      style={styles.generateButton}
+                      onPress={handleGenerateAnalysis}
+                      disabled={generatingAnalysis}
+                    >
+                      {generatingAnalysis ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+                          <Text style={styles.generateButtonText}>
+                            Tạo phân tích AI
+                          </Text>
+                        </>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   )}
+                </View>
+              )}
             </ScrollView>
           ) : null}
         </View>
@@ -682,7 +736,9 @@ export default function HomeScreen() {
                 <View style={styles.aiIconLarge}>
                   <Ionicons name="sparkles" size={24} color="#FFFFFF" />
                 </View>
-                <Text style={styles.detailModalTitle}>Chi tiết phân tích AI</Text>
+                <Text style={styles.detailModalTitle}>
+                  Chi tiết phân tích AI
+                </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setAnalysisDetailModalVisible(false)}
@@ -694,7 +750,7 @@ export default function HomeScreen() {
           </View>
 
           {selectedProgress?.aiLearnerProgressAnalyses &&
-            selectedProgress.aiLearnerProgressAnalyses.length > 0 ? (
+          selectedProgress.aiLearnerProgressAnalyses.length > 0 ? (
             <ScrollView
               style={styles.modalScrollView}
               contentContainerStyle={styles.modalContent}
@@ -712,7 +768,11 @@ export default function HomeScreen() {
                         {currentAnalysis.title}
                       </Text>
                       <View style={styles.detailDateRow}>
-                        <Ionicons name="calendar-outline" size={14} color="#8B5CF6" />
+                        <Ionicons
+                          name="calendar-outline"
+                          size={14}
+                          color="#8B5CF6"
+                        />
                         <Text style={styles.detailDate}>
                           {new Date(
                             currentAnalysis.createdAt
@@ -728,23 +788,54 @@ export default function HomeScreen() {
                     {/* Quiz & AI Performance */}
                     <View style={styles.detailPerformanceRow}>
                       <View style={styles.detailPerformanceCard}>
-                        <View style={[styles.performanceIconBox, { backgroundColor: "#F3E8FF" }]}>
-                          <Ionicons name="help-circle" size={20} color="#8B5CF6" />
+                        <View
+                          style={[
+                            styles.performanceIconBox,
+                            { backgroundColor: "#F3E8FF" },
+                          ]}
+                        >
+                          <Ionicons
+                            name="help-circle"
+                            size={20}
+                            color="#8B5CF6"
+                          />
                         </View>
-                        <Text style={styles.detailPerformanceLabel}>Điểm Quiz TB</Text>
-                        <Text style={[styles.detailPerformanceScore, { color: "#8B5CF6" }]}>
+                        <Text style={styles.detailPerformanceLabel}>
+                          Điểm Quiz TB
+                        </Text>
+                        <Text
+                          style={[
+                            styles.detailPerformanceScore,
+                            { color: "#8B5CF6" },
+                          ]}
+                        >
                           {currentAnalysis.quizPerformanceAnalysis.averageScore}
                         </Text>
                         <Text style={styles.detailPerformanceMax}>/100</Text>
                       </View>
 
                       <View style={styles.detailPerformanceCard}>
-                        <View style={[styles.performanceIconBox, { backgroundColor: "#F3E8FF" }]}>
+                        <View
+                          style={[
+                            styles.performanceIconBox,
+                            { backgroundColor: "#F3E8FF" },
+                          ]}
+                        >
                           <Ionicons name="sparkles" size={20} color="#8B5CF6" />
                         </View>
-                        <Text style={styles.detailPerformanceLabel}>Điểm AI TB</Text>
-                        <Text style={[styles.detailPerformanceScore, { color: "#8B5CF6" }]}>
-                          {currentAnalysis.videoPerformanceAnalysis.averageScore}
+                        <Text style={styles.detailPerformanceLabel}>
+                          Điểm AI TB
+                        </Text>
+                        <Text
+                          style={[
+                            styles.detailPerformanceScore,
+                            { color: "#8B5CF6" },
+                          ]}
+                        >
+                          {
+                            currentAnalysis.videoPerformanceAnalysis
+                              .averageScore
+                          }
                         </Text>
                         <Text style={styles.detailPerformanceMax}>/100</Text>
                       </View>
@@ -758,7 +849,12 @@ export default function HomeScreen() {
                         activeOpacity={0.7}
                       >
                         <View style={styles.detailSectionTitleRow}>
-                          <View style={[styles.sectionIconBox, { backgroundColor: "#DCFCE7" }]}>
+                          <View
+                            style={[
+                              styles.sectionIconBox,
+                              { backgroundColor: "#DCFCE7" },
+                            ]}
+                          >
                             <Ionicons
                               name="document-text"
                               size={18}
@@ -770,7 +866,11 @@ export default function HomeScreen() {
                           </Text>
                         </View>
                         <Ionicons
-                          name={expandedSections.summary ? "chevron-up" : "chevron-down"}
+                          name={
+                            expandedSections.summary
+                              ? "chevron-up"
+                              : "chevron-down"
+                          }
                           size={20}
                           color="#9CA3AF"
                         />
@@ -793,15 +893,28 @@ export default function HomeScreen() {
                           activeOpacity={0.7}
                         >
                           <View style={styles.detailSectionTitleRow}>
-                            <View style={[styles.sectionIconBox, { backgroundColor: "#FEE2E2" }]}>
-                              <Ionicons name="heart" size={18} color="#EF4444" />
+                            <View
+                              style={[
+                                styles.sectionIconBox,
+                                { backgroundColor: "#FEE2E2" },
+                              ]}
+                            >
+                              <Ionicons
+                                name="heart"
+                                size={18}
+                                color="#EF4444"
+                              />
                             </View>
                             <Text style={styles.detailSectionTitle}>
                               Lời động viên
                             </Text>
                           </View>
                           <Ionicons
-                            name={expandedSections.motivational ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.motivational
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#9CA3AF"
                           />
@@ -825,8 +938,17 @@ export default function HomeScreen() {
                           activeOpacity={0.7}
                         >
                           <View style={styles.detailSectionTitleRow}>
-                            <View style={[styles.sectionIconBox, { backgroundColor: "#FEF3C7" }]}>
-                              <Ionicons name="trophy" size={18} color="#F59E0B" />
+                            <View
+                              style={[
+                                styles.sectionIconBox,
+                                { backgroundColor: "#FEF3C7" },
+                              ]}
+                            >
+                              <Ionicons
+                                name="trophy"
+                                size={18}
+                                color="#F59E0B"
+                              />
                             </View>
                             <Text style={styles.detailSectionTitle}>
                               Điểm mạnh
@@ -838,7 +960,11 @@ export default function HomeScreen() {
                             </View>
                           </View>
                           <Ionicons
-                            name={expandedSections.strengths ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.strengths
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#9CA3AF"
                           />
@@ -849,9 +975,15 @@ export default function HomeScreen() {
                               (strength: string, index: number) => (
                                 <View key={index} style={styles.detailListItem}>
                                   <View style={styles.listIconBox}>
-                                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                                    <Ionicons
+                                      name="checkmark-circle"
+                                      size={16}
+                                      color="#10B981"
+                                    />
                                   </View>
-                                  <Text style={styles.detailListText}>{strength}</Text>
+                                  <Text style={styles.detailListText}>
+                                    {strength}
+                                  </Text>
                                 </View>
                               )
                             )}
@@ -869,8 +1001,17 @@ export default function HomeScreen() {
                           activeOpacity={0.7}
                         >
                           <View style={styles.detailSectionTitleRow}>
-                            <View style={[styles.sectionIconBox, { backgroundColor: "#DBEAFE" }]}>
-                              <Ionicons name="trending-up" size={18} color="#3B82F6" />
+                            <View
+                              style={[
+                                styles.sectionIconBox,
+                                { backgroundColor: "#DBEAFE" },
+                              ]}
+                            >
+                              <Ionicons
+                                name="trending-up"
+                                size={18}
+                                color="#3B82F6"
+                              />
                             </View>
                             <Text style={styles.detailSectionTitle}>
                               Cần cải thiện
@@ -882,7 +1023,11 @@ export default function HomeScreen() {
                             </View>
                           </View>
                           <Ionicons
-                            name={expandedSections.improvements ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.improvements
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#9CA3AF"
                           />
@@ -893,9 +1038,15 @@ export default function HomeScreen() {
                               (area: string, index: number) => (
                                 <View key={index} style={styles.detailListItem}>
                                   <View style={styles.listIconBox}>
-                                    <Ionicons name="alert-circle" size={16} color="#F59E0B" />
+                                    <Ionicons
+                                      name="alert-circle"
+                                      size={16}
+                                      color="#F59E0B"
+                                    />
                                   </View>
-                                  <Text style={styles.detailListText}>{area}</Text>
+                                  <Text style={styles.detailListText}>
+                                    {area}
+                                  </Text>
                                 </View>
                               )
                             )}
@@ -905,7 +1056,8 @@ export default function HomeScreen() {
                     )}
 
                     {/* Recommendations */}
-                    {currentAnalysis.recommendationsForNextSession.length > 0 && (
+                    {currentAnalysis.recommendationsForNextSession.length >
+                      0 && (
                       <View style={styles.detailSection}>
                         <TouchableOpacity
                           style={styles.detailSectionHeader}
@@ -913,7 +1065,12 @@ export default function HomeScreen() {
                           activeOpacity={0.7}
                         >
                           <View style={styles.detailSectionTitleRow}>
-                            <View style={[styles.sectionIconBox, { backgroundColor: "#FEF3C7" }]}>
+                            <View
+                              style={[
+                                styles.sectionIconBox,
+                                { backgroundColor: "#FEF3C7" },
+                              ]}
+                            >
                               <Ionicons name="bulb" size={18} color="#F59E0B" />
                             </View>
                             <Text style={styles.detailSectionTitle}>
@@ -921,12 +1078,19 @@ export default function HomeScreen() {
                             </Text>
                             <View style={styles.countBadge}>
                               <Text style={styles.countBadgeText}>
-                                {currentAnalysis.recommendationsForNextSession.length}
+                                {
+                                  currentAnalysis.recommendationsForNextSession
+                                    .length
+                                }
                               </Text>
                             </View>
                           </View>
                           <Ionicons
-                            name={expandedSections.recommendations ? "chevron-up" : "chevron-down"}
+                            name={
+                              expandedSections.recommendations
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
                             size={20}
                             color="#9CA3AF"
                           />
@@ -935,26 +1099,52 @@ export default function HomeScreen() {
                           <View style={styles.detailSectionContent}>
                             {currentAnalysis.recommendationsForNextSession.map(
                               (rec: any, index: number) => (
-                                <View key={index} style={styles.detailRecommendationCard}>
+                                <View
+                                  key={index}
+                                  style={styles.detailRecommendationCard}
+                                >
                                   <View style={styles.recommendationCardHeader}>
                                     <View
                                       style={[
                                         styles.detailPriorityBadge,
-                                        rec.priority === "HIGH" && { backgroundColor: "#FEE2E2" },
-                                        rec.priority === "MEDIUM" && { backgroundColor: "#FEF3C7" },
-                                        rec.priority === "LOW" && { backgroundColor: "#DBEAFE" },
+                                        rec.priority === "HIGH" && {
+                                          backgroundColor: "#FEE2E2",
+                                        },
+                                        rec.priority === "MEDIUM" && {
+                                          backgroundColor: "#FEF3C7",
+                                        },
+                                        rec.priority === "LOW" && {
+                                          backgroundColor: "#DBEAFE",
+                                        },
                                       ]}
                                     >
                                       {rec.priority === "HIGH" ? (
-                                        <Ionicons name="alert-circle" size={18} color="#DC2626" style={{ marginTop: 1 }} />
+                                        <Ionicons
+                                          name="alert-circle"
+                                          size={18}
+                                          color="#DC2626"
+                                          style={{ marginTop: 1 }}
+                                        />
                                       ) : rec.priority === "MEDIUM" ? (
-                                        <Ionicons name="bulb" size={18} color="#D97706" style={{ marginTop: 1 }} />
+                                        <Ionicons
+                                          name="bulb"
+                                          size={18}
+                                          color="#D97706"
+                                          style={{ marginTop: 1 }}
+                                        />
                                       ) : (
-                                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" style={{ marginTop: 1 }} />
+                                        <Ionicons
+                                          name="checkmark-circle"
+                                          size={18}
+                                          color="#2563EB"
+                                          style={{ marginTop: 1 }}
+                                        />
                                       )}
                                     </View>
                                   </View>
-                                  <Text style={styles.detailRecommendationText}>{rec.title}</Text>
+                                  <Text style={styles.detailRecommendationText}>
+                                    {rec.title}
+                                  </Text>
                                 </View>
                               )
                             )}
