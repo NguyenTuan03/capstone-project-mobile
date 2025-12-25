@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { AiVideoCompareResult } from "../../../types/ai";
 import { VideoType } from "../../../types/video";
 import CoachVideoCard from "./CoachVideoCard";
 import SubmittedVideoCard from "./SubmittedVideoCard";
-import VideoDetailsModal from "./VideoDetailsModal";
 import VideoOverlayPlayer from "./VideoOverlayPlayer";
 import VideoUploadSection from "./VideoUploadSection";
 
@@ -56,70 +57,126 @@ const VideoList: React.FC<VideoListProps> = ({
   coachVideoId,
   coachVideoDuration,
 }) => {
-  const [showCoachVideosModal, setShowCoachVideosModal] = useState(false);
   const [showOverlayPlayer, setShowOverlayPlayer] = useState(false);
+  const [isReuploading, setIsReuploading] = useState(false);
 
-  
+  // Auto-reset isReuploading when upload finished
+  useEffect(() => {
+    if (!isUploading && isReuploading && submittedVideo) {
+      setIsReuploading(false);
+    }
+  }, [isUploading, submittedVideo]);
 
   return (
-    <>
-      {submittedVideo && (
-        <SubmittedVideoCard
-          submittedVideo={submittedVideo}
-          overlayVideoUrl={overlayVideoUrl}
-          onViewOverlay={() => setShowOverlayPlayer(true)}
-        />
+    <View style={styles.container}>
+      {/* Immersive Background Element */}
+      <View style={styles.bgDecoration} pointerEvents="none" />
+
+      {/* Learning Path Header */}
+      <Animated.View
+        entering={FadeInUp.duration(600).springify()}
+        style={styles.pageHeader}
+      >
+        <View style={styles.headerIndicator} />
+        <Text style={styles.headerTitleText}>Lộ trình luyện tập</Text>
+        <Text style={styles.headerSubtitleText}>
+          Theo dõi và cải thiện kỹ thuật của bạn
+        </Text>
+      </Animated.View>
+
+      {submittedVideo && !isReuploading && (
+        <Animated.View
+          entering={FadeInDown.delay(100).springify()}
+          style={styles.sectionWrapper}
+        >
+          <View style={styles.sectionBadge}>
+            <LinearGradient
+              colors={["#059669", "#047857"]}
+              style={styles.badgeGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Ionicons name="sparkles" size={10} color="#FFFFFF" />
+              <Text style={styles.badgeText}>BÀI TẬP HIỆN TẠI</Text>
+            </LinearGradient>
+          </View>
+          <SubmittedVideoCard
+            submittedVideo={submittedVideo}
+            overlayVideoUrl={overlayVideoUrl}
+            onViewOverlay={() => setShowOverlayPlayer(true)}
+            hasAiResult={!!aiAnalysisResult}
+            onUpdate={() => setIsReuploading(true)}
+          />
+        </Animated.View>
       )}
 
-      {/* Chỉ hiển thị phần quay video nếu chưa có kết quả AI */}
-      {!aiAnalysisResult && (
-        <VideoUploadSection
-          localVideo={localVideo}
-          isUploading={isUploading}
-          hasCoachVideo={video !== null}
-          coachVideoId={coachVideoId}
-          coachVideoDuration={coachVideoDuration}
-          onPickVideo={onPickVideo}
-          onUploadVideo={onUploadVideo}
-          onVideoCapture={onVideoCapture}
-        />
+      {video && (
+        <Animated.View
+          entering={FadeInUp.delay(200).springify()}
+          style={styles.coachSection}
+        >
+          <View style={styles.coachCardWrapper}>
+            <CoachVideoCard video={video} />
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Hiển thị upload nếu chưa có kết quả AI HOẶC đang muốn upload lại */}
+      {(!aiAnalysisResult || isReuploading) && (
+        <Animated.View
+          entering={FadeInUp.delay(300).springify()}
+          style={styles.uploadSectionWrapper}
+        >
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            {isReuploading ? (
+              <TouchableOpacity
+                onPress={() => setIsReuploading(false)}
+                style={styles.cancelButton}
+              >
+                <Ionicons name="close-circle" size={16} color="#EF4444" />
+                <Text style={styles.cancelText}>Hủy cập nhật</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.dividerDots}>
+                <View style={styles.dot} />
+                <View style={[styles.dot, styles.dotActive]} />
+                <View style={styles.dot} />
+              </View>
+            )}
+            <View style={styles.dividerLine} />
+          </View>
+
+          <VideoUploadSection
+            localVideo={localVideo}
+            isUploading={isUploading}
+            hasCoachVideo={video !== null}
+            coachVideoId={coachVideoId}
+            coachVideoDuration={coachVideoDuration}
+            onPickVideo={onPickVideo}
+            onUploadVideo={onUploadVideo}
+            onVideoCapture={onVideoCapture}
+          />
+        </Animated.View>
       )}
 
       {video === null && !localVideo && (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="videocam-off-outline" size={32} color="#9CA3AF" />
-          <Text style={styles.emptyText}>
-            Chưa có video nào cho bài học này.
-          </Text>
-        </View>
-      )}
-
-      {/* Coach Videos Section */}
-      {video && (
-        <View style={styles.coachVideosSection}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="videocam" size={20} color="#059669" />
-              </View>
-              <Text style={styles.sectionTitle}>Video từ HLV</Text>
+        <Animated.View
+          entering={FadeInUp.delay(400)}
+          style={styles.emptyContainer}
+        >
+          <View style={styles.emptyIconGlow}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="videocam-off" size={48} color="#059669" />
             </View>
           </View>
-
-          {/* Show preview (first video only) */}
-          <View style={styles.previewContainer}>
-            <CoachVideoCard video={video} />
-          </View>
-        </View>
+          <Text style={styles.emptyTitle}>Khám phá bài học mới</Text>
+          <Text style={styles.emptyText}>
+            Bạn chưa có video hướng dẫn hay bài tập nào. Hãy bắt đầu hành trình
+            ngay!
+          </Text>
+        </Animated.View>
       )}
-
-      {/* Coach Videos Modal */}
-      <VideoDetailsModal
-        visible={showCoachVideosModal}
-        video={video}
-        onClose={() => setShowCoachVideosModal(false)}
-        title="Video từ Coach"
-      />
 
       {/* Custom Overlay Player */}
       {video && video.publicUrl && submittedVideo && (
@@ -132,107 +189,178 @@ const VideoList: React.FC<VideoListProps> = ({
           isPaddingTopEnabled={true}
         />
       )}
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    backgroundColor: "#F8FAFC",
+  },
+  bgDecoration: {
+    position: "absolute",
+    top: -80,
+    right: -80,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(5, 150, 105, 0.03)",
+  },
+  pageHeader: {
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  },
+  headerIndicator: {
+    width: 24,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "#059669",
+    marginBottom: 8,
+  },
+  headerTitleText: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#111827",
+    letterSpacing: -0.6,
+  },
+  headerSubtitleText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  sectionWrapper: {
+    marginBottom: 16,
+  },
+  sectionBadge: {
+    alignSelf: "flex-start",
+    marginBottom: -10,
+    zIndex: 10,
+    marginLeft: 10,
+  },
+  badgeGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 8,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: 0.8,
+  },
+  uploadSectionWrapper: {
+    marginTop: 8,
+  },
+  sectionDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 16,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  dividerDots: {
+    flexDirection: "row",
+    gap: 3,
+    alignItems: "center",
+  },
+  dot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "#E5E7EB",
+  },
+  dotActive: {
+    width: 6,
+    backgroundColor: "#059669",
+  },
+  coachSection: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 2,
+    marginBottom: 4,
+  },
+  coachCardWrapper: {
+    padding: 0,
+  },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 30,
-    gap: 8,
+    paddingVertical: 32,
+    paddingHorizontal: 32,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  emptyIconGlow: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(5, 150, 105, 0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#111827",
+    marginBottom: 8,
+    letterSpacing: -0.4,
   },
   emptyText: {
     fontSize: 14,
-    color: "#9CA3AF",
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  coachVideosSection: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    gap: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#ECFDF5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  videoBadge: {
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  videoBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  viewAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#F3F4F6",
-  },
-  viewAllText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  previewContainer: {
-    gap: 12,
-  },
-  moreVideosCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 2,
-    borderColor: "#ECFDF5",
-    borderStyle: "dashed",
-  },
-  moreVideosText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#059669",
-  },
-  moreVideosSubtext: {
-    fontSize: 13,
     color: "#6B7280",
-    fontStyle: "italic",
+    textAlign: "center",
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  cancelText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#EF4444",
   },
 });
 

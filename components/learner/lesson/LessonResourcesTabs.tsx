@@ -1,5 +1,6 @@
 import { get } from "@/services/http/httpService";
 import { AiVideoCompareResult, LessonResourcesTabsProps } from "@/types/ai";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -47,13 +48,30 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const [overlayVideoUrl, setOverlayVideoUrl] = useState<string | null>(null);
     const [showOverlayModal, setShowOverlayModal] = useState(false);
 
-    const tabs: { key: LessonResourcesTab; label: string }[] = useMemo(
-      () => [
-        { key: "videos", label: "Video" },
-        { key: "quizzes", label: "Quiz" },
-      ],
-      [quiz, video]
-    );
+    const handleTabPress = async (key: LessonResourcesTab) => {
+      if (key !== activeTab) {
+        import("expo-haptics").then((Haptics) => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        });
+        setTabLoading(true);
+        setActiveTab(key);
+        try {
+          await refresh();
+        } catch (err) {
+        } finally {
+          setTabLoading(false);
+        }
+      }
+    };
+
+    const tabs: { key: LessonResourcesTab; label: string; icon: any }[] =
+      useMemo(
+        () => [
+          { key: "videos", label: "Luyện tập", icon: "videocam-outline" },
+          { key: "quizzes", label: "Kiểm tra", icon: "help-circle-outline" },
+        ],
+        []
+      );
 
     const handlePickVideo = async () => {
       try {
@@ -94,7 +112,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       name: string;
       duration?: number;
     }) => {
-      // Update parent localVideo state with captured video including duration
       setLocalVideo({
         uri: video.uri,
         name: video.name,
@@ -103,7 +120,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       });
     };
 
-    // UPDATED: Load both submitted video and overlayVideoUrl
     const loadSubmittedVideo = useCallback(async () => {
       if (!sessionId) {
         setSubmittedVideo(null);
@@ -130,7 +146,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
           return;
         }
 
-        // Get the latest video
         const picked =
           list
             .slice()
@@ -149,7 +164,6 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
             id: picked.id,
           });
 
-          // IMPORTANT: Check and set overlayVideoUrl if it exists
           if (
             picked.overlayVideoUrl &&
             picked.overlayVideoUrl.trim().length > 0
@@ -174,13 +188,10 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       setIsUploading(true);
       try {
         const fd = new FormData();
-
-        // Ensure URI has file:// prefix
         const videoUri = localVideo.uri.startsWith("file://")
           ? localVideo.uri
           : `file://${localVideo.uri}`;
 
-        // Ensure filename ends with .mp4
         const videoName = localVideo.name?.endsWith(".mp4")
           ? localVideo.name
           : `${localVideo.name || "video"}.mp4`;
@@ -194,23 +205,26 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
         fd.append("coachVideoId", String(coachVideoId));
         fd.append("sessionId", String(lessonId));
 
-        // Only append duration if available (captured videos may not have it)
         if (localVideo.duration != null) {
           fd.append("duration", String(Math.round(localVideo.duration)));
         }
 
-        // Append tags if available
         if (localVideo.tags && localVideo.tags.length > 0) {
           fd.append("tags", JSON.stringify(localVideo.tags));
         }
 
-        await http.post("/v1/learner-videos", fd, {
-          // Don't set Content-Type manually - let axios set it with boundary
-        });
+        await http.post("/v1/learner-videos", fd, {});
 
         Alert.alert("Thành công", "Video đã được upload thành công!");
         setLocalVideo((prev) => (prev ? { ...prev, uploaded: true } : null));
-        await loadSubmittedVideo();
+
+        // Refresh all lesson data
+        await Promise.all([
+          refresh(),
+          loadSubmittedVideo(),
+          loadAiAnalysisResult(),
+        ]);
+
         setLocalVideo(null);
       } catch (err: any) {
         Alert.alert(
@@ -269,9 +283,12 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
     const renderQuizzes = (item: QuizType | undefined) => {
       if (!item) {
         return (
-          <Text style={styles.emptyText}>
-            Chưa có quiz nào cho bài học này.
-          </Text>
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconCircle}>
+              <Ionicons name="help-buoy-outline" size={40} color="#94A3B8" />
+            </View>
+            <Text style={styles.emptyText}>Chưa có bài kiểm tra.</Text>
+          </View>
         );
       }
 
@@ -301,55 +318,56 @@ const LessonResourcesTabs: React.FC<LessonResourcesTabsProps> = React.memo(
       );
     };
 
-    if (!lessonId) {
-      return null;
-    }
+    if (!lessonId) return null;
 
     return (
       <View style={[styles.container, style]}>
-        <View style={styles.tabRow}>
-          {tabs.map((tab) => {
-            const isActive = tab.key === activeTab;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                onPress={async () => {
-                  if (tab.key !== activeTab) {
-                    setTabLoading(true);
-                    setActiveTab(tab.key);
-                    try {
-                      await refresh();
-                    } catch (err) {
-                    } finally {
-                      setTabLoading(false);
-                    }
-                  }
-                }}
-                style={[styles.tabButton, isActive && styles.tabButtonActive]}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+        <View style={styles.header}>
+          <View style={styles.tabContainer}>
+            {tabs.map((tab) => {
+              const isActive = tab.key === activeTab;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  onPress={() => handleTabPress(tab.key)}
+                  style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                  activeOpacity={0.7}
                 >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <Ionicons
+                    name={tab.icon}
+                    size={16}
+                    color={isActive ? "#FFFFFF" : "#64748B"}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.content}>
           {loading || tabLoading ? (
-            <View style={styles.loadingContainer}>
+            <View style={styles.loadingWrapper}>
               <ActivityIndicator size="large" color="#059669" />
-              <Text style={styles.loadingText}>
-                {activeTab === "videos"
-                  ? "Đang tải video..."
-                  : "Đang tải quiz..."}
-              </Text>
+              <View style={styles.loadingTextContainer}>
+                <Text style={styles.loadingMainText}>
+                  Đang chuẩn bị nội dung
+                </Text>
+                <Text style={styles.loadingSubText}>
+                  Vui lòng chờ trong giây lát...
+                </Text>
+              </View>
             </View>
           ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={32} color="#EF4444" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           ) : activeTab === "videos" ? (
             <VideoList
               video={video}
@@ -379,92 +397,107 @@ LessonResourcesTabs.displayName = "LessonResourcesTabs";
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    overflow: "hidden",
+    marginTop: 12,
+    backgroundColor: "transparent",
+    gap: 12,
   },
-  tabRow: {
+  header: {
+    paddingHorizontal: 2,
+  },
+  tabContainer: {
     flexDirection: "row",
-    padding: 6,
-    gap: 6,
-    backgroundColor: "#F3F4F6",
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    backgroundColor: "#F1F5F9",
+    padding: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
+    flexDirection: "row",
+    paddingVertical: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent",
   },
   tabButtonActive: {
     backgroundColor: "#059669",
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 3,
   },
   tabLabel: {
     fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "600",
+    color: "#64748B",
+    fontWeight: "700",
   },
   tabLabelActive: {
     color: "#FFFFFF",
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  tabCounter: {
-    fontWeight: "500",
-    fontSize: 12,
+    fontWeight: "800",
   },
   content: {
-    padding: 10,
-    gap: 10,
-    minHeight: 200,
+    paddingBottom: 16,
   },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  loadingWrapper: {
     paddingVertical: 40,
-    gap: 12,
+    alignItems: "center",
+    gap: 16,
   },
-  loadingText: {
-    fontSize: 14,
-    color: "#6B7280",
+  loadingTextContainer: {
+    alignItems: "center",
+    gap: 2,
+  },
+  loadingMainText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#1E293B",
+  },
+  loadingSubText: {
+    fontSize: 12,
+    color: "#94A3B8",
     fontWeight: "500",
   },
+  errorContainer: {
+    padding: 24,
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
   errorText: {
-    fontSize: 12,
-    color: "#DC2626",
+    fontSize: 13,
+    color: "#EF4444",
     textAlign: "center",
+    fontWeight: "600",
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: "center",
+    gap: 12,
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   emptyText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    textAlign: "center",
-    paddingVertical: 20,
-    fontStyle: "italic",
+    fontSize: 14,
+    color: "#94A3B8",
+    fontWeight: "600",
   },
   resourceCard: {
-    padding: 10,
-    borderRadius: 9,
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    gap: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0.5 },
-    shadowOpacity: 0.04,
-    shadowRadius: 1.5,
-    elevation: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 4,
   },
 });
 

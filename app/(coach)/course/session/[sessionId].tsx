@@ -199,7 +199,7 @@ const SessionDetailScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}

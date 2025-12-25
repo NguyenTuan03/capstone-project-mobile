@@ -1,211 +1,320 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, {
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { VideoType } from "../../../types/video";
 import LessonVideoPlayer from "./LessonVideoPlayer";
 
 interface CoachVideoCardProps {
   video: VideoType;
+  onPress?: () => void;
+  fullDescription?: boolean;
 }
 
-const CoachVideoCard: React.FC<CoachVideoCardProps> = ({ video }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const CoachVideoCard: React.FC<CoachVideoCardProps> = ({
+  video,
+  onPress,
+  fullDescription = false,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(fullDescription);
+  const rotation = useSharedValue(fullDescription ? 180 : 0);
 
-  const hasDetails = video.drillName || video.drillDescription || video.drillPracticeSets;
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+    rotation.value = withSpring(!isExpanded ? 180 : 0);
+  };
+
+  const rotationStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  // Helper to structure long descriptions into steps or chunks
+  const descriptionChunks = video.drillDescription
+    ? video.drillDescription.split(/\n+/).filter((chunk) => chunk.trim() !== "")
+    : [];
 
   return (
-    <View style={styles.resourceCard}>
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        <View style={styles.titleRow}>
-          <Text style={styles.resourceTitle}>{video.title}</Text>
-          {hasDetails && (
-            <TouchableOpacity
-              onPress={() => setIsExpanded(!isExpanded)}
-              style={styles.toggleButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="#059669"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-        {video.description && (
-          <Text style={styles.resourceDescription} numberOfLines={2}>
-            {video.description}
-          </Text>
-        )}
-        {video.duration != null && (
-          <View style={styles.durationBadge}>
-            <Ionicons name="time-outline" size={12} color="#6B7280" />
-            <Text style={styles.durationText}>{video.duration}s</Text>
+    <View style={styles.card}>
+      <TouchableOpacity
+        onPress={onPress || toggleExpand}
+        activeOpacity={0.9}
+        disabled={fullDescription}
+      >
+        <View style={styles.header}>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>{video.title}</Text>
           </View>
-        )}
-      </View>
 
-      {/* Expandable Drill Info Section */}
-      {isExpanded && hasDetails && (
-        <View style={styles.detailsSection}>
-          {video.drillName && (
-            <View style={styles.drillHeader}>
-              <Ionicons name="fitness" size={14} color="#059669" />
-              <Text style={styles.drillName}>{video.drillName}</Text>
-            </View>
-          )}
-          {video.drillDescription && (
-            <Text style={styles.drillDescription}>
-              {video.drillDescription}
-            </Text>
-          )}
-          {video.drillPracticeSets && (
-            <View style={styles.metaItem}>
-              <Ionicons name="bar-chart-outline" size={12} color="#6B7280" />
-              <Text style={styles.metaText}>
-                {video.drillPracticeSets} hiệp tập
-              </Text>
-            </View>
-          )}
+          <TouchableOpacity
+            onPress={toggleExpand}
+            style={styles.expandButton}
+            activeOpacity={0.7}
+          >
+            <Animated.View style={rotationStyle}>
+              <Ionicons name="chevron-down" size={20} color="#059669" />
+            </Animated.View>
+          </TouchableOpacity>
         </View>
+
+        <Text
+          style={styles.description}
+          numberOfLines={isExpanded ? undefined : 2}
+        >
+          {video.description}
+        </Text>
+      </TouchableOpacity>
+
+      {isExpanded && (
+        <Animated.View
+          entering={FadeInUp.delay(100).springify().damping(18)}
+          style={styles.drillsSection}
+        >
+          {/* Main Drill Header */}
+          <View style={styles.drillMainCard}>
+            <View style={styles.drillHeader}>
+              <View style={styles.drillIconContainer}>
+                <MaterialCommunityIcons
+                  name="lightning-bolt"
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.drillNameSmall}>BÀI TẬP TRỌNG TÂM</Text>
+                <Text style={styles.drillName}>
+                  {video.drillName || "Nội dung bài tập"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Structured Steps/Description */}
+            <View style={styles.guidanceContainer}>
+              {descriptionChunks.length > 0 ? (
+                descriptionChunks.map((chunk, index) => (
+                  <View key={index} style={styles.stepRow}>
+                    <View style={styles.stepIndicator}>
+                      <Text style={styles.stepNumber}>{index + 1}</Text>
+                    </View>
+                    <Text style={styles.stepText}>{chunk.trim()}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noDataText}>
+                  Chưa có hướng dẫn chi tiết.
+                </Text>
+              )}
+            </View>
+
+            {/* Immersive Stat Bar */}
+            <View style={styles.immersiveStatBar}>
+              <View style={styles.statItem}>
+                <Ionicons name="repeat" size={16} color="#059669" />
+                <View>
+                  <Text style={styles.statLabel}>LUYỆN TẬP</Text>
+                  <Text style={styles.statValue}>
+                    {video.drillPracticeSets}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Animated.View>
       )}
 
-      {/* Video Player Section */}
-      <View style={styles.videoContainer}>
-        {video.publicUrl ? (
-          <LessonVideoPlayer source={video.publicUrl} />
-        ) : (
-          <View style={styles.fallbackContainer}>
-            <Ionicons name="alert-circle" size={24} color="#EF4444" />
-            <Text style={styles.fallbackText}>Video hiện chưa khả dụng</Text>
-          </View>
-        )}
+      <View style={styles.videoWrapper}>
+        <View style={styles.videoContainer}>
+          {video.publicUrl ? (
+            <LessonVideoPlayer source={video.publicUrl} />
+          ) : (
+            <View style={styles.noVideo}>
+              <Ionicons name="alert-circle" size={40} color="#9CA3AF" />
+              <Text style={styles.noVideoText}>Video hiện không khả dụng</Text>
+            </View>
+          )}
+        </View>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  resourceCard: {
+  card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 12,
-    gap: 10,
+    borderRadius: 20,
+    padding: 14,
+    gap: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
   },
-  headerSection: {
-    gap: 6,
-  },
-  titleRow: {
+  header: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+    alignItems: "flex-start",
   },
-  resourceTitle: {
+  titleSection: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
-    lineHeight: 20,
   },
-  toggleButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: "#F0FDF4",
+  title: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.6,
+    lineHeight: 24,
+    flexShrink: 1,
+  },
+  expandButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
     borderWidth: 1,
-    borderColor: "#BBF7D0",
+    borderColor: "#F1F5F9",
+    marginLeft: 12,
   },
-  resourceDescription: {
-    fontSize: 13,
-    color: "#6B7280",
-    lineHeight: 18,
+  description: {
+    fontSize: 14,
+    color: "#64748B",
+    lineHeight: 20,
+    fontWeight: "500",
   },
-  durationBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-start",
-    backgroundColor: "#F9FAFB",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  drillsSection: {
+    marginTop: 2,
+  },
+  drillMainCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  durationText: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "600",
-  },
-  detailsSection: {
-    backgroundColor: "#F0FDF4",
-    padding: 10,
-    borderRadius: 8,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
+    borderColor: "#F1F5F9",
+    gap: 14,
   },
   drillHeader: {
     flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  drillIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#059669",
+    justifyContent: "center",
     alignItems: "center",
-    gap: 5,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  drillNameSmall: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#94A3B8",
+    letterSpacing: 0.8,
+    marginBottom: 0,
   },
   drillName: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#1E293B",
+    letterSpacing: -0.4,
+    flexShrink: 1,
+    flex: 1,
+  },
+  guidanceContainer: {
+    gap: 12,
+  },
+  stepRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  stepIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    backgroundColor: "#ECFDF5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 1,
+  },
+  stepNumber: {
+    fontSize: 10,
+    fontWeight: "800",
     color: "#059669",
   },
-  drillDescription: {
-    fontSize: 12,
-    color: "#16A34A",
-    lineHeight: 16,
+  stepText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 18,
+    fontWeight: "500",
   },
-  metaItem: {
+  immersiveStatBar: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  statItem: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
+    gap: 10,
   },
-  metaText: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "600",
+  statLabel: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#94A3B8",
+    letterSpacing: 0.4,
+    marginBottom: 0,
   },
-  videoContainer: {
-    borderRadius: 10,
+  statValue: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#0F172A",
+  },
+  statDivider: {
+    width: 1,
+    height: "100%",
+    backgroundColor: "#F1F5F9",
+    marginHorizontal: 12,
+  },
+  noDataText: {
+    fontSize: 13,
+    color: "#94A3B8",
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  videoWrapper: {
+    borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#000",
   },
-  fallbackContainer: {
-    backgroundColor: "#FEF2F2",
-    padding: 20,
+  videoContainer: {
+    aspectRatio: 16 / 9,
+  },
+  noVideo: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#FECACA",
+    gap: 10,
+    padding: 30,
+    backgroundColor: "#111827",
   },
-  fallbackText: {
-    fontSize: 12,
-    color: "#DC2626",
+  noVideoText: {
+    color: "#9CA3AF",
+    fontSize: 13,
     fontWeight: "600",
   },
 });

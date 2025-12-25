@@ -14,106 +14,125 @@ interface SubmittedVideoCardProps {
   };
   overlayVideoUrl: string | null;
   onViewOverlay: () => void;
+  hasAiResult?: boolean;
+  onUpdate?: () => void;
 }
 
 const SubmittedVideoCard: React.FC<SubmittedVideoCardProps> = ({
   submittedVideo,
   overlayVideoUrl,
   onViewOverlay,
+  hasAiResult,
+  onUpdate,
 }) => {
   return (
-    <View style={styles.submittedVideoCard}>
-      <View style={styles.submittedVideoHeader}>
+    <View style={styles.cardContainer}>
+      <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.iconContainer}>
+          <LinearGradient
+            colors={["#ECFDF5", "#D1FAE5"]}
+            style={styles.iconWrapper}
+          >
             <Ionicons name="videocam" size={20} color="#059669" />
-          </View>
+          </LinearGradient>
           <View>
-            <Text style={styles.submittedVideoTitle}>Video bạn đã nộp</Text>
+            <Text style={styles.title}>Kết quả luyện tập</Text>
             {submittedVideo.createdAt && (
-              <Text style={styles.submittedVideoMeta}>
-                {new Date(submittedVideo.createdAt).toLocaleString("vi-VN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })}
-              </Text>
+              <View style={styles.timestamp}>
+                <Ionicons name="time-outline" size={12} color="#94A3B8" />
+                <Text style={styles.timeText}>
+                  {new Date(submittedVideo.createdAt).toLocaleDateString(
+                    "vi-VN",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    }
+                  )}
+                </Text>
+              </View>
             )}
           </View>
         </View>
 
         {submittedVideo.status && (
-          <View style={styles.statusBadgeContainer}>
+          <View
+            style={[
+              styles.statusChip,
+              submittedVideo.status === "PROCESSING" && styles.statusProcessing,
+              (submittedVideo.status === "COMPLETED" ||
+                submittedVideo.status === "READY") &&
+                styles.statusCompleted,
+              submittedVideo.status === "FAILED" && styles.statusFailed,
+            ]}
+          >
             <View
               style={[
-                styles.statusBadge,
+                styles.pulse,
                 submittedVideo.status === "PROCESSING" &&
-                  styles.statusProcessing,
-                submittedVideo.status === "COMPLETED" && styles.statusCompleted,
-                submittedVideo.status === "FAILED" && styles.statusFailed,
+                  styles.pulseProcessing,
+                (submittedVideo.status === "COMPLETED" ||
+                  submittedVideo.status === "READY") &&
+                  styles.pulseCompleted,
               ]}
-            >
-              <Text
-                style={[
-                  styles.statusBadgeText,
-                  submittedVideo.status === "PROCESSING" &&
-                    styles.statusProcessingText,
-                  submittedVideo.status === "READY" &&
-                    styles.statusCompletedText,
-                  submittedVideo.status === "FAILED" && styles.statusFailedText,
-                ]}
-              >
-                {submittedVideo.status === "PROCESSING" && "Đang xử lý"}
-                {submittedVideo.status === "READY" && ""}
-                {submittedVideo.status === "FAILED" && "Thất bại"}
-                {!["PROCESSING", "READY", "FAILED"].includes(
-                  submittedVideo.status
-                ) && submittedVideo.status}
-              </Text>
-            </View>
+            />
           </View>
         )}
       </View>
 
-      <View style={styles.videoContainer}>
+      <View style={styles.videoWrapper}>
         <LessonVideoPlayer source={submittedVideo.publicUrl} />
       </View>
-      <View style={styles.actionsRow}>
-        <TouchableOpacity
-          style={styles.customCompareButton}
-          onPress={onViewOverlay}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={["#10B981", "#059669"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.compareButtonGradient}
+
+      <View style={styles.footer}>
+        {hasAiResult && (
+          <TouchableOpacity
+            onPress={onViewOverlay}
+            activeOpacity={0.8}
+            style={styles.aiButton}
           >
-            <Ionicons name="layers" size={20} color="#FFFFFF" />
-            <Text style={styles.compareButtonText}>Xem phân tích AI</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={["#059669", "#065F46"]}
+              style={styles.aiGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+              <Text style={styles.aiButtonText}>Xem phân tích AI</Text>
+              <View style={styles.aiGlow} />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {onUpdate && (
+          <TouchableOpacity
+            onPress={onUpdate}
+            activeOpacity={0.7}
+            style={styles.secondaryButton}
+          >
+            <Ionicons name="refresh-outline" size={16} color="#64748B" />
+            <Text style={styles.secondaryButtonText}>Thay đổi video</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  submittedVideoCard: {
-    padding: 16,
-    borderRadius: 16,
+  cardContainer: {
     backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    marginBottom: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
   },
-  submittedVideoHeader: {
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -124,139 +143,136 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
+  iconWrapper: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: "#ECFDF5",
     justifyContent: "center",
     alignItems: "center",
-  },
-  submittedVideoTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 2,
-  },
-  submittedVideoMeta: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  statusBadgeContainer: {
-    flexDirection: "row",
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
     borderWidth: 1,
+    borderColor: "rgba(5, 150, 105, 0.1)",
   },
-  statusProcessing: {
-    backgroundColor: "#FEF3C7",
-    borderColor: "#F59E0B",
+  title: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.4,
   },
-  statusCompleted: {
-    backgroundColor: "#D1FAE5",
-    borderColor: "#10B981",
+  timestamp: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 1,
   },
-  statusFailed: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#EF4444",
-  },
-  statusBadgeText: {
-    fontSize: 11,
+  timeText: {
+    fontSize: 12,
+    color: "#94A3B8",
     fontWeight: "600",
   },
-  statusProcessingText: {
-    color: "#B45309",
+  statusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#F8FAFC",
   },
-  statusCompletedText: {
-    color: "#047857",
+  statusProcessing: { backgroundColor: "#FFFBEB" },
+  statusCompleted: { backgroundColor: "#F0FDF4" },
+  statusFailed: { backgroundColor: "#FEF2F2" },
+  pulse: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#94A3B8",
   },
-  statusFailedText: {
-    color: "#B91C1C",
+  pulseProcessing: { backgroundColor: "#F59E0B" },
+  pulseCompleted: { backgroundColor: "#10B981" },
+  statusText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
-  videoContainer: {
-    borderRadius: 12,
+  textProcessing: { color: "#D97706" },
+  textCompleted: { color: "#059669" },
+  textFailed: { color: "#DC2626" },
+  videoWrapper: {
+    borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#F3F4F6",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#000",
   },
-  actionButtonContainer: {
+  videoOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 60,
+    justifyContent: "flex-end",
+    padding: 12,
+  },
+  overlayContent: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  qualityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  qualityText: {
+    color: "#FFFFFF",
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+  footer: {
     marginTop: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  actionButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 8,
-  },
-  actionButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  viewOverlayButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 8,
-  },
-  viewOverlayButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  actionsRow: {
-    flexDirection: "row",
     gap: 10,
-    marginTop: 16,
   },
-  compareButton: {
-    flex: 1,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  aiButton: {
+    borderRadius: 16,
+    overflow: "hidden",
   },
-  compareButtonDisabled: {
-    opacity: 0.7,
-  },
-  compareButtonGradient: {
+  aiGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 6,
+    gap: 8,
   },
-  compareButtonText: {
+  aiButtonText: {
     color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "900",
+    letterSpacing: 0.4,
   },
-  customCompareButton: {
-    flex: 1,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  aiGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  secondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    gap: 6,
+    borderRadius: 16,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+  },
+  secondaryButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#64748B",
   },
 });
 
