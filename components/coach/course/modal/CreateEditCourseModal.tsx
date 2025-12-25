@@ -1721,7 +1721,8 @@ export default function CreateEditCourseModal({
                         display="default"
                         onChange={(event, date) => {
                           setShowStartTimePicker(false);
-                          if (date) {
+                          // Only update if user confirmed (not dismissed)
+                          if (event.type === "set" && date) {
                             const hh = String(date.getHours()).padStart(2, "0");
                             const mm = String(date.getMinutes()).padStart(
                               2,
@@ -1825,7 +1826,8 @@ export default function CreateEditCourseModal({
                         display="default"
                         onChange={(event, date) => {
                           setShowEndTimePicker(false);
-                          if (date) {
+                          // Only update if user confirmed (not dismissed)
+                          if (event.type === "set" && date) {
                             const hh = String(date.getHours()).padStart(2, "0");
                             const mm = String(date.getMinutes()).padStart(
                               2,
