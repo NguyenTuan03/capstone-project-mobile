@@ -69,8 +69,11 @@ export interface VideoComparisonResult {
     practiceSets: string;
   }>;
   learnerScore: number;
+  overallForPlayer2?: number;
   coachNote?: string;
   createdAt?: Date;
+  status?: "PENDING" | "USED";
+  id?: number;
 }
 
 export interface PoseLandmark {
@@ -89,6 +92,7 @@ export interface AiVideoCompareResult {
   id: number;
   summary: string | null;
   learnerScore: number | null;
+  overallScoreForPlayer2?: number | null;
   keyDifferents:
     | {
         aspect: string;
@@ -119,6 +123,7 @@ export interface AiVideoCompareResult {
   createdAt: string;
   video: VideoType | null;
   learnerVideo: LearnerVideo | null;
+  status: "PENDING" | "USED";
 }
 
 export interface LessonResourcesTabsProps {

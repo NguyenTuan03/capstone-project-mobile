@@ -29,37 +29,53 @@ export class LearnerVideoService {
    * @param coachNote - Coach's note (required)
    * @returns Promise with the response data
    */
-  async submitAiFeedback(
-    learnerVideoId: number,
-    aiData: {
-      summary: string;
-      learnerScore: number;
-      keyDifferents: {
+  async submitAiFeedback(id: number, coachNote: string) {
+    try {
+      const response = await http.post(
+        `/v1/ai-video-compare-results/${id}/save`,
+        {
+          coachNote,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Update AI feedback result
+   * @param id - The ID of the comparison result
+   * @param data - The data to update
+   * @returns Promise with the response data
+   */
+  async updateAiFeedback(
+    id: number,
+    data: {
+      summary?: string;
+      overallScoreForPlayer2?: number;
+      keyDifferents?: {
         aspect: string;
         learnerTechnique: string;
         impact: string;
       }[];
-      details: {
+      details?: {
         type: string;
         advanced: string;
         strengths: string[];
         weaknesses: string[];
       }[];
-      recommendationDrills: {
+      recommendationDrills?: {
         name: string;
         description: string;
         practiceSets: string;
       }[];
-    },
-    coachNote: string
+    }
   ) {
     try {
-      const response = await http.post(
-        `/v1/learner-videos/${learnerVideoId}/ai-feedback`,
-        {
-          ...aiData,
-          coachNote,
-        }
+      const response = await http.put(
+        `/v1/ai-video-compare-results/${id}`,
+        data
       );
       return response.data;
     } catch (error) {

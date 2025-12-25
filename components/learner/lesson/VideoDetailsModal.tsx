@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import {
   Modal,
@@ -31,41 +32,51 @@ const VideoDetailsModal: React.FC<VideoDetailsModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <View style={styles.modalTitleRow}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="videocam" size={20} color="#059669" />
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          <View style={styles.handleContainer}>
+            <View style={styles.handle} />
+          </View>
+
+          <View style={styles.header}>
+            <View style={styles.titleWrapper}>
+              <LinearGradient
+                colors={["#ECFDF5", "#D1FAE5"]}
+                style={styles.iconBox}
+              >
+                <Ionicons name="school" size={20} color="#059669" />
+              </LinearGradient>
+              <View>
+                <Text style={styles.titleText}>{title}</Text>
+                <Text style={styles.subtitleText}>
+                  Giáo trình huấn luyện nâng cao
+                </Text>
               </View>
-              <Text style={styles.modalTitle}>{title}</Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
-              style={styles.closeButton}
+              style={styles.closeBtn}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={20} color="#6B7280" />
+              <Ionicons name="close-circle" size={28} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
 
-          {/* Content */}
           <ScrollView
-            style={styles.modalContent}
+            style={styles.content}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
             {video ? (
-              <CoachVideoCard video={video} />
+              <CoachVideoCard video={video} fullDescription={true} />
             ) : (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconContainer}>
-                  <Ionicons name="film-outline" size={32} color="#9CA3AF" />
+              <View style={styles.empty}>
+                <View style={styles.emptyCircle}>
+                  <Ionicons name="videocam-off" size={64} color="#059669" />
                 </View>
-                <Text style={styles.emptyText}>Chưa có video nào</Text>
-                <Text style={styles.emptySubtext}>
-                  Video từ huấn luyện viên sẽ xuất hiện ở đây
+                <Text style={styles.emptyTitle}>Nội dung chưa sẵn sàng</Text>
+                <Text style={styles.emptyText}>
+                  Video hướng dẫn đang được HLV chuẩn bị. Vui lòng quay lại sau!
                 </Text>
               </View>
             )}
@@ -77,93 +88,104 @@ const VideoDetailsModal: React.FC<VideoDetailsModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "flex-end",
   },
-  modalContainer: {
+  container: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: "90%",
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    height: "85%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -20 },
+    shadowOpacity: 0.2,
+    shadowRadius: 30,
+    elevation: 25,
   },
-  modalHeader: {
+  handleContainer: {
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  handle: {
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#E5E7EB",
+  },
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#F3F4F6",
   },
-  modalTitleRow: {
+  titleWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 16,
     flex: 1,
   },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#ECFDF5",
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+  titleText: {
+    fontSize: 20,
+    fontWeight: "900",
     color: "#111827",
-    letterSpacing: 0.2,
+    letterSpacing: -0.5,
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    justifyContent: "center",
-    alignItems: "center",
+  subtitleText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+    marginTop: 2,
   },
-  modalContent: {
+  closeBtn: {
+    padding: 4,
+  },
+  content: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 24,
+    paddingBottom: 48,
   },
-  emptyState: {
+  empty: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 48,
-    gap: 8,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
   },
-  emptyIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#F9FAFB",
-    justifyContent: "center",
+  emptyCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#ECFDF5",
     alignItems: "center",
-    marginBottom: 8,
+    justifyContent: "center",
+    marginBottom: 32,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#111827",
+    marginBottom: 12,
+    textAlign: "center",
   },
   emptyText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  emptySubtext: {
-    fontSize: 13,
-    color: "#9CA3AF",
+    color: "#6B7280",
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 24,
+    fontWeight: "500",
   },
 });
 
