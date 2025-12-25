@@ -20,6 +20,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  InteractionManager,
   Modal,
   Platform,
   ScrollView,
@@ -349,6 +350,24 @@ export default function CreateEditCourseModal({
       setMapRegion(mapInitialRegion);
     }
   }, [mapInitialRegion]);
+
+  // Reset modal states after image is selected to prevent blocking interactions
+  useEffect(() => {
+    if (selectedCourseImage) {
+      // Small delay to ensure ImagePicker is fully closed
+      const timer = setTimeout(() => {
+        setShowDatePicker(false);
+        setShowSubjectModal(false);
+        setShowScheduleModal(false);
+        setShowProvinceModal(false);
+        setShowDistrictModal(false);
+        setShowCourtModal(false);
+        setShowStartTimePicker(false);
+        setShowEndTimePicker(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedCourseImage]);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -785,9 +804,22 @@ export default function CreateEditCourseModal({
         setExistingImageUrl(null);
       }
 
-      // Small delay to ensure ImagePicker modal is fully closed
+      // Use InteractionManager to ensure ImagePicker modal is fully closed
       // This prevents interaction blocking issues
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => {
+        InteractionManager.runAfterInteractions(() => {
+          // Force reset any potential blocking states
+          setShowDatePicker(false);
+          setShowSubjectModal(false);
+          setShowScheduleModal(false);
+          setShowProvinceModal(false);
+          setShowDistrictModal(false);
+          setShowCourtModal(false);
+          setShowStartTimePicker(false);
+          setShowEndTimePicker(false);
+          resolve(undefined);
+        });
+      });
     } catch {
       Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
     }
@@ -1279,6 +1311,7 @@ export default function CreateEditCourseModal({
                 style={styles.dateInput}
                 activeOpacity={0.7}
                 onPress={() => {
+                  console.log("Date picker button pressed");
                   // Always update selectedDate to avoid stale state
                   if (startDate) {
                     setSelectedDate(new Date(startDate));
@@ -1287,6 +1320,7 @@ export default function CreateEditCourseModal({
                   }
                   setShowDatePicker(true);
                 }}
+                disabled={false}
               >
                 <Text
                   style={[
