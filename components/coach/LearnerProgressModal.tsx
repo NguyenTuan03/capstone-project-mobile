@@ -22,12 +22,14 @@ interface LearnerProgressModalProps {
   visible: boolean;
   onClose: () => void;
   learner: LearnerProgress | null;
+  onReload?: () => void;
 }
 
 export default function LearnerProgressModal({
   visible,
   onClose,
   learner,
+  onReload,
 }: LearnerProgressModalProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,6 +47,9 @@ export default function LearnerProgressModal({
   const [learnerVideoModalVisible, setLearnerVideoModalVisible] =
     useState(false);
   const [selectedVideoTitle, setSelectedVideoTitle] = useState("");
+  const [currentCoachVideoId, setCurrentCoachVideoId] = useState<number | null>(
+    null
+  );
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [loadingQuizAttempts, setLoadingQuizAttempts] = useState(false);
 
@@ -132,6 +137,7 @@ export default function LearnerProgressModal({
         );
       setLearnerVideos(videos);
       setSelectedVideoTitle(videoTitle);
+      setCurrentCoachVideoId(coachVideoId);
 
       if (videos && videos.length > 0) {
         const sortedVideos = [...videos].sort(
@@ -147,6 +153,34 @@ export default function LearnerProgressModal({
       alert("Không thể tải dữ liệu video");
     } finally {
       setLoadingVideos(false);
+    }
+  };
+
+  const refreshVideos = async () => {
+    if (!learner?.user?.id || !currentCoachVideoId) return;
+    try {
+      const videos =
+        await learnerVideoService.getLearnerVideosByUserAndCoachVideo(
+          learner.user.id,
+          currentCoachVideoId
+        );
+      setLearnerVideos(videos);
+
+      // Update selectedLearnerVideo if it exists in the new list to maintain selection if possible
+      // Otherwise default to the latest (first in sorted list)
+      if (videos && videos.length > 0) {
+        const sortedVideos = [...videos].sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        // Ideally we would want to keep the same video selected, but since we don't track which one
+        // the user has selected inside the modal, we update to the first one or keep current if valid.
+        // For simplicity and "get latest" behavior, we re-select the latest.
+        setSelectedLearnerVideo(sortedVideos[0]);
+      }
+      onReload?.();
+    } catch (error) {
+      console.log("Error refreshing videos:", error);
     }
   };
 
@@ -294,7 +328,11 @@ export default function LearnerProgressModal({
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <View style={styles.statIconContainer}>
-                    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#10B981"
+                    />
                   </View>
                   <Text style={styles.statValue}>
                     {learner.sessionsCompleted}/{learner.totalSessions}
@@ -332,6 +370,7 @@ export default function LearnerProgressModal({
         learnerVideo={selectedLearnerVideo}
         learnerVideos={learnerVideos}
         videoTitle={selectedVideoTitle}
+        onReload={refreshVideos}
       />
     </Modal>
   );

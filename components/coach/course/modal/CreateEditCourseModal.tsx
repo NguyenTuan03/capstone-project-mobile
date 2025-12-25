@@ -212,6 +212,7 @@ export default function CreateEditCourseModal({
   const [selectedStartTime, setSelectedStartTime] = useState<Date>(new Date());
   const [selectedEndTime, setSelectedEndTime] = useState<Date>(new Date());
   const isInitializingRef = useRef(false);
+  const hasInitialized = useRef(false);
 
   const loadUserLocation = useCallback(async () => {
     try {
@@ -251,7 +252,8 @@ export default function CreateEditCourseModal({
   }, [provinces]);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !hasInitialized.current) {
+      hasInitialized.current = true;
       fetchSubjects();
       fetchProvinces();
       if (initialData) {
@@ -298,9 +300,11 @@ export default function CreateEditCourseModal({
         // Load user location as default for create mode
         loadUserLocation();
       }
+    } else if (!visible) {
+      hasInitialized.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, initialData, subjectFilter]);
+  }, [visible]);
 
   useEffect(() => {
     if (selectedProvince) {
@@ -566,7 +570,9 @@ export default function CreateEditCourseModal({
     const scheduleDays = getScheduleDaysOfWeek();
     if (scheduleDays.length === 0) return true; // No schedules, any date is valid
     const dateDay = getDayOfWeekName(date);
-    return scheduleDays.includes(dateDay);
+    return scheduleDays.some(
+      (day) => day.toUpperCase() === dateDay.toUpperCase()
+    );
   };
 
   const handleSaveSchedule = () => {
@@ -1464,24 +1470,31 @@ export default function CreateEditCourseModal({
                   mode="date"
                   display="default"
                   onChange={(event, date) => {
+                    console.log("Date picker onChange:", event.type, date);
+                    setShowDatePicker(false);
                     if (event.type === "set" && date) {
-                      // Calculate minimum allowed date
-                      const minAllowedDate = new Date(
-                        new Date().getTime() +
-                          (courseStartDateAfterDaysFromNow || 0) *
-                            24 *
-                            60 *
-                            60 *
-                            1000
+                      // Normalize dates to start of day for comparison
+                      const minAllowedDate = new Date();
+                      minAllowedDate.setDate(
+                        minAllowedDate.getDate() +
+                          (Number(courseStartDateAfterDaysFromNow) || 0)
                       );
+                      minAllowedDate.setHours(0, 0, 0, 0);
+
+                      const selectedDateNormal = new Date(date);
+                      selectedDateNormal.setHours(0, 0, 0, 0);
+
+                      console.log("Comparing dates:", {
+                        selected: selectedDateNormal,
+                        min: minAllowedDate,
+                      });
 
                       // Validate selected date is after minimum
-                      if (date < minAllowedDate) {
+                      if (selectedDateNormal < minAllowedDate) {
                         Alert.alert(
                           "Ngày không hợp lệ",
                           `Ngày bắt đầu phải cách ít nhất ${courseStartDateAfterDaysFromNow} ngày từ hôm nay.`
                         );
-                        setShowDatePicker(false);
                         return;
                       }
 
@@ -1497,20 +1510,24 @@ export default function CreateEditCourseModal({
                           "Ngày không hợp lệ",
                           `Ngày bắt đầu phải là ${scheduleDays} (theo lịch học của bạn)`
                         );
-                        setShowDatePicker(false);
                         return;
                       }
 
-                      const formattedDate = date.toISOString().split("T")[0];
+                      // timezone correction for display/saving
+                      const offset = date.getTimezoneOffset() * 60000;
+                      const localDate = new Date(date.getTime() - offset);
+                      const formattedDate = localDate
+                        .toISOString()
+                        .split("T")[0];
+
                       setStartDate(formattedDate);
                       setSelectedDate(date);
                     }
-                    setShowDatePicker(false);
                   }}
                   minimumDate={
                     new Date(
-                      new Date().getTime() +
-                        (courseStartDateAfterDaysFromNow || 0) *
+                      new Date().setHours(0, 0, 0, 0) +
+                        (Number(courseStartDateAfterDaysFromNow) || 0) *
                           24 *
                           60 *
                           60 *
