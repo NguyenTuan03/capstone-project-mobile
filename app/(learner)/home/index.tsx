@@ -122,7 +122,6 @@ export default function HomeScreen() {
         }
       }
     } catch (error) {
-      console.error("Failed to generate analysis:", error);
     } finally {
       setGeneratingAnalysis(false);
     }

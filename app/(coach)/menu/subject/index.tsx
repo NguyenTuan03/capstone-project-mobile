@@ -95,8 +95,6 @@ const CoachSubjectScreen = () => {
         router.push("/(coach)/menu/subject/ai-generations" as any);
       }
     } catch (error) {
-      console.error("AI generation error:", error);
-      console.error("Error details:", JSON.stringify(error, null, 2));
       Alert.alert("Lỗi", "Không thể tạo tài liệu với AI. Vui lòng thử lại.");
     } finally {
       setAiGenerating(false);

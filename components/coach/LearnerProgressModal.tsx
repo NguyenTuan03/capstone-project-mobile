@@ -179,9 +179,7 @@ export default function LearnerProgressModal({
         setSelectedLearnerVideo(sortedVideos[0]);
       }
       onReload?.();
-    } catch (error) {
-      console.log("Error refreshing videos:", error);
-    }
+    } catch (error) {}
   };
 
   const renderSessionItem = (session: Session) => {

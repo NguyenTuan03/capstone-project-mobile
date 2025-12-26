@@ -467,7 +467,6 @@ export default function CreateEditCourseModal({
           provinceId,
           districtId
         );
-        console.log(res);
 
         setCourts(res || []);
 
@@ -1279,7 +1278,6 @@ export default function CreateEditCourseModal({
                 style={styles.dateInput}
                 activeOpacity={0.7}
                 onPress={() => {
-                  console.log("Date picker button pressed");
                   // Always update selectedDate to avoid stale state
                   if (startDate) {
                     setSelectedDate(new Date(startDate));

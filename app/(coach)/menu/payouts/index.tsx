@@ -72,7 +72,6 @@ export default function CoachPayoutsScreen() {
       const res = await get(`${API_URL}/v1/wallets/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Wallet data:", res.data);
       setWallet(res.data);
     } catch (err: any) {
     } finally {

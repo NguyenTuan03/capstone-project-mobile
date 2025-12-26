@@ -1,5 +1,8 @@
 import aiSubjectGenerationService from "@/services/aiSubjectGeneration.service";
-import { AiSubjectGeneration, AiSubjectGenerationStatus } from "@/types/ai-subject-generation";
+import {
+  AiSubjectGeneration,
+  AiSubjectGenerationStatus,
+} from "@/types/ai-subject-generation";
 import { Subject } from "@/types/subject";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -53,7 +56,6 @@ export default function SubjectSelectionModal({
       );
       setAiGenerations(response.items || []);
     } catch (error) {
-      console.error("Error fetching AI generations:", error);
     } finally {
       setLoadingAI(false);
     }
@@ -73,8 +75,11 @@ export default function SubjectSelectionModal({
           onPress: async () => {
             try {
               setUsingGeneration(true);
-              const createdSubject = await aiSubjectGenerationService.useGeneratedSubject(generation.id);
-              
+              const createdSubject =
+                await aiSubjectGenerationService.useGeneratedSubject(
+                  generation.id
+                );
+
               Alert.alert("Thành công", "Đã tạo tài liệu từ AI thành công", [
                 {
                   text: "OK",
@@ -88,8 +93,10 @@ export default function SubjectSelectionModal({
                 },
               ]);
             } catch (error) {
-              console.error("Error using AI generation:", error);
-              Alert.alert("Lỗi", "Không thể sử dụng tài liệu AI. Vui lòng thử lại.");
+              Alert.alert(
+                "Lỗi",
+                "Không thể sử dụng tài liệu AI. Vui lòng thử lại."
+              );
             } finally {
               setUsingGeneration(false);
             }
@@ -148,12 +155,18 @@ export default function SubjectSelectionModal({
             <ScrollView>
               <View style={styles.lessonPreviewContainer}>
                 <Text style={styles.lessonPreviewTitle}>
-                  Danh sách bài học ({previewSubject.lessons?.length || 0} bài học)
+                  Danh sách bài học ({previewSubject.lessons?.length || 0} bài
+                  học)
                 </Text>
                 <View style={styles.infoBox}>
-                  <Ionicons name="information-circle" size={18} color="#059669" />
+                  <Ionicons
+                    name="information-circle"
+                    size={18}
+                    color="#059669"
+                  />
                   <Text style={styles.infoText}>
-                   Số lượng bài học {previewSubject.lessons?.length || 0} sẽ là số lượng buổi học của khóa.
+                    Số lượng bài học {previewSubject.lessons?.length || 0} sẽ là
+                    số lượng buổi học của khóa.
                   </Text>
                 </View>
                 {previewSubject.lessons && previewSubject.lessons.length > 0 ? (
@@ -163,9 +176,7 @@ export default function SubjectSelectionModal({
                       style={styles.lessonPreviewItem}
                     >
                       <View style={styles.lessonNumberBadge}>
-                        <Text style={styles.lessonNumberText}>
-                          {index + 1}
-                        </Text>
+                        <Text style={styles.lessonNumberText}>{index + 1}</Text>
                       </View>
                       <View style={styles.lessonInfo}>
                         <Text style={styles.lessonName}>{lesson.name}</Text>
@@ -195,7 +206,11 @@ export default function SubjectSelectionModal({
           ) : subjects.length === 0 && aiGenerations.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconContainer}>
-                <Ionicons name="folder-open-outline" size={48} color="#D1D5DB" />
+                <Ionicons
+                  name="folder-open-outline"
+                  size={48}
+                  color="#D1D5DB"
+                />
               </View>
               <Text style={styles.emptyTitle}>Chưa có tài liệu nào</Text>
               <Text style={styles.emptyDescription}>
@@ -213,7 +228,10 @@ export default function SubjectSelectionModal({
                   <Text style={styles.createButtonText}>AI Tạo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.createButton, { flex: 1, backgroundColor: "#059669" }]}
+                  style={[
+                    styles.createButton,
+                    { flex: 1, backgroundColor: "#059669" },
+                  ]}
                   onPress={() => {
                     handleClose();
                     router.dismissAll();
@@ -250,7 +268,8 @@ export default function SubjectSelectionModal({
                           {generation.generatedData.name}
                         </Text>
                         <Text style={styles.hint}>
-                          {generation.generatedData.lessons?.length || 0} bài học • AI
+                          {generation.generatedData.lessons?.length || 0} bài
+                          học • AI
                         </Text>
                       </View>
                       <Ionicons name="add-circle" size={24} color="#8B5CF6" />
@@ -284,7 +303,11 @@ export default function SubjectSelectionModal({
                           {subject.lessons?.length || 0} bài học
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color="#6B7280"
+                      />
                     </TouchableOpacity>
                   ))}
                 </View>

@@ -1,25 +1,24 @@
 import aiSubjectGenerationService from "@/services/aiSubjectGeneration.service";
 import {
-    AiSubjectGenerationResponse,
-    PickleballLevel,
+  AiSubjectGenerationResponse,
+  PickleballLevel,
 } from "@/types/ai-subject-generation";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const EditAiGenerationScreen: React.FC = () => {
   const { generationId } = useLocalSearchParams();
-
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -40,15 +39,12 @@ const EditAiGenerationScreen: React.FC = () => {
         Number(generationId)
       );
 
-
       // Initialize form with existing data
       setName(data.generatedData.name);
       setDescription(data.generatedData.description);
       setLevel(data.generatedData.level);
       setLessons(data.generatedData.lessons || []);
-
     } catch (error) {
-      console.error("Error loading generation:", error);
       Alert.alert(
         "Lỗi",
         `Không thể tải dữ liệu tạo AI: ${
@@ -131,7 +127,6 @@ const EditAiGenerationScreen: React.FC = () => {
         lessons,
       };
 
-
       await aiSubjectGenerationService.update(
         Number(generationId),
         updatedData
@@ -144,7 +139,6 @@ const EditAiGenerationScreen: React.FC = () => {
         },
       ]);
     } catch (error) {
-      console.error("Error updating generation:", error);
       Alert.alert("Lỗi", "Không thể lưu thay đổi");
     } finally {
       setUpdating(false);

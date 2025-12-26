@@ -1,23 +1,23 @@
 import aiSubjectGenerationService from "@/services/aiSubjectGeneration.service";
 import http from "@/services/http/interceptor";
 import {
-    AiSubjectGeneration,
-    PickleballLevel
+  AiSubjectGeneration,
+  PickleballLevel,
 } from "@/types/ai-subject-generation";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -57,7 +57,6 @@ export default function CreateAISubjectScreen() {
       }
     } catch (error) {
       Alert.alert("Lỗi", "Không thể tải tài liệu AI");
-      console.error("Load generation error:", error);
       router.back();
     } finally {
       setLoading(false);
@@ -130,7 +129,6 @@ export default function CreateAISubjectScreen() {
 
       router.replace("/(coach)/menu/subject");
     } catch (error) {
-      console.error("Create subject error:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -314,7 +312,10 @@ export default function CreateAISubjectScreen() {
 
         {/* Create Button */}
         <TouchableOpacity
-          style={[styles.createButton, submitting && styles.createButtonDisabled]}
+          style={[
+            styles.createButton,
+            submitting && styles.createButtonDisabled,
+          ]}
           onPress={handleCreateSubject}
           disabled={submitting || !subjectName.trim()}
         >

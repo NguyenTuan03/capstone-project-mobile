@@ -269,7 +269,6 @@ export default function LearnerVideoModal({
       setEditingResultIndex(null);
       onReload?.();
     } catch (error) {
-      console.error("Error updating AI feedback:", error);
       Alert.alert("Lỗi", "Không thể cập nhật kết quả phân tích.");
     } finally {
       setIsSubmitting(false);

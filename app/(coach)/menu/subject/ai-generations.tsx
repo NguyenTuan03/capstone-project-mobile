@@ -67,12 +67,9 @@ const AIGenerationsScreen = () => {
         }
 
         setTotal(response?.total || 0);
-        setHasMore(
-          (response?.page || 0) < (response?.totalPages || 0)
-        );
+        setHasMore((response?.page || 0) < (response?.totalPages || 0));
       } catch (error) {
         Alert.alert("Lỗi", "Không thể tải danh sách tài liệu AI");
-        console.error("Fetch AI generations error:", error);
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -140,25 +137,21 @@ const AIGenerationsScreen = () => {
           onPress: async () => {
             try {
               setDeleting(true); // Reuse deleting state for loading indicator
-              const createdSubject = await aiSubjectGenerationService.useGeneratedSubject(
-                selectedGeneration.id
-              );
-              
-              Alert.alert(
-                "Thành công",
-                `Đã tạo tài liệu từ AI thành công`,
-                [
-                  {
-                    text: "OK",
-                    onPress: () => {
-                      setModalVisible(false);
-                      handleRefresh();
-                    },
+              const createdSubject =
+                await aiSubjectGenerationService.useGeneratedSubject(
+                  selectedGeneration.id
+                );
+
+              Alert.alert("Thành công", `Đã tạo tài liệu từ AI thành công`, [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    setModalVisible(false);
+                    handleRefresh();
                   },
-                ]
-              );
+                },
+              ]);
             } catch (error) {
-              console.error("Use generation error:", error);
               Alert.alert(
                 "Lỗi",
                 "Không thể tạo tài liệu từ AI. Vui lòng thử lại."
@@ -203,7 +196,6 @@ const AIGenerationsScreen = () => {
               handleRefresh();
             } catch (error) {
               Alert.alert("Lỗi", "Không thể xóa tài liệu");
-              console.error("Delete generation error:", error);
             } finally {
               setDeleting(false);
             }
@@ -489,9 +481,7 @@ const AIGenerationsScreen = () => {
                                 </Text>
                                 <Ionicons
                                   name={
-                                    isExpanded
-                                      ? "chevron-up"
-                                      : "chevron-down"
+                                    isExpanded ? "chevron-up" : "chevron-down"
                                   }
                                   size={20}
                                   color="#6B7280"
@@ -517,11 +507,46 @@ const AIGenerationsScreen = () => {
                                     </View>
                                     {/* Create Instructions (AI-generated) */}
                                     {lesson.video.createInstructions && (
-                                      <View style={{ marginBottom: 8, marginTop: 2, backgroundColor: '#FEF3C7', borderRadius: 8, padding: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                                        <Ionicons name="bulb" size={16} color="#F59E0B" style={{ marginTop: 2 }} />
+                                      <View
+                                        style={{
+                                          marginBottom: 8,
+                                          marginTop: 2,
+                                          backgroundColor: "#FEF3C7",
+                                          borderRadius: 8,
+                                          padding: 8,
+                                          flexDirection: "row",
+                                          alignItems: "flex-start",
+                                          gap: 6,
+                                        }}
+                                      >
+                                        <Ionicons
+                                          name="bulb"
+                                          size={16}
+                                          color="#F59E0B"
+                                          style={{ marginTop: 2 }}
+                                        />
                                         <View style={{ flex: 1 }}>
-                                          <Text style={[styles.detailLabel, { color: '#B45309', fontWeight: '700', marginBottom: 2 }]}>Hướng dẫn tạo video:</Text>
-                                          <Text style={{ color: '#92400E', fontSize: 13, lineHeight: 18 }}>{lesson.video.createInstructions}</Text>
+                                          <Text
+                                            style={[
+                                              styles.detailLabel,
+                                              {
+                                                color: "#B45309",
+                                                fontWeight: "700",
+                                                marginBottom: 2,
+                                              },
+                                            ]}
+                                          >
+                                            Hướng dẫn tạo video:
+                                          </Text>
+                                          <Text
+                                            style={{
+                                              color: "#92400E",
+                                              fontSize: 13,
+                                              lineHeight: 18,
+                                            }}
+                                          >
+                                            {lesson.video.createInstructions}
+                                          </Text>
                                         </View>
                                       </View>
                                     )}
@@ -581,8 +606,9 @@ const AIGenerationsScreen = () => {
                                         color="#10B981"
                                       />
                                       <Text style={styles.detailBlockTitle}>
-                                        Quiz ({lesson.quiz.questions?.length || 0}{" "}
-                                        câu hỏi)
+                                        Quiz (
+                                        {lesson.quiz.questions?.length || 0} câu
+                                        hỏi)
                                       </Text>
                                     </View>
                                     <Text style={styles.detailText}>
@@ -611,12 +637,17 @@ const AIGenerationsScreen = () => {
                                             </Text>
                                             {question.explanation && (
                                               <Text
-                                                style={styles.questionExplanation}
+                                                style={
+                                                  styles.questionExplanation
+                                                }
                                               >
-                                                Giải thích: {question.explanation}
+                                                Giải thích:{" "}
+                                                {question.explanation}
                                               </Text>
                                             )}
-                                            <View style={styles.optionsContainer}>
+                                            <View
+                                              style={styles.optionsContainer}
+                                            >
                                               {question.options?.map(
                                                 (option, oIndex) => (
                                                   <View
@@ -768,8 +799,14 @@ const AIGenerationsScreen = () => {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                    <Text style={styles.useButtonText}>Sử dụng tài liệu này</Text>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.useButtonText}>
+                      Sử dụng tài liệu này
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
