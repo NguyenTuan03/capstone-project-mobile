@@ -56,29 +56,6 @@ export default function AchievementTabs({
           Đã đạt {stats?.totalEarned ? `(${stats.totalEarned})` : ""}
         </Text>
       </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.tab,
-          activeTab === "progress" && styles.tabActive,
-          pressed && styles.tabPressed,
-        ]}
-        onPress={() => onTabChange("progress")}
-      >
-        <Ionicons
-          name={activeTab === "progress" ? "hourglass" : "hourglass-outline"}
-          size={18}
-          color={activeTab === "progress" ? "#FFFFFF" : "#6B7280"}
-        />
-        <Text
-          style={
-            activeTab === "progress" ? styles.tabTextActive : styles.tabText
-          }
-        >
-          Đang làm{" "}
-          {stats?.totalInProgress ? `(${stats.totalInProgress})` : ""}
-        </Text>
-      </Pressable>
     </View>
   );
 }
