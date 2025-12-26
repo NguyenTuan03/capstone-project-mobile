@@ -351,24 +351,6 @@ export default function CreateEditCourseModal({
     }
   }, [mapInitialRegion]);
 
-  // Reset modal states after image is selected to prevent blocking interactions
-  useEffect(() => {
-    if (selectedCourseImage) {
-      // Small delay to ensure ImagePicker is fully closed
-      const timer = setTimeout(() => {
-        setShowDatePicker(false);
-        setShowSubjectModal(false);
-        setShowScheduleModal(false);
-        setShowProvinceModal(false);
-        setShowDistrictModal(false);
-        setShowCourtModal(false);
-        setShowStartTimePicker(false);
-        setShowEndTimePicker(false);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedCourseImage]);
-
   useEffect(() => {
     const loadConfig = async () => {
       try {
