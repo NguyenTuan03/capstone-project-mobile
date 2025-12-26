@@ -143,7 +143,7 @@ export default function UploadVideoScreen() {
         response = await http.put(`/v1/videos/${videoId}`, formData, {
           onUploadProgress: (progressEvent) => {
             const progress = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+              (progressEvent.loaded * 100) / (progressEvent.total ?? 1) / 2
             );
             setUploadProgress(progress);
           },
@@ -200,7 +200,16 @@ export default function UploadVideoScreen() {
         >
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB" }}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              backgroundColor: "#F3F4F6",
+              justifyContent: "center",
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+            }}
           >
             <Ionicons name="arrow-back" size={20} color="#059669" />
           </TouchableOpacity>
@@ -221,7 +230,14 @@ export default function UploadVideoScreen() {
 
         {/* Form Fields */}
         <View style={{ marginBottom: 8 }}>
-          <Text style={{ fontWeight: "600", fontSize: 13, marginBottom: 4, color: "#374151" }}>
+          <Text
+            style={{
+              fontWeight: "600",
+              fontSize: 13,
+              marginBottom: 4,
+              color: "#374151",
+            }}
+          >
             Tiêu đề video
           </Text>
           <TextInput
@@ -243,7 +259,16 @@ export default function UploadVideoScreen() {
         </View>
 
         <View style={{ marginBottom: 8 }}>
-          <Text style={{ fontWeight: "600", fontSize: 13, marginBottom: 4, color: "#374151" }}>Mô tả</Text>
+          <Text
+            style={{
+              fontWeight: "600",
+              fontSize: 13,
+              marginBottom: 4,
+              color: "#374151",
+            }}
+          >
+            Mô tả
+          </Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
@@ -285,7 +310,14 @@ export default function UploadVideoScreen() {
           },
         ].map((field, index) => (
           <View key={index} style={{ marginBottom: 8 }}>
-            <Text style={{ fontWeight: "600", fontSize: 13, marginBottom: 4, color: "#374151" }}>
+            <Text
+              style={{
+                fontWeight: "600",
+                fontSize: 13,
+                marginBottom: 4,
+                color: "#374151",
+              }}
+            >
               {field.label}
             </Text>
             <TextInput
@@ -302,7 +334,10 @@ export default function UploadVideoScreen() {
                 fontSize: 14,
                 color: "#111827",
               }}
-              keyboardType={(field.keyboardType as import("react-native").KeyboardTypeOptions) || "default"}
+              keyboardType={
+                (field.keyboardType as import("react-native").KeyboardTypeOptions) ||
+                "default"
+              }
               maxLength={field.keyboardType === "numeric" ? 3 : 60}
             />
           </View>
@@ -396,7 +431,13 @@ export default function UploadVideoScreen() {
                   marginBottom: 2,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flex: 1,
+                  }}
+                >
                   <Ionicons name="film" size={16} color="#059669" />
                   <Text
                     style={{
@@ -424,7 +465,13 @@ export default function UploadVideoScreen() {
                     marginLeft: 8,
                   }}
                 >
-                  <Text style={{ color: "#DC2626", fontWeight: "bold", fontSize: 16 }}>
+                  <Text
+                    style={{
+                      color: "#DC2626",
+                      fontWeight: "bold",
+                      fontSize: 16,
+                    }}
+                  >
                     ×
                   </Text>
                 </TouchableOpacity>
@@ -476,28 +523,35 @@ export default function UploadVideoScreen() {
         </View>
 
         {/* Action Buttons */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
           {/* Secondary Button: Cancel/Back */}
           <TouchableOpacity
             onPress={() => router.back()}
             activeOpacity={0.85}
             style={{
               flex: 1,
-              backgroundColor: '#fff',
+              backgroundColor: "#fff",
               borderWidth: 1,
-              borderColor: '#D1D5DB',
+              borderColor: "#D1D5DB",
               borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems: "center",
+              justifyContent: "center",
               paddingVertical: 13,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.07,
               shadowRadius: 2,
               elevation: 1,
             }}
           >
-            <Text style={{ color: '#374151', fontSize: 15, fontWeight: '600', letterSpacing: 0.2 }}>
+            <Text
+              style={{
+                color: "#374151",
+                fontSize: 15,
+                fontWeight: "600",
+                letterSpacing: 0.2,
+              }}
+            >
               Huỷ
             </Text>
           </TouchableOpacity>
@@ -510,17 +564,17 @@ export default function UploadVideoScreen() {
             style={{
               flex: 1,
               backgroundColor:
-                saving || (!videoId && !video) ? '#9CA3AF' : '#059669',
+                saving || (!videoId && !video) ? "#9CA3AF" : "#059669",
               borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems: "center",
+              justifyContent: "center",
               paddingVertical: 13,
-              shadowColor: '#059669',
+              shadowColor: "#059669",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.15,
               shadowRadius: 4,
               elevation: 3,
-              flexDirection: 'row',
+              flexDirection: "row",
               gap: 8,
             }}
           >
@@ -529,19 +583,27 @@ export default function UploadVideoScreen() {
                 <ActivityIndicator color="#fff" size="small" />
                 <Text
                   style={{
-                    color: '#fff',
+                    color: "#fff",
                     fontSize: 15,
-                    fontWeight: '700',
+                    fontWeight: "700",
                     marginLeft: 8,
                     letterSpacing: 0.3,
                   }}
                 >
-                  {videoId ? 'Đang cập nhật' : 'Đang tải lên'}... {uploadProgress}%
+                  {videoId ? "Đang cập nhật" : "Đang tải lên"}...{" "}
+                  {uploadProgress}%
                 </Text>
               </>
             ) : (
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>
-                {videoId ? 'Cập nhật video' : 'Tải video lên'}
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 15,
+                  fontWeight: "700",
+                  letterSpacing: 0.3,
+                }}
+              >
+                {videoId ? "Cập nhật video" : "Tải video lên"}
               </Text>
             )}
           </TouchableOpacity>

@@ -153,42 +153,61 @@ export default function AIScreen() {
                   </View>
                   <View style={{ flex: 1, marginLeft: 10 }}>
                     <Text style={styles.analysisTitleModern} numberOfLines={2}>
-                      {r.video?.session?.course.name || r.video?.title || "Phân tích Video"}
+                      {r.video?.session?.course.name ||
+                        r.video?.title ||
+                        "Phân tích Video"}
                     </Text>
                     <View style={styles.badgeRow}>
                       <View style={styles.sessionBadgeModern}>
                         <Text style={styles.sessionBadgeTextModern}>
-                          {r.video?.session?.sessionNumber ? `Buổi ${r.video?.session.sessionNumber}` : "Buổi tập"}
+                          {r.video?.session?.sessionNumber
+                            ? `Buổi ${r.video?.session.sessionNumber}`
+                            : "Buổi tập"}
                         </Text>
                       </View>
-                      <View style={[
-                        styles.scoreBadgeModern,
-                        styles.scoreBadgeCircle,
-                        (r.learnerScore || 0) >= 70
-                          ? styles.scoreBadgePass
-                          : (r.learnerScore || 0) >= 50
-                          ? styles.scoreBadgeWarning
-                          : styles.scoreBadgeFail
-                      ]}>
-                        <Text style={[
-                          styles.scoreBadgeTextModern,
-                          styles.scoreBadgeTextCircle,
+                      <View
+                        style={[
+                          styles.scoreBadgeModern,
+                          styles.scoreBadgeCircle,
                           (r.learnerScore || 0) >= 70
-                            ? styles.scoreTextPass
+                            ? styles.scoreBadgePass
                             : (r.learnerScore || 0) >= 50
-                            ? styles.scoreTextWarning
-                            : styles.scoreTextFail
-                        ]}>
+                            ? styles.scoreBadgeWarning
+                            : styles.scoreBadgeFail,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.scoreBadgeTextModern,
+                            styles.scoreBadgeTextCircle,
+                            (r.learnerScore || 0) >= 70
+                              ? styles.scoreTextPass
+                              : (r.learnerScore || 0) >= 50
+                              ? styles.scoreTextWarning
+                              : styles.scoreTextFail,
+                          ]}
+                        >
                           {r.learnerScore || 0}
                         </Text>
                       </View>
                     </View>
                     <View style={styles.metaRowModern}>
-                      <Ionicons name="calendar-outline" size={13} color="#6B7280" />
-                      <Text style={styles.metaModern}>{formatDate(r.createdAt)}</Text>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={13}
+                        color="#6B7280"
+                      />
+                      <Text style={styles.metaModern}>
+                        {formatDate(r.createdAt)}
+                      </Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#059669" style={{ marginLeft: 8 }} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color="#059669"
+                    style={{ marginLeft: 8 }}
+                  />
                 </View>
               </TouchableOpacity>
             ))}
@@ -203,7 +222,7 @@ export default function AIScreen() {
           coachVideoUrl={selectedResult.video?.publicUrl || ""}
           learnerVideoUrl={selectedResult.learnerVideo?.publicUrl || ""}
           aiAnalysisResult={selectedResult}
-          isPaddingTopEnabled={false}
+          isPaddingTopEnabled={true}
         />
       )}
     </View>
@@ -406,7 +425,7 @@ const styles = StyleSheet.create({
     height: 38,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
+    shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 2,
     marginLeft: 2,
