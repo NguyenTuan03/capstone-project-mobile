@@ -2,23 +2,23 @@ import { Ionicons } from "@expo/vector-icons";
 import type { FC } from "react";
 import { memo } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    Modal,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import type { Course } from "@/types/course";
 import { convertDayOfWeekToVietnamese } from "@/utils/scheduleFormat";
 
 import {
-    formatCoursePrice,
-    getLevelInVietnamese,
-    getStatusColor,
-    getStatusInVietnamese,
+  formatCoursePrice,
+  getLevelInVietnamese,
+  getStatusColor,
+  getStatusInVietnamese,
 } from "./helpers";
 import styles from "./styles";
 
@@ -49,15 +49,16 @@ const CourseDetailModalComponent: FC<CourseDetailModalProps> = ({
   >
     <View style={styles.modalOverlay}>
       <View
-        style={[
-          styles.courseModalContent,
-          { paddingBottom: bottomInset + 20 },
-        ]}
+        style={[styles.courseModalContent, { paddingBottom: bottomInset + 20 }]}
       >
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.courseModalHeader}>
             <Text style={styles.courseModalTitle}>Chi tiết khóa học</Text>
-            <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={styles.closeBtn}>
+            <TouchableOpacity
+              onPress={onClose}
+              activeOpacity={0.7}
+              style={styles.closeBtn}
+            >
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
@@ -74,7 +75,9 @@ const CourseDetailModalComponent: FC<CourseDetailModalProps> = ({
                 <View style={styles.statusBadgeOverlay}>
                   <View style={[styles.badge, styles.badgePrimary]}>
                     <Text style={styles.badgeText}>
-                      {course.learningFormat === "INDIVIDUAL" ? "Cá nhân" : "Nhóm"}
+                      {course.learningFormat === "INDIVIDUAL"
+                        ? "Cá nhân"
+                        : "Nhóm"}
                     </Text>
                   </View>
                   <View style={styles.levelBadge}>
@@ -177,11 +180,7 @@ const CourseDetailModalComponent: FC<CourseDetailModalProps> = ({
                 {course.currentParticipants === 0 &&
                   course.learningFormat === "GROUP" && (
                     <View style={styles.warningSection}>
-                      <Ionicons
-                        name="alert-circle"
-                        size={16}
-                        color="#F59E0B"
-                      />
+                      <Ionicons name="alert-circle" size={16} color="#F59E0B" />
                       <Text style={styles.warningText}>
                         Chưa có học viên đăng ký {"\n"} Hãy là người đầu tiên!
                       </Text>
@@ -321,7 +320,8 @@ const CourseDetailModalComponent: FC<CourseDetailModalProps> = ({
                 >
                   {processingPaymentId === course.id ? (
                     <ActivityIndicator size="small" color="#fff" />
-                  ) : course.maxParticipants - course.currentParticipants <= 0 ? (
+                  ) : course.maxParticipants - course.currentParticipants <=
+                    0 ? (
                     <Text style={styles.primaryBtnText}>
                       Khóa học đã đủ học viên
                     </Text>
@@ -349,4 +349,3 @@ const CourseDetailModal = memo(CourseDetailModalComponent);
 CourseDetailModal.displayName = "CourseDetailModal";
 
 export default CourseDetailModal;
-

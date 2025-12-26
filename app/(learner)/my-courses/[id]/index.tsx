@@ -391,7 +391,7 @@ export default function CourseDetailScreen() {
           {/* Course Info Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.courseName} numberOfLines={2}>
+              <Text style={styles.courseName} numberOfLines={4}>
                 {course.name}
               </Text>
               {course.status && (

@@ -146,6 +146,7 @@ export default function LearnerVideoModal({
         ],
       });
       setExpandedResultIndices([0]); // Select the new latest result
+      onReload?.(); // Required to get the database ID for the new result
     } catch (error) {
       Alert.alert("Lỗi", "Không thể tạo phân tích AI. Vui lòng thử lại.");
     } finally {
