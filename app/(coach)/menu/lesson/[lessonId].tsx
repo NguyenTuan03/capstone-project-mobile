@@ -583,19 +583,21 @@ export default function LessonDetailScreen() {
       >
         {activeTab === "VIDEO LESSON" ? (
           <View>
-            <TouchableOpacity
-              style={styles.addVideoButton}
-              onPress={() =>
-                router.push({
-                  pathname: "/(coach)/menu/lesson/uploadVideo",
-                  params: { lessonId },
-                })
-              }
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-              <Text style={styles.addVideoButtonText}>Thêm video mới</Text>
-            </TouchableOpacity>
+            {!video && (
+              <TouchableOpacity
+                style={styles.addVideoButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(coach)/menu/lesson/uploadVideo",
+                    params: { lessonId },
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.addVideoButtonText}>Thêm video mới</Text>
+              </TouchableOpacity>
+            )}
             {loading ? (
               <View style={styles.videoCardSkeleton}>
                 <View style={styles.videoThumbnailSkeleton} />
@@ -604,35 +606,7 @@ export default function LessonDetailScreen() {
                   <View style={[styles.skeletonBar, { width: "40%" }]} />
                 </View>
               </View>
-            ) : video === undefined ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconContainer}>
-                  <Ionicons name="videocam-outline" size={32} color="#10B981" />
-                </View>
-                <Text style={styles.emptyTitle}>Chưa có video bài giảng</Text>
-                <Text style={styles.emptyDescription}>
-                  Tải lên video bài giảng đầu tiên để giúp học viên tiếp cận nội
-                  dung bài học tốt hơn.
-                </Text>
-                <TouchableOpacity
-                  style={styles.emptyCreateButton}
-                  onPress={() =>
-                    router.push(
-                      `/menu/lesson/video/create?lessonId=${lessonId}`
-                    )
-                  }
-                >
-                  <Ionicons
-                    name="cloud-upload-outline"
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.emptyCreateButtonText}>
-                    Tải video lên ngay
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
+            ) : video === undefined ? null : (
               <View>
                 <View style={styles.videosHeader}>
                   <Text style={styles.videosHeaderTitle}>Video bài giảng</Text>
