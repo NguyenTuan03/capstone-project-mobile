@@ -14,7 +14,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -389,7 +391,9 @@ export default function CourseDetailScreen() {
           {/* Course Info Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.courseName} numberOfLines={2}>{course.name}</Text>
+              <Text style={styles.courseName} numberOfLines={2}>
+                {course.name}
+              </Text>
               {course.status && (
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusText}>
@@ -400,7 +404,9 @@ export default function CourseDetailScreen() {
             </View>
 
             {course.description && (
-              <Text style={styles.courseDescription} numberOfLines={3}>{course.description}</Text>
+              <Text style={styles.courseDescription} numberOfLines={3}>
+                {course.description}
+              </Text>
             )}
 
             {/* Compact Stats Grid */}
@@ -408,19 +414,25 @@ export default function CourseDetailScreen() {
               <View style={styles.statBox}>
                 <Ionicons name="school-outline" size={16} color="#059669" />
                 <Text style={styles.statLabel}>Trình độ</Text>
-                <Text style={styles.statValue}>{getLevelLabel(course.level)}</Text>
+                <Text style={styles.statValue}>
+                  {getLevelLabel(course.level)}
+                </Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statBox}>
                 <Ionicons name="people-outline" size={16} color="#059669" />
                 <Text style={styles.statLabel}>Hình thức</Text>
-                <Text style={styles.statValue}>{translateLearningFormat(course.learningFormat)}</Text>
+                <Text style={styles.statValue}>
+                  {translateLearningFormat(course.learningFormat)}
+                </Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statBox}>
                 <Ionicons name="time-outline" size={16} color="#059669" />
                 <Text style={styles.statLabel}>Buổi học</Text>
-                <Text style={styles.statValue}>{course.totalSessions ?? 0}</Text>
+                <Text style={styles.statValue}>
+                  {course.totalSessions ?? 0}
+                </Text>
               </View>
             </View>
 
@@ -430,7 +442,9 @@ export default function CourseDetailScreen() {
                 <Ionicons name="cash-outline" size={18} color="#059669" />
                 <Text style={styles.priceLabel}>Học phí</Text>
               </View>
-              <Text style={styles.priceValue}>{formatPrice(course.pricePerParticipant)}</Text>
+              <Text style={styles.priceValue}>
+                {formatPrice(course.pricePerParticipant)}
+              </Text>
             </View>
 
             {/* Participant Progress Compact */}
@@ -439,10 +453,13 @@ export default function CourseDetailScreen() {
                 <View style={styles.participantCount}>
                   <Ionicons name="people" size={14} color="#059669" />
                   <Text style={styles.participantText}>
-                    {course.currentParticipants}/{course.maxParticipants} học viên
+                    {course.currentParticipants}/{course.maxParticipants} học
+                    viên
                   </Text>
                 </View>
-                <Text style={styles.minText}>Tối thiểu {course.minParticipants}</Text>
+                <Text style={styles.minText}>
+                  Tối thiểu {course.minParticipants}
+                </Text>
               </View>
               <View style={styles.progressBar}>
                 <View
@@ -450,7 +467,8 @@ export default function CourseDetailScreen() {
                     styles.progressFill,
                     {
                       width: `${Math.min(
-                        (course.currentParticipants / course.maxParticipants) * 100,
+                        (course.currentParticipants / course.maxParticipants) *
+                          100,
                         100
                       )}%`,
                     },
@@ -462,15 +480,23 @@ export default function CourseDetailScreen() {
             {/* Date Row Compact */}
             <View style={styles.dateRow}>
               <View style={styles.dateBox}>
-                <Ionicons name="play-circle-outline" size={14} color="#059669" />
-                <Text style={styles.dateText}>{formatDate(course.startDate)}</Text>
+                <Ionicons
+                  name="play-circle-outline"
+                  size={14}
+                  color="#059669"
+                />
+                <Text style={styles.dateText}>
+                  {formatDate(course.startDate)}
+                </Text>
               </View>
               {course.endDate && (
                 <>
                   <Ionicons name="arrow-forward" size={12} color="#D1D5DB" />
                   <View style={styles.dateBox}>
                     <Ionicons name="flag-outline" size={14} color="#EF4444" />
-                    <Text style={styles.dateText}>{formatDate(course.endDate)}</Text>
+                    <Text style={styles.dateText}>
+                      {formatDate(course.endDate)}
+                    </Text>
                   </View>
                 </>
               )}
@@ -500,8 +526,12 @@ export default function CourseDetailScreen() {
               >
                 <Ionicons name="person-circle" size={20} color="#059669" />
                 <View style={styles.coachInfo}>
-                  <Text style={styles.coachName}>{coachDetail.user?.fullName}</Text>
-                  <Text style={styles.coachPhone}>{coachDetail.user?.phoneNumber}</Text>
+                  <Text style={styles.coachName}>
+                    {coachDetail.user?.fullName}
+                  </Text>
+                  <Text style={styles.coachPhone}>
+                    {coachDetail.user?.phoneNumber}
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
               </TouchableOpacity>
@@ -514,7 +544,9 @@ export default function CourseDetailScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="videocam" size={18} color="#FFFFFF" />
-              <Text style={styles.vcButtonText}>Tham gia lớp học trực tuyến</Text>
+              <Text style={styles.vcButtonText}>
+                Tham gia lớp học trực tuyến
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -568,8 +600,14 @@ export default function CourseDetailScreen() {
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                       <>
-                        <Ionicons name="close-circle" size={16} color="#FFFFFF" />
-                        <Text style={styles.cancelButtonText}>Hủy khóa học</Text>
+                        <Ionicons
+                          name="close-circle"
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.cancelButtonText}>
+                          Hủy khóa học
+                        </Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -598,8 +636,8 @@ export default function CourseDetailScreen() {
               />
             </TouchableOpacity>
 
-            {showSessions && (
-              sessions.length === 0 ? (
+            {showSessions &&
+              (sessions.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="calendar-outline" size={40} color="#D1D5DB" />
                   <Text style={styles.emptyText}>Chưa có lịch học</Text>
@@ -607,143 +645,142 @@ export default function CourseDetailScreen() {
               ) : (
                 <View style={{ gap: 8 }}>
                   {sessions.map((session, index) => (
-                  <View key={session.id} style={styles.sessionCard}>
-                    <View style={styles.sessionLeft}>
-                      <View style={styles.sessionIndex}>
-                        <Text style={styles.sessionIndexText}>
-                          {session.sessionNumber || index + 1}
-                        </Text>
+                    <View key={session.id} style={styles.sessionCard}>
+                      <View style={styles.sessionLeft}>
+                        <View style={styles.sessionIndex}>
+                          <Text style={styles.sessionIndexText}>
+                            {session.sessionNumber || index + 1}
+                          </Text>
+                        </View>
+                        <View style={styles.connectorLine} />
                       </View>
-                      <View style={styles.connectorLine} />
-                    </View>
 
-                    <View style={styles.sessionRight}>
-                      <View style={styles.sessionHeader}>
-                        <Text style={styles.sessionTitle}>
-                          {session.name || `Buổi ${session.sessionNumber}`}
-                        </Text>
-                        <View
-                          style={[
-                            styles.sessionStatusBadge,
-                            session.status === "COMPLETED" && {
-                              backgroundColor: "#DCFCE7",
-                            },
-                            session.status === "IN_PROGRESS" && {
-                              backgroundColor: "#DBEAFE",
-                            },
-                          ]}
-                        >
-                          <Text
+                      <View style={styles.sessionRight}>
+                        <View style={styles.sessionHeader}>
+                          <Text style={styles.sessionTitle}>
+                            {session.name || `Buổi ${session.sessionNumber}`}
+                          </Text>
+                          <View
                             style={[
-                              styles.sessionStatusText,
+                              styles.sessionStatusBadge,
                               session.status === "COMPLETED" && {
-                                color: "#059669",
+                                backgroundColor: "#DCFCE7",
                               },
                               session.status === "IN_PROGRESS" && {
-                                color: "#2563EB",
+                                backgroundColor: "#DBEAFE",
                               },
                             ]}
                           >
-                            {getSessionStatusLabel(session.status)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.sessionMetaRow}>
-                        <View style={styles.metaItem}>
-                          <Ionicons
-                            name="calendar-outline"
-                            size={14}
-                            color="#6B7280"
-                          />
-                          <Text style={styles.metaValue}>
-                            {formatDate(session.scheduleDate)}
-                          </Text>
-                        </View>
-                        <View style={styles.metaItem}>
-                          <Ionicons
-                            name="time-outline"
-                            size={14}
-                            color="#6B7280"
-                          />
-                          <Text style={styles.metaValue}>
-                            {session.startTime} - {session.endTime}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Lesson Content */}
-                      <View style={styles.lessonContainer}>
-                        <View style={styles.lessonHeader}>
-                          <Ionicons
-                            name="book-outline"
-                            size={16}
-                            color="#059669"
-                          />
-                          <Text style={styles.lessonLabel}>
-                            Nội dung bài học
-                          </Text>
-                        </View>
-
-                        <View style={styles.lessonStats}>
-                          {session.video && (
-                            <View style={styles.statTag}>
-                              <Ionicons
-                                name="play-circle-outline"
-                                size={12}
-                                color="#4B5563"
-                              />
-                              <Text style={styles.statText}>Video</Text>
-                            </View>
-                          )}
-                          {session.quiz && (
-                            <View style={styles.statTag}>
-                              <Ionicons
-                                name="help-circle-outline"
-                                size={12}
-                                color="#4B5563"
-                              />
-                              <Text style={styles.statText}>Quiz</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {session.status === SessionStatus.COMPLETED && (
-                          <TouchableOpacity
-                            style={styles.accessButton}
-                            activeOpacity={0.8}
-                            onPress={() =>
-                              router.push({
-                                pathname:
-                                  "/(learner)/my-courses/[id]/lesson/[lessonId]",
-                                params: {
-                                  id: courseId?.toString() ?? "",
-                                  lessonId: session.id.toString(),
-                                  lessonName:
-                                    session.name ||
-                                    `Buổi ${session.sessionNumber}`,
-                                  sessionId: session.id.toString(),
+                            <Text
+                              style={[
+                                styles.sessionStatusText,
+                                session.status === "COMPLETED" && {
+                                  color: "#059669",
                                 },
-                              })
-                            }
-                          >
-                            <Text style={styles.accessButtonText}>
-                              Vào học ngay
+                                session.status === "IN_PROGRESS" && {
+                                  color: "#2563EB",
+                                },
+                              ]}
+                            >
+                              {getSessionStatusLabel(session.status)}
                             </Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.sessionMetaRow}>
+                          <View style={styles.metaItem}>
                             <Ionicons
-                              name="arrow-forward"
-                              size={16}
-                              color="#FFFFFF"
+                              name="calendar-outline"
+                              size={14}
+                              color="#6B7280"
                             />
-                          </TouchableOpacity>
-                        )}
+                            <Text style={styles.metaValue}>
+                              {formatDate(session.scheduleDate)}
+                            </Text>
+                          </View>
+                          <View style={styles.metaItem}>
+                            <Ionicons
+                              name="time-outline"
+                              size={14}
+                              color="#6B7280"
+                            />
+                            <Text style={styles.metaValue}>
+                              {session.startTime} - {session.endTime}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Lesson Content */}
+                        <View style={styles.lessonContainer}>
+                          <View style={styles.lessonHeader}>
+                            <Ionicons
+                              name="book-outline"
+                              size={16}
+                              color="#059669"
+                            />
+                            <Text style={styles.lessonLabel}>
+                              Nội dung bài học
+                            </Text>
+                          </View>
+
+                          <View style={styles.lessonStats}>
+                            {session.video && (
+                              <View style={styles.statTag}>
+                                <Ionicons
+                                  name="play-circle-outline"
+                                  size={12}
+                                  color="#4B5563"
+                                />
+                                <Text style={styles.statText}>Video</Text>
+                              </View>
+                            )}
+                            {session.quiz && (
+                              <View style={styles.statTag}>
+                                <Ionicons
+                                  name="help-circle-outline"
+                                  size={12}
+                                  color="#4B5563"
+                                />
+                                <Text style={styles.statText}>Quiz</Text>
+                              </View>
+                            )}
+                          </View>
+
+                          {session.status === SessionStatus.COMPLETED && (
+                            <TouchableOpacity
+                              style={styles.accessButton}
+                              activeOpacity={0.8}
+                              onPress={() =>
+                                router.push({
+                                  pathname:
+                                    "/(learner)/my-courses/[id]/lesson/[lessonId]",
+                                  params: {
+                                    id: courseId?.toString() ?? "",
+                                    lessonId: session.id.toString(),
+                                    lessonName:
+                                      session.name ||
+                                      `Buổi ${session.sessionNumber}`,
+                                    sessionId: session.id.toString(),
+                                  },
+                                })
+                              }
+                            >
+                              <Text style={styles.accessButtonText}>
+                                Vào học ngay
+                              </Text>
+                              <Ionicons
+                                name="arrow-forward"
+                                size={16}
+                                color="#FFFFFF"
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
                     </View>
-                  </View>
                   ))}
                 </View>
-              )
-            )}
+              ))}
           </View>
 
           {/* Feedbacks Section */}
@@ -775,71 +812,74 @@ export default function CourseDetailScreen() {
                   activeOpacity={0.8}
                 >
                   <Ionicons name="create" size={16} color="#FFFFFF" />
-                  <Text style={styles.writeFeedbackButtonText}>Viết đánh giá</Text>
+                  <Text style={styles.writeFeedbackButtonText}>
+                    Viết đánh giá
+                  </Text>
                 </TouchableOpacity>
               )}
 
-              {showFeedbacks && (
-                feedbacks.length === 0 ? (
+              {showFeedbacks &&
+                (feedbacks.length === 0 ? (
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
                   </View>
                 ) : (
                   <View style={{ gap: 8 }}>
-                  {feedbacks.map((feedback, index) => (
-                    <View
-                      key={feedback.id || index}
-                      style={styles.feedbackCard}
-                    >
-                      <View style={styles.feedbackTop}>
-                        <View style={styles.userInfo}>
-                          <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarText}>
-                              {feedback.isAnonymous
-                                ? "A"
-                                : (feedback as any).createdBy?.fullName?.[0] ||
-                                  "U"}
-                            </Text>
+                    {feedbacks.map((feedback, index) => (
+                      <View
+                        key={feedback.id || index}
+                        style={styles.feedbackCard}
+                      >
+                        <View style={styles.feedbackTop}>
+                          <View style={styles.userInfo}>
+                            <View style={styles.avatarPlaceholder}>
+                              <Text style={styles.avatarText}>
+                                {feedback.isAnonymous
+                                  ? "A"
+                                  : (feedback as any).createdBy
+                                      ?.fullName?.[0] || "U"}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text style={styles.userName}>
+                                {feedback.isAnonymous
+                                  ? "Ẩn danh"
+                                  : (feedback as any).createdBy?.fullName ||
+                                    "Người dùng"}
+                              </Text>
+                              <Text style={styles.feedbackTime}>
+                                {formatDateTime(feedback.createdAt)}
+                              </Text>
+                            </View>
                           </View>
-                          <View>
-                            <Text style={styles.userName}>
-                              {feedback.isAnonymous
-                                ? "Ẩn danh"
-                                : (feedback as any).createdBy?.fullName ||
-                                  "Người dùng"}
-                            </Text>
-                            <Text style={styles.feedbackTime}>
-                              {formatDateTime(feedback.createdAt)}
-                            </Text>
+                          <View style={styles.starsRow}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Ionicons
+                                key={star}
+                                name={
+                                  star <= feedback.rating
+                                    ? "star"
+                                    : "star-outline"
+                                }
+                                size={14}
+                                color={
+                                  star <= feedback.rating
+                                    ? "#F59E0B"
+                                    : "#E5E7EB"
+                                }
+                              />
+                            ))}
                           </View>
                         </View>
-                        <View style={styles.starsRow}>
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Ionicons
-                              key={star}
-                              name={
-                                star <= feedback.rating
-                                  ? "star"
-                                  : "star-outline"
-                              }
-                              size={14}
-                              color={
-                                star <= feedback.rating ? "#F59E0B" : "#E5E7EB"
-                              }
-                            />
-                          ))}
-                        </View>
+                        {feedback.comment && (
+                          <Text style={styles.commentText}>
+                            {feedback.comment}
+                          </Text>
+                        )}
                       </View>
-                      {feedback.comment && (
-                        <Text style={styles.commentText}>
-                          {feedback.comment}
-                        </Text>
-                      )}
-                    </View>
-                  ))}
+                    ))}
                   </View>
-                )
-              )}
+                ))}
             </View>
           )}
         </View>
@@ -862,7 +902,10 @@ export default function CourseDetailScreen() {
         transparent={true}
         onRequestClose={() => setShowFeedbackModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Đánh giá khóa học</Text>
@@ -874,7 +917,10 @@ export default function CourseDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            <ScrollView
+              style={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.ratingWrapper}>
                 <Text style={styles.ratingTitle}>Bạn cảm thấy thế nào?</Text>
                 <View style={styles.starSelectRow}>
@@ -962,7 +1008,7 @@ export default function CourseDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Credential Image Modal - Removed: Images shown directly in CoachDetailModal */}
