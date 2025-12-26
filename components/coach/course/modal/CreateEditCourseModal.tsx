@@ -30,6 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Calendar } from "react-native-calendars";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 type Province = {
@@ -1298,7 +1299,17 @@ export default function CreateEditCourseModal({
                   if (startDate) {
                     setSelectedDate(new Date(startDate));
                   } else {
-                    setSelectedDate(new Date());
+                    // If no startDate, use minimum allowed date instead of today
+                    // This prevents Android picker from showing today when minimumDate is in the future
+                    const minDate = new Date(
+                      new Date().getTime() +
+                        (courseStartDateAfterDaysFromNow || 0) *
+                          24 *
+                          60 *
+                          60 *
+                          1000
+                    );
+                    setSelectedDate(minDate);
                   }
                   setShowDatePicker(true);
                 }}
@@ -1320,7 +1331,7 @@ export default function CreateEditCourseModal({
                 </Text>
                 <Ionicons name="calendar-outline" size={20} color="#059669" />
               </TouchableOpacity>
-              {Platform.OS === "ios" && showDatePicker && (
+              {showDatePicker && (
                 <Modal
                   visible={showDatePicker}
                   transparent
@@ -1337,92 +1348,11 @@ export default function CreateEditCourseModal({
                           <Text style={styles.datePickerCancelText}>Hủy</Text>
                         </TouchableOpacity>
                         <Text style={styles.datePickerTitle}>Chọn ngày</Text>
-                        <TouchableOpacity
-                          onPress={() => {
-                            // Calculate minimum allowed date
-                            const minAllowedDate = new Date(
-                              new Date().getTime() +
-                                (courseStartDateAfterDaysFromNow || 0) *
-                                  24 *
-                                  60 *
-                                  60 *
-                                  1000
-                            );
-
-                            // Validate selected date is after minimum
-                            if (selectedDate < minAllowedDate) {
-                              Alert.alert(
-                                "Ngày không hợp lệ",
-                                `Ngày bắt đầu phải cách ít nhất ${courseStartDateAfterDaysFromNow} ngày từ hôm nay.`
-                              );
-                              return;
-                            }
-
-                            // Validate selected date matches schedule days
-                            if (
-                              schedules.length > 0 &&
-                              !isDateValidForSchedules(selectedDate)
-                            ) {
-                              const scheduleDays = getScheduleDaysOfWeek()
-                                .map((day) => getDayNameInVietnamese(day))
-                                .join(", ");
-                              Alert.alert(
-                                "Ngày không hợp lệ",
-                                `Ngày bắt đầu phải là ${scheduleDays} (theo lịch học của bạn)`
-                              );
-                              return;
-                            }
-
-                            const formattedDate = selectedDate
-                              .toISOString()
-                              .split("T")[0];
-                            setStartDate(formattedDate);
-                            setShowDatePicker(false);
-                          }}
-                          disabled={
-                            schedules.length > 0
-                              ? !isDateValidForSchedules(selectedDate)
-                              : false
-                          }
-                          style={[
-                            styles.datePickerConfirmButton,
-                            schedules.length > 0 &&
-                            !isDateValidForSchedules(selectedDate)
-                              ? styles.datePickerConfirmButtonDisabled
-                              : null,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.datePickerConfirmText,
-                              schedules.length > 0 &&
-                              !isDateValidForSchedules(selectedDate)
-                                ? styles.datePickerConfirmTextDisabled
-                                : null,
-                            ]}
-                          >
-                            Xác nhận
-                          </Text>
-                        </TouchableOpacity>
+                        <View style={styles.placeholder} />
                       </View>
-                      <DateTimePicker
-                        value={selectedDate}
-                        mode="date"
-                        display="inline"
-                        onChange={(event, date) => {
-                          // Always update selectedDate and startDate on iOS picker change
-                          if (date) {
-                            setSelectedDate(date);
-                            // For iOS, update startDate immediately for inline picker
-                            if (Platform.OS === "ios") {
-                              const formattedDate = date
-                                .toISOString()
-                                .split("T")[0];
-                              setStartDate(formattedDate);
-                            }
-                          }
-                        }}
-                        minimumDate={
+                      <Calendar
+                        current={selectedDate.toISOString().split("T")[0]}
+                        minDate={
                           new Date(
                             new Date().getTime() +
                               (courseStartDateAfterDaysFromNow || 0) *
@@ -1431,75 +1361,104 @@ export default function CreateEditCourseModal({
                                 60 *
                                 1000
                           )
+                            .toISOString()
+                            .split("T")[0]
                         }
-                        textColor="#111827"
-                        accentColor="#059669"
-                        themeVariant="light"
+                        markedDates={{
+                          [selectedDate.toISOString().split("T")[0]]: {
+                            selected: true,
+                            selectedColor: "#059669",
+                            selectedTextColor: "#FFFFFF",
+                          },
+                        }}
+                        onDayPress={(day) => {
+                          const selectedDay = new Date(day.dateString);
+
+                          // Calculate minimum allowed date
+                          const minAllowedDate = new Date(
+                            new Date().getTime() +
+                              (courseStartDateAfterDaysFromNow || 0) *
+                                24 *
+                                60 *
+                                60 *
+                                1000
+                          );
+                          minAllowedDate.setHours(0, 0, 0, 0);
+                          selectedDay.setHours(0, 0, 0, 0);
+
+                          // Validate selected date is after minimum
+                          if (selectedDay < minAllowedDate) {
+                            Alert.alert(
+                              "Ngày không hợp lệ",
+                              `Ngày bắt đầu phải cách ít nhất ${courseStartDateAfterDaysFromNow} ngày từ hôm nay.`
+                            );
+                            return;
+                          }
+
+                          // Validate selected date matches schedule days
+                          if (
+                            schedules.length > 0 &&
+                            !isDateValidForSchedules(selectedDay)
+                          ) {
+                            const scheduleDays = getScheduleDaysOfWeek()
+                              .map((day) => getDayNameInVietnamese(day))
+                              .join(", ");
+                            Alert.alert(
+                              "Ngày không hợp lệ",
+                              `Ngày bắt đầu phải là ${scheduleDays} (theo lịch học của bạn)`
+                            );
+                            return;
+                          }
+
+                          // Update selected date
+                          setSelectedDate(selectedDay);
+                          const formattedDate = day.dateString;
+                          setStartDate(formattedDate);
+                          setShowDatePicker(false);
+                        }}
+                        disableAllTouchEventsForDisabledDays={true}
+                        enableSwipeMonths={true}
+                        firstDay={1}
+                        theme={{
+                          backgroundColor: "#FFFFFF",
+                          calendarBackground: "#FFFFFF",
+                          textSectionTitleColor: "#6B7280",
+                          selectedDayBackgroundColor: "#059669",
+                          selectedDayTextColor: "#FFFFFF",
+                          todayTextColor: "#059669",
+                          dayTextColor: "#111827",
+                          textDisabledColor: "#D1D5DB",
+                          dotColor: "#059669",
+                          selectedDotColor: "#FFFFFF",
+                          arrowColor: "#059669",
+                          monthTextColor: "#111827",
+                          textDayFontWeight: "500",
+                          textMonthFontWeight: "600",
+                          textDayHeaderFontWeight: "600",
+                          textDayFontSize: 14,
+                          textMonthFontSize: 16,
+                          textDayHeaderFontSize: 12,
+                        }}
+                        style={styles.calendar}
                       />
+                      {schedules.length > 0 && (
+                        <View style={styles.dateValidationHint}>
+                          <Ionicons
+                            name="information-circle-outline"
+                            size={16}
+                            color="#059669"
+                          />
+                          <Text style={styles.dateValidationHintText}>
+                            Ngày bắt đầu phải là:{" "}
+                            {getScheduleDaysOfWeek()
+                              .map((day) => getDayNameInVietnamese(day))
+                              .join(", ")}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </Modal>
-              )}
-              {Platform.OS === "android" && showDatePicker && (
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display="default"
-                  onChange={(event, date) => {
-                    if (event.type === "set" && date) {
-                      // Calculate minimum allowed date
-                      const minAllowedDate = new Date(
-                        new Date().getTime() +
-                          (courseStartDateAfterDaysFromNow || 0) *
-                            24 *
-                            60 *
-                            60 *
-                            1000
-                      );
-
-                      // Validate selected date is after minimum
-                      if (date < minAllowedDate) {
-                        Alert.alert(
-                          "Ngày không hợp lệ",
-                          `Ngày bắt đầu phải cách ít nhất ${courseStartDateAfterDaysFromNow} ngày từ hôm nay.`
-                        );
-                        setShowDatePicker(false);
-                        return;
-                      }
-
-                      // Validate selected date matches schedule days
-                      if (
-                        schedules.length > 0 &&
-                        !isDateValidForSchedules(date)
-                      ) {
-                        const scheduleDays = getScheduleDaysOfWeek()
-                          .map((day) => getDayNameInVietnamese(day))
-                          .join(", ");
-                        Alert.alert(
-                          "Ngày không hợp lệ",
-                          `Ngày bắt đầu phải là ${scheduleDays} (theo lịch học của bạn)`
-                        );
-                        setShowDatePicker(false);
-                        return;
-                      }
-
-                      const formattedDate = date.toISOString().split("T")[0];
-                      setStartDate(formattedDate);
-                      setSelectedDate(date);
-                    }
-                    setShowDatePicker(false);
-                  }}
-                  minimumDate={
-                    new Date(
-                      new Date().getTime() +
-                        (courseStartDateAfterDaysFromNow || 0) *
-                          24 *
-                          60 *
-                          60 *
-                          1000
-                    )
-                  }
-                />
               )}
               {showDatePicker && schedules.length > 0 && (
                 <View style={styles.dateValidationHint}>
@@ -2370,6 +2329,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 32,
+  },
+  calendar: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   datePickerHeader: {
     flexDirection: "row",
