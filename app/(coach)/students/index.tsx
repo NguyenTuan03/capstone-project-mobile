@@ -1,4 +1,3 @@
-
 import LearnerProgressModal from "@/components/coach/LearnerProgressModal";
 import { getAllCoachLearnerProgress } from "@/services/learner.service";
 import { CourseStatus } from "@/types/course";
@@ -32,6 +31,12 @@ export default function CoachStudentsScreen() {
       setLoading(true);
       const data = await getAllCoachLearnerProgress(status);
       setLearners(data);
+      if (selectedLearner) {
+        const updatedLearner = data.find((l) => l.id === selectedLearner.id);
+        if (updatedLearner) {
+          setSelectedLearner(updatedLearner);
+        }
+      }
     } catch (error) {
     } finally {
       setLoading(false);
@@ -189,7 +194,8 @@ export default function CoachStudentsScreen() {
           <View>
             <Text style={styles.headerTitle}>Học viên của tôi</Text>
             <Text style={styles.headerSubtitle}>
-              {learners.length} học viên {status === CourseStatus.ON_GOING ? "đang học" : "đã hoàn thành"}
+              {learners.length} học viên{" "}
+              {status === CourseStatus.ON_GOING ? "đang học" : "đã hoàn thành"}
             </Text>
           </View>
         </View>
@@ -269,6 +275,7 @@ export default function CoachStudentsScreen() {
           setModalVisible(false);
           setSelectedLearner(null);
         }}
+        onReload={fetchLearners}
       />
     </View>
   );

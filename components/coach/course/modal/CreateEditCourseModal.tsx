@@ -213,6 +213,7 @@ export default function CreateEditCourseModal({
   const [selectedStartTime, setSelectedStartTime] = useState<Date>(new Date());
   const [selectedEndTime, setSelectedEndTime] = useState<Date>(new Date());
   const isInitializingRef = useRef(false);
+  const hasInitialized = useRef(false);
 
   const loadUserLocation = useCallback(async () => {
     try {
@@ -252,7 +253,8 @@ export default function CreateEditCourseModal({
   }, [provinces]);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !hasInitialized.current) {
+      hasInitialized.current = true;
       fetchSubjects();
       fetchProvinces();
       if (initialData) {
@@ -299,9 +301,11 @@ export default function CreateEditCourseModal({
         // Load user location as default for create mode
         loadUserLocation();
       }
+    } else if (!visible) {
+      hasInitialized.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, initialData, subjectFilter]);
+  }, [visible]);
 
   useEffect(() => {
     if (selectedProvince) {
@@ -549,7 +553,9 @@ export default function CreateEditCourseModal({
     const scheduleDays = getScheduleDaysOfWeek();
     if (scheduleDays.length === 0) return true; // No schedules, any date is valid
     const dateDay = getDayOfWeekName(date);
-    return scheduleDays.includes(dateDay);
+    return scheduleDays.some(
+      (day) => day.toUpperCase() === dateDay.toUpperCase()
+    );
   };
 
   const handleSaveSchedule = () => {
@@ -695,21 +701,6 @@ export default function CreateEditCourseModal({
     if (!startDate) {
       Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu");
       return;
-    }
-
-    // Validate start date matches schedule days of week
-    if (schedules.length > 0) {
-      const startDateObj = new Date(startDate);
-      if (!isDateValidForSchedules(startDateObj)) {
-        const scheduleDays = getScheduleDaysOfWeek()
-          .map((day) => getDayNameInVietnamese(day))
-          .join(", ");
-        Alert.alert(
-          "Lỗi",
-          `Ngày bắt đầu phải là ${scheduleDays} (theo lịch học của bạn)`
-        );
-        return;
-      }
     }
 
     if (!selectedCourt) {
@@ -1283,13 +1274,7 @@ export default function CreateEditCourseModal({
               <Text style={styles.label}>
                 Ngày bắt đầu <Text style={styles.required}>*</Text>
               </Text>
-              <Text style={styles.hintText}>
-                Ngày bắt đầu phải cách it nhất{" "}
-                <Text style={styles.highlightedText}>
-                  {courseStartDateAfterDaysFromNow || ""} ngày
-                </Text>{" "}
-                từ hôm nay.
-              </Text>
+
               <TouchableOpacity
                 style={styles.dateInput}
                 activeOpacity={0.7}
